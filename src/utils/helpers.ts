@@ -1,4 +1,4 @@
-import { Recipe, RecipeIngredient, CookedLog, ShoppingItem, DayPlan, FilterState } from '../types';
+import { Recipe, RecipeIngredient, CookedLog, ShoppingItem, DayPlan, FilterState, IngredientCategory } from '../types';
 
 // Format ingredient text with scaled portion amount
 export function formatIngredientAmount(ingredient: RecipeIngredient, originalServings: number, currentServings: number): string {
@@ -70,6 +70,95 @@ export function calculateMealSavings(servings: number, isVegan: boolean) {
     savedCO2Kg: Math.round(servings * co2PerServing * 10) / 10,
     savedWaterLiters: Math.round(servings * waterPerServing),
   };
+}
+
+// Automatische Erkennung des Supermarkt-Regals anhand des Zutatennamens
+export function detectIngredientCategory(name: string): IngredientCategory {
+  if (!name || typeof name !== 'string') return 'sonstiges';
+  const clean = name.toLowerCase().trim();
+
+  // 1. Hülsenfrüchte & Tofu / Fleischalternativen
+  const huelsenfruechteKeywords = [
+    'kichererbse', 'kichererbsen', 'linse', 'linsen', 'beluga', 'chana',
+    'bohne', 'bohnen', 'kidney', 'kidneybohne', 'kidneybohnen', 'edamame',
+    'tofu', 'räuchertofu', 'seidentofu', 'tempeh', 'sojaschnetzel', 'sojagranulat',
+    'soja-schnetzel', 'lupine', 'lupinen', 'erbse', 'erbsen', 'kichererbsenmehl'
+  ];
+  if (huelsenfruechteKeywords.some((kw) => clean.includes(kw))) {
+    return 'huelsenfruechte';
+  }
+
+  // 2. Frisches Gemüse, Obst & Kräuter
+  const gemueseKeywords = [
+    'spinat', 'blattspinat', 'tomate', 'tomaten', 'kirschtomate', 'kirschtomaten',
+    'gurke', 'salat', 'feldsalat', 'rucola', 'kopfsalat', 'paprika',
+    'zwiebel', 'zwiebeln', 'schalotte', 'schalotten', 'knoblauch', 'knoblauchzehe',
+    'karotte', 'karotten', 'möhre', 'möhren', 'zucchini', 'aubergine',
+    'brokkoli', 'broccoli', 'blumenkohl', 'kartoffel', 'kartoffeln', 'süßkartoffel', 'süßkartoffeln',
+    'pilz', 'pilze', 'champignon', 'champignons', 'shiitake', 'kräuterseitling', 'pfifferling',
+    'lauch', 'porree', 'frühlingszwiebel', 'frühlingszwiebeln', 'sellerie', 'knollensellerie', 'staudensellerie',
+    'kohl', 'weißkohl', 'rotkohl', 'rosenkohl', 'wirsing', 'grünkohl', 'chinakohl', 'pak choi',
+    'kürbis', 'hokkaido', 'butternut', 'avocado', 'ingwer', 'chili', 'chilischote',
+    'zitrone', 'zitronen', 'limette', 'limetten', 'apfel', 'äpfel', 'birne', 'birnen',
+    'banane', 'bananen', 'beere', 'beeren', 'blaubeere', 'himbeere', 'erdbeere',
+    'basilikum', 'petersilie', 'koriander', 'schnittlauch', 'rosmarin', 'thymian',
+    'dill', 'minze', 'salbei', 'oregano frisch', 'majoran', 'kerbel'
+  ];
+  if (gemueseKeywords.some((kw) => clean.includes(kw))) {
+    return 'gemuese';
+  }
+
+  // 3. Kühlregal & Pflanzliche Alternativen / Milchprodukte
+  const kuehlregalKeywords = [
+    'milch', 'hafermilch', 'sojamilch', 'mandelmilch', 'erbsenmilch',
+    'joghurt', 'sojajoghurt', 'haferjoghurt', 'quark', 'skyr',
+    'käse', 'feta', 'parmesan', 'mozzarella', 'gouda', 'cheddar', 'geriebener',
+    'frischkäse', 'veganer käse', 'hefe-schmelz',
+    'butter', 'margarine', 'albfett', 'kokosöl gekühlt',
+    'sahne', 'hafercreme', 'sojasahne', 'kokoscreme gekühlt', 'creme fraiche', 'crème fraîche',
+    'schmand', 'saure sahne', 'hummus', 'veganer aufstrich', 'aufstrich',
+    'seitan', 'vegane wurst', 'vegane bratwurst', 'veganes hack'
+  ];
+  if (kuehlregalKeywords.some((kw) => clean.includes(kw))) {
+    return 'kuehlregal';
+  }
+
+  // 4. Vorratskammer, Pasta, Reis, Getreide, Nüsse & Backzutaten
+  const trockenwarenKeywords = [
+    'pasta', 'nudel', 'nudeln', 'spaghetti', 'penne', 'fusilli', 'tagliatelle', 'lasagne',
+    'reis', 'basmati', 'jasmin', 'vollkornreis', 'risotto',
+    'quinoa', 'bulgur', 'couscous', 'polenta', 'hirse', 'haferflocken', 'flocken',
+    'mehl', 'weizenmehl', 'dinkelmehl', 'mandelmehl', 'speisestärke', 'stärke',
+    'hefe', 'trockenhefe', 'hefeflocken', 'nährhefe', 'backpulver', 'natron', 'zucker', 'puderzucker',
+    'erdnussmus', 'mandelmus', 'cashewmus', 'tahin', 'sesammus',
+    'kokosmilch', 'erdnuss', 'erdnüsse', 'walnuss', 'walnüsse', 'mandel', 'mandeln',
+    'cashew', 'cashews', 'haselnuss', 'haselnüsse', 'pinienkerne',
+    'sesam', 'chiasamen', 'chia', 'leinsamen', 'sonnenblumenkerne', 'kürbiskerne',
+    'tomatenmark', 'gehackte tomaten', 'passierte tomaten', 'dosentomaten', 'passata',
+    'tortilla', 'wraps', 'brot', 'toast', 'brötchen', 'knäckebrot'
+  ];
+  if (trockenwarenKeywords.some((kw) => clean.includes(kw))) {
+    return 'trockenwaren';
+  }
+
+  // 5. Gewürze, Öle, Essig & Dips
+  const gewuerzeKeywords = [
+    'salz', 'meersalz', 'pfeffer', 'schwarzpfeffer', 'paprikapulver', 'edelsüß', 'rosenscharf',
+    'kreuzkümmel', 'kumin', 'curry', 'currypulver', 'currypaste', 'kurkuma',
+    'zimt', 'muskat', 'muskatnuss', 'kardamom', 'nelken', 'oregano',
+    'chiliflocken', 'cayennepfeffer', 'garam masala', 'senfkörner',
+    'öl', 'olivenöl', 'rapsöl', 'sesamöl', 'sonnenblumenöl', 'kokosöl', 'leinöl',
+    'essig', 'apfelessig', 'balsamico', 'weißweinessig', 'rotweinessig', 'reisessig',
+    'sojasauce', 'sojasoße', 'tamari', 'shoyu', 'senf', 'dijonsenf', 'ketchup', 'mayo', 'mayonnaise',
+    'ahornsirup', 'agavendicksaft', 'dattelsirup', 'honig', 'sirup',
+    'brühe', 'gemüsebrühe', 'bouillon', 'fond'
+  ];
+  if (gewuerzeKeywords.some((kw) => clean.includes(kw))) {
+    return 'gewuerze';
+  }
+
+  // Fallback: nicht erkannt -> sonstiges
+  return 'sonstiges';
 }
 
 // LocalStorage helpers

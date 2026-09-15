@@ -18,7 +18,7 @@ import {
   X
 } from 'lucide-react';
 import { ShoppingItem, IngredientCategory } from '../types';
-import { generateShoppingListText } from '../utils/helpers';
+import { generateShoppingListText, detectIngredientCategory } from '../utils/helpers';
 import { SyncConfig } from '../lib/syncService';
 import { Users, Cloud } from 'lucide-react';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
@@ -53,7 +53,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
   const [copied, setCopied] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const [newItemAmount, setNewItemAmount] = useState('');
-  const [newItemCategory, setNewItemCategory] = useState<IngredientCategory>('sonstiges');
+  const [newItemCategoryChoice, setNewItemCategoryChoice] = useState<'auto' | IngredientCategory>('auto');
   const [viewMode, setViewMode] = useState<'categorized' | 'flat'>('categorized');
   const [undoBackup, setUndoBackup] = useState<ShoppingItem[] | null>(null);
   const [showUndoBanner, setShowUndoBanner] = useState(false);
@@ -218,20 +218,26 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
     e.preventDefault();
     if (!newItemName.trim()) return;
 
+    const assignedCategory: IngredientCategory =
+      newItemCategoryChoice === 'auto'
+        ? detectIngredientCategory(newItemName)
+        : newItemCategoryChoice;
+
     const newItem: ShoppingItem = {
       id: `custom-shop-${Date.now()}`,
       name: newItemName.trim(),
       amount: newItemAmount.trim(),
       unit: '',
-      category: newItemCategory,
+      category: assignedCategory,
       completed: false,
     };
 
     setItems((prev) => [...prev, newItem]);
     setNewItemName('');
     setNewItemAmount('');
-    setNewItemCategory('sonstiges');
-    onCopyFeedback(`"${newItem.name}" zur Einkaufsliste hinzugefügt!`);
+    setNewItemCategoryChoice('auto');
+    const catLabel = CATEGORY_META[assignedCategory]?.label || 'Sonstiges';
+    onCopyFeedback(`"${newItem.name}" hinzugefügt (${catLabel})!`);
   };
 
   const handleConfirmDeleteAction = () => {
@@ -590,21 +596,22 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             className="w-24 sm:w-36 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-3 py-2.5 sm:py-2 text-[16px] sm:text-sm text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden focus:bg-white transition-all min-h-[44px] sm:min-h-0"
           />
 
-          {viewMode === 'categorized' && (
-            <select
-              value={newItemCategory}
-              onChange={(e) => setNewItemCategory(e.target.value as IngredientCategory)}
-              className="flex-1 sm:flex-none bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-3 py-2.5 sm:py-2 text-[16px] sm:text-xs text-[#2D3E40] font-medium cursor-pointer focus:border-[#4A7856] focus:outline-hidden min-h-[44px] sm:min-h-0"
-              title="Kategorie auswählen"
-            >
-              <option value="gemuese">🥦 Gemüse</option>
-              <option value="kuehlregal">🥛 Kühlregal</option>
-              <option value="huelsenfruechte">🫘 Hülsenfrüchte</option>
-              <option value="trockenwaren">🌾 Vorrat</option>
-              <option value="gewuerze">🧂 Gewürze</option>
-              <option value="sonstiges">📦 Sonstiges</option>
-            </select>
-          )}
+          {/* Regal / Sortierung: Automatisch ist standardmäßig ausgewählt und sowohl bei Regale als auch Liste sichtbar */}
+          <select
+            id="shopping-item-category-select"
+            value={newItemCategoryChoice}
+            onChange={(e) => setNewItemCategoryChoice(e.target.value as 'auto' | IngredientCategory)}
+            className="flex-1 sm:flex-none bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-2.5 sm:px-3 py-2.5 sm:py-2 text-[15px] sm:text-xs text-[#2D3E40] font-semibold cursor-pointer focus:border-[#4A7856] focus:outline-hidden min-h-[44px] sm:min-h-0"
+            title="Regal / Sortierung wählen (Standard: Automatisch)"
+          >
+            <option value="auto">✨ Automatisch</option>
+            <option value="gemuese">🥦 Gemüse</option>
+            <option value="kuehlregal">🥛 Kühlregal</option>
+            <option value="huelsenfruechte">🫘 Hülsenfrüchte</option>
+            <option value="trockenwaren">🌾 Vorrat</option>
+            <option value="gewuerze">🧂 Gewürze</option>
+            <option value="sonstiges">📦 Sonstiges</option>
+          </select>
 
           <button
             type="submit"

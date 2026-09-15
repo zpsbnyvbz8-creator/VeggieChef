@@ -253,9 +253,13 @@ function buildFallbackMealPlan(params: { isVegan?: boolean; peopleCount?: number
       },
       {
         dayName: "Dienstag",
-        lunch: "Mediterraner Hirten-Salat mit gebratenen Kichererbsen",
+        lunch: isVegan 
+          ? "Mediterrane Kichererbsen-Bowl mit Oliven & Gurke" 
+          : "Mediterraner Hirten-Salat mit gebratenen Kichererbsen",
         lunchTime: "15 Min",
-        dinner: "Knusprige Ofen-Gnocchi mit Kirschtomaten & Spinat",
+        dinner: isVegan 
+          ? "Knusprige Ofen-Gnocchi mit Kirschtomaten & Tofu-Kräuter-Topping" 
+          : "Knusprige Ofen-Gnocchi mit Kirschtomaten & Spinat",
         dinnerTime: "20 Min",
         calories: 1690,
         protein: 64,
@@ -285,7 +289,9 @@ function buildFallbackMealPlan(params: { isVegan?: boolean; peopleCount?: number
         dayName: "Freitag",
         lunch: "Samtige Tomatensuppe mit gerösteten Kürbiskernen",
         lunchTime: "15 Min",
-        dinner: "Hausgemachte Veggie-Burger mit gebackenen Süßkartoffeln",
+        dinner: isVegan 
+          ? "Hausgemachte vegane Linsen-Burger mit gebackenen Süßkartoffeln" 
+          : "Hausgemachte Veggie-Burger mit gebackenen Süßkartoffeln",
         dinnerTime: "35 Min",
         calories: 1880,
         protein: 70,
@@ -295,7 +301,9 @@ function buildFallbackMealPlan(params: { isVegan?: boolean; peopleCount?: number
         dayName: "Samstag",
         lunch: "Knackige Sommerrollen mit Minze, Tofu & Sesam-Dip",
         lunchTime: "25 Min",
-        dinner: "Würzige Shakshuka mit Tomaten, Paprika & Fladenbrot",
+        dinner: isVegan 
+          ? "Vegane Pfanne nach Shakshuka-Art mit Seidentofu & Fladenbrot" 
+          : "Würzige Shakshuka mit Tomaten, Paprika & Fladenbrot",
         dinnerTime: "25 Min",
         calories: 1660,
         protein: 62,
@@ -305,7 +313,9 @@ function buildFallbackMealPlan(params: { isVegan?: boolean; peopleCount?: number
         dayName: "Sonntag",
         lunch: "Aromatische Ramen-Suppe mit Shiitake-Pilzen & Pak Choi",
         lunchTime: "25 Min",
-        dinner: "Gemüse-Lasagne mit Cashew-Béchamel & Zucchini",
+        dinner: isVegan 
+          ? "Vegane Gemüse-Lasagne mit Cashew-Béchamel & Zucchini" 
+          : "Gemüse-Lasagne mit Cashew-Béchamel & Zucchini",
         dinnerTime: "45 Min",
         calories: 1940,
         protein: 74,
@@ -677,8 +687,19 @@ app.post("/api/ai/meal-plan", async (req, res) => {
         ? 'Plane ausschließlich das ABENDESSEN (lunch auf null setzen).' 
         : 'Plane sowohl MITTAGESSEN als auch ABENDESSEN.';
 
+    const dietInstruction = isVegan
+      ? `STRIKT 100% REIN PFLANZLICH (VEGAN):
+- Es dürfen AUSNAHMSLOS KEINE tierischen Produkte enthalten sein!
+- ABSOLUTES VERBOT für: Käse, Feta, Parmesan, Mozzarella, Quark, Frischkäse, Kuhmilch, Sahne, Butter, Eier, Ei, Spiegelei, Honig.
+- Verwende ausschließlich pflanzliche Lebensmittel und Proteinquellen wie Tofu, Räuchertofu, Seidentofu, Kichererbsen, Linsen, Bohnen, Tempeh, Cashew-Creme, Hafercuisine, Pflanzendrink, Hefeflocken, Nüsse und Samen.
+- Gerichtsbezeichnungen müssen für den Nutzer eindeutig vegan klingen (z.B. "Vegane Shakshuka mit Seidentofu" statt nur "Shakshuka", "Kichererbsen-Bowl mit Tofu-Feta" statt "Hirten-Salat").`
+      : `100% VEGETARISCH:
+- Kein Fleisch, kein Fisch. Pflanzliche Zutaten, Milchprodukte und Eier sind erlaubt.`;
+
     const prompt = `Erstelle einen ausgewogenen 7-Tage-Wochenplan (Montag bis Sonntag) für ${peopleCount || 2} Personen.
-Ernährung: ${isVegan ? "100% VEGAN" : "100% VEGETARISCH"}
+Ernährungsvorgabe:
+${dietInstruction}
+
 Mahlzeiten-Auswahl: ${mealInstruction}
 ${maxMinutesPerMeal ? `Max. Kochzeit pro Gericht: ${maxMinutesPerMeal} Minuten` : ''}
 
@@ -708,8 +729,8 @@ Antworte ausschließlich im folgenden JSON-Format:
       "items": ["2 Pck. Tofu", "3 Dosen Kichererbsen"]
     },
     {
-      "category": "Kühlregal & Milch-/Pflanzenalternativen",
-      "items": ["1x Hafercuisine", "1x Feta oder Tofu-Feta"]
+      "category": "Kühlregal & Pflanzliche Alternativen",
+      "items": ${isVegan ? '["2x Hafercuisine", "1x Pflanzendrink", "1x Tofu-Feta"]' : '["1x Hafercuisine", "1x Feta", "1x Joghurt"]'}
     },
     {
       "category": "Vorratskammer & Getreide",
@@ -729,6 +750,34 @@ Antworte ausschließlich im folgenden JSON-Format:
     });
 
     const parsed = JSON.parse(response.text || "{}");
+
+    // Post-sanitize if isVegan: Ensure no non-vegan terms slip through
+    if (isVegan && parsed.days && Array.isArray(parsed.days)) {
+      const nonVeganPattern = /\b(feta|hirtenk[äa]se|parmesan|mozzarella|gorgonzola|camembert|gouda|cheddar|k[äa]se|quark|spiegelei|r[üu]hrei|eier|ei\b|ricotta|mascarpone|butter|joghurt|milch|sahne)\b/i;
+      parsed.days = parsed.days.map((day: any) => {
+        const cleanDay = { ...day };
+        if (cleanDay.lunch && typeof cleanDay.lunch === 'string' && nonVeganPattern.test(cleanDay.lunch)) {
+          cleanDay.lunch = cleanDay.lunch
+            .replace(/hirtenk[äa]se|feta/gi, 'Tofu-Feta')
+            .replace(/parmesan|mozzarella|k[äa]se/gi, 'vegane Alternative')
+            .replace(/shakshuka/gi, 'Vegane Shakshuka mit Seidentofu')
+            .replace(/quark/gi, 'Soja-Quark')
+            .replace(/sahne/gi, 'Hafer-Cuisine')
+            .replace(/spiegelei|r[üu]hrei|eier/gi, 'Tofu-Scramble');
+        }
+        if (cleanDay.dinner && typeof cleanDay.dinner === 'string' && nonVeganPattern.test(cleanDay.dinner)) {
+          cleanDay.dinner = cleanDay.dinner
+            .replace(/hirtenk[äa]se|feta/gi, 'Tofu-Feta')
+            .replace(/parmesan|mozzarella|k[äa]se/gi, 'vegane Alternative')
+            .replace(/shakshuka/gi, 'Vegane Shakshuka mit Seidentofu')
+            .replace(/quark/gi, 'Soja-Quark')
+            .replace(/sahne/gi, 'Hafer-Cuisine')
+            .replace(/spiegelei|r[üu]hrei|eier/gi, 'Tofu-Scramble');
+        }
+        return cleanDay;
+      });
+    }
+
     res.json({ success: true, ...parsed });
   } catch (error: any) {
     console.warn("Fallback triggered for /api/ai/meal-plan due to:", error?.message || error);
