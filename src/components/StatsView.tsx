@@ -19,7 +19,8 @@ import {
   Flame,
   Crown,
   Filter,
-  X
+  X,
+  Clock
 } from 'lucide-react';
 import { CookedLog, Recipe } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
@@ -54,6 +55,9 @@ export const StatsView: React.FC<StatsViewProps> = ({
 
   // Filter for Achievements
   const [achievementTierFilter, setAchievementTierFilter] = useState<AchievementFilterTier>('all');
+
+  // Mobile clean view toggle: 'history' or 'achievements'
+  const [activeMobileTab, setActiveMobileTab] = useState<'history' | 'achievements'>('history');
 
   useLockBodyScroll(showConfirmModal);
 
@@ -171,35 +175,19 @@ export const StatsView: React.FC<StatsViewProps> = ({
       )}
 
       {/* Header */}
-      <div className="bg-white rounded-2xl p-4 sm:p-8 border border-[#ECEBE8] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold uppercase tracking-wider border border-[#ECEBE8]">
-            <BarChart3 className="w-3.5 h-3.5" />
-            Deine Kochstatistik & Umweltbeitrag
-          </div>
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#2D3E40] tracking-tight">
-            Übersicht & Verlauf
-          </h2>
-          <p className="text-xs sm:text-sm text-[#7A7E7B]">
-            {totalCooked === 0
-              ? 'Noch keine Gerichte gekocht. Markiere Rezepte als gekocht, um deine Erfolge zu tracken.'
-              : `${totalCooked} Mahlzeiten zubereitet • ${totalPortions} Portionen • ${totalCO2Saved} kg CO₂ eingespart`}
-          </p>
+      <div className="bg-white rounded-2xl p-4 sm:p-7 border border-[#ECEBE8] shadow-xs space-y-1">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold uppercase tracking-wider border border-[#ECEBE8]">
+          <BarChart3 className="w-3.5 h-3.5" />
+          Deine Kochstatistik & Umweltbeitrag
         </div>
-
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0 w-full sm:w-auto">
-          {logs.length > 0 && (
-            <button
-              id="clear-all-stats-btn"
-              onClick={() => setShowConfirmModal(true)}
-              className="min-h-[44px] px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs sm:text-sm border border-red-200 transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-2 shadow-2xs w-full sm:w-auto"
-              title="Statistik und Kochverlauf leeren (erfordert Bestätigung)"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>Statistik leeren</span>
-            </button>
-          )}
-        </div>
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#2D3E40] tracking-tight">
+          Übersicht & Verlauf
+        </h2>
+        <p className="text-xs sm:text-sm text-[#7A7E7B]">
+          {totalCooked === 0
+            ? 'Noch keine Gerichte gekocht. Markiere Rezepte als gekocht, um deine Erfolge zu tracken.'
+            : `${totalCooked} Mahlzeiten zubereitet • ${totalPortions} Portionen • ${totalCO2Saved} kg CO₂ eingespart`}
+        </p>
       </div>
 
       {/* Confirmation Modal: Achtung */}
@@ -305,8 +293,36 @@ export const StatsView: React.FC<StatsViewProps> = ({
         </div>
       </div>
 
+      {/* Mobile Navigation Tabs: Für deutlich mehr Übersicht auf Smartphones */}
+      <div className="flex p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-2xl md:hidden">
+        <button
+          type="button"
+          onClick={() => setActiveMobileTab('history')}
+          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation active:scale-95 ${
+            activeMobileTab === 'history'
+              ? 'bg-white text-[#2D3E40] shadow-xs border border-[#ECEBE8]'
+              : 'text-[#7A7E7B] hover:text-[#2D3E40]'
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5" />
+          <span>Kochverlauf ({logs.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMobileTab('achievements')}
+          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation active:scale-95 ${
+            activeMobileTab === 'achievements'
+              ? 'bg-white text-[#2D3E40] shadow-xs border border-[#ECEBE8]'
+              : 'text-[#7A7E7B] hover:text-[#2D3E40]'
+          }`}
+        >
+          <Trophy className="w-3.5 h-3.5 text-[#D35400]" />
+          <span>Erfolge ({unlockedCount}/{achievements.length})</span>
+        </button>
+      </div>
+
       {/* ZULETZT GEKOCHT SECTION - KOMPAKT & SCROLLBAR */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-3 sm:space-y-4">
+      <div className={`bg-white p-4 sm:p-6 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-3 sm:space-y-4 ${activeMobileTab !== 'history' ? 'hidden md:block' : ''}`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#ECEBE8] pb-3">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-[#F1F5F2] text-[#4A7856]">
@@ -474,7 +490,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
       </div>
 
       {/* ERFOLGE & TROPHÄEN - MIT INSANE-LEVEL & KOMPAKTER ANSICHT */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-3 sm:space-y-4">
+      <div className={`bg-white p-4 sm:p-6 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-3 sm:space-y-4 ${activeMobileTab !== 'achievements' ? 'hidden md:block' : ''}`}>
         {/* Header with summary & unlocked badge */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#ECEBE8] pb-3">
           <div>
@@ -659,6 +675,27 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* STATISTIKEN LÖSCHEN - GANZ UNTEN PLATZIERT */}
+      {logs.length > 0 && (
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+          <div className="space-y-0.5">
+            <h4 className="text-xs sm:text-sm font-semibold text-[#2D3E40]">Kochdaten & Verlauf verwalten</h4>
+            <p className="text-xs text-[#7A7E7B]">
+              Möchtest du deinen bisherigen Kochverlauf und alle erfassten Ersparnisse zurücksetzen?
+            </p>
+          </div>
+          <button
+            id="clear-all-stats-btn"
+            onClick={() => setShowConfirmModal(true)}
+            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs sm:text-sm border border-red-200 transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-2 shadow-2xs w-full sm:w-auto shrink-0"
+            title="Statistik und Kochverlauf leeren (erfordert Bestätigung)"
+          >
+            <Trash2 className="w-4 h-4 text-red-600" />
+            <span>Statistik leeren</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

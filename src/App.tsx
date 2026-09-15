@@ -896,6 +896,8 @@ export function App() {
             mealPlan={mealPlan}
             setMealPlan={handleSetMealPlan}
             allRecipes={recipes}
+            favorites={favorites}
+            onToggleFavorite={handleToggleFavorite}
             onSelectRecipe={setSelectedRecipe}
             onAddAllToShoppingList={handleAddMultipleToShoppingList}
             onCopyFeedback={showToast}

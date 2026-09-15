@@ -20,7 +20,9 @@ import {
   Undo2,
   AlertTriangle,
   X,
-  Search
+  Search,
+  Heart,
+  ArrowUpDown
 } from 'lucide-react';
 import { DayPlan, MealPlanSlot, Recipe, WeekPlan } from '../types';
 import { SyncConfig } from '../lib/syncService';
@@ -31,6 +33,8 @@ interface WeeklyPlannerViewProps {
   mealPlan: DayPlan[];
   setMealPlan: React.Dispatch<React.SetStateAction<DayPlan[]>>;
   allRecipes: Recipe[];
+  favorites?: string[];
+  onToggleFavorite?: (recipeId: string) => void;
   onSelectRecipe: (recipe: Recipe) => void;
   onAddAllToShoppingList: (recipesToPlan: { recipe: Recipe; servings: number }[]) => void;
   onCopyFeedback: (msg: string) => void;
@@ -48,6 +52,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
   mealPlan,
   setMealPlan,
   allRecipes,
+  favorites = [],
+  onToggleFavorite,
   onSelectRecipe,
   onAddAllToShoppingList,
   onCopyFeedback,
@@ -64,7 +70,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
   const [selectedMealType, setSelectedMealType] = useState<'lunch' | 'dinner'>('dinner');
   const [showRecipePickerModal, setShowRecipePickerModal] = useState(false);
   const [pickerSearchQuery, setPickerSearchQuery] = useState('');
-  const [pickerVeganOnly, setPickerVeganOnly] = useState(onlyVeganGlobal);
+  const [pickerFilter, setPickerFilter] = useState<'all' | 'favorites' | 'vegan'>('all');
+  const [pickerSortFavoritesFirst, setPickerSortFavoritesFirst] = useState(true);
 
   // Toggle showing lunch slot - persisted in localStorage
   const [showLunchSlot, setShowLunchSlot] = useState<boolean>(() => {
@@ -169,19 +176,31 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
     setSelectedDayId(dayId);
     setSelectedMealType(mealType);
     setPickerSearchQuery('');
-    setPickerVeganOnly(onlyVeganGlobal);
+    setPickerFilter(onlyVeganGlobal ? 'vegan' : 'all');
     setShowRecipePickerModal(true);
   };
 
-  const filteredPickerRecipes = allRecipes.filter((recipe) => {
-    if (pickerVeganOnly && !recipe.isVegan) return false;
-    if (!pickerSearchQuery.trim()) return true;
-    const query = pickerSearchQuery.toLowerCase().trim();
-    const matchesTitle = recipe.title.toLowerCase().includes(query);
-    const matchesCategory = recipe.category.toLowerCase().includes(query);
-    const matchesIngredient = recipe.ingredients?.some((ing) => ing.name.toLowerCase().includes(query));
-    return matchesTitle || matchesCategory || matchesIngredient;
-  });
+  const filteredPickerRecipes = React.useMemo(() => {
+    let list = allRecipes.filter((recipe) => {
+      if (pickerFilter === 'vegan' && !recipe.isVegan) return false;
+      if (pickerFilter === 'favorites' && !favorites.includes(recipe.id)) return false;
+      if (!pickerSearchQuery.trim()) return true;
+      const query = pickerSearchQuery.toLowerCase().trim();
+      const matchesTitle = recipe.title.toLowerCase().includes(query);
+      const matchesIngredient = recipe.ingredients?.some((ing) => ing.name.toLowerCase().includes(query));
+      return matchesTitle || matchesIngredient;
+    });
+
+    if (pickerSortFavoritesFirst) {
+      list = [...list].sort((a, b) => {
+        const aFav = favorites.includes(a.id) ? 1 : 0;
+        const bFav = favorites.includes(b.id) ? 1 : 0;
+        return bFav - aFav;
+      });
+    }
+
+    return list;
+  }, [allRecipes, pickerFilter, pickerSearchQuery, pickerSortFavoritesFirst, favorites]);
 
   const assignRecipeToSlot = (recipe: Recipe) => {
     if (!selectedDayId) return;
@@ -622,8 +641,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
         </div>
       )}
 
-      {/* 7-Day Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3 sm:gap-4">
+      {/* 7-Day Grid - On PC balanced across columns with high-end card proportions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3.5 xl:gap-2.5 2xl:gap-3.5">
         {mealPlan.map((day) => {
           const totalCalories = (day.lunch?.calories || 0) + (day.dinner?.calories || 0);
           const totalProtein = (day.lunch?.protein || 0) + (day.dinner?.protein || 0);
@@ -632,11 +651,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
             <div
               key={day.dayId}
               id={`meal-plan-day-${day.dayId}`}
-              className="bg-white rounded-2xl border border-[#ECEBE8] p-3 sm:p-4 flex flex-col justify-between gap-2.5 sm:gap-3 shadow-xs hover:border-[#4A7856]/40 transition-all"
+              className="bg-white rounded-2xl border border-[#ECEBE8] p-3.5 sm:p-4 flex flex-col justify-between gap-3 shadow-xs hover:border-[#4A7856]/40 hover:shadow-sm transition-all min-h-[240px] xl:min-h-[270px]"
             >
               {/* Day Header */}
               <div className="border-b border-[#ECEBE8] pb-2 flex items-center justify-between">
-                <span className="font-semibold text-sm text-[#2D3E40]">
+                <span className="font-semibold text-sm sm:text-base text-[#2D3E40]">
                   {day.dayName}
                 </span>
                 {totalProtein > 0 && (
@@ -648,20 +667,21 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
 
               {/* Lunch Slot - nur anzeigen wenn showLunchSlot aktiviert ist */}
               {showLunchSlot && (
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 flex-1 flex flex-col justify-between">
                   <div className="text-xs font-bold text-[#2D3E40] uppercase tracking-wide flex items-center justify-between">
                     <span>Mittag</span>
                   </div>
 
                   {day.lunch ? (
-                    <div className="p-3 bg-[#FAF9F6] hover:bg-[#F1F5F2] rounded-xl border border-[#ECEBE8] space-y-2 transition-colors group relative">
-                      <div className="flex items-start justify-between gap-2">
+                    <div className="p-2.5 sm:p-3 bg-[#FAF9F6] hover:bg-[#F1F5F2] rounded-xl border border-[#ECEBE8] space-y-2 transition-colors group relative flex-1 flex flex-col justify-between">
+                      <div className="flex items-start justify-between gap-1.5">
                         <h4 
                           onClick={() => {
                             const r = allRecipes.find((rec) => rec.id === day.lunch?.recipeId);
                             if (r) onSelectRecipe(r);
                           }}
-                          className="text-xs sm:text-sm font-semibold text-[#2D3E40] leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] flex-1"
+                          className="text-xs sm:text-sm font-semibold text-[#2D3E40] leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] flex-1 line-clamp-2"
+                          title={day.lunch.recipeTitle}
                         >
                           {day.lunch.recipeTitle}
                         </h4>
@@ -670,22 +690,22 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
                             removeSlot(day.dayId, 'lunch');
                             onCopyFeedback(`"${day.lunch?.recipeTitle || 'Mahlzeit'}" entfernt.`);
                           }}
-                          className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl min-w-[38px] min-h-[38px] w-9 h-9 flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
+                          className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg min-w-[34px] min-h-[34px] w-8 h-8 flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
                           title="Mahlzeit entfernen"
                         >
-                          <Trash2 className="w-4 h-4 text-rose-500" />
+                          <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                         </button>
                       </div>
 
                       <div className="flex items-center justify-between text-xs text-[#7A7E7B] pt-1.5 border-t border-[#ECEBE8]">
-                        <span>⏱️ {day.lunch.prepTime} Min.</span>
+                        <span>⏱️ {day.lunch.prepTime}m</span>
                         <span className="font-bold text-[#4A7856]">{day.lunch.protein}g Prot.</span>
                       </div>
                     </div>
                   ) : (
                     <button
                       onClick={() => openRecipePicker(day.dayId, 'lunch')}
-                      className="w-full py-3.5 sm:py-3 rounded-xl border border-dashed border-[#ECEBE8] text-[#7A7E7B] hover:text-[#4A7856] hover:border-[#4A7856]/40 hover:bg-[#F1F5F2] text-xs font-medium flex items-center justify-center gap-1.5 transition-all min-h-[44px] sm:min-h-0 touch-manipulation active:scale-98 cursor-pointer"
+                      className="w-full py-3.5 sm:py-3.5 rounded-xl border border-dashed border-[#D5DDD7] hover:border-[#4A7856] text-[#7A7E7B] hover:text-[#4A7856] bg-[#FAF9F6]/60 hover:bg-[#F1F5F2] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all min-h-[44px] touch-manipulation active:scale-98 cursor-pointer flex-1"
                     >
                       <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                       <span>Gericht wählen</span>
@@ -695,7 +715,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
               )}
 
               {/* Dinner Slot - wenn Mittag ausgeblendet ist, geräumiger */}
-              <div className={`space-y-1.5 ${!showLunchSlot ? 'flex-1 flex flex-col justify-center' : ''}`}>
+              <div className={`space-y-1.5 flex-1 flex flex-col justify-between ${!showLunchSlot ? 'py-1' : ''}`}>
                 <div className="text-xs font-bold text-[#2D3E40] uppercase tracking-wide flex items-center justify-between">
                   <span>Abendessen</span>
                   {!showLunchSlot && day.lunch && (
@@ -706,14 +726,15 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
                 </div>
 
                 {day.dinner ? (
-                  <div className="p-3 bg-[#FAF9F6] hover:bg-[#F1F5F2] rounded-xl border border-[#ECEBE8] space-y-2 transition-colors group relative">
-                    <div className="flex items-start justify-between gap-2">
+                  <div className="p-2.5 sm:p-3 bg-[#FAF9F6] hover:bg-[#F1F5F2] rounded-xl border border-[#ECEBE8] space-y-2 transition-colors group relative flex-1 flex flex-col justify-between">
+                    <div className="flex items-start justify-between gap-1.5">
                       <h4 
                         onClick={() => {
                           const r = allRecipes.find((rec) => rec.id === day.dinner?.recipeId);
                           if (r) onSelectRecipe(r);
                         }}
-                        className="text-xs sm:text-sm font-semibold text-[#2D3E40] leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] flex-1"
+                        className="text-xs sm:text-sm font-semibold text-[#2D3E40] leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] flex-1 line-clamp-2"
+                        title={day.dinner.recipeTitle}
                       >
                         {day.dinner.recipeTitle}
                       </h4>
@@ -722,22 +743,22 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
                           removeSlot(day.dayId, 'dinner');
                           onCopyFeedback(`"${day.dinner?.recipeTitle || 'Mahlzeit'}" entfernt.`);
                         }}
-                        className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl min-w-[38px] min-h-[38px] w-9 h-9 flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
+                        className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg min-w-[34px] min-h-[34px] w-8 h-8 flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
                         title="Mahlzeit entfernen"
                       >
-                        <Trash2 className="w-4 h-4 text-rose-500" />
+                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                       </button>
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-[#7A7E7B] pt-1.5 border-t border-[#ECEBE8]">
-                      <span>⏱️ {day.dinner.prepTime} Min.</span>
+                      <span>⏱️ {day.dinner.prepTime}m</span>
                       <span className="font-bold text-[#4A7856]">{day.dinner.protein}g Prot.</span>
                     </div>
                   </div>
                 ) : (
                   <button
                     onClick={() => openRecipePicker(day.dayId, 'dinner')}
-                    className="w-full py-3.5 sm:py-3 rounded-xl border border-dashed border-[#ECEBE8] text-[#7A7E7B] hover:text-[#4A7856] hover:border-[#4A7856]/40 hover:bg-[#F1F5F2] text-xs font-medium flex items-center justify-center gap-1.5 transition-all min-h-[44px] sm:min-h-0 touch-manipulation active:scale-98 cursor-pointer"
+                    className="w-full py-3.5 sm:py-3.5 rounded-xl border border-dashed border-[#D5DDD7] hover:border-[#4A7856] text-[#7A7E7B] hover:text-[#4A7856] bg-[#FAF9F6]/60 hover:bg-[#F1F5F2] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all min-h-[44px] touch-manipulation active:scale-98 cursor-pointer flex-1"
                   >
                     <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                     <span>Gericht wählen</span>
@@ -754,7 +775,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
         })}
       </div>
 
-      {/* Recipe Picker Modal - Breitere Ansicht mit hoher Informationsdichte & dynamischem Scrollen */}
+      {/* Recipe Picker Modal - Breitere Ansicht mit hoher Informationsdichte & Favoriten-Sortierung */}
       {showRecipePickerModal && (
         <div 
           onClick={() => setShowRecipePickerModal(false)}
@@ -783,7 +804,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
               </button>
             </div>
 
-            {/* Search and Filters Bar: Schlank & responsiv */}
+            {/* Search, Filter & Sort Bar: Aufgeräumt & ohne Kategorie-Ballast */}
             <div className="py-2.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 border-b border-[#ECEBE8]">
               <div className="relative flex-1">
                 <Search className="w-4.5 h-4.5 text-[#7A7E7B] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -804,101 +825,168 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
                 )}
               </div>
 
-              {/* Filter pills */}
+              {/* Filter pills and Sort favorites button */}
               <div className="flex items-center gap-1.5 shrink-0 overflow-x-auto pb-0.5 sm:pb-0 text-xs font-semibold">
                 <button
                   type="button"
-                  onClick={() => setPickerVeganOnly(false)}
+                  onClick={() => setPickerFilter('all')}
                   className={`min-h-[40px] px-3.5 py-1.5 rounded-xl transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap ${
-                    !pickerVeganOnly
-                      ? 'bg-[#4A7856] text-white shadow-2xs'
+                    pickerFilter === 'all'
+                      ? 'bg-[#2D3E40] text-white shadow-2xs'
                       : 'bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
                   }`}
                 >
                   Alle ({allRecipes.length})
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => setPickerVeganOnly(true)}
+                  onClick={() => setPickerFilter('favorites')}
+                  className={`min-h-[40px] px-3.5 py-1.5 rounded-xl transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap flex items-center gap-1.5 ${
+                    pickerFilter === 'favorites'
+                      ? 'bg-rose-600 text-white shadow-2xs'
+                      : 'bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                  }`}
+                >
+                  <Heart className={`w-3.5 h-3.5 ${pickerFilter === 'favorites' ? 'fill-white' : 'fill-rose-500 text-rose-500'}`} />
+                  <span>Gelikt ({favorites.filter((id) => allRecipes.some((r) => r.id === id)).length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPickerFilter('vegan')}
                   className={`min-h-[40px] px-3.5 py-1.5 rounded-xl transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap flex items-center gap-1 ${
-                    pickerVeganOnly
+                    pickerFilter === 'vegan'
                       ? 'bg-[#4A7856] text-white shadow-2xs'
                       : 'bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
                   }`}
                 >
                   <span>🌱</span>
-                  <span>Nur Vegan ({allRecipes.filter((r) => r.isVegan).length})</span>
+                  <span>Vegan ({allRecipes.filter((r) => r.isVegan).length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPickerSortFavoritesFirst((prev) => !prev)}
+                  className={`min-h-[40px] px-3 py-1.5 rounded-xl border transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap flex items-center gap-1.5 ${
+                    pickerSortFavoritesFirst
+                      ? 'bg-rose-50 border-rose-300 text-rose-700 font-bold'
+                      : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#7A7E7B] hover:bg-[#F1F5F2]'
+                  }`}
+                  title={pickerSortFavoritesFirst ? 'Favoriten werden zuerst angezeigt' : 'Normale Sortierung'}
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  <span>Favoriten zuerst</span>
                 </button>
               </div>
             </div>
 
-            {/* Recipes List: Dynamisch über große Bildschirmlänge mit 2-Spalten-Grid auf Desktop & Tablet */}
+            {/* Recipes List: Übersichtlich ohne Sortier-Kategorien ("Bowls & Salate" etc. entfernt) */}
             <div className="overflow-y-auto pr-1 flex-1 overscroll-contain pt-2.5">
               {filteredPickerRecipes.length === 0 ? (
                 <div className="text-center py-12 px-4 space-y-2">
                   <p className="text-base font-semibold text-[#2D3E40]">Keine passenden Rezepte gefunden</p>
                   <p className="text-xs sm:text-sm text-[#7A7E7B]">Passe deinen Suchbegriff oder Filter an.</p>
-                  {pickerVeganOnly && (
+                  {pickerFilter !== 'all' && (
                     <button
-                      onClick={() => setPickerVeganOnly(false)}
+                      onClick={() => setPickerFilter('all')}
                       className="mt-2 text-xs font-semibold text-[#4A7856] hover:underline cursor-pointer"
                     >
-                      Filter "Nur Vegan" aufheben
+                      Filter aufheben
                     </button>
                   )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 pb-3">
-                  {filteredPickerRecipes.map((recipe) => (
-                    <div
-                      key={recipe.id}
-                      onClick={() => assignRecipeToSlot(recipe)}
-                      className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl border border-[#ECEBE8] hover:border-[#4A7856] bg-[#FAF9F6] hover:bg-white transition-all cursor-pointer group shadow-2xs relative touch-manipulation active:scale-99"
-                    >
-                      <img
-                        src={recipe.image || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=300&q=80'}
-                        alt={recipe.title}
-                        referrerPolicy="no-referrer"
-                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover shrink-0 shadow-2xs"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                          <span className="text-xs uppercase font-bold text-[#4A7856] truncate max-w-[120px]">
-                            {recipe.category}
-                          </span>
-                          {recipe.isVegan ? (
-                            <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md">
-                              🌱 Vegan
-                            </span>
-                          ) : (
-                            <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">
-                              🧀 Veg.
-                            </span>
+                  {filteredPickerRecipes.map((recipe) => {
+                    const isFav = favorites.includes(recipe.id);
+
+                    return (
+                      <div
+                        key={recipe.id}
+                        onClick={() => assignRecipeToSlot(recipe)}
+                        className={`flex items-center gap-3 p-2.5 sm:p-3 rounded-xl border transition-all cursor-pointer group shadow-2xs relative touch-manipulation active:scale-99 ${
+                          isFav 
+                            ? 'border-rose-200 hover:border-rose-400 bg-rose-50/20 hover:bg-white' 
+                            : 'border-[#ECEBE8] hover:border-[#4A7856] bg-[#FAF9F6] hover:bg-white'
+                        }`}
+                      >
+                        <div className="relative shrink-0">
+                          <img
+                            src={recipe.image || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=300&q=80'}
+                            alt={recipe.title}
+                            referrerPolicy="no-referrer"
+                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover shadow-2xs"
+                          />
+                          {isFav && (
+                            <div className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-xs border-2 border-white">
+                              <Heart className="w-3.5 h-3.5 fill-white text-white" />
+                            </div>
                           )}
                         </div>
-                        <h4 className="text-xs sm:text-sm font-bold text-[#2D3E40] group-hover:text-[#4A7856] leading-snug break-words">
-                          {recipe.title}
-                        </h4>
-                        <div className="text-xs text-[#7A7E7B] flex items-center gap-2.5 mt-1.5 font-medium">
-                          <span>⏱️ {recipe.totalTimeMinutes}m</span>
-                          <span>🔥 {recipe.nutrients.calories} kcal</span>
-                          <span className="text-[#4A7856] font-semibold">💪 {recipe.nutrients.protein}g Prot.</span>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            {recipe.isVegan ? (
+                              <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                🌱 Vegan
+                              </span>
+                            ) : (
+                              <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                                🧀 Veggie
+                              </span>
+                            )}
+                            {isFav && (
+                              <span className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+                                <span>Gelikt</span>
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-bold text-[#2D3E40] group-hover:text-[#4A7856] leading-snug break-words">
+                            {recipe.title}
+                          </h4>
+                          <div className="text-xs text-[#7A7E7B] flex items-center gap-2.5 mt-1.5 font-medium">
+                            <span>⏱️ {recipe.totalTimeMinutes}m</span>
+                            <span>🔥 {recipe.nutrients.calories} kcal</span>
+                            <span className="text-[#4A7856] font-semibold">💪 {recipe.nutrients.protein}g Prot.</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {onToggleFavorite && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleFavorite(recipe.id);
+                              }}
+                              className={`w-9 h-9 rounded-xl border flex items-center justify-center cursor-pointer transition-colors touch-manipulation active:scale-90 ${
+                                isFav
+                                  ? 'bg-rose-50 border-rose-200 text-rose-600'
+                                  : 'bg-white border-[#ECEBE8] text-[#7A7E7B] hover:text-rose-500'
+                              }`}
+                              title={isFav ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
+                            >
+                              <Heart className={`w-4 h-4 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`} />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              assignRecipeToSlot(recipe);
+                            }}
+                            className="px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl bg-[#4A7856] group-hover:bg-[#3D6447] text-white text-xs font-bold transition-all shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1 shrink-0"
+                            title="Dieses Gericht einplanen"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span className="hidden xs:inline">Wählen</span>
+                          </button>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          assignRecipeToSlot(recipe);
-                        }}
-                        className="px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl bg-[#4A7856] group-hover:bg-[#3D6447] text-white text-xs font-bold transition-all shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1 shrink-0"
-                        title="Dieses Gericht einplanen"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span className="hidden xs:inline">Wählen</span>
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
