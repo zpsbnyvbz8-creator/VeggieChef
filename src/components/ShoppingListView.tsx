@@ -237,35 +237,36 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
         onClick={() => {
           if (!isEditing) toggleItem(item.id);
         }}
-        className={`flex items-center justify-between p-2.5 sm:p-3 rounded-xl border transition-all select-none ${
-          isEditing ? 'cursor-default' : 'cursor-pointer'
+        className={`flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border transition-all select-none min-h-[52px] ${
+          isEditing ? 'cursor-default' : 'cursor-pointer active:scale-[0.99]'
         } ${
           item.completed
             ? 'bg-[#FAF9F6] border-[#ECEBE8] text-[#7A7E7B]'
             : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/40 text-[#2D3E40] shadow-2xs'
         }`}
       >
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
+        <div className="flex items-center gap-3 min-w-0 pr-2">
+          {/* Checkbox with minimum touch friendly size */}
           <div
-            className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors shrink-0 ${
+            className={`w-6 h-6 sm:w-5 sm:h-5 rounded-lg sm:rounded-md flex items-center justify-center border transition-colors shrink-0 ${
               item.completed
                 ? 'bg-[#4A7856] border-[#4A7856] text-white'
                 : 'border-[#ECEBE8] bg-[#FAF9F6]'
             }`}
           >
-            {item.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+            {item.completed && <Check className="w-4 h-4 sm:w-3.5 sm:h-3.5 stroke-[3]" />}
           </div>
 
           <div className="min-w-0">
             <span
-              className={`text-xs sm:text-sm font-medium block truncate ${
+              className={`text-sm sm:text-sm font-medium block truncate ${
                 item.completed ? 'line-through text-[#7A7E7B]' : 'text-[#2D3E40]'
               }`}
             >
               {item.name}
             </span>
             {item.recipeSource && (
-              <span className="text-[10px] text-[#7A7E7B] block truncate">
+              <span className="text-[11px] sm:text-[10px] text-[#7A7E7B] block truncate">
                 aus {item.recipeSource}
               </span>
             )}
@@ -273,16 +274,17 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
         </div>
 
         {/* Right side: Either inline quantity editor or quantity badge + discreet edit button + delete button */}
-        <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
           {isEditing ? (
-            <div className="flex items-center gap-1 bg-[#FAF9F6] p-1 rounded-xl border border-[#4A7856]/40 shadow-xs animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-1 sm:gap-1.5 bg-[#FAF9F6] p-1.5 rounded-xl border border-[#4A7856]/40 shadow-xs animate-in zoom-in-95 duration-150">
               <button
                 type="button"
                 onClick={() => stepEditedAmount(-1)}
-                className="w-6 h-6 rounded-lg bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#2D3E40] flex items-center justify-center transition-colors active:scale-95 cursor-pointer"
+                className="w-8 h-8 sm:w-6 sm:h-6 rounded-lg bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#2D3E40] flex items-center justify-center transition-colors active:scale-95 cursor-pointer touch-manipulation"
                 title="Menge verringern"
+                aria-label="Menge verringern"
               >
-                <Minus className="w-3 h-3" />
+                <Minus className="w-4 h-4 sm:w-3 sm:h-3" />
               </button>
 
               <input
@@ -299,34 +301,37 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                 }}
                 autoFocus
                 placeholder="Menge..."
-                className="w-18 sm:w-24 px-1.5 py-0.5 text-center text-xs font-semibold text-[#2D3E40] bg-white border border-[#ECEBE8] rounded-md focus:border-[#4A7856] focus:outline-hidden"
+                className="w-20 sm:w-24 px-2 py-1 sm:py-0.5 text-center text-xs sm:text-xs font-semibold text-[#2D3E40] bg-white border border-[#ECEBE8] rounded-lg focus:border-[#4A7856] focus:outline-hidden"
               />
 
               <button
                 type="button"
                 onClick={() => stepEditedAmount(1)}
-                className="w-6 h-6 rounded-lg bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#2D3E40] flex items-center justify-center transition-colors active:scale-95 cursor-pointer"
+                className="w-8 h-8 sm:w-6 sm:h-6 rounded-lg bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#2D3E40] flex items-center justify-center transition-colors active:scale-95 cursor-pointer touch-manipulation"
                 title="Menge erhöhen"
+                aria-label="Menge erhöhen"
               >
-                <Plus className="w-3 h-3" />
+                <Plus className="w-4 h-4 sm:w-3 sm:h-3" />
               </button>
 
               <button
                 type="button"
                 onClick={() => saveEditedAmount(item.id)}
-                className="w-6 h-6 rounded-lg bg-[#4A7856] hover:bg-[#3D6447] text-white flex items-center justify-center transition-colors active:scale-95 cursor-pointer"
+                className="w-8 h-8 sm:w-6 sm:h-6 rounded-lg bg-[#4A7856] hover:bg-[#3D6447] text-white flex items-center justify-center transition-colors active:scale-95 cursor-pointer touch-manipulation"
                 title="Menge speichern"
+                aria-label="Menge speichern"
               >
-                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                <Check className="w-4 h-4 sm:w-3.5 sm:h-3.5 stroke-[2.5]" />
               </button>
 
               <button
                 type="button"
                 onClick={cancelEditing}
-                className="w-6 h-6 rounded-lg text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer"
+                className="w-8 h-8 sm:w-6 sm:h-6 rounded-lg text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation"
                 title="Abbrechen"
+                aria-label="Abbrechen"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
               </button>
             </div>
           ) : (
@@ -335,7 +340,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                 <button
                   type="button"
                   onClick={() => startEditingItem(item)}
-                  className={`text-xs font-semibold px-2 py-0.5 rounded-md border transition-all cursor-pointer select-none ${
+                  className={`text-xs sm:text-xs font-semibold px-2.5 sm:px-2 py-1 sm:py-0.5 rounded-lg sm:rounded-md border transition-all cursor-pointer select-none min-h-[34px] sm:min-h-0 flex items-center ${
                     item.completed
                       ? 'bg-[#ECEBE8] text-[#7A7E7B] border-[#ECEBE8]'
                       : 'bg-[#F1F5F2] text-[#4A7856] border-[#ECEBE8] hover:border-[#4A7856]/40 hover:bg-[#E8EFEA]'
@@ -350,11 +355,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
               <button
                 type="button"
                 onClick={() => startEditingItem(item)}
-                className="p-1.5 rounded-lg text-[#9BA19D] hover:text-[#4A7856] hover:bg-[#FAF9F6] border border-transparent hover:border-[#ECEBE8] transition-colors cursor-pointer"
+                className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center rounded-xl text-[#9BA19D] hover:text-[#4A7856] hover:bg-[#FAF9F6] border border-transparent hover:border-[#ECEBE8] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 title="Menge manuell anpassen"
                 aria-label="Menge manuell anpassen"
               >
-                <Pencil className="w-3.5 h-3.5" />
+                <Pencil className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
               </button>
 
               {/* Direktes Löschen OHNE Bestätigungs-Dialog */}
@@ -364,11 +369,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                   deleteItem(item.id);
                   onCopyFeedback(`"${item.name}" gelöscht.`);
                 }}
-                className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center rounded-xl text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer touch-manipulation active:scale-95"
                 title="Artikel löschen"
                 aria-label="Artikel löschen"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
               </button>
             </>
           )}
@@ -446,33 +451,33 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-2 shrink-0 w-full md:w-auto">
           {/* View mode toggle */}
-          <div className="flex items-center p-0.5 sm:p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[11px] sm:text-xs font-medium">
+          <div className="flex items-center p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs font-medium">
             <button
               type="button"
               onClick={() => setViewMode('categorized')}
-              className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 sm:py-1.5 rounded-lg transition-all min-h-[36px] sm:min-h-0 ${
                 viewMode === 'categorized'
                   ? 'bg-white text-[#2D3E40] shadow-xs font-semibold'
                   : 'text-[#7A7E7B] hover:text-[#2D3E40]'
               }`}
               title="Nach Supermarkt-Regalen gruppiert"
             >
-              <LayoutGrid className="w-3.5 h-3.5" />
+              <LayoutGrid className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
               <span>Regale</span>
             </button>
             <button
               type="button"
               onClick={() => setViewMode('flat')}
-              className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 sm:py-1.5 rounded-lg transition-all min-h-[36px] sm:min-h-0 ${
                 viewMode === 'flat'
                   ? 'bg-white text-[#2D3E40] shadow-xs font-semibold'
                   : 'text-[#7A7E7B] hover:text-[#2D3E40]'
               }`}
               title="Alle Artikel in einer einfachen Liste"
             >
-              <List className="w-3.5 h-3.5" />
+              <List className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
               <span>Liste</span>
             </button>
           </div>
@@ -482,10 +487,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             id="copy-entire-shopping-list-btn"
             onClick={handleCopyFormattedList}
             disabled={items.length === 0}
-            className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-[#2D3E40] hover:bg-[#1F2C2D] disabled:opacity-40 text-white font-medium text-[11px] sm:text-xs shadow-xs transition-all"
+            className="flex items-center justify-center gap-1.5 px-3.5 sm:px-3.5 py-2 sm:py-2 rounded-xl bg-[#2D3E40] hover:bg-[#1F2C2D] disabled:opacity-40 text-white font-medium text-xs shadow-xs transition-all min-h-[38px] sm:min-h-0 active:scale-95 touch-manipulation cursor-pointer"
             title="Kopiert die gesamte Liste gegliedert nach Gängen"
           >
-            {copied ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4A7856]" /> : <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+            {copied ? <Check className="w-4 h-4 text-[#4A7856]" /> : <Copy className="w-4 h-4 text-white" />}
             <span>{copied ? 'Kopiert!' : 'Kopieren'}</span>
           </button>
 
@@ -493,10 +498,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
           {completedCount > 0 && (
             <button
               onClick={() => setConfirmDeleteState({ type: 'completed' })}
-              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-[#FAF9F6] hover:bg-[#FBECE0] text-[#D35400] font-semibold text-[11px] sm:text-xs border border-[#ECEBE8] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 sm:px-3 py-2 sm:py-2 rounded-xl bg-[#FAF9F6] hover:bg-[#FBECE0] text-[#D35400] font-semibold text-xs border border-[#ECEBE8] transition-colors cursor-pointer min-h-[38px] sm:min-h-0 active:scale-95 touch-manipulation"
               title="Erledigte Artikel entfernen"
             >
-              <CheckCheck className="w-3.5 h-3.5" />
+              <CheckCheck className="w-4 h-4" />
               <span>Erledigte ({completedCount})</span>
             </button>
           )}
@@ -506,10 +511,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             <button
               id="clear-entire-shopping-list-btn"
               onClick={() => setConfirmDeleteState({ type: 'all' })}
-              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-[11px] sm:text-xs border border-red-200 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 sm:px-3 py-2 sm:py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs border border-red-200 transition-colors cursor-pointer min-h-[38px] sm:min-h-0 active:scale-95 touch-manipulation"
               title="Die gesamte Liste auf einmal löschen"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-4 h-4" />
               <span>Leeren</span>
             </button>
           )}
@@ -519,14 +524,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
       {/* Add New Item Form */}
       <form
         onSubmit={handleAddItem}
-        className="bg-white p-3 sm:p-5 rounded-2xl border border-[#ECEBE8] flex flex-col sm:flex-row gap-2 sm:gap-2.5 shadow-xs"
+        className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#ECEBE8] flex flex-col sm:flex-row gap-2 sm:gap-2.5 shadow-xs"
       >
         <input
           type="text"
           placeholder="Artikelname (z.B. Bio-Tofu, Basilikum, Hafermilch)..."
           value={newItemName}
           onChange={(e) => setNewItemName(e.target.value)}
-          className="flex-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden focus:bg-white transition-all"
+          className="flex-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-3.5 sm:px-4 py-2 sm:py-2 text-sm text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden focus:bg-white transition-all min-h-[42px] sm:min-h-0"
         />
 
         <div className="flex gap-2">
@@ -535,14 +540,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             placeholder="Menge..."
             value={newItemAmount}
             onChange={(e) => setNewItemAmount(e.target.value)}
-            className="w-24 sm:w-36 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden focus:bg-white transition-all"
+            className="w-24 sm:w-36 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-3 py-2 text-sm text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden focus:bg-white transition-all min-h-[42px] sm:min-h-0"
           />
 
           {viewMode === 'categorized' && (
             <select
               value={newItemCategory}
               onChange={(e) => setNewItemCategory(e.target.value as IngredientCategory)}
-              className="flex-1 sm:flex-none bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs text-[#2D3E40] font-medium cursor-pointer focus:border-[#4A7856] focus:outline-hidden"
+              className="flex-1 sm:flex-none bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-3 py-2 text-xs sm:text-xs text-[#2D3E40] font-medium cursor-pointer focus:border-[#4A7856] focus:outline-hidden min-h-[42px] sm:min-h-0"
               title="Kategorie auswählen"
             >
               <option value="gemuese">🥦 Gemüse</option>
@@ -556,9 +561,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
 
           <button
             type="submit"
-            className="px-3.5 sm:px-5 py-1.5 sm:py-2.5 bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1 shadow-xs shrink-0 transition-colors"
+            className="px-4 sm:px-5 py-2 sm:py-2.5 bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs sm:text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 shadow-xs shrink-0 transition-colors min-h-[42px] sm:min-h-0 active:scale-95 touch-manipulation cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Hinzufügen</span>
           </button>
         </div>
