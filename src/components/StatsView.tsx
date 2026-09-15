@@ -148,21 +148,21 @@ export const StatsView: React.FC<StatsViewProps> = ({
     <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-300">
       {/* Undo Banner */}
       {showUndoBanner && undoBackup && (
-        <div className="p-3 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8] flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-top duration-200">
+        <div className="p-3.5 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8] flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-top duration-200">
           <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
-            <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4A7856] shrink-0" />
-            <span className="text-xs">Statistiken zurückgesetzt ({undoBackup.length} Einträge).</span>
+            <RotateCcw className="w-4 h-4 text-[#4A7856] shrink-0" />
+            <span className="text-xs sm:text-sm">Statistiken zurückgesetzt ({undoBackup.length} Einträge).</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleUndo}
-              className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[11px] sm:text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
+              className="min-h-[42px] px-4 py-2 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center"
             >
               Rückgängig
             </button>
             <button
               onClick={() => setShowUndoBanner(false)}
-              className="p-1 text-white/70 hover:text-white text-xs cursor-pointer"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 text-sm cursor-pointer touch-manipulation active:scale-95"
             >
               ✕
             </button>
@@ -187,15 +187,15 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 w-full sm:w-auto">
           {logs.length > 0 && (
             <button
               id="clear-all-stats-btn"
               onClick={() => setShowConfirmModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs border border-red-200 transition-colors cursor-pointer"
+              className="min-h-[44px] px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs sm:text-sm border border-red-200 transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-2 shadow-2xs w-full sm:w-auto"
               title="Statistik und Kochverlauf leeren (erfordert Bestätigung)"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-4 h-4" />
               <span>Statistik leeren</span>
             </button>
           )}
@@ -213,7 +213,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
             className="bg-white rounded-3xl p-5 sm:p-8 max-w-md w-full shadow-2xl border border-[#ECEBE8] space-y-4 sm:space-y-5 animate-in zoom-in-95 duration-200 overscroll-contain"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center shrink-0">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
               </div>
               <div>
@@ -228,11 +228,11 @@ export const StatsView: React.FC<StatsViewProps> = ({
               Bist du sicher, dass du deinen gesamten Kochverlauf und alle <strong className="text-[#2D3E40]">{logs.length} erfassten Einträge</strong> löschen möchtest? Alle bisher berechneten CO₂- und Wasserersparnisse werden zurückgesetzt.
             </p>
 
-            <div className="flex items-center justify-end gap-2 sm:gap-3 pt-2">
+            <div className="flex items-center justify-end gap-2.5 sm:gap-3 pt-2">
               <button
                 id="cancel-clear-stats-btn"
                 onClick={() => setShowConfirmModal(false)}
-                className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#2D3E40] font-semibold text-xs transition-colors cursor-pointer"
+                className="min-h-[44px] px-4 sm:px-5 py-2.5 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#2D3E40] font-semibold text-xs sm:text-sm transition-colors cursor-pointer touch-manipulation active:scale-95"
               >
                 Abbrechen
               </button>
@@ -242,9 +242,9 @@ export const StatsView: React.FC<StatsViewProps> = ({
                   setShowConfirmModal(false);
                   handleClearAllLogs();
                 }}
-                className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs shadow-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                className="min-h-[44px] px-4 sm:px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs sm:text-sm shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-4 h-4" />
                 <span>Ja, wirklich löschen</span>
               </button>
             </div>
@@ -330,31 +330,31 @@ export const StatsView: React.FC<StatsViewProps> = ({
           {/* Quick Search & Filter if logs exist */}
           {logs.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto">
-              <div className="relative flex-1 sm:w-48">
-                <Search className="w-4 h-4 text-[#7A7E7B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <div className="relative flex-1 sm:w-52">
+                <Search className="w-4 h-4 text-[#7A7E7B] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={historySearchQuery}
                   onChange={(e) => setHistorySearchQuery(e.target.value)}
                   placeholder="Gericht filtern..."
-                  className="w-full pl-9 pr-8 py-2 text-xs sm:text-xs bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[#2D3E40] placeholder:text-[#7A7E7B] focus:outline-none focus:border-[#4A7856] focus:bg-white transition-all min-h-[40px] sm:min-h-0"
+                  className="w-full pl-10 pr-10 py-2.5 text-[16px] sm:text-xs bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[#2D3E40] placeholder:text-[#7A7E7B] focus:outline-none focus:border-[#4A7856] focus:bg-white transition-all min-h-[44px] sm:min-h-0"
                 />
                 {historySearchQuery && (
                   <button
                     onClick={() => setHistorySearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#7A7E7B] hover:text-[#2D3E40] p-1 cursor-pointer"
+                    className="w-9 h-9 absolute right-1.5 top-1/2 -translate-y-1/2 text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-[#ECEBE8] rounded-lg flex items-center justify-center cursor-pointer touch-manipulation active:scale-90"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => setHistoryFilter('all')}
-                  className={`px-3 sm:px-2.5 py-2 sm:py-1 rounded-xl text-xs sm:text-[11px] font-semibold border transition-all cursor-pointer min-h-[40px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
+                  className={`px-4 py-2.5 sm:py-2 rounded-xl text-xs sm:text-xs font-semibold border transition-all cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
                     historyFilter === 'all'
-                      ? 'bg-[#2D3E40] text-white border-[#2D3E40]'
+                      ? 'bg-[#2D3E40] text-white border-[#2D3E40] shadow-2xs'
                       : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
                   }`}
                 >
@@ -362,9 +362,9 @@ export const StatsView: React.FC<StatsViewProps> = ({
                 </button>
                 <button
                   onClick={() => setHistoryFilter('vegan')}
-                  className={`px-3 sm:px-2.5 py-2 sm:py-1 rounded-xl text-xs sm:text-[11px] font-semibold border transition-all cursor-pointer min-h-[40px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
+                  className={`px-4 py-2.5 sm:py-2 rounded-xl text-xs sm:text-xs font-semibold border transition-all cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
                     historyFilter === 'vegan'
-                      ? 'bg-[#4A7856] text-white border-[#4A7856]'
+                      ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs'
                       : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
                   }`}
                 >
@@ -381,14 +381,14 @@ export const StatsView: React.FC<StatsViewProps> = ({
             <p>Öffne ein beliebiges Rezept und klicke auf "Ich habe das gekocht!", um es hier aufzulisten.</p>
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="text-center py-6 text-xs text-[#7A7E7B] space-y-2">
+          <div className="text-center py-6 text-xs text-[#7A7E7B] space-y-3">
             <p className="font-semibold text-[#2D3E40]">Keine Treffer für diese Filterung</p>
             <button
               onClick={() => {
                 setHistorySearchQuery('');
                 setHistoryFilter('all');
               }}
-              className="text-xs text-[#4A7856] font-semibold hover:underline cursor-pointer"
+              className="min-h-[42px] px-4 py-2 bg-[#F1F5F2] hover:bg-[#E8EFEA] text-[#4A7856] font-semibold text-xs rounded-xl transition-colors cursor-pointer touch-manipulation active:scale-95 inline-flex items-center justify-center"
             >
               Filter zurücksetzen
             </button>
@@ -397,7 +397,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           /* Scrollable Container so it doesn't take unlimited vertical space */
           <div 
             id="cooked-history-scroll-container"
-            className="max-h-[380px] sm:max-h-[440px] overflow-y-auto overscroll-contain pr-1 sm:pr-1.5 space-y-2 scrollbar-thin scrollbar-thumb-gray-200"
+            className="max-h-[380px] sm:max-h-[440px] overflow-y-auto overscroll-contain pr-1 sm:pr-1.5 space-y-2.5 scrollbar-thin scrollbar-thumb-gray-200"
           >
             {filteredLogs.map((log) => {
               const formattedDate = new Date(log.date).toLocaleDateString('de-DE', {
@@ -414,11 +414,11 @@ export const StatsView: React.FC<StatsViewProps> = ({
               return (
                 <div
                   key={log.id}
-                  className="p-2.5 sm:p-3 bg-[#FAF9F6] rounded-xl border border-[#ECEBE8] flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-colors hover:bg-white hover:border-[#DCDAD5]"
+                  className="p-3 sm:p-3.5 bg-[#FAF9F6] rounded-2xl border border-[#ECEBE8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors hover:bg-white hover:border-[#DCDAD5]"
                 >
                   <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                      <span className="font-semibold text-[#2D3E40] text-xs sm:text-sm truncate max-w-[280px] sm:max-w-md">
+                      <span className="font-semibold text-[#2D3E40] text-xs sm:text-sm break-words whitespace-normal leading-snug">
                         {log.recipeTitle}
                       </span>
                       {log.isVegan ? (
@@ -450,19 +450,20 @@ export const StatsView: React.FC<StatsViewProps> = ({
                     {matchedRecipe && (
                       <button
                         onClick={() => onSelectRecipe(matchedRecipe)}
-                        className="px-3 sm:px-2.5 py-1.5 sm:py-1 rounded-xl bg-white hover:bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs sm:text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer min-h-[38px] sm:min-h-0 touch-manipulation active:scale-95"
+                        className="px-3.5 sm:px-3 py-2 sm:py-1.5 rounded-xl bg-white hover:bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer min-h-[42px] sm:min-h-0 touch-manipulation active:scale-95"
                       >
-                        <BookOpen className="w-3.5 h-3.5" />
+                        <BookOpen className="w-4 h-4" />
                         <span>Rezept</span>
                       </button>
                     )}
 
                     <button
                       onClick={() => handleDeleteSingleLog(log.id)}
-                      className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center rounded-xl text-rose-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer touch-manipulation active:scale-95"
+                      className="w-10.5 h-10.5 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-white sm:bg-[#FAF9F6] text-rose-500 hover:text-rose-600 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs shrink-0"
                       title="Eintrag entfernen"
+                      aria-label="Eintrag entfernen"
                     >
-                      <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -494,17 +495,17 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </div>
 
           {/* Insane Milestone Status Pill */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold self-start sm:self-auto">
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold self-start sm:self-auto min-h-[38px]">
             <Flame className="w-4 h-4 text-rose-600 shrink-0" />
             <span>Insane Trophäen: {insaneUnlockedCount}/{insaneCount}</span>
           </div>
         </div>
 
-        {/* Tier Filter Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
+        {/* Tier Filter Tabs - Auf Einkaufslisten-Niveau vergrößert */}
+        <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none text-xs sm:text-sm">
           <button
             onClick={() => setAchievementTierFilter('all')}
-            className={`px-3.5 sm:px-2.5 py-2 sm:py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[38px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
+            className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
               achievementTierFilter === 'all'
                 ? 'bg-[#2D3E40] text-white border-[#2D3E40] shadow-2xs'
                 : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
@@ -514,7 +515,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </button>
           <button
             onClick={() => setAchievementTierFilter('unlocked')}
-            className={`px-3.5 sm:px-2.5 py-2 sm:py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[38px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
+            className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
               achievementTierFilter === 'unlocked'
                 ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs'
                 : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
@@ -524,7 +525,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </button>
           <button
             onClick={() => setAchievementTierFilter('bronze')}
-            className={`px-3.5 sm:px-2.5 py-2 sm:py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[38px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
+            className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
               achievementTierFilter === 'bronze'
                 ? 'bg-amber-700 text-white border-amber-700 shadow-2xs'
                 : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
@@ -534,7 +535,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </button>
           <button
             onClick={() => setAchievementTierFilter('silver')}
-            className={`px-3.5 sm:px-2.5 py-2 sm:py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[38px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
+            className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
               achievementTierFilter === 'silver'
                 ? 'bg-slate-700 text-white border-slate-700 shadow-2xs'
                 : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
@@ -544,7 +545,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </button>
           <button
             onClick={() => setAchievementTierFilter('gold')}
-            className={`px-3.5 sm:px-2.5 py-2 sm:py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[38px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
+            className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
               achievementTierFilter === 'gold'
                 ? 'bg-yellow-600 text-white border-yellow-600 shadow-2xs'
                 : 'bg-yellow-50 text-yellow-800 border-yellow-300 hover:bg-yellow-100'
@@ -554,7 +555,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </button>
           <button
             onClick={() => setAchievementTierFilter('diamond')}
-            className={`px-3.5 sm:px-2.5 py-2 sm:py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[38px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
+            className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
               achievementTierFilter === 'diamond'
                 ? 'bg-teal-700 text-white border-teal-700 shadow-2xs'
                 : 'bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100'
@@ -564,13 +565,13 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </button>
           <button
             onClick={() => setAchievementTierFilter('insane')}
-            className={`px-3.5 sm:px-2.5 py-2 sm:py-1 rounded-xl font-extrabold whitespace-nowrap transition-all border flex items-center gap-1 cursor-pointer min-h-[38px] sm:min-h-0 touch-manipulation active:scale-95 ${
+            className={`px-4 py-2.5 sm:py-2 rounded-xl font-extrabold whitespace-nowrap transition-all border flex items-center gap-1.5 cursor-pointer min-h-[44px] sm:min-h-0 touch-manipulation active:scale-95 ${
               achievementTierFilter === 'insane'
                 ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
                 : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
             }`}
           >
-            <Flame className="w-3.5 h-3.5 text-rose-600" />
+            <Flame className="w-4 h-4 text-rose-600" />
             <span>🔥 Insane ({insaneCount})</span>
           </button>
         </div>
@@ -611,15 +612,15 @@ export const StatsView: React.FC<StatsViewProps> = ({
 
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-center justify-between gap-1.5">
-                      <h4 className="font-semibold text-xs text-[#2D3E40] truncate">
+                      <h4 className="font-semibold text-xs sm:text-sm text-[#2D3E40] break-words whitespace-normal leading-snug">
                         {ach.title}
                       </h4>
-                      <span className={`text-[9px] px-1.5 py-0.2 rounded-md border shrink-0 ${tierBadge.bg}`}>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-md border shrink-0 ${tierBadge.bg}`}>
                         {tierBadge.label}
                       </span>
                     </div>
 
-                    <p className="text-[10px] text-[#7A7E7B] leading-tight line-clamp-1">
+                    <p className="text-[10px] sm:text-[11px] text-[#7A7E7B] leading-tight break-words whitespace-normal">
                       {ach.desc}
                     </p>
 
