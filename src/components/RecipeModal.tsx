@@ -37,7 +37,7 @@ interface RecipeModalProps {
   onToggleDislike?: (id: string) => void;
   onAddToShoppingList: (recipe: Recipe, servings: number) => void;
   onAddToMealPlan: (recipe: Recipe) => void;
-  onLogCooked: (recipe: Recipe, servings: number, rating: number, notes?: string) => void;
+  onLogCooked: (recipe: Recipe, servings: number, notes?: string) => void;
   onOpenCookingMode: (recipe: Recipe, servings: number) => void;
   onCopyFeedback: (msg: string) => void;
 }
@@ -76,7 +76,6 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
 
   // Mark as cooked dialog
   const [showCookedDialog, setShowCookedDialog] = useState(false);
-  const [userRating, setUserRating] = useState(5);
   const [userNotes, setUserNotes] = useState('');
 
   // Lock background scrolling while recipe modal is open
@@ -174,7 +173,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
       colors: ['#10b981', '#34d399', '#f59e0b', '#3b82f6'],
     });
 
-    onLogCooked(recipe, servings, userRating, userNotes);
+    onLogCooked(recipe, servings, userNotes);
     setShowCookedDialog(false);
     onCopyFeedback('🎉 Großartig! Dein Gericht wurde als gekocht in der Statistik erfasst!');
   };

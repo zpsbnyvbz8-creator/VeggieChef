@@ -50,7 +50,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
 
   // Filters for Cooked History
   const [historySearchQuery, setHistorySearchQuery] = useState('');
-  const [historyFilter, setHistoryFilter] = useState<'all' | 'vegan' | 'fivestar'>('all');
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'vegan'>('all');
 
   // Filter for Achievements
   const [achievementTierFilter, setAchievementTierFilter] = useState<AchievementFilterTier>('all');
@@ -73,7 +73,6 @@ export const StatsView: React.FC<StatsViewProps> = ({
   const totalCO2Saved = Math.round(logs.reduce((acc, log) => acc + (log.savedCO2Kg || 0), 0) * 10) / 10;
   const totalWaterSaved = Math.round(logs.reduce((acc, log) => acc + (log.savedWaterLiters || 0), 0));
   const veganCount = logs.filter((l) => l.isVegan).length;
-  const fiveStarCount = logs.filter((l) => l.rating === 5).length;
   const distinctDishesCount = new Set(
     logs.map((l) => (l.recipeId || l.recipeTitle).toLowerCase().trim())
   ).size;
@@ -117,7 +116,6 @@ export const StatsView: React.FC<StatsViewProps> = ({
         if (!matchesTitle && !matchesNotes) return false;
       }
       if (historyFilter === 'vegan' && !log.isVegan) return false;
-      if (historyFilter === 'fivestar' && log.rating !== 5) return false;
       return true;
     });
   }, [sortedLogs, historySearchQuery, historyFilter]);
@@ -132,9 +130,8 @@ export const StatsView: React.FC<StatsViewProps> = ({
       veganCount,
       favoritesCount,
       distinctDishesCount,
-      fiveStarCount,
     });
-  }, [totalCooked, totalCO2Saved, totalWaterSaved, veganCount, favoritesCount, distinctDishesCount, fiveStarCount, totalPortions]);
+  }, [totalCooked, totalCO2Saved, totalWaterSaved, veganCount, favoritesCount, distinctDishesCount, totalPortions]);
 
   // Filtered achievements by tier
   const filteredAchievements = useMemo(() => {
@@ -373,16 +370,6 @@ export const StatsView: React.FC<StatsViewProps> = ({
                 >
                   🌱 Vegan
                 </button>
-                <button
-                  onClick={() => setHistoryFilter('fivestar')}
-                  className={`px-2 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
-                    historyFilter === 'fivestar'
-                      ? 'bg-amber-600 text-white border-amber-600'
-                      : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
-                  }`}
-                >
-                  ⭐ 5★
-                </button>
               </div>
             </div>
           )}
@@ -441,11 +428,6 @@ export const StatsView: React.FC<StatsViewProps> = ({
                       ) : (
                         <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-white text-[#2D3E40] border border-[#ECEBE8] shrink-0">
                           🧀 Veggie
-                        </span>
-                      )}
-                      {log.rating > 0 && (
-                        <span className="text-[10px] text-amber-500 font-bold shrink-0">
-                          {'★'.repeat(log.rating)}
                         </span>
                       )}
                     </div>

@@ -20,7 +20,6 @@ export interface UserStatsMetrics {
   veganCount: number;
   favoritesCount: number;
   distinctDishesCount: number;
-  fiveStarCount: number;
 }
 
 export function computeAchievements(metrics: UserStatsMetrics): AchievementItem[] {
@@ -32,7 +31,6 @@ export function computeAchievements(metrics: UserStatsMetrics): AchievementItem[
     veganCount,
     favoritesCount,
     distinctDishesCount,
-    fiveStarCount,
   } = metrics;
 
   return [
@@ -172,15 +170,15 @@ export function computeAchievements(metrics: UserStatsMetrics): AchievementItem[
       unlocked: distinctDishesCount >= 5,
     },
     {
-      id: 'stars_5',
+      id: 'portions_15',
       tier: 'silver',
-      title: 'Feinschmecker',
-      desc: '5 Gerichte mit 5 Sternen bewertet',
-      icon: '✨',
-      current: fiveStarCount,
-      target: 5,
-      unit: 'Bewertungen',
-      unlocked: fiveStarCount >= 5,
+      title: 'Große Tafel',
+      desc: 'Mindestens 15 Portionen insgesamt gekocht',
+      icon: '🍲',
+      current: totalPortions,
+      target: 15,
+      unit: 'Portionen',
+      unlocked: totalPortions >= 15,
     },
 
     // --- TIER 3: GOLD (Meister) ---

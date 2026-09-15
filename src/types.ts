@@ -88,7 +88,7 @@ export interface CookedLog {
   recipeId: string;
   recipeTitle: string;
   date: string; // ISO date
-  rating: number;
+  rating?: number;
   notes?: string;
   servingsCooked: number;
   isVegan: boolean;

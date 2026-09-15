@@ -174,7 +174,6 @@ export function App() {
         recipeTitle: 'Cremiges Kichererbsen Tikka Masala',
         date: new Date(Date.now() - 86400000 * 2).toISOString(),
         servingsCooked: 4,
-        rating: 5,
         isVegan: true,
         savedCO2Kg: 5.6,
         savedWaterLiters: 4800,
@@ -185,7 +184,6 @@ export function App() {
         recipeTitle: 'Crispy Sesam-Tofu Bowl mit Edamame & Erdnuss-Dressing',
         date: new Date(Date.now() - 86400000 * 5).toISOString(),
         servingsCooked: 2,
-        rating: 5,
         isVegan: true,
         savedCO2Kg: 2.8,
         savedWaterLiters: 2400,
@@ -495,7 +493,7 @@ export function App() {
   };
 
   // Log a cooked dish into stats
-  const handleLogCooked = (recipe: Recipe, servings: number, rating: number, notes?: string) => {
+  const handleLogCooked = (recipe: Recipe, servings: number, notes?: string) => {
     const savings = calculateMealSavings(servings, recipe.isVegan);
     const newLog: CookedLog = {
       id: `cooked-${Date.now()}`,
@@ -503,7 +501,6 @@ export function App() {
       recipeTitle: recipe.title,
       date: new Date().toISOString(),
       servingsCooked: servings,
-      rating,
       notes,
       isVegan: recipe.isVegan,
       savedCO2Kg: savings.savedCO2Kg,
@@ -970,7 +967,7 @@ export function App() {
             setSelectedRecipe(recipeToReopen);
           }}
           onFinishCooking={() => {
-            handleLogCooked(cookingModeRecipe.recipe, cookingModeRecipe.servings, 5);
+            handleLogCooked(cookingModeRecipe.recipe, cookingModeRecipe.servings);
             const recipeToReopen = cookingModeRecipe.recipe;
             setCookingModeRecipe(null);
             setSelectedRecipe(recipeToReopen);
