@@ -137,7 +137,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = ({
                     key={day.dayId}
                     type="button"
                     onClick={() => setSelectedDayId(day.dayId)}
-                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-center border transition-all cursor-pointer ${
+                    className={`flex flex-col items-center justify-center min-h-[48px] py-2 px-1 rounded-xl text-center border transition-all cursor-pointer touch-manipulation active:scale-95 ${
                       isSelected
                         ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
                         : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40]'
@@ -175,7 +175,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedMealType('lunch')}
-                className={`p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer ${
+                className={`min-h-[50px] p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer touch-manipulation active:scale-95 ${
                   selectedMealType === 'lunch'
                     ? 'bg-[#F1F5F2] border-[#4A7856] text-[#2D3E40] ring-1 ring-[#4A7856]'
                     : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/40 text-[#7A7E7B]'
@@ -197,7 +197,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedMealType('dinner')}
-                className={`p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer ${
+                className={`min-h-[50px] p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer touch-manipulation active:scale-95 ${
                   selectedMealType === 'dinner'
                     ? 'bg-[#F1F5F2] border-[#4A7856] text-[#2D3E40] ring-1 ring-[#4A7856]'
                     : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/40 text-[#7A7E7B]'
@@ -230,15 +230,15 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-[#ECEBE8] text-[#7A7E7B] hover:text-[#2D3E40] text-xs font-semibold hover:bg-[#FAF9F6] transition-colors cursor-pointer"
+              className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-[#ECEBE8] text-[#7A7E7B] hover:text-[#2D3E40] text-xs font-semibold hover:bg-[#FAF9F6] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation active:scale-95"
             >
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-4 h-4" />
               <span>Jetzt einplanen</span>
             </button>
           </div>

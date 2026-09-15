@@ -310,18 +310,18 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
           {/* Action Row: Portionen, Kopieren, Veganisieren, Einkaufsliste, Kochmodus */}
           <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 p-3 sm:p-4 bg-[#F1F5F2] border border-[#ECEBE8] rounded-2xl">
             {/* Portion Adjuster */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-[#2D3E40]">
-                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4A7856]" />
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-start">
+              <div className="flex items-center gap-1.5 text-xs sm:text-xs font-semibold text-[#2D3E40]">
+                <Users className="w-4 h-4 sm:w-4 sm:h-4 text-[#4A7856]" />
                 <span>Portionen:</span>
               </div>
-              <div className="flex items-center bg-white border border-[#ECEBE8] rounded-xl p-0.5 shadow-2xs">
+              <div className="flex items-center bg-white border border-[#ECEBE8] rounded-xl p-1 shadow-2xs gap-1 min-h-[42px]">
                 {[1, 2, 3, 4, 6, 8].map((num) => (
                   <button
                     key={num}
                     id={`servings-btn-${num}`}
                     onClick={() => setServings(num)}
-                    className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-xs font-semibold transition-all ${
+                    className={`w-10 h-10 sm:w-8 sm:h-8 rounded-xl sm:rounded-lg text-sm sm:text-xs font-bold transition-all flex items-center justify-center touch-manipulation cursor-pointer active:scale-90 ${
                       servings === num
                         ? 'bg-[#4A7856] text-white shadow-xs'
                         : 'text-[#7A7E7B] hover:bg-[#FAF9F6] hover:text-[#2D3E40]'
@@ -334,15 +334,15 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
             </div>
 
             {/* Quick Action Buttons */}
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2 w-full sm:w-auto">
               {/* Copy ingredients */}
               <button
                 id="modal-copy-ingredients-btn"
                 onClick={handleCopyIngredients}
-                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-medium bg-white border border-[#ECEBE8] hover:bg-[#FAF9F6] text-[#2D3E40] shadow-2xs transition-all"
+                className="flex items-center justify-center gap-1.5 px-3.5 sm:px-3 py-2.5 sm:py-2 rounded-xl text-xs font-semibold bg-white border border-[#ECEBE8] hover:bg-[#FAF9F6] text-[#2D3E40] shadow-2xs transition-all active:scale-95 touch-manipulation cursor-pointer min-h-[42px] sm:min-h-0"
                 title="Zutatenliste für WhatsApp oder Notizen kopieren"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <Copy className="w-3.5 h-3.5 text-[#7A7E7B]" />}
+                {copied ? <Check className="w-4 h-4 text-[#4A7856]" /> : <Copy className="w-4 h-4 text-[#7A7E7B]" />}
                 <span>{copied ? 'Kopiert!' : 'Zutaten kopieren'}</span>
               </button>
 
@@ -351,13 +351,13 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
                 <button
                   id="modal-veganize-btn"
                   onClick={handleVeganize}
-                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all ${
+                  className={`flex items-center justify-center gap-1.5 px-3.5 sm:px-3 py-2.5 sm:py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 touch-manipulation cursor-pointer min-h-[42px] sm:min-h-0 ${
                     isVeganized
                       ? 'bg-[#4A7856] text-white shadow-xs'
                       : 'bg-white hover:bg-[#FAF9F6] text-[#4A7856] border border-[#4A7856]/40'
                   }`}
                 >
-                  <Leaf className="w-3.5 h-3.5" />
+                  <Leaf className="w-4 h-4" />
                   <span>{isVeganized ? '✓ Vegan' : 'Veganisieren'}</span>
                 </button>
               )}
@@ -366,9 +366,9 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
               <button
                 id="modal-add-shopping-btn"
                 onClick={handleAddShopping}
-                className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-medium bg-[#4A7856] hover:bg-[#3D6447] text-white shadow-xs transition-all"
+                className="flex items-center justify-center gap-1.5 px-4 sm:px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-semibold bg-[#4A7856] hover:bg-[#3D6447] text-white shadow-xs transition-all active:scale-95 touch-manipulation cursor-pointer min-h-[42px] sm:min-h-0"
               >
-                {addedShopping ? <Check className="w-3.5 h-3.5" /> : <ShoppingCart className="w-3.5 h-3.5" />}
+                {addedShopping ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
                 <span>{addedShopping ? 'Hinzugefügt!' : '+ Einkaufsliste'}</span>
               </button>
 
@@ -376,9 +376,9 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
               <button
                 id="modal-start-cooking-mode-btn"
                 onClick={() => onOpenCookingMode(recipe, servings)}
-                className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-semibold bg-[#2D3E40] hover:bg-[#1F2C2D] text-white shadow-xs transition-all active:scale-98"
+                className="flex items-center justify-center gap-1.5 px-4 sm:px-4 py-2.5 sm:py-2 rounded-xl text-xs font-semibold bg-[#2D3E40] hover:bg-[#1F2C2D] text-white shadow-xs transition-all active:scale-95 touch-manipulation cursor-pointer min-h-[42px] sm:min-h-0"
               >
-                <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-white" />
+                <Play className="w-3.5 h-3.5 fill-white" />
                 <span>Koch-Modus</span>
               </button>
             </div>
@@ -401,9 +401,9 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
               <button
                 id="toggle-missing-ingredient-mode"
                 onClick={() => setShowSubstitutionsPanel(!showSubstitutionsPanel)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#D35400] bg-[#FDF6F0] hover:bg-[#F5EADF] border border-[#F5EADF] transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-[#D35400] bg-[#FDF6F0] hover:bg-[#F5EADF] border border-[#F5EADF] transition-colors cursor-pointer touch-manipulation active:scale-95 min-h-[38px]"
               >
-                <Sparkles className="w-3.5 h-3.5 text-[#D35400]" />
+                <Sparkles className="w-4 h-4 text-[#D35400]" />
                 <span>Zutat fehlt? KI-Ersatz</span>
               </button>
             </div>

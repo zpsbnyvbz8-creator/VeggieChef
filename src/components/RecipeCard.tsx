@@ -112,7 +112,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                   e.stopPropagation();
                   onToggleDislike(recipe.id);
                 }}
-                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full backdrop-blur-md shadow-xs flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
+                className={`w-9 h-9 sm:w-9 sm:h-9 rounded-full backdrop-blur-md shadow-xs flex items-center justify-center transition-all hover:scale-110 active:scale-95 touch-manipulation cursor-pointer ${
                   isDisliked
                     ? 'bg-rose-500 text-white'
                     : 'bg-white/95 text-[#7A7E7B] hover:text-rose-600 hover:bg-white'
@@ -130,7 +130,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                 e.stopPropagation();
                 onToggleFavorite(recipe.id);
               }}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 backdrop-blur-md text-[#7A7E7B] hover:text-[#D35400] hover:bg-white shadow-xs flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+              className="w-9 h-9 sm:w-9 sm:h-9 rounded-full bg-white/95 backdrop-blur-md text-[#7A7E7B] hover:text-[#D35400] hover:bg-white shadow-xs flex items-center justify-center transition-all hover:scale-110 active:scale-95 touch-manipulation cursor-pointer"
               title="Favorit umschalten"
             >
               <Heart className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${isFavorite ? 'fill-[#D35400] text-[#D35400]' : ''}`} />
@@ -190,10 +190,10 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
                 onCopyFeedback(`"${recipe.title}" in Wochenplaner eingetragen!`);
                 setTimeout(() => setAddedMealPlan(false), 2000);
               }}
-              className="flex items-center justify-center gap-1 min-h-[38px] py-1.5 px-1.5 rounded-xl text-xs font-medium text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors active:scale-95"
+              className="flex items-center justify-center gap-1.5 min-h-[42px] sm:min-h-[38px] py-2 px-1.5 rounded-xl text-xs font-semibold text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors active:scale-95 touch-manipulation cursor-pointer"
               title="In Wochenplaner eintragen"
             >
-              {addedMealPlan ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <CalendarPlus className="w-3.5 h-3.5 text-[#4A7856]" />}
+              {addedMealPlan ? <Check className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[#4A7856]" /> : <CalendarPlus className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[#4A7856]" />}
               <span className="truncate">{addedMealPlan ? 'Geplant' : 'Planer'}</span>
             </button>
           )}
@@ -202,12 +202,12 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
           <button
             id={`card-copy-btn-${recipe.id}`}
             onClick={handleCopy}
-            className={`flex items-center justify-center gap-1 min-h-[38px] py-1.5 px-1.5 rounded-xl text-xs font-medium text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors active:scale-95 ${
+            className={`flex items-center justify-center gap-1.5 min-h-[42px] sm:min-h-[38px] py-2 px-1.5 rounded-xl text-xs font-semibold text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors active:scale-95 touch-manipulation cursor-pointer ${
               !onAddToMealPlan ? 'col-span-2' : ''
             }`}
             title="Zutaten schnell kopieren"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <Copy className="w-3.5 h-3.5 text-[#7A7E7B]" />}
+            {copied ? <Check className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[#4A7856]" /> : <Copy className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[#7A7E7B]" />}
             <span className="truncate">{copied ? 'Kopiert' : 'Kopieren'}</span>
           </button>
 
@@ -215,10 +215,10 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
           <button
             id={`card-shop-btn-${recipe.id}`}
             onClick={handleShopping}
-            className="flex items-center justify-center gap-1 min-h-[38px] py-1.5 px-1.5 rounded-xl text-xs font-medium text-[#4A7856] bg-[#F1F5F2] border border-[#ECEBE8] hover:bg-[#4A7856] hover:text-white transition-colors active:scale-95"
+            className="flex items-center justify-center gap-1.5 min-h-[42px] sm:min-h-[38px] py-2 px-1.5 rounded-xl text-xs font-semibold text-[#4A7856] bg-[#F1F5F2] border border-[#ECEBE8] hover:bg-[#4A7856] hover:text-white transition-colors active:scale-95 touch-manipulation cursor-pointer"
             title="Zur Einkaufsliste"
           >
-            {addedShopping ? <Check className="w-3.5 h-3.5" /> : <ShoppingCart className="w-3.5 h-3.5" />}
+            {addedShopping ? <Check className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> : <ShoppingCart className="w-4 h-4 sm:w-3.5 sm:h-3.5" />}
             <span className="truncate">{addedShopping ? 'Hinzugefügt' : '+ Liste'}</span>
           </button>
         </div>

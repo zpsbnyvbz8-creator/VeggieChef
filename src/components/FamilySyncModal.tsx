@@ -198,18 +198,18 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = ({
                   id="force-sync-push-btn"
                   onClick={handleSyncDataNow}
                   disabled={isSubmitting}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] text-xs font-semibold shadow-2xs transition-all disabled:opacity-50"
+                  className="flex-1 min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] text-xs font-semibold shadow-2xs transition-all disabled:opacity-50 cursor-pointer touch-manipulation active:scale-95"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 text-[#4A7856] ${isSubmitting ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 text-[#4A7856] ${isSubmitting ? 'animate-spin' : ''}`} />
                   <span>{pushSuccess ? '✓ Erfolgreich hochgeladen!' : 'Lokale Daten jetzt hochladen'}</span>
                 </button>
 
                 <button
                   id="leave-family-btn"
                   onClick={onLeaveFamily}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#FDF6F0] hover:bg-rose-50 text-[#D35400] text-xs font-semibold border border-rose-200 transition-colors"
+                  className="min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#FDF6F0] hover:bg-rose-50 text-[#D35400] text-xs font-semibold border border-rose-200 transition-colors cursor-pointer touch-manipulation active:scale-95"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <LogOut className="w-4 h-4" />
                   <span>Zu lokalem Modus wechseln</span>
                 </button>
               </div>
@@ -228,7 +228,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = ({
                     value={groupIdInput}
                     onChange={(e) => setGroupIdInput(e.target.value)}
                     placeholder="z.B. familie-schmidt oder zuhause"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#ECEBE8] text-sm text-[#2D3E40] font-mono focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] outline-hidden shadow-2xs"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-white border border-[#ECEBE8] text-sm text-[#2D3E40] font-mono focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] outline-hidden shadow-2xs"
                     required
                   />
                   <p className="text-[11px] text-[#7A7E7B] mt-1">
@@ -247,7 +247,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = ({
                       value={groupNameInput}
                       onChange={(e) => setGroupNameInput(e.target.value)}
                       placeholder="Unsere Familie"
-                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#ECEBE8] text-xs text-[#2D3E40] focus:border-[#4A7856] outline-hidden"
+                      className="w-full min-h-[42px] px-3 py-2 rounded-xl bg-white border border-[#ECEBE8] text-xs text-[#2D3E40] focus:border-[#4A7856] outline-hidden"
                     />
                   </div>
 
@@ -261,7 +261,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = ({
                       value={memberNameInput}
                       onChange={(e) => setMemberNameInput(e.target.value)}
                       placeholder="z.B. Mama, Felix..."
-                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#ECEBE8] text-xs text-[#2D3E40] focus:border-[#4A7856] outline-hidden"
+                      className="w-full min-h-[42px] px-3 py-2 rounded-xl bg-white border border-[#ECEBE8] text-xs text-[#2D3E40] focus:border-[#4A7856] outline-hidden"
                     />
                   </div>
                 </div>
@@ -271,7 +271,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = ({
                     type="checkbox"
                     checked={pushExistingData}
                     onChange={(e) => setPushExistingData(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#4A7856] accent-[#4A7856]"
+                    className="w-5 h-5 rounded text-[#4A7856] accent-[#4A7856]"
                   />
                   <div className="text-xs">
                     <span className="font-semibold text-[#2D3E40]">Aktuelle Einkäufe & Wochenplan übernehmen</span>
@@ -285,7 +285,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = ({
                   type="submit"
                   id="submit-join-family-btn"
                   disabled={isSubmitting || !groupIdInput.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs sm:text-sm font-semibold shadow-xs transition-all disabled:opacity-50"
+                  className="flex-1 min-h-[46px] flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs sm:text-sm font-semibold shadow-xs transition-all disabled:opacity-50 cursor-pointer touch-manipulation active:scale-95"
                 >
                   <span>{isSubmitting ? 'Verbinde...' : 'Mit Familie verbinden'}</span>
                   <ArrowRight className="w-4 h-4" />

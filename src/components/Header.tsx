@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="header-sync-modal-btn"
                 onClick={onOpenSyncModal}
-                className={`flex items-center gap-1 sm:gap-1.5 h-10 px-2.5 sm:px-3 rounded-xl text-xs font-semibold transition-all border ${
+                className={`flex items-center gap-1 sm:gap-1.5 h-10 px-2.5 sm:px-3 rounded-xl text-xs font-semibold transition-all border cursor-pointer touch-manipulation active:scale-95 ${
                   syncConfig?.mode === 'family' && syncConfig?.groupId
                     ? 'bg-[#F1F5F2] text-[#4A7856] border-[#4A7856]/40 shadow-2xs hover:bg-[#e4ede6]'
                     : 'bg-white text-[#7A7E7B] border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-[#2D3E40]'
@@ -128,7 +128,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="nav-tab-favorites"
               onClick={() => setActiveTab('favorites')}
-              className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#D35400] transition-colors border border-transparent ${
+              className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#D35400] transition-colors border border-transparent cursor-pointer touch-manipulation active:scale-95 ${
                 activeTab === 'favorites' ? 'bg-[#FDF6F0] text-[#D35400] border-[#F5EADF]' : 'bg-white sm:bg-transparent border-[#ECEBE8] sm:border-transparent'
               }`}
               title="Gespeicherte Favoriten"
@@ -145,7 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="nav-tab-shopping-badge"
               onClick={() => setActiveTab('shopping')}
-              className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors border border-transparent ${
+              className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors border border-transparent cursor-pointer touch-manipulation active:scale-95 ${
                 activeTab === 'shopping' ? 'bg-[#F1F5F2] text-[#4A7856] border-[#4A7856]/30' : 'bg-white sm:bg-transparent border-[#ECEBE8] sm:border-transparent'
               }`}
               title="Einkaufsliste"
@@ -165,7 +165,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="nav-tab-recipes"
             onClick={() => setActiveTab('recipes')}
-            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation ${
+            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'recipes'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
                 : 'text-[#7A7E7B] hover:bg-gray-50 hover:text-[#2D3E40]'
@@ -178,7 +178,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="nav-tab-fridge"
             onClick={() => setActiveTab('fridge')}
-            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation ${
+            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'fridge'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
                 : 'text-[#7A7E7B] hover:bg-gray-50 hover:text-[#2D3E40]'
@@ -191,7 +191,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="nav-tab-planner"
             onClick={() => setActiveTab('planner')}
-            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation ${
+            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'planner'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
                 : 'text-[#7A7E7B] hover:bg-gray-50 hover:text-[#2D3E40]'
@@ -204,7 +204,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="nav-tab-shopping"
             onClick={() => setActiveTab('shopping')}
-            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation ${
+            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'shopping'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
                 : 'text-[#7A7E7B] hover:bg-gray-50 hover:text-[#2D3E40]'
@@ -222,7 +222,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="nav-tab-stats"
             onClick={() => setActiveTab('stats')}
-            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3 py-2 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation ${
+            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3 py-2 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'stats'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
                 : 'text-[#7A7E7B] hover:bg-gray-50 hover:text-[#2D3E40]'

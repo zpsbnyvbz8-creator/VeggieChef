@@ -329,30 +329,30 @@ export const StatsView: React.FC<StatsViewProps> = ({
 
           {/* Quick Search & Filter if logs exist */}
           {logs.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto">
               <div className="relative flex-1 sm:w-48">
-                <Search className="w-3.5 h-3.5 text-[#7A7E7B] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-4 h-4 text-[#7A7E7B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={historySearchQuery}
                   onChange={(e) => setHistorySearchQuery(e.target.value)}
                   placeholder="Gericht filtern..."
-                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[#2D3E40] placeholder:text-[#7A7E7B] focus:outline-none focus:border-[#4A7856] focus:bg-white transition-all"
+                  className="w-full pl-9 pr-8 py-2 text-xs sm:text-xs bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[#2D3E40] placeholder:text-[#7A7E7B] focus:outline-none focus:border-[#4A7856] focus:bg-white transition-all min-h-[40px] sm:min-h-0"
                 />
                 {historySearchQuery && (
                   <button
                     onClick={() => setHistorySearchQuery('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[#7A7E7B] hover:text-[#2D3E40] p-0.5 cursor-pointer"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#7A7E7B] hover:text-[#2D3E40] p-1 cursor-pointer"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
 
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   onClick={() => setHistoryFilter('all')}
-                  className={`px-2 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                  className={`px-3 sm:px-2.5 py-2 sm:py-1 rounded-xl text-xs sm:text-[11px] font-semibold border transition-all cursor-pointer min-h-[40px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
                     historyFilter === 'all'
                       ? 'bg-[#2D3E40] text-white border-[#2D3E40]'
                       : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
@@ -362,7 +362,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
                 </button>
                 <button
                   onClick={() => setHistoryFilter('vegan')}
-                  className={`px-2 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                  className={`px-3 sm:px-2.5 py-2 sm:py-1 rounded-xl text-xs sm:text-[11px] font-semibold border transition-all cursor-pointer min-h-[40px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
                     historyFilter === 'vegan'
                       ? 'bg-[#4A7856] text-white border-[#4A7856]'
                       : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
@@ -446,23 +446,23 @@ export const StatsView: React.FC<StatsViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                     {matchedRecipe && (
                       <button
                         onClick={() => onSelectRecipe(matchedRecipe)}
-                        className="px-2 sm:px-2.5 py-1 rounded-lg bg-white hover:bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                        className="px-3 sm:px-2.5 py-1.5 sm:py-1 rounded-xl bg-white hover:bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs sm:text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer min-h-[38px] sm:min-h-0 touch-manipulation active:scale-95"
                       >
-                        <BookOpen className="w-3 h-3" />
+                        <BookOpen className="w-3.5 h-3.5" />
                         <span>Rezept</span>
                       </button>
                     )}
 
                     <button
                       onClick={() => handleDeleteSingleLog(log.id)}
-                      className="p-1 rounded-lg text-[#7A7E7B] hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                      className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center rounded-xl text-rose-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer touch-manipulation active:scale-95"
                       title="Eintrag entfernen"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -494,17 +494,17 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </div>
 
           {/* Insane Milestone Status Pill */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold self-start sm:self-auto">
-            <Flame className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold self-start sm:self-auto">
+            <Flame className="w-4 h-4 text-rose-600 shrink-0" />
             <span>Insane Trophäen: {insaneUnlockedCount}/{insaneCount}</span>
           </div>
         </div>
 
         {/* Tier Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
           <button
             onClick={() => setAchievementTierFilter('all')}
-            className={`px-2.5 py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer ${
+            className={`px-3.5 sm:px-2.5 py-2 sm:py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[38px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
               achievementTierFilter === 'all'
                 ? 'bg-[#2D3E40] text-white border-[#2D3E40] shadow-2xs'
                 : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
@@ -514,7 +514,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </button>
           <button
             onClick={() => setAchievementTierFilter('unlocked')}
-            className={`px-2.5 py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer ${
+            className={`px-3.5 sm:px-2.5 py-2 sm:py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[38px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
               achievementTierFilter === 'unlocked'
                 ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs'
                 : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
@@ -524,7 +524,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </button>
           <button
             onClick={() => setAchievementTierFilter('bronze')}
-            className={`px-2.5 py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer ${
+            className={`px-3.5 sm:px-2.5 py-2 sm:py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[38px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
               achievementTierFilter === 'bronze'
                 ? 'bg-amber-700 text-white border-amber-700 shadow-2xs'
                 : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
@@ -534,7 +534,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </button>
           <button
             onClick={() => setAchievementTierFilter('silver')}
-            className={`px-2.5 py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer ${
+            className={`px-3.5 sm:px-2.5 py-2 sm:py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[38px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
               achievementTierFilter === 'silver'
                 ? 'bg-slate-700 text-white border-slate-700 shadow-2xs'
                 : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
@@ -544,7 +544,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </button>
           <button
             onClick={() => setAchievementTierFilter('gold')}
-            className={`px-2.5 py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer ${
+            className={`px-3.5 sm:px-2.5 py-2 sm:py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[38px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
               achievementTierFilter === 'gold'
                 ? 'bg-yellow-600 text-white border-yellow-600 shadow-2xs'
                 : 'bg-yellow-50 text-yellow-800 border-yellow-300 hover:bg-yellow-100'
@@ -554,7 +554,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </button>
           <button
             onClick={() => setAchievementTierFilter('diamond')}
-            className={`px-2.5 py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer ${
+            className={`px-3.5 sm:px-2.5 py-2 sm:py-1 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[38px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
               achievementTierFilter === 'diamond'
                 ? 'bg-teal-700 text-white border-teal-700 shadow-2xs'
                 : 'bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100'
@@ -564,13 +564,13 @@ export const StatsView: React.FC<StatsViewProps> = ({
           </button>
           <button
             onClick={() => setAchievementTierFilter('insane')}
-            className={`px-2.5 py-1 rounded-xl font-extrabold whitespace-nowrap transition-all border flex items-center gap-1 cursor-pointer ${
+            className={`px-3.5 sm:px-2.5 py-2 sm:py-1 rounded-xl font-extrabold whitespace-nowrap transition-all border flex items-center gap-1 cursor-pointer min-h-[38px] sm:min-h-0 touch-manipulation active:scale-95 ${
               achievementTierFilter === 'insane'
                 ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
                 : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
             }`}
           >
-            <Flame className="w-3 h-3 text-rose-600" />
+            <Flame className="w-3.5 h-3.5 text-rose-600" />
             <span>🔥 Insane ({insaneCount})</span>
           </button>
         </div>

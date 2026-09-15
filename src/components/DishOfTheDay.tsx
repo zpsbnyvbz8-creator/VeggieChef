@@ -138,12 +138,12 @@ export const DishOfTheDay: React.FC<DishOfTheDayProps> = ({
                   e.stopPropagation();
                   onToggleFavorite(activeRecipe.id);
                 }}
-                className={`min-w-[38px] min-h-[38px] p-2 sm:p-2.5 rounded-xl border border-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer ${
+                className={`min-w-[42px] min-h-[42px] sm:min-w-[38px] sm:min-h-[38px] p-2.5 sm:p-2.5 rounded-xl border border-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 ${
                   isFavorite ? 'bg-[#FDF6F0] text-[#D35400]' : 'bg-white hover:bg-[#F1F5F2] text-[#7A7E7B]'
                 }`}
                 title={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
               >
-                <Heart className={`w-4 h-4 ${isFavorite ? 'fill-[#D35400] text-[#D35400]' : ''}`} />
+                <Heart className={`w-4.5 h-4.5 sm:w-4 sm:h-4 ${isFavorite ? 'fill-[#D35400] text-[#D35400]' : ''}`} />
               </button>
 
               {onToggleDislike && (
@@ -153,12 +153,12 @@ export const DishOfTheDay: React.FC<DishOfTheDayProps> = ({
                     e.stopPropagation();
                     onToggleDislike(activeRecipe.id);
                   }}
-                  className={`min-w-[38px] min-h-[38px] p-2 sm:p-2.5 rounded-xl border border-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer ${
+                  className={`min-w-[42px] min-h-[42px] sm:min-w-[38px] sm:min-h-[38px] p-2.5 sm:p-2.5 rounded-xl border border-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 ${
                     isDisliked ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white hover:bg-[#F1F5F2] text-[#7A7E7B]'
                   }`}
                   title={isDisliked ? 'Nicht mehr ablehnen' : 'Gericht weniger oft anzeigen'}
                 >
-                  <ThumbsDown className={`w-4 h-4 ${isDisliked ? 'fill-red-600' : ''}`} />
+                  <ThumbsDown className={`w-4.5 h-4.5 sm:w-4 sm:h-4 ${isDisliked ? 'fill-red-600' : ''}`} />
                 </button>
               )}
 
@@ -166,7 +166,7 @@ export const DishOfTheDay: React.FC<DishOfTheDayProps> = ({
                 <button
                   id="dish-of-the-day-plan-btn"
                   onClick={handleMealPlan}
-                  className="min-h-[38px] px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors flex items-center gap-1.5 text-xs sm:text-sm font-medium cursor-pointer"
+                  className="min-h-[42px] sm:min-h-[38px] px-3 sm:px-3 py-2 sm:py-2 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors flex items-center gap-1.5 text-xs sm:text-sm font-semibold cursor-pointer touch-manipulation active:scale-95"
                   title="In Wochenplaner eintragen"
                 >
                   <CalendarPlus className="w-4 h-4 text-[#4A7856]" />
@@ -177,10 +177,10 @@ export const DishOfTheDay: React.FC<DishOfTheDayProps> = ({
               <button
                 id="dish-of-the-day-copy-btn"
                 onClick={handleCopyIngredients}
-                className="hidden md:flex min-h-[38px] px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors items-center gap-1.5 text-xs sm:text-sm font-medium cursor-pointer"
+                className="hidden md:flex min-h-[42px] sm:min-h-[38px] px-3 sm:px-3 py-2 sm:py-2 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors items-center gap-1.5 text-xs sm:text-sm font-semibold cursor-pointer touch-manipulation active:scale-95"
                 title="Zutatenliste schnell kopieren"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <Copy className="w-3.5 h-3.5 text-[#7A7E7B]" />}
+                {copied ? <Check className="w-4 h-4 text-[#4A7856]" /> : <Copy className="w-4 h-4 text-[#7A7E7B]" />}
                 <span>{copied ? 'Kopiert' : 'Zutaten'}</span>
               </button>
 
@@ -188,10 +188,10 @@ export const DishOfTheDay: React.FC<DishOfTheDayProps> = ({
                 <button
                   id="dish-of-the-day-shopping-btn"
                   onClick={handleShopping}
-                  className="min-h-[38px] px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors flex items-center gap-1.5 text-xs sm:text-sm font-medium cursor-pointer"
+                  className="min-h-[42px] sm:min-h-[38px] px-3 sm:px-3 py-2 sm:py-2 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors flex items-center gap-1.5 text-xs sm:text-sm font-semibold cursor-pointer touch-manipulation active:scale-95"
                   title="Auf die Einkaufsliste setzen"
                 >
-                  {addedShopping ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <ShoppingCart className="w-3.5 h-3.5 text-[#7A7E7B]" />}
+                  {addedShopping ? <Check className="w-4 h-4 text-[#4A7856]" /> : <ShoppingCart className="w-4 h-4 text-[#7A7E7B]" />}
                   <span className="hidden sm:inline">{addedShopping ? 'Auf Liste' : 'Einkaufsliste'}</span>
                 </button>
               )}

@@ -290,23 +290,23 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = ({
               </div>
 
               {/* Controls */}
-              <div className="flex items-center gap-1.5 self-end sm:self-center">
+              <div className="flex items-center gap-1.5 sm:gap-2 self-end sm:self-center">
                 {/* Adjust +/- 1 min */}
                 <button
                   type="button"
                   onClick={() => handleAdjustTimer(-60)}
-                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 text-xs cursor-pointer"
+                  className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl sm:rounded-lg bg-white/10 hover:bg-white/15 text-white text-xs cursor-pointer flex items-center justify-center touch-manipulation active:scale-95"
                   title="1 Minute abziehen"
                 >
-                  <Minus className="w-3.5 h-3.5" />
+                  <Minus className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                 </button>
                 <button
                   type="button"
                   onClick={() => handleAdjustTimer(60)}
-                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 text-xs cursor-pointer"
+                  className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl sm:rounded-lg bg-white/10 hover:bg-white/15 text-white text-xs cursor-pointer flex items-center justify-center touch-manipulation active:scale-95"
                   title="1 Minute hinzufügen"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                 </button>
 
                 {/* Play / Pause */}
@@ -314,34 +314,34 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = ({
                   type="button"
                   id="cooking-mode-timer-toggle-btn"
                   onClick={isTimerRunning ? handlePauseTimer : handleStartTimer}
-                  className={`p-2 sm:p-2.5 rounded-xl font-semibold transition-all cursor-pointer ${
+                  className={`w-11 h-11 sm:w-9 sm:h-9 rounded-xl font-semibold transition-all cursor-pointer flex items-center justify-center touch-manipulation active:scale-95 ${
                     isTimerRunning
                       ? 'bg-[#D35400] hover:bg-[#B94600] text-white'
                       : 'bg-[#4A7856] hover:bg-[#3D6447] text-white'
                   }`}
                   title={isTimerRunning ? 'Pause' : 'Start'}
                 >
-                  {isTimerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
+                  {isTimerRunning ? <Pause className="w-5 h-5 sm:w-4 sm:h-4" /> : <Play className="w-5 h-5 sm:w-4 sm:h-4 fill-white" />}
                 </button>
 
                 {/* Reset */}
                 <button
                   type="button"
                   onClick={handleResetTimer}
-                  className="p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white/70 cursor-pointer"
+                  className="w-10 h-10 sm:w-9 sm:h-9 rounded-xl bg-white/10 hover:bg-white/15 text-white/70 hover:text-white cursor-pointer flex items-center justify-center touch-manipulation active:scale-95"
                   title="Timer zurücksetzen & beenden"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                 </button>
 
                 {/* Delete / Dismiss Timer Button */}
                 <button
                   type="button"
                   onClick={handleDeleteTimer}
-                  className="p-2 sm:p-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 hover:text-white cursor-pointer transition-colors"
+                  className="w-10 h-10 sm:w-9 sm:h-9 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 hover:text-white cursor-pointer transition-colors flex items-center justify-center touch-manipulation active:scale-95"
                   title="Timer löschen / ausblenden"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                 </button>
               </div>
             </div>
@@ -387,19 +387,19 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = ({
       </div>
 
       {/* Bottom Navigation Control Bar */}
-      <div className="p-3 sm:p-6 bg-[#243335] border-t border-white/10 flex items-center justify-between">
+      <div className="p-3.5 sm:p-6 bg-[#243335] border-t border-white/10 flex items-center justify-between">
         <button
           id="cooking-mode-prev-btn"
           type="button"
           disabled={currentStepIndex === 0}
           onClick={handlePrev}
-          className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-white/10 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold text-xs sm:text-sm transition-all cursor-pointer"
+          className="flex items-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[40px] px-4 sm:px-5 py-2.5 sm:py-2.5 rounded-xl bg-white/10 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold text-xs sm:text-sm transition-all cursor-pointer touch-manipulation active:scale-95"
         >
-          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          <ChevronLeft className="w-5 h-5 sm:w-5 sm:h-5" />
           <span>Zurück</span>
         </button>
 
-        <span className="text-[11px] sm:text-xs font-semibold text-white/70">
+        <span className="text-xs sm:text-xs font-semibold text-white/70">
           {currentStepIndex + 1} / {recipe.steps.length}
         </span>
 
@@ -407,12 +407,12 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = ({
           id="cooking-mode-next-btn"
           type="button"
           onClick={handleNext}
-          className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-semibold text-xs sm:text-sm shadow-xs transition-all active:scale-98 cursor-pointer"
+          className="flex items-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[40px] px-5 sm:px-6 py-2.5 sm:py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-semibold text-xs sm:text-sm shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
         >
           <span>
             {currentStepIndex === recipe.steps.length - 1 ? 'Fertig! 🎉' : 'Weiter'}
           </span>
-          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+          <ChevronRight className="w-5 h-5 sm:w-5 sm:h-5" />
         </button>
       </div>
     </div>

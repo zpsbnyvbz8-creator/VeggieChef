@@ -66,30 +66,30 @@ export const CookingTimerBar: React.FC<CookingTimerBarProps> = ({
           <button
             type="button"
             onClick={onTogglePlay}
-            className={`p-1.5 sm:p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+            className={`min-h-[40px] px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer touch-manipulation active:scale-95 ${
               timer.isRunning
                 ? 'bg-[#D35400] hover:bg-[#B94600] text-white'
                 : 'bg-[#4A7856] hover:bg-[#3D6447] text-white'
             }`}
             title={timer.isRunning ? 'Timer pausieren' : 'Timer starten'}
           >
-            {timer.isRunning ? <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />}
+            {timer.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
             <span className="hidden sm:inline">{timer.isRunning ? 'Pause' : 'Start'}</span>
           </button>
 
           <button
             type="button"
             onClick={onReset}
-            className="p-1.5 sm:p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 transition-colors"
+            className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 transition-colors flex items-center justify-center cursor-pointer touch-manipulation active:scale-95"
             title="Timer zurücksetzen"
           >
-            <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <RotateCcw className="w-4 h-4" />
           </button>
 
           <button
             type="button"
             onClick={onOpenCookingMode}
-            className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs font-semibold flex items-center gap-1 transition-colors"
+            className="min-h-[40px] px-3 sm:px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer touch-manipulation active:scale-95"
             title="Zum Kochmodus zurückkehren"
           >
             <span>Kochmodus</span>
@@ -99,7 +99,7 @@ export const CookingTimerBar: React.FC<CookingTimerBarProps> = ({
           <button
             type="button"
             onClick={onDismiss}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors ml-1"
+            className="w-10 h-10 rounded-xl hover:bg-white/10 text-white/60 hover:text-white transition-colors ml-0.5 flex items-center justify-center cursor-pointer touch-manipulation active:scale-95"
             title="Timer schließen"
           >
             <X className="w-4 h-4" />

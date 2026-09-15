@@ -90,7 +90,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   return (
     <div className="space-y-3 bg-white p-3 sm:p-4 rounded-2xl border border-[#ECEBE8] shadow-xs">
       {/* Category Pills & Vegan Filter */}
-      <div className="flex flex-wrap items-center gap-1.5 pb-1 border-b border-[#ECEBE8]">
+      <div className="flex flex-wrap items-center gap-2 pb-1.5 border-b border-[#ECEBE8]">
         {CATEGORIES.map((cat) => {
           const isSelected = filters.category === cat;
           const label = cat === 'all' ? 'Alle Rezepte' : cat;
@@ -99,7 +99,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               key={cat}
               id={`cat-filter-${cat}`}
               onClick={() => setFilters((prev) => ({ ...prev, category: cat }))}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
+              className={`min-h-[38px] px-3.5 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center ${
                 isSelected
                   ? 'bg-[#4A7856] text-white shadow-2xs font-semibold'
                   : 'bg-[#FAF9F6] border border-[#ECEBE8] text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#2D3E40]'
@@ -115,7 +115,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           id="filter-vegan-pill-btn"
           type="button"
           onClick={() => setFilters((prev) => ({ ...prev, onlyVegan: !prev.onlyVegan }))}
-          className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
+          className={`min-h-[38px] px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border touch-manipulation active:scale-95 flex items-center justify-center ${
             filters.onlyVegan
               ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs'
               : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#4A7856] hover:bg-[#F1F5F2]'
@@ -135,7 +135,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               id="filter-difficulty"
               value={filters.difficulty}
               onChange={(e) => setFilters((prev) => ({ ...prev, difficulty: e.target.value }))}
-              className="appearance-none bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
+              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
             >
               {DIFFICULTY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -143,7 +143,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 </option>
               ))}
             </select>
-            <ChefHat className="w-3.5 h-3.5 text-[#7A7E7B] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChefHat className="w-4 h-4 text-[#7A7E7B] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* Filter nach Kalorien */}
@@ -152,7 +152,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               id="filter-max-calories"
               value={filters.maxCalories}
               onChange={(e) => setFilters((prev) => ({ ...prev, maxCalories: Number(e.target.value) }))}
-              className="appearance-none bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
+              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
             >
               {CALORIE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -160,7 +160,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 </option>
               ))}
             </select>
-            <Flame className="w-3.5 h-3.5 text-[#E67E22] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Flame className="w-4 h-4 text-[#E67E22] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* Filter nach Protein */}
@@ -169,7 +169,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               id="filter-min-protein"
               value={filters.minProtein}
               onChange={(e) => setFilters((prev) => ({ ...prev, minProtein: Number(e.target.value) }))}
-              className="appearance-none bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
+              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
             >
               {PROTEIN_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -177,7 +177,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 </option>
               ))}
             </select>
-            <Dumbbell className="w-3.5 h-3.5 text-[#4A7856] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Dumbbell className="w-4 h-4 text-[#4A7856] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* Reset Filter Button */}
@@ -185,10 +185,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             <button
               id="reset-filters-btn"
               onClick={resetFilters}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-[#F1F5F2] transition-colors cursor-pointer"
+              className="min-h-[40px] flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-[#F1F5F2] transition-colors cursor-pointer touch-manipulation active:scale-95"
               title="Filter zurücksetzen"
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="w-3.5 h-3.5" />
               <span>Zurücksetzen</span>
             </button>
           )}
@@ -205,7 +205,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               id="filter-sort-by"
               value={filters.sortBy}
               onChange={(e) => setFilters((prev) => ({ ...prev, sortBy: e.target.value as FilterState['sortBy'] }))}
-              className="appearance-none bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
+              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
             >
               {SORT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -213,7 +213,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 </option>
               ))}
             </select>
-            <ArrowUpDown className="w-3.5 h-3.5 text-[#7A7E7B] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ArrowUpDown className="w-4 h-4 text-[#7A7E7B] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
       </div>

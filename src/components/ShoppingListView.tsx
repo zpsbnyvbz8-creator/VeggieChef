@@ -479,7 +479,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             <button
               type="button"
               onClick={() => setViewMode('categorized')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 sm:py-1.5 rounded-lg transition-all min-h-[36px] sm:min-h-0 ${
+              className={`flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg transition-all min-h-[40px] sm:min-h-0 cursor-pointer touch-manipulation active:scale-95 ${
                 viewMode === 'categorized'
                   ? 'bg-white text-[#2D3E40] shadow-xs font-semibold'
                   : 'text-[#7A7E7B] hover:text-[#2D3E40]'
@@ -492,7 +492,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             <button
               type="button"
               onClick={() => setViewMode('flat')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 sm:py-1.5 rounded-lg transition-all min-h-[36px] sm:min-h-0 ${
+              className={`flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg transition-all min-h-[40px] sm:min-h-0 cursor-pointer touch-manipulation active:scale-95 ${
                 viewMode === 'flat'
                   ? 'bg-white text-[#2D3E40] shadow-xs font-semibold'
                   : 'text-[#7A7E7B] hover:text-[#2D3E40]'
@@ -509,7 +509,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             id="copy-entire-shopping-list-btn"
             onClick={handleCopyFormattedList}
             disabled={items.length === 0}
-            className="flex items-center justify-center gap-1.5 px-3.5 sm:px-3.5 py-2 sm:py-2 rounded-xl bg-[#2D3E40] hover:bg-[#1F2C2D] disabled:opacity-40 text-white font-medium text-xs shadow-xs transition-all min-h-[38px] sm:min-h-0 active:scale-95 touch-manipulation cursor-pointer"
+            className="flex items-center justify-center gap-1.5 px-3.5 sm:px-3.5 py-2 sm:py-2 rounded-xl bg-[#2D3E40] hover:bg-[#1F2C2D] disabled:opacity-40 text-white font-medium text-xs shadow-xs transition-all min-h-[40px] sm:min-h-0 active:scale-95 touch-manipulation cursor-pointer"
             title="Kopiert die gesamte Liste gegliedert nach Gängen"
           >
             {copied ? <Check className="w-4 h-4 text-[#4A7856]" /> : <Copy className="w-4 h-4 text-white" />}
@@ -520,7 +520,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
           {completedCount > 0 && (
             <button
               onClick={() => setConfirmDeleteState({ type: 'completed' })}
-              className="flex items-center gap-1.5 px-3 sm:px-3 py-2 sm:py-2 rounded-xl bg-[#FAF9F6] hover:bg-[#FBECE0] text-[#D35400] font-semibold text-xs border border-[#ECEBE8] transition-colors cursor-pointer min-h-[38px] sm:min-h-0 active:scale-95 touch-manipulation"
+              className="flex items-center gap-1.5 px-3 sm:px-3 py-2 sm:py-2 rounded-xl bg-[#FAF9F6] hover:bg-[#FBECE0] text-[#D35400] font-semibold text-xs border border-[#ECEBE8] transition-colors cursor-pointer min-h-[40px] sm:min-h-0 active:scale-95 touch-manipulation"
               title="Erledigte Artikel entfernen"
             >
               <CheckCheck className="w-4 h-4" />
@@ -533,7 +533,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             <button
               id="clear-entire-shopping-list-btn"
               onClick={() => setConfirmDeleteState({ type: 'all' })}
-              className="flex items-center gap-1.5 px-3 sm:px-3 py-2 sm:py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs border border-red-200 transition-colors cursor-pointer min-h-[38px] sm:min-h-0 active:scale-95 touch-manipulation"
+              className="flex items-center gap-1.5 px-3 sm:px-3 py-2 sm:py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs border border-red-200 transition-colors cursor-pointer min-h-[40px] sm:min-h-0 active:scale-95 touch-manipulation"
               title="Die gesamte Liste auf einmal löschen"
             >
               <Trash2 className="w-4 h-4" />
