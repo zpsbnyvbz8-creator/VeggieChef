@@ -56,6 +56,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
   const [newItemCategoryChoice, setNewItemCategoryChoice] = useState<'auto' | IngredientCategory>('auto');
   const [viewMode, setViewMode] = useState<'categorized' | 'flat'>('categorized');
   const [undoBackup, setUndoBackup] = useState<ShoppingItem[] | null>(null);
+  const [lastDeletedInfo, setLastDeletedInfo] = useState<{ type: 'all' | 'completed'; count: number } | null>(null);
   const [showUndoBanner, setShowUndoBanner] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingAmountValue, setEditingAmountValue] = useState<string>('');
@@ -187,26 +188,35 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
 
   const clearCompleted = () => {
     const prevItems = [...items];
+    const completedItems = prevItems.filter((item) => item.completed);
+    const count = completedItems.length;
+    if (count === 0) return;
+
     setUndoBackup(prevItems);
+    setLastDeletedInfo({ type: 'completed', count });
     setItems((prev) => prev.filter((item) => !item.completed));
     setShowUndoBanner(true);
-    onCopyFeedback('Erledigte Artikel wurden von der Liste gelöscht.');
+    onCopyFeedback(`${count} abgehakte ${count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`);
   };
 
   const handleClearAll = () => {
     if (items.length === 0) return;
+    const count = items.length;
     setUndoBackup([...items]);
+    setLastDeletedInfo({ type: 'all', count });
     setItems([]);
     setShowUndoBanner(true);
-    onCopyFeedback('Gesamte Einkaufsliste wurde geleert.');
+    onCopyFeedback(`Gesamte Einkaufsliste (${count} ${count === 1 ? 'Zutat' : 'Zutaten'}) wurde geleert.`);
   };
 
   const handleUndo = () => {
     if (undoBackup && undoBackup.length > 0) {
       setItems(undoBackup);
+      const count = lastDeletedInfo?.count || undoBackup.length;
       setUndoBackup(null);
+      setLastDeletedInfo(null);
       setShowUndoBanner(false);
-      onCopyFeedback('Einkaufsliste wiederhergestellt! 🛒');
+      onCopyFeedback(`${count} ${count === 1 ? 'Zutat' : 'Zutaten'} wiederhergestellt! 🛒`);
     }
   };
 
@@ -312,11 +322,6 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             >
               {item.name}
             </span>
-            {item.recipeSource && (
-              <span className="text-xs text-[#7A7E7B] block break-words whitespace-normal mt-0.5">
-                aus {item.recipeSource}
-              </span>
-            )}
           </div>
         </div>
 
@@ -442,7 +447,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
         <div className="p-3 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8] flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-top duration-200">
           <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
             <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4A7856] shrink-0" />
-            <span className="text-xs">Einkaufsliste geleert ({undoBackup.length} Artikel).</span>
+            <span className="text-xs">
+              {lastDeletedInfo?.type === 'completed'
+                ? `${lastDeletedInfo.count} abgehakte ${lastDeletedInfo.count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`
+                : `Einkaufsliste geleert (${lastDeletedInfo?.count || undoBackup.length} ${lastDeletedInfo?.count === 1 ? 'Zutat' : 'Zutaten'}).`}
+            </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -552,10 +561,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             <button
               onClick={() => setConfirmDeleteState({ type: 'completed' })}
               className="flex items-center gap-1.5 px-3 sm:px-3 py-2 sm:py-2 rounded-xl bg-[#FAF9F6] hover:bg-[#FBECE0] text-[#D35400] font-semibold text-xs border border-[#ECEBE8] transition-colors cursor-pointer min-h-[40px] sm:min-h-0 active:scale-95 touch-manipulation"
-              title="Erledigte Artikel entfernen"
+              title="Abgehakte Zutaten entfernen"
             >
               <CheckCheck className="w-4 h-4" />
-              <span>Erledigte ({completedCount})</span>
+              <span>Abgehakte ({completedCount})</span>
             </button>
           )}
 
@@ -706,15 +715,15 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                 <h3 className="text-base sm:text-lg font-bold text-[#2D3E40] leading-snug">
                   {confirmDeleteState.type === 'all'
                     ? 'Einkaufsliste wirklich leeren?'
-                    : 'Erledigte Artikel entfernen?'}
+                    : 'Abgehakte Zutaten entfernen?'}
                 </h3>
               </div>
             </div>
 
             <p className="text-xs sm:text-sm text-[#7A7E7B] leading-relaxed">
               {confirmDeleteState.type === 'all'
-                ? `Bist du sicher, dass du alle ${items.length} Artikel von deiner Einkaufsliste löschen möchtest?`
-                : `Bist du sicher, dass du alle ${completedCount} erledigten Artikel löschen möchtest?`}
+                ? `Bist du sicher, dass du alle ${items.length} Zutaten von deiner Einkaufsliste löschen möchtest?`
+                : `Bist du sicher, dass du alle ${completedCount} abgehakten Zutaten löschen möchtest?`}
             </p>
 
             <div className="flex items-center justify-end gap-2 sm:gap-3 pt-2">

@@ -675,16 +675,31 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
                   {day.lunch ? (
                     <div className="p-2.5 sm:p-3 bg-[#FAF9F6] hover:bg-[#F1F5F2] rounded-xl border border-[#ECEBE8] space-y-2 transition-colors group relative flex-1 flex flex-col justify-between">
                       <div className="flex items-start justify-between gap-1.5">
-                        <h4 
-                          onClick={() => {
-                            const r = allRecipes.find((rec) => rec.id === day.lunch?.recipeId);
-                            if (r) onSelectRecipe(r);
-                          }}
-                          className="text-xs sm:text-sm font-semibold text-[#2D3E40] leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] flex-1 line-clamp-2"
-                          title={day.lunch.recipeTitle}
-                        >
-                          {day.lunch.recipeTitle}
-                        </h4>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1 mb-1">
+                            {day.lunch.isVegan ? (
+                              <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded leading-tight inline-flex items-center gap-0.5">
+                                <span>🌱</span>
+                                <span>Vegan</span>
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded leading-tight inline-flex items-center gap-0.5">
+                                <span>🧀</span>
+                                <span>Veggie</span>
+                              </span>
+                            )}
+                          </div>
+                          <h4 
+                            onClick={() => {
+                              const r = allRecipes.find((rec) => rec.id === day.lunch?.recipeId);
+                              if (r) onSelectRecipe(r);
+                            }}
+                            className="text-xs sm:text-sm font-semibold text-[#2D3E40] leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856]"
+                            title={day.lunch.recipeTitle}
+                          >
+                            {day.lunch.recipeTitle}
+                          </h4>
+                        </div>
                         <button
                           onClick={() => {
                             removeSlot(day.dayId, 'lunch');
@@ -697,9 +712,20 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
                         </button>
                       </div>
 
-                      <div className="flex items-center justify-between text-xs text-[#7A7E7B] pt-1.5 border-t border-[#ECEBE8]">
-                        <span>⏱️ {day.lunch.prepTime}m</span>
-                        <span className="font-bold text-[#4A7856]">{day.lunch.protein}g Prot.</span>
+                      {/* Dezent gehaltene Info-Leiste mit Zeit, Kalorien & Protein */}
+                      <div className="flex items-center justify-between text-[11px] sm:text-xs text-[#7A7E7B] pt-1.5 border-t border-[#ECEBE8] font-medium gap-1 flex-wrap">
+                        <span className="flex items-center gap-1 shrink-0" title={`Zubereitungszeit: ${day.lunch.prepTime} Minuten`}>
+                          <span>⏱️</span>
+                          <span>{day.lunch.prepTime}m</span>
+                        </span>
+                        <span className="flex items-center gap-1 text-[#5C6460] shrink-0" title={`Kalorien: ${day.lunch.calories} kcal`}>
+                          <span>🔥</span>
+                          <span>{day.lunch.calories} kcal</span>
+                        </span>
+                        <span className="flex items-center gap-1 font-bold text-[#4A7856] shrink-0" title={`Protein: ${day.lunch.protein}g`}>
+                          <span>💪</span>
+                          <span>{day.lunch.protein}g</span>
+                        </span>
                       </div>
                     </div>
                   ) : (
@@ -728,16 +754,31 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
                 {day.dinner ? (
                   <div className="p-2.5 sm:p-3 bg-[#FAF9F6] hover:bg-[#F1F5F2] rounded-xl border border-[#ECEBE8] space-y-2 transition-colors group relative flex-1 flex flex-col justify-between">
                     <div className="flex items-start justify-between gap-1.5">
-                      <h4 
-                        onClick={() => {
-                          const r = allRecipes.find((rec) => rec.id === day.dinner?.recipeId);
-                          if (r) onSelectRecipe(r);
-                        }}
-                        className="text-xs sm:text-sm font-semibold text-[#2D3E40] leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] flex-1 line-clamp-2"
-                        title={day.dinner.recipeTitle}
-                      >
-                        {day.dinner.recipeTitle}
-                      </h4>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1 mb-1">
+                          {day.dinner.isVegan ? (
+                            <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded leading-tight inline-flex items-center gap-0.5">
+                              <span>🌱</span>
+                              <span>Vegan</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded leading-tight inline-flex items-center gap-0.5">
+                              <span>🧀</span>
+                              <span>Veggie</span>
+                            </span>
+                          )}
+                        </div>
+                        <h4 
+                          onClick={() => {
+                            const r = allRecipes.find((rec) => rec.id === day.dinner?.recipeId);
+                            if (r) onSelectRecipe(r);
+                          }}
+                          className="text-xs sm:text-sm font-semibold text-[#2D3E40] leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856]"
+                          title={day.dinner.recipeTitle}
+                        >
+                          {day.dinner.recipeTitle}
+                        </h4>
+                      </div>
                       <button
                         onClick={() => {
                           removeSlot(day.dayId, 'dinner');
@@ -750,9 +791,20 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-[#7A7E7B] pt-1.5 border-t border-[#ECEBE8]">
-                      <span>⏱️ {day.dinner.prepTime}m</span>
-                      <span className="font-bold text-[#4A7856]">{day.dinner.protein}g Prot.</span>
+                    {/* Dezent gehaltene Info-Leiste mit Zeit, Kalorien & Protein */}
+                    <div className="flex items-center justify-between text-[11px] sm:text-xs text-[#7A7E7B] pt-1.5 border-t border-[#ECEBE8] font-medium gap-1 flex-wrap">
+                      <span className="flex items-center gap-1 shrink-0" title={`Zubereitungszeit: ${day.dinner.prepTime} Minuten`}>
+                        <span>⏱️</span>
+                        <span>{day.dinner.prepTime}m</span>
+                      </span>
+                      <span className="flex items-center gap-1 text-[#5C6460] shrink-0" title={`Kalorien: ${day.dinner.calories} kcal`}>
+                        <span>🔥</span>
+                        <span>{day.dinner.calories} kcal</span>
+                      </span>
+                      <span className="flex items-center gap-1 font-bold text-[#4A7856] shrink-0" title={`Protein: ${day.dinner.protein}g`}>
+                        <span>💪</span>
+                        <span>{day.dinner.protein}g</span>
+                      </span>
                     </div>
                   </div>
                 ) : (
