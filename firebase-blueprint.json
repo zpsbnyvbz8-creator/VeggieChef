@@ -1,0 +1,91 @@
+{
+  "entities": {
+    "FamilyGroup": {
+      "title": "FamilyGroup",
+      "description": "Family or household group metadata for collaborative syncing",
+      "type": "object",
+      "properties": {
+        "groupId": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 64 },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "members": { "type": "array" }
+      },
+      "required": ["groupId", "name", "createdBy"]
+    },
+    "ShoppingItem": {
+      "title": "ShoppingItem",
+      "description": "Item in the collaborative shopping list",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "groupId": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 120 },
+        "amount": { "type": "string", "maxLength": 32 },
+        "unit": { "type": "string", "maxLength": 32 },
+        "category": { "type": "string", "maxLength": 32 },
+        "completed": { "type": "boolean" },
+        "recipeSource": { "type": "string", "maxLength": 120 },
+        "updatedAt": { "type": "string" },
+        "updatedBy": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "groupId", "name", "completed"]
+    },
+    "MealDay": {
+      "title": "MealDay",
+      "description": "A day in the weekly meal plan for the group",
+      "type": "object",
+      "properties": {
+        "dayKey": { "type": "string", "maxLength": 10 },
+        "groupId": { "type": "string", "maxLength": 64 },
+        "dayName": { "type": "string", "maxLength": 30 },
+        "dateFormatted": { "type": "string", "maxLength": 40 },
+        "lunchRecipeId": { "type": "string", "maxLength": 64 },
+        "dinnerRecipeId": { "type": "string", "maxLength": 64 },
+        "customLunchNotes": { "type": "string", "maxLength": 250 },
+        "customDinnerNotes": { "type": "string", "maxLength": 250 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["dayKey", "groupId", "lunchRecipeId", "dinnerRecipeId"]
+    },
+    "CustomRecipe": {
+      "title": "CustomRecipe",
+      "description": "Shared custom recipe created by a group member",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "groupId": { "type": "string", "maxLength": 64 },
+        "title": { "type": "string", "maxLength": 120 },
+        "subtitle": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 50 },
+        "isVegan": { "type": "boolean" },
+        "prepTimeMinutes": { "type": "number" },
+        "cookTimeMinutes": { "type": "number" },
+        "totalTimeMinutes": { "type": "number" },
+        "servings": { "type": "number" },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "groupId", "title", "totalTimeMinutes"]
+    }
+  },
+  "firestore": {
+    "/family_groups/{groupId}": {
+      "schema": "FamilyGroup",
+      "description": "Top-level group document representing a family or household sharing space"
+    },
+    "/family_groups/{groupId}/shopping_items/{itemId}": {
+      "schema": "ShoppingItem",
+      "description": "Shopping list items synced within this family group"
+    },
+    "/family_groups/{groupId}/meal_days/{dayKey}": {
+      "schema": "MealDay",
+      "description": "Weekly meal plan days synced within this family group"
+    },
+    "/family_groups/{groupId}/custom_recipes/{recipeId}": {
+      "schema": "CustomRecipe",
+      "description": "Custom recipes shared within this family group"
+    }
+  }
+}
