@@ -82,11 +82,11 @@ export const DishOfTheDay: React.FC<DishOfTheDayProps> = ({
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
           <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 items-start">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E67E22] text-white text-[11px] sm:text-xs font-semibold shadow-xs">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E67E22] text-white text-xs font-semibold shadow-xs">
               <Sparkles className="w-3 h-3" />
               <span>Tagesrezept</span>
             </span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold shadow-xs ${
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold shadow-xs ${
               activeRecipe.isVegan 
                 ? 'bg-[#4A7856] text-white' 
                 : 'bg-white/95 text-[#4A7856]'

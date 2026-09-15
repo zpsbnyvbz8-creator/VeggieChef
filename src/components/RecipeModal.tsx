@@ -246,17 +246,17 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
           {/* Title on Image */}
           <div className="absolute bottom-3 left-3.5 right-3.5 sm:bottom-6 sm:left-6 sm:right-6 text-white">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
-              <span className="px-2.5 sm:px-3 py-0.5 rounded-full bg-[#4A7856] text-white text-[10px] sm:text-xs font-semibold shadow-xs">
+              <span className="px-2.5 sm:px-3 py-0.5 rounded-full bg-[#4A7856] text-white text-xs font-semibold shadow-xs">
                 {isVeganized || recipe.isVegan ? '🌱 Vegan' : '🧀 Vegetarisch'}
               </span>
-              <span className="px-2 sm:px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] sm:text-xs backdrop-blur-xs font-medium">
+              <span className="px-2 sm:px-2.5 py-0.5 rounded-full bg-white/20 text-white text-xs backdrop-blur-xs font-medium">
                 {recipe.category}
               </span>
             </div>
             <h1 className="text-lg sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-tight">
               {recipe.title}
             </h1>
-            <p className="text-white/80 text-[11px] sm:text-sm mt-0.5 sm:mt-1 max-w-2xl line-clamp-1 sm:line-clamp-2">
+            <p className="text-white/80 text-xs sm:text-sm mt-0.5 sm:mt-1 max-w-2xl line-clamp-1 sm:line-clamp-2">
               {recipe.subtitle}
             </p>
           </div>
@@ -271,8 +271,8 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
                 <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div>
-                <div className="text-[10px] sm:text-[11px] font-semibold text-[#7A7E7B] uppercase">Gesamtzeit</div>
-                <div className="font-bold text-[#2D3E40] text-xs sm:text-sm">{recipe.totalTimeMinutes} Min.</div>
+                <div className="text-xs font-semibold text-[#7A7E7B] uppercase tracking-wide">Gesamtzeit</div>
+                <div className="font-bold text-[#2D3E40] text-sm sm:text-base">{recipe.totalTimeMinutes} Min.</div>
               </div>
             </div>
 
@@ -281,8 +281,8 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
                 <Flame className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div>
-                <div className="text-[10px] sm:text-[11px] font-semibold text-[#7A7E7B] uppercase">Energie / Port.</div>
-                <div className="font-bold text-[#2D3E40] text-xs sm:text-sm">{recipe.nutrients.calories} kcal</div>
+                <div className="text-xs font-semibold text-[#7A7E7B] uppercase tracking-wide">Energie / Port.</div>
+                <div className="font-bold text-[#2D3E40] text-sm sm:text-base">{recipe.nutrients.calories} kcal</div>
               </div>
             </div>
 
@@ -291,8 +291,8 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
                 <Dumbbell className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div>
-                <div className="text-[10px] sm:text-[11px] font-semibold text-[#7A7E7B] uppercase">Protein / Port.</div>
-                <div className="font-bold text-[#4A7856] text-xs sm:text-sm">{recipe.nutrients.protein}g Power</div>
+                <div className="text-xs font-semibold text-[#7A7E7B] uppercase tracking-wide">Protein / Port.</div>
+                <div className="font-bold text-[#4A7856] text-sm sm:text-base">{recipe.nutrients.protein}g Power</div>
               </div>
             </div>
 
@@ -301,8 +301,8 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
                 <Leaf className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div>
-                <div className="text-[10px] sm:text-[11px] font-semibold text-[#7A7E7B] uppercase">CO₂-Ersparnis</div>
-                <div className="font-bold text-[#4A7856] text-xs sm:text-sm">{savings.savedCO2Kg} kg CO₂</div>
+                <div className="text-xs font-semibold text-[#7A7E7B] uppercase tracking-wide">CO₂-Ersparnis</div>
+                <div className="font-bold text-[#4A7856] text-sm sm:text-base">{savings.savedCO2Kg} kg CO₂</div>
               </div>
             </div>
           </div>
@@ -545,7 +545,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
           {/* Detailed Nutritional Balance */}
           <div className="p-4 sm:p-5 bg-[#FAF9F6] rounded-2xl border border-[#ECEBE8] space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-[#7A7E7B] uppercase tracking-wider">
+              <h3 className="text-xs sm:text-sm font-semibold text-[#7A7E7B] uppercase tracking-wider">
                 Nährwerte pro Portion ({recipe.nutrients.calories} kcal)
               </h3>
             </div>
@@ -553,23 +553,23 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
             {/* Macro Bars */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-1">
               <div className="p-3 bg-white rounded-xl border border-[#ECEBE8] text-center">
-                <div className="text-xs text-[#7A7E7B] font-medium">Protein</div>
-                <div className="text-base font-bold text-[#4A7856] mt-0.5">{recipe.nutrients.protein}g</div>
+                <div className="text-xs sm:text-sm text-[#7A7E7B] font-semibold">Protein</div>
+                <div className="text-base sm:text-lg font-bold text-[#4A7856] mt-0.5">{recipe.nutrients.protein}g</div>
               </div>
 
               <div className="p-3 bg-white rounded-xl border border-[#ECEBE8] text-center">
-                <div className="text-xs text-[#7A7E7B] font-medium">Kohlenhydrate</div>
-                <div className="text-base font-bold text-[#2D3E40] mt-0.5">{recipe.nutrients.carbs}g</div>
+                <div className="text-xs sm:text-sm text-[#7A7E7B] font-semibold">Kohlenhydrate</div>
+                <div className="text-base sm:text-lg font-bold text-[#2D3E40] mt-0.5">{recipe.nutrients.carbs}g</div>
               </div>
 
               <div className="p-3 bg-white rounded-xl border border-[#ECEBE8] text-center">
-                <div className="text-xs text-[#7A7E7B] font-medium">Fett</div>
-                <div className="text-base font-bold text-[#2D3E40] mt-0.5">{recipe.nutrients.fat}g</div>
+                <div className="text-xs sm:text-sm text-[#7A7E7B] font-semibold">Fett</div>
+                <div className="text-base sm:text-lg font-bold text-[#2D3E40] mt-0.5">{recipe.nutrients.fat}g</div>
               </div>
 
               <div className="p-3 bg-white rounded-xl border border-[#ECEBE8] text-center">
-                <div className="text-xs text-[#7A7E7B] font-medium">Ballaststoffe</div>
-                <div className="text-base font-bold text-[#2D3E40] mt-0.5">{recipe.nutrients.fiber}g</div>
+                <div className="text-xs sm:text-sm text-[#7A7E7B] font-semibold">Ballaststoffe</div>
+                <div className="text-base sm:text-lg font-bold text-[#2D3E40] mt-0.5">{recipe.nutrients.fiber}g</div>
               </div>
             </div>
 

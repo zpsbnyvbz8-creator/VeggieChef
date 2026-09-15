@@ -173,7 +173,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
       {/* Header */}
       <div className="bg-white rounded-2xl p-4 sm:p-8 border border-[#ECEBE8] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-[11px] sm:text-xs font-semibold uppercase tracking-wider border border-[#ECEBE8]">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold uppercase tracking-wider border border-[#ECEBE8]">
             <BarChart3 className="w-3.5 h-3.5" />
             Deine Kochstatistik & Umweltbeitrag
           </div>
@@ -217,7 +217,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
                 <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
               </div>
               <div>
-                <span className="text-[10px] sm:text-[11px] font-bold text-amber-600 uppercase tracking-wider">Achtung: Bestätigung erforderlich</span>
+                <span className="text-xs font-bold text-amber-600 uppercase tracking-wider">Achtung: Bestätigung erforderlich</span>
                 <h3 className="text-base sm:text-lg font-bold text-[#2D3E40] leading-snug">
                   Statistiken wirklich löschen?
                 </h3>
@@ -256,43 +256,43 @@ export const StatsView: React.FC<StatsViewProps> = ({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Total Meals */}
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-1 sm:space-y-1.5">
-          <div className="flex items-center justify-between text-[#7A7E7B] text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-[#7A7E7B] text-xs font-semibold uppercase tracking-wider">
             <span>Gekocht</span>
             <div className="p-1.5 sm:p-2 rounded-lg bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8]">
               <Utensils className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
           <div className="text-xl sm:text-3xl font-bold text-[#2D3E40]">{totalCooked}</div>
-          <div className="text-[11px] sm:text-xs text-[#7A7E7B] truncate">{totalPortions} Portionen</div>
+          <div className="text-xs text-[#7A7E7B] truncate font-medium">{totalPortions} Portionen</div>
         </div>
 
         {/* CO2 Saved */}
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-1 sm:space-y-1.5">
-          <div className="flex items-center justify-between text-[#7A7E7B] text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-[#7A7E7B] text-xs font-semibold uppercase tracking-wider">
             <span>CO₂ gespart</span>
             <div className="p-1.5 sm:p-2 rounded-lg bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8]">
               <Leaf className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
           <div className="text-xl sm:text-3xl font-bold text-[#4A7856]">{totalCO2Saved} kg</div>
-          <div className="text-[11px] sm:text-xs text-[#7A7E7B] truncate">vs. Mischkost</div>
+          <div className="text-xs text-[#7A7E7B] truncate font-medium">vs. Mischkost</div>
         </div>
 
         {/* Water Saved */}
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-1 sm:space-y-1.5">
-          <div className="flex items-center justify-between text-[#7A7E7B] text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-[#7A7E7B] text-xs font-semibold uppercase tracking-wider">
             <span>Wasser</span>
             <div className="p-1.5 sm:p-2 rounded-lg bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8]">
               <Droplets className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
           <div className="text-xl sm:text-3xl font-bold text-[#2D3E40]">{totalWaterSaved.toLocaleString('de-DE')} L</div>
-          <div className="text-[11px] sm:text-xs text-[#7A7E7B] truncate">virtuelles Wasser</div>
+          <div className="text-xs text-[#7A7E7B] truncate font-medium">virtuelles Wasser</div>
         </div>
 
         {/* Vegan Share */}
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-1 sm:space-y-1.5">
-          <div className="flex items-center justify-between text-[#7A7E7B] text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-[#7A7E7B] text-xs font-semibold uppercase tracking-wider">
             <span>Vegan</span>
             <div className="p-1.5 sm:p-2 rounded-lg bg-[#FDF6F0] text-[#D35400] border border-[#F5EADF]">
               <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -301,7 +301,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
           <div className="text-xl sm:text-3xl font-bold text-[#2D3E40]">
             {veganCount} <span className="text-xs font-normal text-[#7A7E7B]">/ {totalCooked}</span>
           </div>
-          <div className="text-[11px] sm:text-xs text-[#7A7E7B] truncate">{favoritesCount} Favoriten</div>
+          <div className="text-xs text-[#7A7E7B] truncate font-medium">{favoritesCount} Favoriten</div>
         </div>
       </div>
 
@@ -317,11 +317,11 @@ export const StatsView: React.FC<StatsViewProps> = ({
                 <h3 className="font-semibold text-[#2D3E40] text-sm sm:text-base">
                   Zuletzt gekocht
                 </h3>
-                <span className="px-2 py-0.5 rounded-full bg-[#FAF9F6] text-[#7A7E7B] border border-[#ECEBE8] text-[11px] font-bold">
+                <span className="px-2 py-0.5 rounded-full bg-[#FAF9F6] text-[#7A7E7B] border border-[#ECEBE8] text-xs font-bold">
                   {logs.length}
                 </span>
               </div>
-              <p className="text-[11px] text-[#7A7E7B] hidden sm:block">
+              <p className="text-xs text-[#7A7E7B] hidden sm:block">
                 Scrollbare Liste aller deiner zubereiteten Mahlzeiten
               </p>
             </div>
@@ -337,7 +337,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
                   value={historySearchQuery}
                   onChange={(e) => setHistorySearchQuery(e.target.value)}
                   placeholder="Gericht filtern..."
-                  className="w-full pl-10 pr-10 py-2.5 text-[16px] sm:text-xs bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[#2D3E40] placeholder:text-[#7A7E7B] focus:outline-none focus:border-[#4A7856] focus:bg-white transition-all min-h-[44px] sm:min-h-0"
+                  className="w-full pl-10 pr-10 py-2.5 text-base sm:text-sm bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[#2D3E40] placeholder:text-[#7A7E7B] focus:outline-none focus:border-[#4A7856] focus:bg-white transition-all min-h-[44px] sm:min-h-0"
                 />
                 {historySearchQuery && (
                   <button
@@ -422,23 +422,23 @@ export const StatsView: React.FC<StatsViewProps> = ({
                         {log.recipeTitle}
                       </span>
                       {log.isVegan ? (
-                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] shrink-0">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] shrink-0">
                           🌱 Vegan
                         </span>
                       ) : (
-                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-white text-[#2D3E40] border border-[#ECEBE8] shrink-0">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white text-[#2D3E40] border border-[#ECEBE8] shrink-0">
                           🧀 Veggie
                         </span>
                       )}
                     </div>
 
                     {log.notes && (
-                      <p className="text-[11px] text-[#7A7E7B] italic line-clamp-1">
+                      <p className="text-xs text-[#7A7E7B] italic line-clamp-1">
                         "{log.notes}"
                       </p>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-[10px] text-[#7A7E7B]">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs text-[#7A7E7B]">
                       <span>📅 {formattedDate}</span>
                       <span>👥 {log.servingsCooked || 2} Port.</span>
                       <span className="text-[#4A7856] font-medium">🌱 {log.savedCO2Kg} kg CO₂</span>
@@ -484,12 +484,12 @@ export const StatsView: React.FC<StatsViewProps> = ({
               </div>
               <h3 className="text-sm sm:text-base font-semibold text-[#2D3E40] flex items-center gap-2">
                 <span>Erfolge & Trophäen</span>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8]">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8]">
                   {unlockedCount}/{achievements.length} freigeschaltet
                 </span>
               </h3>
             </div>
-            <p className="text-[11px] text-[#7A7E7B] mt-0.5">
+            <p className="text-xs text-[#7A7E7B] mt-0.5">
               Von schnellen Einstiegs-Erfolgen bis hin zu extremen Langzeit-Trophäen (über 1.000 Mahlzeiten & Tonnen CO₂)
             </p>
           </div>
@@ -615,12 +615,12 @@ export const StatsView: React.FC<StatsViewProps> = ({
                       <h4 className="font-semibold text-xs sm:text-sm text-[#2D3E40] break-words whitespace-normal leading-snug">
                         {ach.title}
                       </h4>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-md border shrink-0 ${tierBadge.bg}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-md border shrink-0 font-medium ${tierBadge.bg}`}>
                         {tierBadge.label}
                       </span>
                     </div>
 
-                    <p className="text-[10px] sm:text-[11px] text-[#7A7E7B] leading-tight break-words whitespace-normal">
+                    <p className="text-xs text-[#7A7E7B] leading-tight break-words whitespace-normal">
                       {ach.desc}
                     </p>
 
@@ -641,7 +641,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
                         />
                       </div>
 
-                      <div className="flex items-center justify-between text-[9px] text-[#7A7E7B]">
+                      <div className="flex items-center justify-between text-xs text-[#7A7E7B]">
                         <span className="font-medium">
                           {ach.unlocked
                             ? 'Erreicht ✓'

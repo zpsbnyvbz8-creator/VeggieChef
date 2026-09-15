@@ -284,7 +284,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
         onClick={() => {
           if (!isEditing) toggleItem(item.id);
         }}
-        className={`flex flex-wrap sm:flex-nowrap items-start sm:items-center justify-between p-3.5 sm:p-4 rounded-2xl border transition-all select-none gap-2.5 sm:gap-3 min-h-[60px] ${
+        className={`flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border transition-all select-none gap-2.5 sm:gap-3 min-h-[58px] ${
           isEditing ? 'cursor-default ring-2 ring-[#4A7856]/40 bg-[#FAF9F6]' : 'cursor-pointer active:scale-[0.99]'
         } ${
           item.completed
@@ -292,28 +292,28 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/40 text-[#2D3E40] shadow-2xs'
         }`}
       >
-        <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0 pr-1">
-          {/* Checkbox: großzügig dimensioniert (28px mobil), oben ausgerichtet bei mehrzeiligem Text */}
+        <div className="flex items-center gap-3 flex-1 min-w-0 pr-1">
+          {/* Checkbox: vertikal perfekt zentriert mit dem Text */}
           <div
-            className={`w-7 h-7 sm:w-6 sm:h-6 rounded-lg sm:rounded-md flex items-center justify-center border-2 sm:border transition-colors shrink-0 mt-0.5 sm:mt-0 ${
+            className={`w-6.5 h-6.5 sm:w-6 sm:h-6 rounded-lg sm:rounded-md flex items-center justify-center border-2 sm:border transition-colors shrink-0 ${
               item.completed
                 ? 'bg-[#4A7856] border-[#4A7856] text-white'
                 : 'border-[#D1D5D2] bg-[#FAF9F6]'
             }`}
           >
-            {item.completed && <Check className="w-4.5 h-4.5 sm:w-3.5 sm:h-3.5 stroke-[3]" />}
+            {item.completed && <Check className="w-4 h-4 sm:w-3.5 sm:h-3.5 stroke-[3]" />}
           </div>
 
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex flex-col justify-center">
             <span
-              className={`text-base sm:text-sm font-medium block break-words whitespace-normal leading-snug ${
+              className={`text-base sm:text-sm font-medium block break-words whitespace-normal leading-tight ${
                 item.completed ? 'line-through text-[#7A7E7B]' : 'text-[#2D3E40]'
               }`}
             >
               {item.name}
             </span>
             {item.recipeSource && (
-              <span className="text-xs sm:text-[11px] text-[#7A7E7B] block break-words whitespace-normal mt-0.5">
+              <span className="text-xs text-[#7A7E7B] block break-words whitespace-normal mt-0.5">
                 aus {item.recipeSource}
               </span>
             )}
@@ -323,7 +323,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
         {/* Right side: Inline-Mengen-Editor oder Mengen-Badge + Stift + Löschen */}
         <div
           className={`flex items-center gap-2 shrink-0 ${
-            isEditing ? 'w-full sm:w-auto justify-end mt-2 sm:mt-0' : 'self-start sm:self-center ml-auto'
+            isEditing ? 'w-full sm:w-auto justify-end mt-2 sm:mt-0' : 'self-center ml-auto'
           }`}
           onClick={(e) => e.stopPropagation()}
         >
@@ -394,7 +394,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
               {/* Reine Mengen-Anzeige ohne Klick-Aktion (Menge wird nur über den Stift bearbeitet) */}
               {item.amount ? (
                 <span
-                  className={`text-xs sm:text-xs font-semibold px-2.5 sm:px-2 py-1.5 sm:py-0.5 rounded-lg border select-none inline-flex items-center ${
+                  className={`text-xs sm:text-sm font-semibold px-2.5 sm:px-2 py-1 rounded-lg border select-none inline-flex items-center ${
                     item.completed
                       ? 'bg-[#ECEBE8] text-[#7A7E7B] border-[#ECEBE8]'
                       : 'bg-[#F1F5F2] text-[#4A7856] border-[#ECEBE8]'
@@ -465,7 +465,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
       <div className="bg-white rounded-2xl p-4 sm:p-8 border border-[#ECEBE8] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-[11px] sm:text-xs font-semibold uppercase tracking-wider border border-[#ECEBE8]">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold uppercase tracking-wider border border-[#ECEBE8]">
               <ShoppingCart className="w-3.5 h-3.5" />
               Einkaufsliste ({items.length} Artikel)
             </div>
@@ -474,7 +474,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
               <button
                 type="button"
                 onClick={onOpenSyncModal}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
                   syncConfig?.mode === 'family' && syncConfig?.groupId
                     ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
                     : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-[#F1F5F2]'
@@ -700,7 +700,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                 <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600" />
               </div>
               <div>
-                <span className="text-[10px] sm:text-[11px] font-bold text-rose-600 uppercase tracking-wider">
+                <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">
                   Sicherheitsabfrage
                 </span>
                 <h3 className="text-base sm:text-lg font-bold text-[#2D3E40] leading-snug">
