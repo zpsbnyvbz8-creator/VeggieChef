@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShoppingCart, 
   Copy, 
@@ -59,11 +59,32 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
   const [showUndoBanner, setShowUndoBanner] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingAmountValue, setEditingAmountValue] = useState<string>('');
+  const editContainerRef = useRef<HTMLDivElement | null>(null);
   const [confirmDeleteState, setConfirmDeleteState] = useState<{
     type: 'all' | 'completed';
   } | null>(null);
 
   useLockBodyScroll(Boolean(confirmDeleteState));
+
+  // Auto-save & close editor on click/tap outside
+  useEffect(() => {
+    if (!editingItemId) return;
+
+    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
+      if (editContainerRef.current && !editContainerRef.current.contains(e.target as Node)) {
+        // Save automatically on outside tap/click
+        saveEditedAmount(editingItemId);
+      }
+    };
+
+    // Use mousedown and touchstart to catch outside tap anywhere on screen
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [editingItemId, editingAmountValue]);
 
   // Auto-dismiss undo banner after 10 seconds
   useEffect(() => {
@@ -237,54 +258,57 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
         onClick={() => {
           if (!isEditing) toggleItem(item.id);
         }}
-        className={`flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border transition-all select-none min-h-[52px] ${
-          isEditing ? 'cursor-default' : 'cursor-pointer active:scale-[0.99]'
+        className={`flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border transition-all select-none min-h-[60px] ${
+          isEditing ? 'cursor-default ring-2 ring-[#4A7856]/40 bg-[#FAF9F6]' : 'cursor-pointer active:scale-[0.99]'
         } ${
           item.completed
             ? 'bg-[#FAF9F6] border-[#ECEBE8] text-[#7A7E7B]'
             : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/40 text-[#2D3E40] shadow-2xs'
         }`}
       >
-        <div className="flex items-center gap-3 min-w-0 pr-2">
-          {/* Checkbox with minimum touch friendly size */}
+        <div className="flex items-center gap-3.5 min-w-0 pr-2">
+          {/* Checkbox: großzügig dimensioniert (28px mobil) für einfaches Antippen */}
           <div
-            className={`w-6 h-6 sm:w-5 sm:h-5 rounded-lg sm:rounded-md flex items-center justify-center border transition-colors shrink-0 ${
+            className={`w-7 h-7 sm:w-6 sm:h-6 rounded-lg sm:rounded-md flex items-center justify-center border-2 sm:border transition-colors shrink-0 ${
               item.completed
                 ? 'bg-[#4A7856] border-[#4A7856] text-white'
-                : 'border-[#ECEBE8] bg-[#FAF9F6]'
+                : 'border-[#D1D5D2] bg-[#FAF9F6]'
             }`}
           >
-            {item.completed && <Check className="w-4 h-4 sm:w-3.5 sm:h-3.5 stroke-[3]" />}
+            {item.completed && <Check className="w-4.5 h-4.5 sm:w-3.5 sm:h-3.5 stroke-[3]" />}
           </div>
 
           <div className="min-w-0">
             <span
-              className={`text-sm sm:text-sm font-medium block truncate ${
+              className={`text-base sm:text-sm font-medium block truncate ${
                 item.completed ? 'line-through text-[#7A7E7B]' : 'text-[#2D3E40]'
               }`}
             >
               {item.name}
             </span>
             {item.recipeSource && (
-              <span className="text-[11px] sm:text-[10px] text-[#7A7E7B] block truncate">
+              <span className="text-xs sm:text-[10px] text-[#7A7E7B] block truncate">
                 aus {item.recipeSource}
               </span>
             )}
           </div>
         </div>
 
-        {/* Right side: Either inline quantity editor or quantity badge + discreet edit button + delete button */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+        {/* Right side: Inline-Mengen-Editor oder Mengen-Badge + Stift + Löschen */}
+        <div className="flex items-center gap-2 sm:gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
           {isEditing ? (
-            <div className="flex items-center gap-1 sm:gap-1.5 bg-[#FAF9F6] p-1.5 rounded-xl border border-[#4A7856]/40 shadow-xs animate-in zoom-in-95 duration-150">
+            <div
+              ref={editContainerRef}
+              className="flex items-center gap-1.5 sm:gap-1.5 bg-white p-2 rounded-2xl border-2 border-[#4A7856] shadow-md animate-in zoom-in-95 duration-150"
+            >
               <button
                 type="button"
                 onClick={() => stepEditedAmount(-1)}
-                className="w-8 h-8 sm:w-6 sm:h-6 rounded-lg bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#2D3E40] flex items-center justify-center transition-colors active:scale-95 cursor-pointer touch-manipulation"
+                className="w-9 h-9 sm:w-7 sm:h-7 rounded-xl bg-[#F1F5F2] hover:bg-[#E8EFEA] border border-[#ECEBE8] text-[#2D3E40] flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
                 title="Menge verringern"
                 aria-label="Menge verringern"
               >
-                <Minus className="w-4 h-4 sm:w-3 sm:h-3" />
+                <Minus className="w-4.5 h-4.5 sm:w-3.5 sm:h-3.5" />
               </button>
 
               <input
@@ -301,79 +325,77 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                 }}
                 autoFocus
                 placeholder="Menge..."
-                className="w-20 sm:w-24 px-2 py-1 sm:py-0.5 text-center text-xs sm:text-xs font-semibold text-[#2D3E40] bg-white border border-[#ECEBE8] rounded-lg focus:border-[#4A7856] focus:outline-hidden"
+                className="w-22 sm:w-24 px-2.5 py-1.5 sm:py-0.5 text-center text-sm sm:text-xs font-semibold text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl focus:border-[#4A7856] focus:outline-hidden"
               />
 
               <button
                 type="button"
                 onClick={() => stepEditedAmount(1)}
-                className="w-8 h-8 sm:w-6 sm:h-6 rounded-lg bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#2D3E40] flex items-center justify-center transition-colors active:scale-95 cursor-pointer touch-manipulation"
+                className="w-9 h-9 sm:w-7 sm:h-7 rounded-xl bg-[#F1F5F2] hover:bg-[#E8EFEA] border border-[#ECEBE8] text-[#2D3E40] flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
                 title="Menge erhöhen"
                 aria-label="Menge erhöhen"
               >
-                <Plus className="w-4 h-4 sm:w-3 sm:h-3" />
+                <Plus className="w-4.5 h-4.5 sm:w-3.5 sm:h-3.5" />
               </button>
 
               <button
                 type="button"
                 onClick={() => saveEditedAmount(item.id)}
-                className="w-8 h-8 sm:w-6 sm:h-6 rounded-lg bg-[#4A7856] hover:bg-[#3D6447] text-white flex items-center justify-center transition-colors active:scale-95 cursor-pointer touch-manipulation"
+                className="w-9 h-9 sm:w-7 sm:h-7 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
                 title="Menge speichern"
                 aria-label="Menge speichern"
               >
-                <Check className="w-4 h-4 sm:w-3.5 sm:h-3.5 stroke-[2.5]" />
+                <Check className="w-4.5 h-4.5 sm:w-3.5 sm:h-3.5 stroke-[2.5]" />
               </button>
 
               <button
                 type="button"
                 onClick={cancelEditing}
-                className="w-8 h-8 sm:w-6 sm:h-6 rounded-lg text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation"
+                className="w-9 h-9 sm:w-7 sm:h-7 rounded-xl text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90"
                 title="Abbrechen"
                 aria-label="Abbrechen"
               >
-                <X className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <X className="w-4.5 h-4.5 sm:w-3.5 sm:h-3.5" />
               </button>
             </div>
           ) : (
             <>
+              {/* Reine Mengen-Anzeige ohne Klick-Aktion (Menge wird nur über den Stift bearbeitet) */}
               {item.amount ? (
-                <button
-                  type="button"
-                  onClick={() => startEditingItem(item)}
-                  className={`text-xs sm:text-xs font-semibold px-2.5 sm:px-2 py-1 sm:py-0.5 rounded-lg sm:rounded-md border transition-all cursor-pointer select-none min-h-[34px] sm:min-h-0 flex items-center ${
+                <span
+                  className={`text-xs sm:text-xs font-semibold px-2.5 sm:px-2 py-1 sm:py-0.5 rounded-lg border select-none inline-flex items-center ${
                     item.completed
                       ? 'bg-[#ECEBE8] text-[#7A7E7B] border-[#ECEBE8]'
-                      : 'bg-[#F1F5F2] text-[#4A7856] border-[#ECEBE8] hover:border-[#4A7856]/40 hover:bg-[#E8EFEA]'
+                      : 'bg-[#F1F5F2] text-[#4A7856] border-[#ECEBE8]'
                   }`}
-                  title="Menge anpassen"
                 >
                   {item.amount} {item.unit}
-                </button>
+                </span>
               ) : null}
 
-              {/* Dezent-manueller Mengen-Ändern-Button direkt neben der Mülltonne */}
+              {/* Bearbeiten-Stift: Mobil extra groß (42x42px) für präzise Touch-Bedienung */}
               <button
                 type="button"
                 onClick={() => startEditingItem(item)}
-                className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center rounded-xl text-[#9BA19D] hover:text-[#4A7856] hover:bg-[#FAF9F6] border border-transparent hover:border-[#ECEBE8] transition-colors cursor-pointer touch-manipulation active:scale-95"
-                title="Menge manuell anpassen"
-                aria-label="Menge manuell anpassen"
+                className="w-10.5 h-10.5 sm:w-8.5 sm:h-8.5 flex items-center justify-center rounded-xl bg-[#FAF9F6] text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs"
+                title="Menge bearbeiten"
+                aria-label="Menge bearbeiten"
               >
-                <Pencil className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <Pencil className="w-4.5 h-4.5 sm:w-3.5 sm:h-3.5" />
               </button>
 
-              {/* Direktes Löschen OHNE Bestätigungs-Dialog */}
+              {/* Löschen: Mobil extra groß (42x42px) */}
               <button
                 type="button"
                 onClick={() => {
                   deleteItem(item.id);
                   onCopyFeedback(`"${item.name}" gelöscht.`);
                 }}
-                className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center rounded-xl text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="w-10.5 h-10.5 sm:w-8.5 sm:h-8.5 flex items-center justify-center rounded-xl bg-[#FAF9F6] text-rose-500 hover:text-rose-600 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs"
                 title="Artikel löschen"
                 aria-label="Artikel löschen"
               >
-                <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <Trash2 className="w-4.5 h-4.5 sm:w-3.5 sm:h-3.5" />
               </button>
             </>
           )}
@@ -593,13 +615,13 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-2">
             {sortedFlatItems.map(renderItemRow)}
           </div>
         </div>
       ) : (
         /* Categorized Display */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {(Object.keys(CATEGORY_META) as IngredientCategory[]).map((catKey) => {
             const catItems = grouped[catKey] || [];
             if (catItems.length === 0) return null;
@@ -608,7 +630,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             return (
               <div
                 key={catKey}
-                className="bg-white rounded-2xl p-5 sm:p-6 border border-[#ECEBE8] shadow-xs space-y-3"
+                className="bg-white rounded-2xl p-4 sm:p-6 border border-[#ECEBE8] shadow-xs space-y-3"
               >
                 {/* Category Header */}
                 <div className="flex items-center justify-between border-b border-[#ECEBE8] pb-3">
@@ -622,7 +644,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                 </div>
 
                 {/* Items List */}
-                <div className="space-y-1.5">
+                <div className="space-y-2 sm:space-y-1.5">
                   {catItems.map(renderItemRow)}
                 </div>
               </div>
