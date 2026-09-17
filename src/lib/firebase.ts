@@ -41,8 +41,20 @@ export function handleFirestoreError(error: unknown, operation: OperationType, p
   throw new Error(JSON.stringify(info));
 }
 
+// Resolved Firebase Configuration (supports both Vercel Environment Variables and local config)
+const metaEnv = typeof import.meta !== 'undefined' ? (import.meta as any).env : {};
+const activeConfig = {
+  apiKey: metaEnv?.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey,
+  authDomain: metaEnv?.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain,
+  projectId: metaEnv?.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId,
+  firestoreDatabaseId: metaEnv?.VITE_FIREBASE_DATABASE_ID || firebaseConfig.firestoreDatabaseId,
+  storageBucket: metaEnv?.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket,
+  messagingSenderId: metaEnv?.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId,
+  appId: metaEnv?.VITE_FIREBASE_APP_ID || firebaseConfig.appId,
+};
+
 // Initialize Firebase App
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const app = getApps().length > 0 ? getApp() : initializeApp(activeConfig);
 
 // Initialize Auth
 export const auth = getAuth(app);
@@ -50,8 +62,8 @@ export const auth = getAuth(app);
 // Initialize Firestore with configured databaseId
 export const db: Firestore = getFirestore(
   app,
-  firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
-    ? firebaseConfig.firestoreDatabaseId
+  activeConfig.firestoreDatabaseId && activeConfig.firestoreDatabaseId !== '(default)'
+    ? activeConfig.firestoreDatabaseId
     : undefined
 );
 

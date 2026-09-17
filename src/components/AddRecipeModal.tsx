@@ -164,9 +164,14 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
         })
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.success || !data.recipe) {
-        throw new Error(data.error || 'Gericht konnte von der KI nicht erstellt werden.');
+      let data: any = null;
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        data = await res.json();
+      }
+
+      if (!data || !data.success || !data.recipe) {
+        throw new Error(data?.error || 'Gericht konnte von der KI nicht erstellt werden.');
       }
 
       setPreviewRecipe(data.recipe);
@@ -202,9 +207,14 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
         })
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.success || !data.recipe) {
-        throw new Error(data.error || 'Rezept konnte aus dem Bild nicht erkannt werden.');
+      let data: any = null;
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        data = await res.json();
+      }
+
+      if (!data || !data.success || !data.recipe) {
+        throw new Error(data?.error || 'Rezept konnte aus dem Bild nicht erkannt werden.');
       }
 
       setPreviewRecipe(data.recipe);

@@ -1631,4 +1631,8 @@ async function startServer() {
   process.on("SIGTERM", () => handleShutdown("SIGTERM"));
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;

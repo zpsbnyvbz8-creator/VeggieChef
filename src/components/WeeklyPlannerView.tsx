@@ -313,9 +313,13 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           mealOption: aiMealOption,
         }),
       });
-      const data = await response.json();
+      let data: any = null;
+      const contentType = response.headers.get('content-type') || '';
+      if (response.ok && contentType.includes('application/json')) {
+        data = await response.json();
+      }
 
-      if (data.success && data.days && Array.isArray(data.days)) {
+      if (data && data.success && data.days && Array.isArray(data.days)) {
         const updatedDays = mealPlan.map((day, idx) => {
           const aiDay = data.days[idx] || data.days[0];
           const newDay = { ...day };
