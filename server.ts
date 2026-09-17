@@ -10,13 +10,13 @@ import { GoogleGenAI, Type } from "@google/genai";
 dotenv.config();
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = 3000;
 
 // ---------------------------------------------------------------------------
 // 1. Security Headers, CORS, Rate Limiting & Payload Protection
 // ---------------------------------------------------------------------------
 
-// Helmet with customized CSP allowing external Unsplash images, fonts, and Firebase endpoints
+// Helmet configured to allow iframe rendering inside Google AI Studio and Unsplash/Firebase
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -41,14 +41,24 @@ app.use(
           "https://identitytoolkit.googleapis.com",
           "https://securetoken.googleapis.com",
         ],
+        frameAncestors: [
+          "'self'",
+          "https://*.google.com",
+          "https://*.run.app",
+          "https://ai.studio",
+          "https://*.aistudio.google.com",
+        ],
         mediaSrc: ["'self'", "data:", "blob:"],
       },
     },
+    xFrameOptions: false,
     crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
 
-// CORS restricted to app domain, localhost, and Vercel deployments
+// CORS restricted to app domain, localhost, AI Studio preview, and Vercel deployments
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -61,11 +71,13 @@ app.use(
         origin.endsWith(".vercel.app") ||
         origin.includes("localhost") ||
         origin.includes("127.0.0.1") ||
-        origin.includes("run.app")
+        origin.includes("run.app") ||
+        origin.includes("google.com") ||
+        origin.includes("ai.studio")
       ) {
         return callback(null, true);
       }
-      return callback(new Error("Not allowed by CORS"));
+      return callback(null, false);
     },
     credentials: true,
   })
