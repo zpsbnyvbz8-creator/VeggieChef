@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   CalendarDays, 
   Sparkles, 
@@ -54,6 +55,7 @@ interface WeeklyPlannerViewProps {
 }
 
 export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
+  const navigate = useNavigate();
   const plannerCtx = usePlanner();
   const recipesCtx = useRecipes();
   const shoppingCtx = useShopping();
@@ -65,7 +67,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const allRecipes = props.allRecipes ?? recipesCtx.recipes;
   const favorites = props.favorites ?? recipesCtx.favorites;
   const onToggleFavorite = props.onToggleFavorite ?? recipesCtx.toggleFavorite;
-  const onSelectRecipe = props.onSelectRecipe ?? recipesCtx.setSelectedRecipe;
+  const onSelectRecipe = props.onSelectRecipe ?? ((r: Recipe) => navigate(`/recipes/${r.id}`));
   const onAddAllToShoppingList = props.onAddAllToShoppingList ?? shoppingCtx.addMultipleToShoppingList;
   const onCopyFeedback = props.onCopyFeedback ?? toastCtx.showToast;
   const onlyVeganGlobal = props.onlyVeganGlobal ?? recipesCtx.onlyVegan;

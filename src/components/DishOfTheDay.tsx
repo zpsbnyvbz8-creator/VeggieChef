@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sparkles, Clock, Flame, Dumbbell, Copy, ArrowRight, Check, Heart, ShoppingCart, ThumbsDown, CalendarPlus } from 'lucide-react';
 import { Recipe } from '../types';
 import { generateRecipeIngredientsText } from '../utils/helpers';
@@ -21,14 +22,15 @@ interface DishOfTheDayProps {
   onCopyFeedback?: (msg: string) => void;
 }
 
-export const DishOfTheDay: React.FC<DishOfTheDayProps> = (props) => {
+const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
+  const navigate = useNavigate();
   const recipesCtx = useRecipes();
   const shoppingCtx = useShopping();
   const plannerCtx = usePlanner();
   const toastCtx = useToast();
 
   const currentDish = props.dish || props.recipe || recipesCtx.dishOfTheDay;
-  const onSelect = props.onSelect || props.onSelectRecipe || recipesCtx.setSelectedRecipe;
+  const onSelect = props.onSelect || props.onSelectRecipe || ((r: Recipe) => navigate(`/recipes/${r.id}`));
   const isFavorite = props.isFavorite !== undefined ? props.isFavorite : (currentDish ? recipesCtx.favorites.includes(currentDish.id) : false);
   const onToggleFavorite = props.onToggleFavorite || recipesCtx.toggleFavorite;
   const isDisliked = props.isDisliked !== undefined ? props.isDisliked : (currentDish ? recipesCtx.dislikedIds.includes(currentDish.id) : false);
@@ -217,4 +219,6 @@ export const DishOfTheDay: React.FC<DishOfTheDayProps> = (props) => {
     </div>
   );
 };
+
+export const DishOfTheDay = React.memo(DishOfTheDayComponent);
 

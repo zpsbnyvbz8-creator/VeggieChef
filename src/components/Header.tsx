@@ -1,14 +1,13 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Utensils, 
   Sparkles, 
-  Calendar,
-  CalendarDays, 
+  Calendar, 
   ShoppingCart, 
   BarChart3, 
   Leaf, 
   Heart,
-  ChefHat,
   Search,
   Users,
   Cloud
@@ -18,9 +17,9 @@ import { useRecipes } from '../context/RecipeContext';
 import { useShopping } from '../context/ShoppingContext';
 import { useSync } from '../context/SyncContext';
 
-interface HeaderProps {
-  activeTab: 'recipes' | 'fridge' | 'planner' | 'shopping' | 'stats' | 'favorites';
-  setActiveTab: (tab: 'recipes' | 'fridge' | 'planner' | 'shopping' | 'stats' | 'favorites') => void;
+export type NavTab = 'recipes' | 'fridge' | 'planner' | 'shopping' | 'stats' | 'favorites';
+
+export interface HeaderProps {
   favoritesCount?: number;
   shoppingCount?: number;
   shoppingListCount?: number;
@@ -29,29 +28,50 @@ interface HeaderProps {
   setSearchQuery?: (q: string) => void;
   syncConfig?: SyncConfig;
   onOpenSyncModal?: () => void;
+  // Optional backwards compatibility if passed anywhere
+  activeTab?: NavTab;
+  setActiveTab?: (tab: NavTab) => void;
 }
 
 export const Header: React.FC<HeaderProps> = (props) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const recipesCtx = useRecipes();
   const shoppingCtx = useShopping();
   const syncCtx = useSync();
 
-  const activeTab = props.activeTab;
-  const setActiveTab = props.setActiveTab;
+  // Directly determine active view via useLocation().pathname
+  const getActiveTabFromLocation = (pathname: string): NavTab => {
+    if (pathname === '/favorites') return 'favorites';
+    if (pathname.startsWith('/fridge')) return 'fridge';
+    if (pathname.startsWith('/planner')) return 'planner';
+    if (pathname.startsWith('/shopping')) return 'shopping';
+    if (pathname.startsWith('/stats')) return 'stats';
+    return 'recipes';
+  };
+
+  const activeTab = getActiveTabFromLocation(location.pathname);
+
+  const handleNavigate = (path: string) => {
+    if (location.pathname !== path) {
+      navigate(path);
+    }
+  };
+
   const favoritesCount = props.favoritesCount ?? recipesCtx.favorites.length;
   const shoppingCount = props.shoppingCount ?? props.shoppingListCount ?? shoppingCtx.uncompletedCount;
-  const cookedCount = props.cookedCount ?? recipesCtx.cookedLogs.length;
   const searchQuery = props.searchQuery !== undefined ? props.searchQuery : recipesCtx.filters.searchQuery;
+  
   const setSearchQuery = props.setSearchQuery ?? ((q: string) => {
     recipesCtx.setFilters((prev) => ({ ...prev, searchQuery: q }));
-    if (activeTab !== 'recipes' && activeTab !== 'favorites') {
-      setActiveTab('recipes');
+    if (location.pathname !== '/' && location.pathname !== '/favorites') {
+      navigate('/');
     }
   });
+
   const syncConfig = props.syncConfig ?? syncCtx.syncConfig;
   const onOpenSyncModal = props.onOpenSyncModal ?? syncCtx.openSyncModal;
 
-  const actualShoppingCount = shoppingCount;
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#ECEBE8]">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
@@ -59,7 +79,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
           {/* Brand Logo & Name */}
           <div 
             id="brand-logo" 
-            onClick={() => setActiveTab('recipes')}
+            onClick={() => handleNavigate('/')}
             className="flex items-center gap-2 sm:gap-3 cursor-pointer group select-none shrink-0"
           >
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#4A7856] flex items-center justify-center text-white font-bold shadow-xs group-hover:scale-105 transition-transform shrink-0">
@@ -76,8 +96,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             </div>
           </div>
 
-          {/* Quick Search bar (visible on all screens) */}
-          {/* Search bar in middle */}
+          {/* Quick Search bar */}
           <div className="flex items-center relative flex-1 min-w-0 max-w-[150px] xs:max-w-[200px] sm:max-w-xs md:max-w-sm mx-1 sm:mx-4 md:mx-6">
             <Search className="w-4 h-4 text-[#7A7E7B] absolute left-2.5 sm:left-3 pointer-events-none" />
             <input
@@ -92,7 +111,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 text-xs text-[#7A7E7B] hover:text-[#2D3E40] p-1"
+                className="absolute right-2.5 text-xs text-[#7A7E7B] hover:text-[#2D3E40] p-1 cursor-pointer"
                 title="Suche zurücksetzen"
               >
                 ✕
@@ -106,6 +125,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             {onOpenSyncModal && (
               <button
                 id="header-sync-modal-btn"
+                type="button"
                 onClick={onOpenSyncModal}
                 className={`flex items-center gap-1 sm:gap-1.5 h-10 px-2.5 sm:px-3 rounded-xl text-xs font-semibold transition-all border cursor-pointer touch-manipulation active:scale-95 ${
                   syncConfig?.mode === 'family' && syncConfig?.groupId
@@ -135,11 +155,12 @@ export const Header: React.FC<HeaderProps> = (props) => {
               </button>
             )}
 
-            {/* Favorites Icon Button (touch friendly 40x40px target) */}
+            {/* Favorites Icon Button */}
             <button
               id="nav-tab-favorites"
-              onClick={() => setActiveTab('favorites')}
-              className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#D35400] transition-colors border border-transparent cursor-pointer touch-manipulation active:scale-95 ${
+              type="button"
+              onClick={() => handleNavigate('/favorites')}
+              className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#D35400] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
                 activeTab === 'favorites' ? 'bg-[#FDF6F0] text-[#D35400] border-[#F5EADF]' : 'bg-white sm:bg-transparent border-[#ECEBE8] sm:border-transparent'
               }`}
               title="Gespeicherte Favoriten"
@@ -152,30 +173,32 @@ export const Header: React.FC<HeaderProps> = (props) => {
               )}
             </button>
 
-            {/* Shopping List Quick Icon Button (touch friendly 40x40px target) */}
+            {/* Shopping List Quick Icon Button */}
             <button
               id="nav-tab-shopping-badge"
-              onClick={() => setActiveTab('shopping')}
-              className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors border border-transparent cursor-pointer touch-manipulation active:scale-95 ${
+              type="button"
+              onClick={() => handleNavigate('/shopping')}
+              className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
                 activeTab === 'shopping' ? 'bg-[#F1F5F2] text-[#4A7856] border-[#4A7856]/30' : 'bg-white sm:bg-transparent border-[#ECEBE8] sm:border-transparent'
               }`}
               title="Einkaufsliste"
             >
               <ShoppingCart className="w-5 h-5" />
-              {actualShoppingCount > 0 && (
+              {shoppingCount > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#4A7856] text-white rounded-full text-[10px] font-bold flex items-center justify-center shadow-xs">
-                  {actualShoppingCount}
+                  {shoppingCount}
                 </span>
               )}
             </button>
           </div>
         </div>
 
-        {/* Navigation Tabs Bar - comfortably sized touch targets on mobile/tablet, sleek on desktop */}
+        {/* Navigation Tabs Bar */}
         <nav className="flex items-center space-x-1.5 sm:space-x-2 py-2 sm:py-2 overflow-x-auto scrollbar-none border-t border-[#ECEBE8] -mx-1 px-1">
           <button
             id="nav-tab-recipes"
-            onClick={() => setActiveTab('recipes')}
+            type="button"
+            onClick={() => handleNavigate('/')}
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'recipes'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
@@ -188,7 +211,8 @@ export const Header: React.FC<HeaderProps> = (props) => {
 
           <button
             id="nav-tab-fridge"
-            onClick={() => setActiveTab('fridge')}
+            type="button"
+            onClick={() => handleNavigate('/fridge')}
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'fridge'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
@@ -201,7 +225,8 @@ export const Header: React.FC<HeaderProps> = (props) => {
 
           <button
             id="nav-tab-planner"
-            onClick={() => setActiveTab('planner')}
+            type="button"
+            onClick={() => handleNavigate('/planner')}
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'planner'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
@@ -214,7 +239,8 @@ export const Header: React.FC<HeaderProps> = (props) => {
 
           <button
             id="nav-tab-shopping"
-            onClick={() => setActiveTab('shopping')}
+            type="button"
+            onClick={() => handleNavigate('/shopping')}
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'shopping'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
@@ -223,16 +249,17 @@ export const Header: React.FC<HeaderProps> = (props) => {
           >
             <ShoppingCart className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
             <span>Einkaufsliste</span>
-            {actualShoppingCount > 0 && (
+            {shoppingCount > 0 && (
               <span className="px-1.5 py-0.5 rounded-full bg-[#4A7856] text-white text-[11px] sm:text-[10px] font-bold shrink-0">
-                {actualShoppingCount}
+                {shoppingCount}
               </span>
             )}
           </button>
 
           <button
             id="nav-tab-stats"
-            onClick={() => setActiveTab('stats')}
+            type="button"
+            onClick={() => handleNavigate('/stats')}
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3 py-2 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'stats'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
@@ -247,3 +274,5 @@ export const Header: React.FC<HeaderProps> = (props) => {
     </header>
   );
 };
+
+export default Header;

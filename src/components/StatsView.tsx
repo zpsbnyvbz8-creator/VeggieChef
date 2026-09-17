@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   BarChart3, 
   Leaf, 
@@ -40,6 +41,7 @@ interface StatsViewProps {
 }
 
 export const StatsView: React.FC<StatsViewProps> = (props) => {
+  const navigate = useNavigate();
   const recipesCtx = useRecipes();
   const toastCtx = useToast();
 
@@ -47,7 +49,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
   const setLogs = props.setLogs ?? recipesCtx.setCookedLogs;
   const favoritesCount = props.favoritesCount ?? recipesCtx.favorites.length;
   const allRecipes = props.allRecipes ?? recipesCtx.recipes;
-  const onSelectRecipe = props.onSelectRecipe ?? recipesCtx.setSelectedRecipe;
+  const onSelectRecipe = props.onSelectRecipe ?? ((r: Recipe) => navigate(`/recipes/${r.id}`));
   const onCopyFeedback = props.onCopyFeedback ?? toastCtx.showToast;
   const [undoBackup, setUndoBackup] = useState<CookedLog[] | null>(null);
   const [showUndoBanner, setShowUndoBanner] = useState(false);

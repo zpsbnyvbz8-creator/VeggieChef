@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Sparkles, 
   Plus, 
@@ -28,11 +29,12 @@ interface FridgeCookViewProps {
 }
 
 export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
+  const navigate = useNavigate();
   const recipesCtx = useRecipes();
   const toastCtx = useToast();
 
   const allRecipes = props.allRecipes ?? recipesCtx.recipes;
-  const onSelectRecipe = props.onSelectRecipe ?? recipesCtx.setSelectedRecipe;
+  const onSelectRecipe = props.onSelectRecipe ?? ((r: Recipe) => navigate(`/recipes/${r.id}`));
   const onSaveCustomRecipe = props.onSaveCustomRecipe ?? recipesCtx.saveCustomRecipe;
   const onlyVeganGlobal = props.onlyVeganGlobal ?? recipesCtx.onlyVegan;
   const onCopyFeedback = props.onCopyFeedback ?? toastCtx.showToast;

@@ -11,7 +11,8 @@ import {
   List, 
   Plus,
   Minus,
-  Trash2
+  Trash2,
+  ChevronDown
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Recipe, CookingTimerState } from '../types';
@@ -24,6 +25,7 @@ interface CookingModeModalProps {
   recipe?: Recipe | null;
   servings?: number;
   onClose?: () => void;
+  onMinimize?: () => void;
   onFinishCooking?: () => void;
   cookingTimer?: CookingTimerState | null;
   onUpdateTimer?: (timer: CookingTimerState | null) => void;
@@ -35,29 +37,79 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
 
   const recipe = props.recipe !== undefined ? props.recipe : (recipesCtx.cookingModeRecipe?.recipe ?? null);
   const servings = props.servings !== undefined ? props.servings : (recipesCtx.cookingModeRecipe?.servings ?? 2);
+  
   const onClose = props.onClose ?? (() => {
-    const r = recipesCtx.cookingModeRecipe?.recipe;
     recipesCtx.setCookingModeRecipe(null);
-    if (r) recipesCtx.setSelectedRecipe(r);
+    recipesCtx.setIsCookingMinimized(false);
+    recipesCtx.setCookingCurrentStep(0);
   });
+
+  const onMinimize = props.onMinimize ?? (() => {
+    recipesCtx.setIsCookingMinimized(true);
+    toastCtx.showToast('Kochmodus minimiert – Timer & Schritt laufen in der Leiste unten weiter.');
+  });
+
   const onFinishCooking = props.onFinishCooking ?? (() => {
     if (recipesCtx.cookingModeRecipe) {
       recipesCtx.logCooked(recipesCtx.cookingModeRecipe.recipe, recipesCtx.cookingModeRecipe.servings);
-      const r = recipesCtx.cookingModeRecipe.recipe;
       recipesCtx.setCookingModeRecipe(null);
-      if (r) recipesCtx.setSelectedRecipe(r);
+      recipesCtx.setIsCookingMinimized(false);
+      recipesCtx.setCookingCurrentStep(0);
       toastCtx.showToast('🎉 Bravo! Dein Gericht wurde als gekocht in deiner Statistik gespeichert!');
     }
   });
+
   const cookingTimer = props.cookingTimer !== undefined ? props.cookingTimer : recipesCtx.cookingTimer;
   const onUpdateTimer = props.onUpdateTimer ?? recipesCtx.setCookingTimer;
+
   if (!recipe) return null;
 
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [currentStepIndex, setCurrentStepIndex] = useState<number>(() => recipesCtx.cookingCurrentStep || 0);
   const [showIngredientsDrawer, setShowIngredientsDrawer] = useState(false);
   const [dismissedSteps, setDismissedSteps] = useState<Record<number, boolean>>({});
 
-  // Lock body scroll while cooking mode modal is open
+  // Synchronize currentStepIndex to context
+  useEffect(() => {
+    recipesCtx.setCookingCurrentStep(currentStepIndex);
+  }, [currentStepIndex]);
+
+  // Screen Wake Lock API to prevent display from sleeping during cooking
+  useEffect(() => {
+    let wakeLockSentinel: any = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator && (navigator as any).wakeLock?.request) {
+          wakeLockSentinel = await (navigator as any).wakeLock.request('screen');
+        }
+      } catch (err) {
+        // Safe fallback: graceful catch if rejected or not supported
+        console.warn('WakeLock not supported or access denied:', err);
+      }
+    };
+
+    requestWakeLock();
+
+    const handleVisibilityChange = () => {
+      if (wakeLockSentinel !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (wakeLockSentinel) {
+        try {
+          wakeLockSentinel.release();
+        } catch {}
+        wakeLockSentinel = null;
+      }
+    };
+  }, []);
+
+  // Lock body scroll while fullscreen cooking mode is open
   useLockBodyScroll(Boolean(recipe));
 
   const currentStep = recipe.steps[currentStepIndex];
@@ -116,12 +168,10 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
   };
 
   const handleResetTimer = () => {
-    // Clear active timer so it is fully reset and dismissed from other steps
     onUpdateTimer(null);
   };
 
   const handleDeleteTimer = () => {
-    // Completely clear timer and dismiss for current step
     onUpdateTimer(null);
     setDismissedSteps((prev) => ({ ...prev, [currentStepIndex]: true }));
   };
@@ -174,16 +224,20 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
   const progressPercent = Math.round(((currentStepIndex + 1) / recipe.steps.length) * 100);
 
   return (
-    <div className="fixed inset-0 z-60 bg-[#2D3E40] text-white flex flex-col justify-between animate-in fade-in duration-200 overscroll-contain">
+    <div 
+      id="cooking-mode-overlay"
+      className="fixed inset-0 z-60 bg-[#2D3E40] text-white flex flex-col justify-between animate-in fade-in duration-200 overscroll-contain"
+    >
       {/* Top Bar */}
-      <div className="p-3 sm:p-6 bg-[#243335] border-b border-white/10 flex items-center justify-between">
+      <div className="p-3 sm:p-5 bg-[#243335] border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2.5 sm:gap-3">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#4A7856] flex items-center justify-center font-semibold text-white shadow-xs shrink-0">
             <ChefHat className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div>
-            <div className="text-[10px] sm:text-xs text-[#8DB898] font-semibold uppercase tracking-wider">
-              Fokus-Kochmodus ({servings} Port.)
+            <div className="text-[10px] sm:text-xs text-[#8DB898] font-semibold uppercase tracking-wider flex items-center gap-1.5">
+              <span>Fokus-Kochmodus ({servings} Port.)</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4A7856] animate-pulse" title="WakeLock aktiv: Display bleibt an" />
             </div>
             <h2 className="text-sm sm:text-lg font-semibold truncate max-w-xs sm:max-w-md">
               {recipe.title}
@@ -191,7 +245,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Ingredients Drawer Toggle */}
           <button
             id="cooking-mode-ingredients-btn"
@@ -207,13 +261,25 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
             <span className="hidden sm:inline">Zutaten</span>
           </button>
 
-          {/* Close Cooking Mode (returns directly to recipe modal) */}
+          {/* Minimize Button */}
+          <button
+            id="cooking-mode-minimize-btn"
+            type="button"
+            onClick={onMinimize}
+            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/90 transition-colors cursor-pointer"
+            title="Kochmodus minimieren (bleibt in der Timer-Leiste unten aktiv)"
+          >
+            <ChevronDown className="w-4 h-4 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline text-xs font-semibold">Minimieren</span>
+          </button>
+
+          {/* Close Cooking Mode */}
           <button
             id="cooking-mode-close-btn"
             type="button"
             onClick={onClose}
             className="p-1.5 sm:p-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/90 transition-colors cursor-pointer"
-            title="Kochmodus beenden (Zurück zum Rezept)"
+            title="Kochmodus beenden"
           >
             <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
@@ -261,14 +327,14 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                 <button
                   type="button"
                   onClick={() => setCurrentStepIndex(cookingTimer.stepNumber - 1)}
-                  className="px-2 py-1 rounded-lg bg-[#4A7856] text-[11px] font-semibold hover:bg-[#3D6447] text-white transition-colors"
+                  className="px-2 py-1 rounded-lg bg-[#4A7856] text-[11px] font-semibold hover:bg-[#3D6447] text-white transition-colors cursor-pointer"
                 >
                   Zu Schritt {cookingTimer.stepNumber}
                 </button>
                 <button
                   type="button"
                   onClick={handleDeleteTimer}
-                  className="p-1.5 rounded-lg text-rose-300 hover:text-white hover:bg-rose-500/30 transition-colors"
+                  className="p-1.5 rounded-lg text-rose-300 hover:text-white hover:bg-rose-500/30 transition-colors cursor-pointer"
                   title="Timer löschen"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -434,3 +500,5 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
     </div>
   );
 };
+
+export default CookingModeModal;

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Clock, 
   Flame, 
@@ -32,14 +33,15 @@ interface RecipeCardProps {
   onCopyFeedback?: (msg: string) => void;
 }
 
-export const RecipeCard: React.FC<RecipeCardProps> = (props) => {
+const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
+  const navigate = useNavigate();
   const recipesCtx = useRecipes();
   const shoppingCtx = useShopping();
   const plannerCtx = usePlanner();
   const toastCtx = useToast();
 
   const recipe = props.recipe;
-  const onSelect = props.onSelect || recipesCtx.setSelectedRecipe;
+  const onSelect = props.onSelect || ((r: Recipe) => navigate(`/recipes/${r.id}`));
   const isFavorite = props.isFavorite !== undefined ? props.isFavorite : recipesCtx.favorites.includes(recipe.id);
   const onToggleFavorite = props.onToggleFavorite || recipesCtx.toggleFavorite;
   const isDisliked = props.isDisliked !== undefined ? props.isDisliked : recipesCtx.dislikedIds.includes(recipe.id);
@@ -234,3 +236,5 @@ export const RecipeCard: React.FC<RecipeCardProps> = (props) => {
     </div>
   );
 };
+
+export const RecipeCard = React.memo(RecipeCardComponent);

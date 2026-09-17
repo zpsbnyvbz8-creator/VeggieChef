@@ -43,7 +43,6 @@ function getGenAI(): GoogleGenAI | null {
 const ACTIVE_MODELS = [
   "gemini-3.1-flash-lite",
   "gemini-flash-latest",
-  "gemini-3.8-flash",
 ] as const;
 
 /**
@@ -154,26 +153,29 @@ async function callGeminiWithRetry(
           err?.statusCode ||
           (err?.response && err.response.status);
 
-        // If timed out, don't waste another 25 seconds retrying the exact same slow model,
+        // If timed out or model unavailable/high-demand, don't waste seconds retrying the exact same model,
         // advance immediately to the next model in the cascade!
         const isTimeout = errMsg.includes("timed out");
+        const isUnavailable =
+          status === 503 ||
+          errMsg.includes("503") ||
+          errMsg.includes("high demand") ||
+          errMsg.includes("unavailable") ||
+          errMsg.includes("overloaded");
+
         const isTemporary =
           !isTimeout &&
-          (status === 503 ||
-            status === 429 ||
+          !isUnavailable &&
+          (status === 429 ||
             status === 500 ||
-            errMsg.includes("503") ||
             errMsg.includes("429") ||
             errMsg.includes("500") ||
-            errMsg.includes("high demand") ||
-            errMsg.includes("unavailable") ||
             errMsg.includes("resource has been exhausted") ||
             errMsg.includes("quota") ||
-            errMsg.includes("rate limit") ||
-            errMsg.includes("overloaded"));
+            errMsg.includes("rate limit"));
 
         if (isTemporary && retry < maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, 800));
+          await new Promise((resolve) => setTimeout(resolve, 500));
           continue;
         }
 
@@ -1171,9 +1173,22 @@ app.post("/api/ai/veganize", async (req, res) => {
       });
     }
 
+    const cleanRecipe = {
+      title: recipe?.title || "Rezept",
+      category: recipe?.category,
+      ingredients: (recipe?.ingredients || []).map((i: any) => ({
+        name: i?.name,
+        amount: i?.amount,
+        unit: i?.unit,
+      })),
+      steps: (recipe?.steps || []).map((s: any) =>
+        typeof s === "string" ? s : s?.text || s?.title || ""
+      ),
+    };
+
     const prompt = `Du bist ein Meister der veganen Gourmetküche.
 Wandle das folgende vegetarische Rezept in eine 100% vegane Version um, ohne Kompromisse bei Geschmack, Schmelz und Cremigkeit:
-Original-Rezept: ${JSON.stringify(recipe || {})}
+Original-Rezept: ${JSON.stringify(cleanRecipe)}
 
 Antworte ausschließlich im JSON-Format:
 {

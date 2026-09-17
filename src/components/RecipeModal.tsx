@@ -92,6 +92,17 @@ export const RecipeModal: React.FC<RecipeModalProps> = (props) => {
   // Lock background scrolling while recipe modal is open
   useLockBodyScroll(Boolean(recipe));
 
+  // Escape key listener to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const toggleCheckIngredient = (name: string) => {
     setCheckedIngredients((prev) => ({ ...prev, [name]: !prev[name] }));
   };

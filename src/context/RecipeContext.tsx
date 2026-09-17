@@ -61,6 +61,10 @@ export interface RecipeContextType {
   addRecipe: (newRecipe: Recipe) => void;
   cookingModeRecipe: { recipe: Recipe; servings: number } | null;
   setCookingModeRecipe: React.Dispatch<React.SetStateAction<{ recipe: Recipe; servings: number } | null>>;
+  isCookingMinimized: boolean;
+  setIsCookingMinimized: React.Dispatch<React.SetStateAction<boolean>>;
+  cookingCurrentStep: number;
+  setCookingCurrentStep: React.Dispatch<React.SetStateAction<number>>;
   cookingTimer: CookingTimerState | null;
   setCookingTimer: React.Dispatch<React.SetStateAction<CookingTimerState | null>>;
 }
@@ -109,6 +113,8 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isAddRecipeOpen, setIsAddRecipeOpen] = useState(false);
   const [cookingModeRecipe, setCookingModeRecipe] = useState<{ recipe: Recipe; servings: number } | null>(null);
+  const [isCookingMinimized, setIsCookingMinimized] = useState<boolean>(false);
+  const [cookingCurrentStep, setCookingCurrentStep] = useState<number>(0);
 
   // Active Persistent Cooking Timer State
   const [cookingTimer, setCookingTimer] = useState<CookingTimerState | null>(() =>
@@ -221,7 +227,7 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [cookingTimer?.isRunning, cookingTimer?.secondsLeft]);
+  }, [cookingTimer?.isRunning]);
 
   // Actions
   const toggleFavorite = (recipeId: string) => {
@@ -338,6 +344,10 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addRecipe,
         cookingModeRecipe,
         setCookingModeRecipe,
+        isCookingMinimized,
+        setIsCookingMinimized,
+        cookingCurrentStep,
+        setCookingCurrentStep,
         cookingTimer,
         setCookingTimer,
       }}
