@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ShoppingItem, Recipe } from '../types';
 import { loadFromLocalStorage, saveToLocalStorage } from '../utils/helpers';
-import { subscribeToFamilyShopping, uploadBatchShopping } from '../lib/syncService';
+import { subscribeToFamilyShopping } from '../lib/syncService';
 import { useToast } from './ToastContext';
 import { useSync } from './SyncContext';
 
@@ -25,7 +25,7 @@ const ShoppingContext = createContext<ShoppingContextType | undefined>(undefined
 
 export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
-  const { syncConfig } = useSync();
+  const { syncConfig, syncShoppingItems, registerDomainSync } = useSync();
 
   const [shoppingItems, setShoppingItemsState] = useState<ShoppingItem[]>(() =>
     loadFromLocalStorage('veggiechef_shopping', INITIAL_SHOPPING_ITEMS)
@@ -35,6 +35,16 @@ export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     saveToLocalStorage('veggiechef_shopping', shoppingItems);
   }, [shoppingItems]);
+
+  // Register with SyncContext to receive non-destructive merged shopping items on join
+  useEffect(() => {
+    const unregister = registerDomainSync({
+      onMergeShopping: (mergedItems) => {
+        setShoppingItemsState(mergedItems);
+      },
+    });
+    return unregister;
+  }, [registerDomainSync]);
 
   // Realtime Family Sync Subscriptions (when mode is family)
   useEffect(() => {
@@ -49,15 +59,11 @@ export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, [syncConfig.mode, syncConfig.groupId]);
 
-  // Synchronized Setter (updates local state and Firestore if in family mode)
+  // Synchronized Setter (updates local state, debounces to cloud via SyncContext if in family mode)
   const setShoppingItems: React.Dispatch<React.SetStateAction<ShoppingItem[]>> = (updater) => {
     setShoppingItemsState((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (syncConfig.mode === 'family' && syncConfig.groupId) {
-        uploadBatchShopping(syncConfig.groupId, next).catch((err) =>
-          console.warn('[Sync] Shopping upload error:', err)
-        );
-      }
+      syncShoppingItems(next, false);
       return next;
     });
   };

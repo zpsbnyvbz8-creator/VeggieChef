@@ -6,10 +6,7 @@ import {
   saveToLocalStorage, 
   createEmptyWeekDays 
 } from '../utils/helpers';
-import { 
-  subscribeToFamilyMealPlan, 
-  uploadBatchMealPlan 
-} from '../lib/syncService';
+import { subscribeToFamilyMealPlan } from '../lib/syncService';
 import { useToast } from './ToastContext';
 import { useSync } from './SyncContext';
 
@@ -34,7 +31,7 @@ const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
 
 export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
-  const { syncConfig } = useSync();
+  const { syncConfig, syncMealPlanDays, registerDomainSync } = useSync();
 
   // Weekly Plans (Supports multiple rotated weeks)
   const [weeks, setWeeks] = useState<WeekPlan[]>(() => {
@@ -81,6 +78,18 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [weeks, activeWeekId, activeWeek]);
 
+  // Register with SyncContext for non-destructive merge updates on join
+  useEffect(() => {
+    const unregister = registerDomainSync({
+      onMergeMealPlan: (mergedPlan) => {
+        setWeeks((prev) =>
+          prev.map((w) => (w.id === activeWeekId ? { ...w, days: mergedPlan } : w))
+        );
+      },
+    });
+    return unregister;
+  }, [registerDomainSync, activeWeekId]);
+
   // Realtime Family Sync Subscriptions
   useEffect(() => {
     if (syncConfig.mode !== 'family' || !syncConfig.groupId) return;
@@ -96,17 +105,13 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, [syncConfig.mode, syncConfig.groupId, activeWeekId]);
 
-  // Synchronized setter (updates local state and Firestore if in family mode)
+  // Synchronized setter (updates local state and delegates debounced upload to SyncContext)
   const setMealPlan: React.Dispatch<React.SetStateAction<DayPlan[]>> = (updater) => {
     setWeeks((prev) => {
       return prev.map((w) => {
         if (w.id === activeWeek.id) {
           const nextDays = typeof updater === 'function' ? updater(w.days) : updater;
-          if (syncConfig.mode === 'family' && syncConfig.groupId) {
-            uploadBatchMealPlan(syncConfig.groupId, nextDays).catch((err) =>
-              console.warn('[Sync] Meal plan upload error:', err)
-            );
-          }
+          syncMealPlanDays(nextDays, false);
           return { ...w, days: nextDays };
         }
         return w;
@@ -143,6 +148,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
             }
             return day;
           });
+          syncMealPlanDays(updatedDays, false);
           return { ...w, days: updatedDays };
         }
         return w;

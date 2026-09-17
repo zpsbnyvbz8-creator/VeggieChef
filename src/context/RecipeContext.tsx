@@ -13,8 +13,7 @@ import {
   calculateMealSavings 
 } from '../utils/helpers';
 import { 
-  subscribeToFamilyRecipes, 
-  syncFamilyRecipe 
+  subscribeToFamilyRecipes 
 } from '../lib/syncService';
 import { useToast } from './ToastContext';
 import { useSync } from './SyncContext';
@@ -73,7 +72,7 @@ const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
 export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
-  const { syncConfig } = useSync();
+  const { syncConfig, syncSingleRecipe, registerDomainSync } = useSync();
 
   // Recipes State (Initial + Custom Saved AI Recipes)
   const [recipes, setRecipes] = useState<Recipe[]>(() => {
@@ -181,6 +180,22 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setVisibleRecipeCount(8);
   }, [filters, onlyVegan]);
 
+  // Register with SyncContext for non-destructive merge updates on join
+  useEffect(() => {
+    const unregister = registerDomainSync({
+      onMergeRecipes: (mergedRecipes) => {
+        if (mergedRecipes.length > 0) {
+          setRecipes((prev) => {
+            const mergedIds = new Set(mergedRecipes.map((r) => r.id));
+            const kept = prev.filter((r) => !mergedIds.has(r.id));
+            return [...mergedRecipes, ...kept];
+          });
+        }
+      },
+    });
+    return unregister;
+  }, [registerDomainSync]);
+
   // Realtime Family Sync Subscriptions for recipes
   useEffect(() => {
     if (syncConfig.mode !== 'family' || !syncConfig.groupId) return;
@@ -277,21 +292,13 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const saveCustomRecipe = (newRecipe: Recipe) => {
     const stamped = { ...newRecipe, createdAt: newRecipe.createdAt || Date.now() };
     setRecipes((prev) => [stamped, ...prev]);
-    if (syncConfig.mode === 'family' && syncConfig.groupId) {
-      syncFamilyRecipe(syncConfig.groupId, stamped).catch((err) =>
-        console.warn('Sync custom recipe error:', err)
-      );
-    }
+    syncSingleRecipe(stamped);
   };
 
   const addRecipe = (newRecipe: Recipe) => {
     const stamped = { ...newRecipe, createdAt: newRecipe.createdAt || Date.now() };
     setRecipes((prev) => [stamped, ...prev.filter((r) => r.id !== stamped.id)]);
-    if (syncConfig.mode === 'family' && syncConfig.groupId) {
-      syncFamilyRecipe(syncConfig.groupId, stamped).catch((err) =>
-        console.warn('Sync added recipe error:', err)
-      );
-    }
+    syncSingleRecipe(stamped);
     setSelectedRecipe(stamped);
     showToast(`Gericht "${stamped.title}" erfolgreich hinzugefügt!`);
   };
