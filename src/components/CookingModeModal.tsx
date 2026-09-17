@@ -14,7 +14,6 @@ import {
   Trash2,
   ChevronDown
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { Recipe, CookingTimerState } from '../types';
 import { formatIngredientAmount } from '../utils/helpers';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
@@ -210,7 +209,10 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
       setCurrentStepIndex(currentStepIndex + 1);
     } else {
       // Completed all steps!
-      confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
+      import('canvas-confetti').then((module) => {
+        const confetti = module.default;
+        confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
+      }).catch(() => {});
       onFinishCooking();
     }
   };

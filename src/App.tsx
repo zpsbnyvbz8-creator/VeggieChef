@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   ToastProvider, 
@@ -6,24 +6,45 @@ import {
   RecipeProvider, 
   PlannerProvider, 
   ShoppingProvider,
-  useRecipes
+  useRecipes,
+  useSync,
+  usePlanner,
 } from './context';
 import { Header } from './components/Header';
 import { ScrollToTop } from './components/ScrollToTop';
-import { RecipeDetailPage } from './pages/RecipeDetailPage';
 import { DishOfTheDay } from './components/DishOfTheDay';
 import { FilterBar } from './components/FilterBar';
 import { RecipeCard } from './components/RecipeCard';
-import { CookingModeModal } from './components/CookingModeModal';
 import { CookingTimerBar } from './components/CookingTimerBar';
-import { FridgeCookView } from './components/FridgeCookView';
-import { WeeklyPlannerView } from './components/WeeklyPlannerView';
-import { ShoppingListView } from './components/ShoppingListView';
-import { StatsView } from './components/StatsView';
-import { AddRecipeModal } from './components/AddRecipeModal';
-import { AddToMealPlanModal } from './components/AddToMealPlanModal';
-import { FamilySyncModal } from './components/FamilySyncModal';
 import { Search, Plus } from 'lucide-react';
+
+// Lazy-loaded Views (Code Splitting)
+const RecipeDetailPage = lazy(() => import('./pages/RecipeDetailPage'));
+const FridgeCookView = lazy(() => import('./components/FridgeCookView').then((m) => ({ default: m.FridgeCookView })));
+const WeeklyPlannerView = lazy(() => import('./components/WeeklyPlannerView').then((m) => ({ default: m.WeeklyPlannerView })));
+const ShoppingListView = lazy(() => import('./components/ShoppingListView').then((m) => ({ default: m.ShoppingListView })));
+const StatsView = lazy(() => import('./components/StatsView').then((m) => ({ default: m.StatsView })));
+
+// Lazy-loaded Modals (On-demand Chunking)
+const CookingModeModal = lazy(() => import('./components/CookingModeModal').then((m) => ({ default: m.CookingModeModal })));
+const AddRecipeModal = lazy(() => import('./components/AddRecipeModal').then((m) => ({ default: m.AddRecipeModal })));
+const AddToMealPlanModal = lazy(() => import('./components/AddToMealPlanModal').then((m) => ({ default: m.AddToMealPlanModal })));
+const FamilySyncModal = lazy(() => import('./components/FamilySyncModal').then((m) => ({ default: m.FamilySyncModal })));
+
+/**
+ * Subtle, brand-consistent loading indicator during asynchronous route transitions
+ */
+function RouteLoadingFallback() {
+  return (
+    <div className="min-h-[45vh] flex flex-col items-center justify-center py-12 px-4 animate-in fade-in duration-150">
+      <div className="relative flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full border-2 border-[#ECEBE8] border-t-[#4A7856] animate-spin" />
+        <span className="absolute text-sm">🌱</span>
+      </div>
+      <p className="text-xs font-medium text-[#7A7E7B] mt-3 tracking-wide">Wird geladen...</p>
+    </div>
+  );
+}
 
 interface RecipesExplorerViewProps {
   isFavorites: boolean;
@@ -197,7 +218,11 @@ function MainApp() {
     cookingModeRecipe,
     isCookingMinimized,
     cookingTimer,
+    isAddRecipeOpen,
   } = useRecipes();
+
+  const { isSyncModalOpen } = useSync();
+  const { recipeToAddToPlan } = usePlanner();
 
   // Backward compatibility: If URL has legacy query param ?recipe=id, redirect cleanly to /recipes/:id
   useEffect(() => {
@@ -217,34 +242,52 @@ function MainApp() {
       {/* Top Main Navigation Header - synchronized with React Router location */}
       <Header />
 
-      {/* Main Content Area rendered via React Router Routes */}
+      {/* Main Content Area rendered via React Router Routes with Suspense code-splitting */}
       <main className={`flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-8 ${showBottomTimerBar ? 'pb-20 sm:pb-24' : ''}`}>
-        <Routes>
-          <Route path="/" element={<RecipesExplorerView isFavorites={false} />} />
-          <Route path="/favorites" element={<RecipesExplorerView isFavorites={true} />} />
-          <Route path="/recipes/:id" element={<RecipeDetailPage />} />
-          <Route path="/fridge" element={<FridgeCookView />} />
-          <Route path="/planner" element={<WeeklyPlannerView />} />
-          <Route path="/shopping" element={<ShoppingListView />} />
-          <Route path="/stats" element={<StatsView />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<RouteLoadingFallback />}>
+          <Routes>
+            <Route path="/" element={<RecipesExplorerView isFavorites={false} />} />
+            <Route path="/favorites" element={<RecipesExplorerView isFavorites={true} />} />
+            <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+            <Route path="/fridge" element={<FridgeCookView />} />
+            <Route path="/planner" element={<WeeklyPlannerView />} />
+            <Route path="/shopping" element={<ShoppingListView />} />
+            <Route path="/stats" element={<StatsView />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </main>
 
       {/* Persistent Cooking Timer Bar at bottom (visible when minimized or timer running) */}
       <CookingTimerBar />
 
-      {/* Fullscreen Interactive Cooking Mode (only active when not minimized) */}
-      {cookingModeRecipe && !isCookingMinimized && <CookingModeModal />}
+      {/* Fullscreen Interactive Cooking Mode (loaded on-demand when active and not minimized) */}
+      {cookingModeRecipe && !isCookingMinimized && (
+        <Suspense fallback={null}>
+          <CookingModeModal />
+        </Suspense>
+      )}
 
-      {/* Add Recipe Modal (Manual, AI Generator & Photo Scan) */}
-      <AddRecipeModal />
+      {/* Add Recipe Modal (Manual, AI Generator & Photo Scan - loaded on demand) */}
+      {isAddRecipeOpen && (
+        <Suspense fallback={null}>
+          <AddRecipeModal />
+        </Suspense>
+      )}
 
-      {/* Add To Meal Plan Modal (Day & Time selection) */}
-      <AddToMealPlanModal />
+      {/* Add To Meal Plan Modal (Day & Time selection - loaded on demand) */}
+      {recipeToAddToPlan && (
+        <Suspense fallback={null}>
+          <AddToMealPlanModal />
+        </Suspense>
+      )}
 
-      {/* Family Sync Modal */}
-      <FamilySyncModal />
+      {/* Family Sync Modal (loaded on demand) */}
+      {isSyncModalOpen && (
+        <Suspense fallback={null}>
+          <FamilySyncModal />
+        </Suspense>
+      )}
 
       {/* Footer */}
       <footer className="mt-16 bg-white border-t border-[#ECEBE8] py-8 px-4 text-center text-xs text-[#7A7E7B]">

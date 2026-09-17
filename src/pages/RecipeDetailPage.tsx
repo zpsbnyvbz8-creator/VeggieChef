@@ -18,7 +18,6 @@ import {
   ThumbsDown,
   SmilePlus
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { AISubstitutionResult, RecipeIngredient } from '../types';
 import { formatIngredientAmount, generateRecipeIngredientsText, calculateMealSavings } from '../utils/helpers';
 import { useRecipes } from '../context/RecipeContext';
@@ -222,12 +221,15 @@ export const RecipeDetailPage: React.FC = () => {
   };
 
   const handleConfirmCooked = () => {
-    confetti({
-      particleCount: 90,
-      spread: 75,
-      origin: { y: 0.6 },
-      colors: ['#10b981', '#34d399', '#f59e0b', '#3b82f6'],
-    });
+    import('canvas-confetti').then((module) => {
+      const confetti = module.default;
+      confetti({
+        particleCount: 90,
+        spread: 75,
+        origin: { y: 0.6 },
+        colors: ['#10b981', '#34d399', '#f59e0b', '#3b82f6'],
+      });
+    }).catch(() => {});
 
     logCooked(recipe, servings, userNotes);
     setShowCookedDialog(false);
