@@ -25,26 +25,30 @@ import {
 import { CookedLog, Recipe } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 import { computeAchievements, AchievementItem } from '../data/achievements';
+import { useRecipes } from '../context/RecipeContext';
+import { useToast } from '../context/ToastContext';
 
 export type AchievementFilterTier = 'all' | 'unlocked' | 'bronze' | 'silver' | 'gold' | 'diamond' | 'insane';
 
 interface StatsViewProps {
-  logs: CookedLog[];
-  setLogs: React.Dispatch<React.SetStateAction<CookedLog[]>>;
-  favoritesCount: number;
-  allRecipes: Recipe[];
-  onSelectRecipe: (recipe: Recipe) => void;
-  onCopyFeedback: (msg: string) => void;
+  logs?: CookedLog[];
+  setLogs?: React.Dispatch<React.SetStateAction<CookedLog[]>>;
+  favoritesCount?: number;
+  allRecipes?: Recipe[];
+  onSelectRecipe?: (recipe: Recipe) => void;
+  onCopyFeedback?: (msg: string) => void;
 }
 
-export const StatsView: React.FC<StatsViewProps> = ({
-  logs,
-  setLogs,
-  favoritesCount,
-  allRecipes,
-  onSelectRecipe,
-  onCopyFeedback,
-}) => {
+export const StatsView: React.FC<StatsViewProps> = (props) => {
+  const recipesCtx = useRecipes();
+  const toastCtx = useToast();
+
+  const logs = props.logs ?? recipesCtx.cookedLogs;
+  const setLogs = props.setLogs ?? recipesCtx.setCookedLogs;
+  const favoritesCount = props.favoritesCount ?? recipesCtx.favorites.length;
+  const allRecipes = props.allRecipes ?? recipesCtx.recipes;
+  const onSelectRecipe = props.onSelectRecipe ?? recipesCtx.setSelectedRecipe;
+  const onCopyFeedback = props.onCopyFeedback ?? toastCtx.showToast;
   const [undoBackup, setUndoBackup] = useState<CookedLog[] | null>(null);
   const [showUndoBanner, setShowUndoBanner] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);

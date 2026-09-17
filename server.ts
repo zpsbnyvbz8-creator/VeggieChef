@@ -37,13 +37,13 @@ function getGenAI(): GoogleGenAI | null {
 // 2. Verified Active Gemini Model Cascade & Safe Invocation
 // ---------------------------------------------------------------------------
 // Official supported models in current Google GenAI runtime:
-// - Primary: gemini-3.8-flash (fast, highest quota, ideal for text & multimodal)
-// - Secondary: gemini-3.1-flash-lite (ultra-fast, high capacity)
-// - Tertiary: gemini-flash-latest (stable alias)
+// - Primary: gemini-3.1-flash-lite (ultra-fast ~1s, high quality structured JSON)
+// - Secondary: gemini-flash-latest (fast, stable alias)
+// - Tertiary: gemini-3.8-flash (robust fallback)
 const ACTIVE_MODELS = [
-  "gemini-3.8-flash",
   "gemini-3.1-flash-lite",
   "gemini-flash-latest",
+  "gemini-3.8-flash",
 ] as const;
 
 /**
@@ -117,7 +117,7 @@ async function callGeminiWithRetry(
   maxRetries = 1
 ): Promise<{ text: string }> {
   const timeoutLimit = options.timeoutMs || 25000;
-  const requestedModel = options.model || "gemini-3.8-flash";
+  const requestedModel = options.model || "gemini-3.1-flash-lite";
   const modelsToTry = Array.from(new Set([requestedModel, ...ACTIVE_MODELS]));
 
   let lastError: any = null;
@@ -154,20 +154,23 @@ async function callGeminiWithRetry(
           err?.statusCode ||
           (err?.response && err.response.status);
 
+        // If timed out, don't waste another 25 seconds retrying the exact same slow model,
+        // advance immediately to the next model in the cascade!
+        const isTimeout = errMsg.includes("timed out");
         const isTemporary =
-          status === 503 ||
-          status === 429 ||
-          status === 500 ||
-          errMsg.includes("503") ||
-          errMsg.includes("429") ||
-          errMsg.includes("500") ||
-          errMsg.includes("high demand") ||
-          errMsg.includes("unavailable") ||
-          errMsg.includes("resource has been exhausted") ||
-          errMsg.includes("quota") ||
-          errMsg.includes("rate limit") ||
-          errMsg.includes("overloaded") ||
-          errMsg.includes("timed out");
+          !isTimeout &&
+          (status === 503 ||
+            status === 429 ||
+            status === 500 ||
+            errMsg.includes("503") ||
+            errMsg.includes("429") ||
+            errMsg.includes("500") ||
+            errMsg.includes("high demand") ||
+            errMsg.includes("unavailable") ||
+            errMsg.includes("resource has been exhausted") ||
+            errMsg.includes("quota") ||
+            errMsg.includes("rate limit") ||
+            errMsg.includes("overloaded"));
 
         if (isTemporary && retry < maxRetries) {
           await new Promise((resolve) => setTimeout(resolve, 800));
@@ -834,7 +837,7 @@ Gib deine Antwort ausschließlich als gültiges JSON in folgendem Format zurück
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.8-flash",
+      model: "gemini-3.1-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -968,7 +971,7 @@ Antworte ausschließlich im folgenden JSON-Format:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.8-flash",
+      model: "gemini-3.1-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1101,7 +1104,7 @@ Antworte ausschließlich im folgenden JSON-Format:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.8-flash",
+      model: "gemini-3.1-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1190,7 +1193,7 @@ Antworte ausschließlich im JSON-Format:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.8-flash",
+      model: "gemini-3.1-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1335,7 +1338,7 @@ Antworte AUSSCHLIESSLICH als valides JSON in dieser Struktur:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.8-flash",
+      model: "gemini-3.1-flash-lite",
       contents: aiPrompt,
       config: {
         responseMimeType: "application/json",
@@ -1491,7 +1494,7 @@ Erstelle das Rezept als valides JSON in exakt dieser Struktur:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.8-flash",
+      model: "gemini-3.1-flash-lite",
       contents: [
         {
           inlineData: {

@@ -14,33 +14,44 @@ import {
   Cloud
 } from 'lucide-react';
 import { SyncConfig } from '../lib/syncService';
+import { useRecipes } from '../context/RecipeContext';
+import { useShopping } from '../context/ShoppingContext';
+import { useSync } from '../context/SyncContext';
 
 interface HeaderProps {
   activeTab: 'recipes' | 'fridge' | 'planner' | 'shopping' | 'stats' | 'favorites';
   setActiveTab: (tab: 'recipes' | 'fridge' | 'planner' | 'shopping' | 'stats' | 'favorites') => void;
-  favoritesCount: number;
+  favoritesCount?: number;
   shoppingCount?: number;
   shoppingListCount?: number;
-  cookedCount: number;
+  cookedCount?: number;
   searchQuery?: string;
   setSearchQuery?: (q: string) => void;
   syncConfig?: SyncConfig;
   onOpenSyncModal?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
-  activeTab,
-  setActiveTab,
-  favoritesCount,
-  shoppingCount,
-  shoppingListCount,
-  cookedCount,
-  searchQuery = '',
-  setSearchQuery = (_q: string) => {},
-  syncConfig,
-  onOpenSyncModal,
-}) => {
-  const actualShoppingCount = shoppingCount !== undefined ? shoppingCount : (shoppingListCount || 0);
+export const Header: React.FC<HeaderProps> = (props) => {
+  const recipesCtx = useRecipes();
+  const shoppingCtx = useShopping();
+  const syncCtx = useSync();
+
+  const activeTab = props.activeTab;
+  const setActiveTab = props.setActiveTab;
+  const favoritesCount = props.favoritesCount ?? recipesCtx.favorites.length;
+  const shoppingCount = props.shoppingCount ?? props.shoppingListCount ?? shoppingCtx.uncompletedCount;
+  const cookedCount = props.cookedCount ?? recipesCtx.cookedLogs.length;
+  const searchQuery = props.searchQuery !== undefined ? props.searchQuery : recipesCtx.filters.searchQuery;
+  const setSearchQuery = props.setSearchQuery ?? ((q: string) => {
+    recipesCtx.setFilters((prev) => ({ ...prev, searchQuery: q }));
+    if (activeTab !== 'recipes' && activeTab !== 'favorites') {
+      setActiveTab('recipes');
+    }
+  });
+  const syncConfig = props.syncConfig ?? syncCtx.syncConfig;
+  const onOpenSyncModal = props.onOpenSyncModal ?? syncCtx.openSyncModal;
+
+  const actualShoppingCount = shoppingCount;
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#ECEBE8]">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">

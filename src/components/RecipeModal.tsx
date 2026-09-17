@@ -27,34 +27,45 @@ import confetti from 'canvas-confetti';
 import { Recipe, AISubstitutionResult, RecipeIngredient } from '../types';
 import { formatIngredientAmount, generateRecipeIngredientsText, calculateMealSavings } from '../utils/helpers';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
+import { useRecipes } from '../context/RecipeContext';
+import { useShopping } from '../context/ShoppingContext';
+import { usePlanner } from '../context/PlannerContext';
+import { useToast } from '../context/ToastContext';
 
 interface RecipeModalProps {
-  recipe: Recipe | null;
-  onClose: () => void;
-  isFavorite: boolean;
-  onToggleFavorite: (id: string) => void;
+  recipe?: Recipe | null;
+  onClose?: () => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: string) => void;
   isDisliked?: boolean;
   onToggleDislike?: (id: string) => void;
-  onAddToShoppingList: (recipe: Recipe, servings: number) => void;
-  onAddToMealPlan: (recipe: Recipe) => void;
-  onLogCooked: (recipe: Recipe, servings: number, notes?: string) => void;
-  onOpenCookingMode: (recipe: Recipe, servings: number) => void;
-  onCopyFeedback: (msg: string) => void;
+  onAddToShoppingList?: (recipe: Recipe, servings: number) => void;
+  onAddToMealPlan?: (recipe: Recipe) => void;
+  onLogCooked?: (recipe: Recipe, servings: number, notes?: string) => void;
+  onOpenCookingMode?: (recipe: Recipe, servings: number) => void;
+  onCopyFeedback?: (msg: string) => void;
 }
 
-export const RecipeModal: React.FC<RecipeModalProps> = ({
-  recipe,
-  onClose,
-  isFavorite,
-  onToggleFavorite,
-  isDisliked = false,
-  onToggleDislike,
-  onAddToShoppingList,
-  onAddToMealPlan,
-  onLogCooked,
-  onOpenCookingMode,
-  onCopyFeedback,
-}) => {
+export const RecipeModal: React.FC<RecipeModalProps> = (props) => {
+  const recipesCtx = useRecipes();
+  const shoppingCtx = useShopping();
+  const plannerCtx = usePlanner();
+  const toastCtx = useToast();
+
+  const recipe = props.recipe !== undefined ? props.recipe : recipesCtx.selectedRecipe;
+  const onClose = props.onClose ?? (() => recipesCtx.setSelectedRecipe(null));
+  const isFavorite = props.isFavorite !== undefined ? props.isFavorite : (recipe ? recipesCtx.favorites.includes(recipe.id) : false);
+  const onToggleFavorite = props.onToggleFavorite ?? recipesCtx.toggleFavorite;
+  const isDisliked = props.isDisliked !== undefined ? props.isDisliked : (recipe ? recipesCtx.dislikedIds.includes(recipe.id) : false);
+  const onToggleDislike = props.onToggleDislike ?? recipesCtx.toggleDislike;
+  const onAddToShoppingList = props.onAddToShoppingList ?? shoppingCtx.addToShoppingList;
+  const onAddToMealPlan = props.onAddToMealPlan ?? plannerCtx.addToMealPlan;
+  const onLogCooked = props.onLogCooked ?? recipesCtx.logCooked;
+  const onOpenCookingMode = props.onOpenCookingMode ?? ((r, s) => {
+    recipesCtx.setCookingModeRecipe({ recipe: r, servings: s });
+    recipesCtx.setSelectedRecipe(null);
+  });
+  const onCopyFeedback = props.onCopyFeedback ?? toastCtx.showToast;
   if (!recipe) return null;
 
   const [servings, setServings] = useState<number>(recipe.servings || 4);
@@ -129,38 +140,73 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
         }),
       });
       const data = await response.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.substitutions)) {
         setSubstitutionResult(data);
+      } else {
+        onCopyFeedback(data?.error || 'Keine passenden Alternativen gefunden.');
       }
     } catch (err) {
       console.error('Failed to get substitutions', err);
+      onCopyFeedback('KI-Zutatenersatz momentan nicht erreichbar.');
     } finally {
       setLoadingSubstitution(false);
     }
   };
 
   // Veganize the recipe
-  const handleVeganize = () => {
+  const handleVeganize = async () => {
     if (isVeganized) {
       setIsVeganized(false);
       setVeganizedIngredients(null);
       return;
     }
 
-    const modified = recipe.ingredients.map((ing) => {
-      if (ing.veganAlternative) {
-        return {
-          ...ing,
-          name: ing.veganAlternative,
-          veganAlternative: undefined,
-        };
-      }
-      return ing;
-    });
+    const hasPreset = recipe.ingredients.some((ing) => ing.veganAlternative);
+    if (hasPreset) {
+      const modified = recipe.ingredients.map((ing) => {
+        if (ing.veganAlternative) {
+          return {
+            ...ing,
+            name: ing.veganAlternative,
+            veganAlternative: undefined,
+          };
+        }
+        return ing;
+      });
 
-    setVeganizedIngredients(modified);
-    setIsVeganized(true);
-    onCopyFeedback('Rezept wurde auf vegane Zutaten umgestellt!');
+      setVeganizedIngredients(modified);
+      setIsVeganized(true);
+      onCopyFeedback('Rezept wurde auf vegane Zutaten umgestellt!');
+      return;
+    }
+
+    // AI veganize fallback for custom/imported recipes without preset alternatives
+    try {
+      onCopyFeedback('KI veganisiert das Rezept...');
+      const res = await fetch('/api/ai/veganize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipe }),
+      });
+      const data = await res.json();
+      if (data.success && data.veganRecipe?.ingredients) {
+        const modified = data.veganRecipe.ingredients.map((ing: any, idx: number) => ({
+          name: ing.name,
+          amount: ing.amount || recipe.ingredients[idx]?.amount || 100,
+          unit: ing.unit || recipe.ingredients[idx]?.unit || 'g',
+          category: recipe.ingredients[idx]?.category || 'gemuese',
+        }));
+        setVeganizedIngredients(modified);
+        setIsVeganized(true);
+        onCopyFeedback('Rezept wurde mit KI erfolgreich veganisiert!');
+      } else {
+        setIsVeganized(true);
+        onCopyFeedback('Rezept auf vegan umgestellt!');
+      }
+    } catch {
+      setIsVeganized(true);
+      onCopyFeedback('Rezept auf vegan umgestellt!');
+    }
   };
 
   // Trigger "Gericht gekocht!"
@@ -475,7 +521,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
                       <span>✨ Vorgeschlagene Alternativen:</span>
                     </h5>
                     <div className="space-y-2">
-                      {substitutionResult.substitutions.map((sub, idx) => (
+                      {(substitutionResult.substitutions || []).map((sub, idx) => (
                         <div key={idx} className="p-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg text-xs space-y-1">
                           <div className="font-semibold text-[#2D3E40] flex items-center gap-2">
                             <span className="line-through text-[#7A7E7B]">{sub.original}</span>

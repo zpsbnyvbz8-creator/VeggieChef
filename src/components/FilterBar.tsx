@@ -7,12 +7,13 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { FilterState, RecipeCategory } from '../types';
+import { useRecipes } from '../context/RecipeContext';
 
 interface FilterBarProps {
-  filters: FilterState;
-  setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
-  totalCount: number;
-  filteredCount: number;
+  filters?: FilterState;
+  setFilters?: React.Dispatch<React.SetStateAction<FilterState>>;
+  totalCount?: number;
+  filteredCount?: number;
 }
 
 const CATEGORIES: ('all' | RecipeCategory)[] = [
@@ -58,12 +59,13 @@ const SORT_OPTIONS: { label: string; value: FilterState['sortBy'] }[] = [
   { label: '⭐ Beste Bewertung', value: 'ratingDesc' },
 ];
 
-export const FilterBar: React.FC<FilterBarProps> = ({
-  filters,
-  setFilters,
-  totalCount,
-  filteredCount,
-}) => {
+export const FilterBar: React.FC<FilterBarProps> = (props) => {
+  const recipesCtx = useRecipes();
+  const filters = props.filters ?? recipesCtx.filters;
+  const setFilters = props.setFilters ?? recipesCtx.setFilters;
+  const totalCount = props.totalCount ?? recipesCtx.recipes.length;
+  const filteredCount = props.filteredCount ?? recipesCtx.filteredRecipes.length;
+
   const hasActiveFilters =
     filters.category !== 'all' ||
     filters.difficulty !== 'all' ||

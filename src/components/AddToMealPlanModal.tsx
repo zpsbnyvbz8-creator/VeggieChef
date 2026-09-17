@@ -3,25 +3,28 @@ import { X, Calendar, Clock, Flame, Dumbbell, Sun, Moon, Check } from 'lucide-re
 import { Recipe, DayPlan, WeekPlan } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 
+import { usePlanner } from '../context/PlannerContext';
+
 interface AddToMealPlanModalProps {
-  recipe: Recipe | null;
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (dayId: string, mealType: 'lunch' | 'dinner', weekId?: string) => void;
-  currentMealPlan: DayPlan[];
+  recipe?: Recipe | null;
+  isOpen?: boolean;
+  onClose?: () => void;
+  onConfirm?: (dayId: string, mealType: 'lunch' | 'dinner', weekId?: string) => void;
+  currentMealPlan?: DayPlan[];
   weeks?: WeekPlan[];
   activeWeekId?: string;
 }
 
-export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = ({
-  recipe,
-  isOpen,
-  onClose,
-  onConfirm,
-  currentMealPlan,
-  weeks,
-  activeWeekId,
-}) => {
+export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => {
+  const plannerCtx = usePlanner();
+
+  const recipe = props.recipe !== undefined ? props.recipe : plannerCtx.recipeToAddToPlan;
+  const isOpen = props.isOpen !== undefined ? props.isOpen : !!plannerCtx.recipeToAddToPlan;
+  const onClose = props.onClose ?? (() => plannerCtx.setRecipeToAddToPlan(null));
+  const onConfirm = props.onConfirm ?? plannerCtx.confirmAddToMealPlan;
+  const currentMealPlan = props.currentMealPlan ?? plannerCtx.mealPlan;
+  const weeks = props.weeks ?? plannerCtx.weeks;
+  const activeWeekId = props.activeWeekId ?? plannerCtx.activeWeekId;
   const [selectedDayId, setSelectedDayId] = useState<string>('mon');
   const [selectedMealType, setSelectedMealType] = useState<'lunch' | 'dinner'>('dinner');
   const [selectedWeekId, setSelectedWeekId] = useState<string>(activeWeekId || weeks?.[0]?.id || 'current');

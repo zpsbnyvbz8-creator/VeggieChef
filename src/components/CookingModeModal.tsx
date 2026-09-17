@@ -17,24 +17,40 @@ import confetti from 'canvas-confetti';
 import { Recipe, CookingTimerState } from '../types';
 import { formatIngredientAmount } from '../utils/helpers';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
+import { useRecipes } from '../context/RecipeContext';
+import { useToast } from '../context/ToastContext';
 
 interface CookingModeModalProps {
-  recipe: Recipe | null;
-  servings: number;
-  onClose: () => void;
-  onFinishCooking: () => void;
-  cookingTimer: CookingTimerState | null;
-  onUpdateTimer: (timer: CookingTimerState | null) => void;
+  recipe?: Recipe | null;
+  servings?: number;
+  onClose?: () => void;
+  onFinishCooking?: () => void;
+  cookingTimer?: CookingTimerState | null;
+  onUpdateTimer?: (timer: CookingTimerState | null) => void;
 }
 
-export const CookingModeModal: React.FC<CookingModeModalProps> = ({
-  recipe,
-  servings,
-  onClose,
-  onFinishCooking,
-  cookingTimer,
-  onUpdateTimer,
-}) => {
+export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
+  const recipesCtx = useRecipes();
+  const toastCtx = useToast();
+
+  const recipe = props.recipe !== undefined ? props.recipe : (recipesCtx.cookingModeRecipe?.recipe ?? null);
+  const servings = props.servings !== undefined ? props.servings : (recipesCtx.cookingModeRecipe?.servings ?? 2);
+  const onClose = props.onClose ?? (() => {
+    const r = recipesCtx.cookingModeRecipe?.recipe;
+    recipesCtx.setCookingModeRecipe(null);
+    if (r) recipesCtx.setSelectedRecipe(r);
+  });
+  const onFinishCooking = props.onFinishCooking ?? (() => {
+    if (recipesCtx.cookingModeRecipe) {
+      recipesCtx.logCooked(recipesCtx.cookingModeRecipe.recipe, recipesCtx.cookingModeRecipe.servings);
+      const r = recipesCtx.cookingModeRecipe.recipe;
+      recipesCtx.setCookingModeRecipe(null);
+      if (r) recipesCtx.setSelectedRecipe(r);
+      toastCtx.showToast('🎉 Bravo! Dein Gericht wurde als gekocht in deiner Statistik gespeichert!');
+    }
+  });
+  const cookingTimer = props.cookingTimer !== undefined ? props.cookingTimer : recipesCtx.cookingTimer;
+  const onUpdateTimer = props.onUpdateTimer ?? recipesCtx.setCookingTimer;
   if (!recipe) return null;
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);

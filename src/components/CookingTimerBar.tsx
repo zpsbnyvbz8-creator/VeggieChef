@@ -1,22 +1,38 @@
 import React from 'react';
 import { Clock, Play, Pause, RotateCcw, X, ArrowUpRight } from 'lucide-react';
 import { CookingTimerState } from '../types';
+import { useRecipes } from '../context/RecipeContext';
 
 interface CookingTimerBarProps {
-  timer: CookingTimerState | null;
-  onTogglePlay: () => void;
-  onReset: () => void;
-  onDismiss: () => void;
-  onOpenCookingMode: () => void;
+  timer?: CookingTimerState | null;
+  onTogglePlay?: () => void;
+  onReset?: () => void;
+  onDismiss?: () => void;
+  onOpenCookingMode?: () => void;
 }
 
-export const CookingTimerBar: React.FC<CookingTimerBarProps> = ({
-  timer,
-  onTogglePlay,
-  onReset,
-  onDismiss,
-  onOpenCookingMode,
-}) => {
+export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
+  const recipesCtx = useRecipes();
+
+  const timer = props.timer !== undefined ? props.timer : recipesCtx.cookingTimer;
+  const onTogglePlay = props.onTogglePlay ?? (() => {
+    recipesCtx.setCookingTimer((prev) => (prev ? { ...prev, isRunning: !prev.isRunning } : null));
+  });
+  const onReset = props.onReset ?? (() => {
+    recipesCtx.setCookingTimer((prev) => (prev ? { ...prev, secondsLeft: prev.totalSeconds, isRunning: false } : null));
+  });
+  const onDismiss = props.onDismiss ?? (() => {
+    recipesCtx.setCookingTimer(null);
+  });
+  const onOpenCookingMode = props.onOpenCookingMode ?? (() => {
+    if (timer) {
+      const target = recipesCtx.recipes.find((r) => r.id === timer.recipeId);
+      if (target) {
+        recipesCtx.setCookingModeRecipe({ recipe: target, servings: 2 });
+        recipesCtx.setSelectedRecipe(null);
+      }
+    }
+  });
   if (!timer) return null;
 
   const mins = Math.floor(timer.secondsLeft / 60);

@@ -15,30 +15,38 @@ import {
 } from 'lucide-react';
 import { Recipe } from '../types';
 import { generateRecipeIngredientsText } from '../utils/helpers';
+import { useRecipes } from '../context/RecipeContext';
+import { useShopping } from '../context/ShoppingContext';
+import { usePlanner } from '../context/PlannerContext';
+import { useToast } from '../context/ToastContext';
 
 interface RecipeCardProps {
   recipe: Recipe;
-  onSelect: (recipe: Recipe) => void;
-  isFavorite: boolean;
-  onToggleFavorite: (recipeId: string) => void;
+  onSelect?: (recipe: Recipe) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (recipeId: string) => void;
   isDisliked?: boolean;
   onToggleDislike?: (recipeId: string) => void;
-  onQuickAddShopping: (recipe: Recipe) => void;
+  onQuickAddShopping?: (recipe: Recipe) => void;
   onAddToMealPlan?: (recipe: Recipe) => void;
-  onCopyFeedback: (msg: string) => void;
+  onCopyFeedback?: (msg: string) => void;
 }
 
-export const RecipeCard: React.FC<RecipeCardProps> = ({
-  recipe,
-  onSelect,
-  isFavorite,
-  onToggleFavorite,
-  isDisliked = false,
-  onToggleDislike,
-  onQuickAddShopping,
-  onAddToMealPlan,
-  onCopyFeedback,
-}) => {
+export const RecipeCard: React.FC<RecipeCardProps> = (props) => {
+  const recipesCtx = useRecipes();
+  const shoppingCtx = useShopping();
+  const plannerCtx = usePlanner();
+  const toastCtx = useToast();
+
+  const recipe = props.recipe;
+  const onSelect = props.onSelect || recipesCtx.setSelectedRecipe;
+  const isFavorite = props.isFavorite !== undefined ? props.isFavorite : recipesCtx.favorites.includes(recipe.id);
+  const onToggleFavorite = props.onToggleFavorite || recipesCtx.toggleFavorite;
+  const isDisliked = props.isDisliked !== undefined ? props.isDisliked : recipesCtx.dislikedIds.includes(recipe.id);
+  const onToggleDislike = props.onToggleDislike || recipesCtx.toggleDislike;
+  const onQuickAddShopping = props.onQuickAddShopping || ((r: Recipe) => shoppingCtx.addToShoppingList(r, r.servings));
+  const onAddToMealPlan = props.onAddToMealPlan || plannerCtx.addToMealPlan;
+  const onCopyFeedback = props.onCopyFeedback || toastCtx.showToast;
   const [copied, setCopied] = useState(false);
   const [addedShopping, setAddedShopping] = useState(false);
   const [addedMealPlan, setAddedMealPlan] = useState(false);

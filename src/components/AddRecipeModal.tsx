@@ -20,11 +20,12 @@ import {
 } from 'lucide-react';
 import { Recipe, RecipeCategory, RecipeIngredient, RecipeStep } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
+import { useRecipes } from '../context/RecipeContext';
 
 interface AddRecipeModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onRecipeAdded: (recipe: Recipe) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
+  onRecipeAdded?: (recipe: Recipe) => void;
 }
 
 const CATEGORIES: RecipeCategory[] = [
@@ -49,11 +50,12 @@ const QUICK_INSPIRATIONS = [
   'Miso-Ramen mit Kräuterseitlingen'
 ];
 
-export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
-  isOpen,
-  onClose,
-  onRecipeAdded
-}) => {
+export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
+  const recipesCtx = useRecipes();
+  const isOpen = props.isOpen !== undefined ? props.isOpen : recipesCtx.isAddRecipeOpen;
+  const onClose = props.onClose ?? (() => recipesCtx.setIsAddRecipeOpen(false));
+  const onRecipeAdded = props.onRecipeAdded ?? recipesCtx.addRecipe;
+
   const [activeTab, setActiveTab] = useState<'ai' | 'scan' | 'manual'>('ai');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);

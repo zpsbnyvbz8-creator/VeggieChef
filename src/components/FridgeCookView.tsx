@@ -16,22 +16,26 @@ import {
 } from 'lucide-react';
 import { Recipe } from '../types';
 import { PANTRY_QUICK_ITEMS } from '../data/recipes';
+import { useRecipes } from '../context/RecipeContext';
+import { useToast } from '../context/ToastContext';
 
 interface FridgeCookViewProps {
-  allRecipes: Recipe[];
-  onSelectRecipe: (recipe: Recipe) => void;
-  onSaveCustomRecipe: (recipe: Recipe) => void;
-  onlyVeganGlobal: boolean;
-  onCopyFeedback: (msg: string) => void;
+  allRecipes?: Recipe[];
+  onSelectRecipe?: (recipe: Recipe) => void;
+  onSaveCustomRecipe?: (recipe: Recipe) => void;
+  onlyVeganGlobal?: boolean;
+  onCopyFeedback?: (msg: string) => void;
 }
 
-export const FridgeCookView: React.FC<FridgeCookViewProps> = ({
-  allRecipes,
-  onSelectRecipe,
-  onSaveCustomRecipe,
-  onlyVeganGlobal,
-  onCopyFeedback,
-}) => {
+export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
+  const recipesCtx = useRecipes();
+  const toastCtx = useToast();
+
+  const allRecipes = props.allRecipes ?? recipesCtx.recipes;
+  const onSelectRecipe = props.onSelectRecipe ?? recipesCtx.setSelectedRecipe;
+  const onSaveCustomRecipe = props.onSaveCustomRecipe ?? recipesCtx.saveCustomRecipe;
+  const onlyVeganGlobal = props.onlyVeganGlobal ?? recipesCtx.onlyVegan;
+  const onCopyFeedback = props.onCopyFeedback ?? toastCtx.showToast;
   // Load and persist ingredients properly so deleted items stay deleted across reloads
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>(() => {
     try {

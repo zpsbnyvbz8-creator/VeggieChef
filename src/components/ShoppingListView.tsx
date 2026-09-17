@@ -22,11 +22,14 @@ import { generateShoppingListText, detectIngredientCategory } from '../utils/hel
 import { SyncConfig } from '../lib/syncService';
 import { Users, Cloud } from 'lucide-react';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
+import { useShopping } from '../context/ShoppingContext';
+import { useSync } from '../context/SyncContext';
+import { useToast } from '../context/ToastContext';
 
 interface ShoppingListViewProps {
-  items: ShoppingItem[];
-  setItems: React.Dispatch<React.SetStateAction<ShoppingItem[]>>;
-  onCopyFeedback: (msg: string) => void;
+  items?: ShoppingItem[];
+  setItems?: React.Dispatch<React.SetStateAction<ShoppingItem[]>>;
+  onCopyFeedback?: (msg: string) => void;
   syncConfig?: SyncConfig;
   onOpenSyncModal?: () => void;
 }
@@ -43,13 +46,16 @@ const CATEGORY_META: Record<
   sonstiges: { label: 'Sonstiges', icon: '📦', badgeColor: 'bg-[#FAF9F6] text-[#7A7E7B]' },
 };
 
-export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
-  items,
-  setItems,
-  onCopyFeedback,
-  syncConfig,
-  onOpenSyncModal,
-}) => {
+export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
+  const shoppingCtx = useShopping();
+  const syncCtx = useSync();
+  const toastCtx = useToast();
+
+  const items = props.items ?? shoppingCtx.items;
+  const setItems = props.setItems ?? shoppingCtx.setItems;
+  const onCopyFeedback = props.onCopyFeedback ?? toastCtx.showToast;
+  const syncConfig = props.syncConfig ?? syncCtx.syncConfig;
+  const onOpenSyncModal = props.onOpenSyncModal ?? syncCtx.openSyncModal;
   const [copied, setCopied] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const [newItemAmount, setNewItemAmount] = useState('');

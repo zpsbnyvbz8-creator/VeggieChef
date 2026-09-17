@@ -2,39 +2,45 @@ import React from 'react';
 import { Sparkles, Clock, Flame, Dumbbell, Copy, ArrowRight, Check, Heart, ShoppingCart, ThumbsDown, CalendarPlus } from 'lucide-react';
 import { Recipe } from '../types';
 import { generateRecipeIngredientsText } from '../utils/helpers';
+import { useRecipes } from '../context/RecipeContext';
+import { useShopping } from '../context/ShoppingContext';
+import { usePlanner } from '../context/PlannerContext';
+import { useToast } from '../context/ToastContext';
 
 interface DishOfTheDayProps {
   dish?: Recipe;
   recipe?: Recipe;
   onSelect?: (recipe: Recipe) => void;
   onSelectRecipe?: (recipe: Recipe) => void;
-  isFavorite: boolean;
-  onToggleFavorite: (recipeId: string) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (recipeId: string) => void;
   isDisliked?: boolean;
   onToggleDislike?: (recipeId: string) => void;
   onQuickAddShopping?: (recipe: Recipe) => void;
   onAddToMealPlan?: (recipe: Recipe) => void;
-  onCopyFeedback: (msg: string) => void;
+  onCopyFeedback?: (msg: string) => void;
 }
 
-export const DishOfTheDay: React.FC<DishOfTheDayProps> = ({
-  dish,
-  recipe: recipeProp,
-  onSelect,
-  onSelectRecipe,
-  isFavorite,
-  onToggleFavorite,
-  isDisliked = false,
-  onToggleDislike,
-  onQuickAddShopping,
-  onAddToMealPlan,
-  onCopyFeedback,
-}) => {
+export const DishOfTheDay: React.FC<DishOfTheDayProps> = (props) => {
+  const recipesCtx = useRecipes();
+  const shoppingCtx = useShopping();
+  const plannerCtx = usePlanner();
+  const toastCtx = useToast();
+
+  const currentDish = props.dish || props.recipe || recipesCtx.dishOfTheDay;
+  const onSelect = props.onSelect || props.onSelectRecipe || recipesCtx.setSelectedRecipe;
+  const isFavorite = props.isFavorite !== undefined ? props.isFavorite : (currentDish ? recipesCtx.favorites.includes(currentDish.id) : false);
+  const onToggleFavorite = props.onToggleFavorite || recipesCtx.toggleFavorite;
+  const isDisliked = props.isDisliked !== undefined ? props.isDisliked : (currentDish ? recipesCtx.dislikedIds.includes(currentDish.id) : false);
+  const onToggleDislike = props.onToggleDislike || recipesCtx.toggleDislike;
+  const onQuickAddShopping = props.onQuickAddShopping || ((r: Recipe) => shoppingCtx.addToShoppingList(r, r.servings));
+  const onAddToMealPlan = props.onAddToMealPlan || plannerCtx.addToMealPlan;
+  const onCopyFeedback = props.onCopyFeedback || toastCtx.showToast;
   const [copied, setCopied] = React.useState(false);
   const [addedShopping, setAddedShopping] = React.useState(false);
 
-  const activeRecipe = dish || recipeProp;
-  const handleSelect = onSelect || onSelectRecipe;
+  const activeRecipe = currentDish;
+  const handleSelect = onSelect;
 
   if (!activeRecipe) return null;
 

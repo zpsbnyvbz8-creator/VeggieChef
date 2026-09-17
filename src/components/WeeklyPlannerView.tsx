@@ -28,17 +28,22 @@ import { DayPlan, MealPlanSlot, Recipe, WeekPlan } from '../types';
 import { SyncConfig } from '../lib/syncService';
 import { Users, Cloud } from 'lucide-react';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
+import { usePlanner } from '../context/PlannerContext';
+import { useRecipes } from '../context/RecipeContext';
+import { useShopping } from '../context/ShoppingContext';
+import { useSync } from '../context/SyncContext';
+import { useToast } from '../context/ToastContext';
 
 interface WeeklyPlannerViewProps {
-  mealPlan: DayPlan[];
-  setMealPlan: React.Dispatch<React.SetStateAction<DayPlan[]>>;
-  allRecipes: Recipe[];
+  mealPlan?: DayPlan[];
+  setMealPlan?: React.Dispatch<React.SetStateAction<DayPlan[]>>;
+  allRecipes?: Recipe[];
   favorites?: string[];
   onToggleFavorite?: (recipeId: string) => void;
-  onSelectRecipe: (recipe: Recipe) => void;
-  onAddAllToShoppingList: (recipesToPlan: { recipe: Recipe; servings: number }[]) => void;
-  onCopyFeedback: (msg: string) => void;
-  onlyVeganGlobal: boolean;
+  onSelectRecipe?: (recipe: Recipe) => void;
+  onAddAllToShoppingList?: (recipesToPlan: { recipe: Recipe; servings: number }[]) => void;
+  onCopyFeedback?: (msg: string) => void;
+  onlyVeganGlobal?: boolean;
   syncConfig?: SyncConfig;
   onOpenSyncModal?: () => void;
   weeks?: WeekPlan[];
@@ -48,24 +53,29 @@ interface WeeklyPlannerViewProps {
   onDeleteWeek?: (weekId: string) => void;
 }
 
-export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({
-  mealPlan,
-  setMealPlan,
-  allRecipes,
-  favorites = [],
-  onToggleFavorite,
-  onSelectRecipe,
-  onAddAllToShoppingList,
-  onCopyFeedback,
-  onlyVeganGlobal,
-  syncConfig,
-  onOpenSyncModal,
-  weeks,
-  activeWeekId,
-  onSelectWeek,
-  onCreateNewWeek,
-  onDeleteWeek,
-}) => {
+export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
+  const plannerCtx = usePlanner();
+  const recipesCtx = useRecipes();
+  const shoppingCtx = useShopping();
+  const syncCtx = useSync();
+  const toastCtx = useToast();
+
+  const mealPlan = props.mealPlan ?? plannerCtx.mealPlan;
+  const setMealPlan = props.setMealPlan ?? plannerCtx.setMealPlan;
+  const allRecipes = props.allRecipes ?? recipesCtx.recipes;
+  const favorites = props.favorites ?? recipesCtx.favorites;
+  const onToggleFavorite = props.onToggleFavorite ?? recipesCtx.toggleFavorite;
+  const onSelectRecipe = props.onSelectRecipe ?? recipesCtx.setSelectedRecipe;
+  const onAddAllToShoppingList = props.onAddAllToShoppingList ?? shoppingCtx.addMultipleToShoppingList;
+  const onCopyFeedback = props.onCopyFeedback ?? toastCtx.showToast;
+  const onlyVeganGlobal = props.onlyVeganGlobal ?? recipesCtx.onlyVegan;
+  const syncConfig = props.syncConfig ?? syncCtx.syncConfig;
+  const onOpenSyncModal = props.onOpenSyncModal ?? syncCtx.openSyncModal;
+  const weeks = props.weeks ?? plannerCtx.weeks;
+  const activeWeekId = props.activeWeekId ?? plannerCtx.activeWeekId;
+  const onSelectWeek = props.onSelectWeek ?? plannerCtx.selectWeek;
+  const onCreateNewWeek = props.onCreateNewWeek ?? plannerCtx.createNewWeek;
+  const onDeleteWeek = props.onDeleteWeek ?? plannerCtx.deleteWeek;
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
   const [selectedMealType, setSelectedMealType] = useState<'lunch' | 'dinner'>('dinner');
   const [showRecipePickerModal, setShowRecipePickerModal] = useState(false);

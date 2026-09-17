@@ -15,24 +15,44 @@ import {
 } from 'lucide-react';
 import { SyncConfig, sanitizeGroupId } from '../lib/syncService';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
+import { useSync } from '../context/SyncContext';
+import { useShopping } from '../context/ShoppingContext';
+import { usePlanner } from '../context/PlannerContext';
+import { useRecipes } from '../context/RecipeContext';
 
 interface FamilySyncModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  syncConfig: SyncConfig;
-  onJoinFamily: (groupId: string, groupName: string, memberName: string, pushData: boolean) => Promise<void>;
-  onLeaveFamily: () => void;
-  onForcePushCurrentData: () => Promise<void>;
+  isOpen?: boolean;
+  onClose?: () => void;
+  syncConfig?: SyncConfig;
+  onJoinFamily?: (groupId: string, groupName: string, memberName: string, pushData: boolean) => Promise<void>;
+  onLeaveFamily?: () => void;
+  onForcePushCurrentData?: () => Promise<void>;
 }
 
-export const FamilySyncModal: React.FC<FamilySyncModalProps> = ({
-  isOpen,
-  onClose,
-  syncConfig,
-  onJoinFamily,
-  onLeaveFamily,
-  onForcePushCurrentData,
-}) => {
+export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
+  const syncCtx = useSync();
+  const shoppingCtx = useShopping();
+  const plannerCtx = usePlanner();
+  const recipesCtx = useRecipes();
+
+  const isOpen = props.isOpen !== undefined ? props.isOpen : syncCtx.isSyncModalOpen;
+  const onClose = props.onClose ?? syncCtx.closeSyncModal;
+  const syncConfig = props.syncConfig ?? syncCtx.syncConfig;
+  const onJoinFamily = props.onJoinFamily ?? ((groupId, groupName, memberName, pushData) =>
+    syncCtx.joinFamily(groupId, groupName, memberName, pushData, {
+      shoppingItems: shoppingCtx.items,
+      mealPlan: plannerCtx.mealPlan,
+      recipes: recipesCtx.recipes,
+    })
+  );
+  const onLeaveFamily = props.onLeaveFamily ?? syncCtx.leaveFamily;
+  const onForcePushCurrentData = props.onForcePushCurrentData ?? (() =>
+    syncCtx.forcePushData({
+      shoppingItems: shoppingCtx.items,
+      mealPlan: plannerCtx.mealPlan,
+      recipes: recipesCtx.recipes,
+    })
+  );
   const [groupIdInput, setGroupIdInput] = useState(syncConfig.groupId || 'unsere-familie');
   const [groupNameInput, setGroupNameInput] = useState(syncConfig.groupName || 'Unsere Familie');
   const [memberNameInput, setMemberNameInput] = useState(syncConfig.memberName || '');
