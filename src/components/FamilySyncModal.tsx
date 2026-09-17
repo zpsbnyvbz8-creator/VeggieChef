@@ -13,7 +13,7 @@ import {
   Sparkles,
   Share2
 } from 'lucide-react';
-import { SyncConfig, sanitizeGroupId } from '../lib/syncService';
+import { SyncConfig, sanitizeGroupId, generateSecureFamilyCode } from '../lib/syncService';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 import { useSync } from '../context/SyncContext';
 import { useShopping } from '../context/ShoppingContext';
@@ -53,7 +53,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
       recipes: recipesCtx.recipes,
     })
   );
-  const [groupIdInput, setGroupIdInput] = useState(syncConfig.groupId || 'unsere-familie');
+  const [groupIdInput, setGroupIdInput] = useState(() => syncConfig.groupId || generateSecureFamilyCode());
   const [groupNameInput, setGroupNameInput] = useState(syncConfig.groupName || 'Unsere Familie');
   const [memberNameInput, setMemberNameInput] = useState(syncConfig.memberName || '');
   const [pushExistingData, setPushExistingData] = useState(true);
@@ -239,20 +239,29 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
             <form onSubmit={handleJoin} className="space-y-4">
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#2D3E40] mb-1.5">
-                    Familien-Code / Gruppenname
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-[#2D3E40]">
+                      Familien-Code (14 Zeichen)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setGroupIdInput(generateSecureFamilyCode())}
+                      className="text-[11px] font-medium text-[#4A7856] hover:underline cursor-pointer"
+                    >
+                      Neuen Code würfeln
+                    </button>
+                  </div>
                   <input
                     id="input-family-code"
                     type="text"
                     value={groupIdInput}
                     onChange={(e) => setGroupIdInput(e.target.value)}
-                    placeholder="z.B. familie-schmidt oder zuhause"
+                    placeholder="z.B. 7m2p9x4w8k3qzt"
                     className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-white border border-[#ECEBE8] text-sm text-[#2D3E40] font-mono focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] outline-hidden shadow-2xs"
                     required
                   />
                   <p className="text-[11px] text-[#7A7E7B] mt-1">
-                    Wähle ein einfaches Codewort (z.B. deinen Nachnamen). Alle Familienmitglieder geben denselben Code ein.
+                    Zufälliger, nicht erratbarer Sicherheitscode. Gib diesen Code auf deinen anderen iPhones oder iPads ein.
                   </p>
                 </div>
 

@@ -61,9 +61,29 @@ export function sanitizeGroupId(raw: string): string {
   return raw
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, '-')
-    .replace(/-+/g, '-')
+    .replace(/[^a-z0-9_-]/g, '')
     .slice(0, 32);
+}
+
+/**
+ * Generates an unguessable, cryptographically secure 14-character alphanumeric family code
+ * preventing enumeration and brute force attacks on Firestore.
+ */
+export function generateSecureFamilyCode(): string {
+  const chars = 'abcdefghijkmnpqrstuvwxyz23456789'; // Clean unambiguous alphanumeric set
+  let code = '';
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const randomBytes = new Uint8Array(14);
+    crypto.getRandomValues(randomBytes);
+    for (let i = 0; i < randomBytes.length; i++) {
+      code += chars[randomBytes[i] % chars.length];
+    }
+  } else {
+    for (let i = 0; i < 14; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+  }
+  return code;
 }
 
 // ==========================================

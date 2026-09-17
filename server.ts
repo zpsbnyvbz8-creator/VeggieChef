@@ -1,18 +1,121 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import dotenv from "dotenv";
-import { GoogleGenAI } from "@google/genai";
+import helmet from "helmet";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
+import { z } from "zod";
+import { GoogleGenAI, Type } from "@google/genai";
 
 dotenv.config();
 
 const app = express();
 const PORT = 3000;
 
-// Middleware for parsing JSON with a generous limit for base64 image scans
-app.use(express.json({ limit: "15mb" }));
+// ---------------------------------------------------------------------------
+// 1. Security Headers, CORS, Rate Limiting & Payload Protection
+// ---------------------------------------------------------------------------
+
+// Helmet with customized CSP allowing external Unsplash images, fonts, and Firebase endpoints
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "blob:",
+          "https://images.unsplash.com",
+          "https://*.unsplash.com",
+        ],
+        connectSrc: [
+          "'self'",
+          "https://*.googleapis.com",
+          "https://*.firebaseio.com",
+          "https://*.identitytoolkit.googleapis.com",
+          "https://firestore.googleapis.com",
+          "https://identitytoolkit.googleapis.com",
+          "https://securetoken.googleapis.com",
+        ],
+        mediaSrc: ["'self'", "data:", "blob:"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
+// CORS restricted to app domain, localhost, and Vercel deployments
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const appUrl = process.env.APP_URL;
+      if (appUrl && origin.startsWith(appUrl)) {
+        return callback(null, true);
+      }
+      if (
+        origin.endsWith(".vercel.app") ||
+        origin.includes("localhost") ||
+        origin.includes("127.0.0.1") ||
+        origin.includes("run.app")
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+  })
+);
+
+// Middleware for parsing JSON with Vercel serverless compatible limit (4.5mb)
+app.use(express.json({ limit: "4.5mb" }));
+
+// Rate Limiting on AI endpoints to prevent quota abuse (10 requests per 15 minutes per IP)
+const aiRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: "Zu viele KI-Anfragen in kurzer Zeit. Bitte warte einen Moment, bevor du eine neue Anfrage startest.",
+    code: "RATE_LIMIT_EXCEEDED",
+  },
+});
+
+app.use("/api/ai/", aiRateLimiter);
 
 // ---------------------------------------------------------------------------
-// 1. Gemini Client Initialization
+// 2. Structured Logging
+// ---------------------------------------------------------------------------
+function logAiEvent(
+  level: "info" | "warn" | "error",
+  endpoint: string,
+  message: string,
+  meta?: Record<string, unknown>
+) {
+  const logPayload = {
+    timestamp: new Date().toISOString(),
+    level,
+    endpoint,
+    message,
+    ...meta,
+  };
+  if (level === "error") {
+    console.error(JSON.stringify(logPayload));
+  } else if (level === "warn") {
+    console.warn(JSON.stringify(logPayload));
+  } else {
+    console.info(JSON.stringify(logPayload));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 3. Gemini Client Initialization
 // ---------------------------------------------------------------------------
 let genAIClient: GoogleGenAI | null = null;
 
@@ -34,22 +137,18 @@ function getGenAI(): GoogleGenAI | null {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Verified Active Gemini Model Cascade & Safe Invocation
+// 4. Verified Active Gemini Model Cascade & Safe Invocation (Max 9000ms Timeout)
 // ---------------------------------------------------------------------------
-// Official supported models in current Google GenAI runtime:
-// - Primary: gemini-3.1-flash-lite (ultra-fast ~1s, high quality structured JSON)
-// - Secondary: gemini-flash-latest (fast, stable alias)
-// - Tertiary: gemini-3.8-flash (robust fallback)
+// Primary: gemini-3.1-flash-lite (ultra-fast ~1s, official supported model)
+// Fallback: gemini-flash-latest (fast official alias for guaranteed availability)
 const ACTIVE_MODELS = [
   "gemini-3.1-flash-lite",
   "gemini-flash-latest",
 ] as const;
 
 /**
- * Safely extracts and parses JSON from Gemini responses, handling:
- * - Markdown code blocks (```json ... ``` or ``` ... ```)
- * - Leading/trailing conversational text
- * - Unescaped quotes or whitespace
+ * Safely extracts and parses JSON from Gemini responses, handling both raw JSON
+ * and fallback parsing if any formatting irregularities occur.
  */
 function safeExtractJson<T = any>(rawText: string, fallback: T): T {
   if (!rawText || typeof rawText !== "string") {
@@ -66,7 +165,7 @@ function safeExtractJson<T = any>(rawText: string, fallback: T): T {
   }
 
   // Strip Markdown fences
-  let sanitized = trimmed
+  const sanitized = trimmed
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/i, "")
     .trim();
@@ -77,7 +176,6 @@ function safeExtractJson<T = any>(rawText: string, fallback: T): T {
     // Continue with regex pattern matching
   }
 
-  // Locate the first { and last } or first [ and last ]
   const firstBrace = sanitized.indexOf("{");
   const lastBrace = sanitized.lastIndexOf("}");
   if (firstBrace !== -1 && lastBrace > firstBrace) {
@@ -102,8 +200,8 @@ function safeExtractJson<T = any>(rawText: string, fallback: T): T {
 }
 
 /**
- * Executes Gemini generateContent with smart model cascading, retry on temporary
- * rate limits / capacity spikes, and proper timeout cleanup.
+ * Executes Gemini generateContent strictly capped at 9000ms max total timeout
+ * to safely ensure compliance with Vercel's 10-second serverless execution window.
  */
 async function callGeminiWithRetry(
   ai: GoogleGenAI,
@@ -112,83 +210,320 @@ async function callGeminiWithRetry(
     contents: any;
     config?: any;
     timeoutMs?: number;
-  },
-  maxRetries = 1
+  }
 ): Promise<{ text: string }> {
-  const timeoutLimit = options.timeoutMs || 25000;
+  // Hard cap to 9000ms for Vercel 10s serverless limit
+  const maxTotalBudgetMs = Math.min(options.timeoutMs || 9000, 9000);
+  const startTime = Date.now();
   const requestedModel = options.model || "gemini-3.1-flash-lite";
   const modelsToTry = Array.from(new Set([requestedModel, ...ACTIVE_MODELS]));
 
-  let lastError: any = null;
+  let lastError: unknown = null;
 
   for (const currentModel of modelsToTry) {
-    for (let retry = 0; retry <= maxRetries; retry++) {
-      let timeoutId: NodeJS.Timeout | null = null;
-      try {
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          timeoutId = setTimeout(() => {
-            reject(new Error(`API call timed out after ${timeoutLimit}ms for ${currentModel}`));
-          }, timeoutLimit);
-        });
+    const elapsed = Date.now() - startTime;
+    const remainingTime = maxTotalBudgetMs - elapsed;
 
-        const callPromise = ai.models.generateContent({
-          ...options,
-          model: currentModel,
-        });
+    // If less than 1.5 seconds remaining, do not launch next call to avoid exceeding Vercel 10s timeout
+    if (remainingTime < 1500) {
+      logAiEvent("warn", "cascade", "Not enough execution budget remaining for model cascade", {
+        elapsed,
+        remainingTime,
+      });
+      break;
+    }
 
-        const response = await Promise.race([callPromise, timeoutPromise]);
-        if (timeoutId) clearTimeout(timeoutId);
+    const currentTimeout = Math.min(remainingTime, 6000);
+    let timeoutId: NodeJS.Timeout | null = null;
 
-        const textOutput = response?.text || "";
-        if (textOutput) {
-          return { text: textOutput };
-        }
-      } catch (err: any) {
-        if (timeoutId) clearTimeout(timeoutId);
-        lastError = err;
-        const errMsg = (err?.message || String(err)).toLowerCase();
-        const status =
-          err?.status ||
-          err?.error?.code ||
-          err?.statusCode ||
-          (err?.response && err.response.status);
+    try {
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(`API call timed out after ${currentTimeout}ms for ${currentModel}`));
+        }, currentTimeout);
+      });
 
-        // If timed out or model unavailable/high-demand, don't waste seconds retrying the exact same model,
-        // advance immediately to the next model in the cascade!
-        const isTimeout = errMsg.includes("timed out");
-        const isUnavailable =
-          status === 503 ||
-          errMsg.includes("503") ||
-          errMsg.includes("high demand") ||
-          errMsg.includes("unavailable") ||
-          errMsg.includes("overloaded");
+      const callPromise = ai.models.generateContent({
+        ...options,
+        model: currentModel,
+      });
 
-        const isTemporary =
-          !isTimeout &&
-          !isUnavailable &&
-          (status === 429 ||
-            status === 500 ||
-            errMsg.includes("429") ||
-            errMsg.includes("500") ||
-            errMsg.includes("resource has been exhausted") ||
-            errMsg.includes("quota") ||
-            errMsg.includes("rate limit"));
+      const response = await Promise.race([callPromise, timeoutPromise]);
+      if (timeoutId) clearTimeout(timeoutId);
 
-        if (isTemporary && retry < maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          continue;
-        }
-
-        console.info(
-          `[AI-Cascade] Model ${currentModel} error (${status || errMsg.slice(0, 60)}), advancing to next model in cascade...`
-        );
-        break; // Advance to next model
+      const textOutput = response?.text || "";
+      if (textOutput) {
+        return { text: textOutput };
       }
+    } catch (err: unknown) {
+      if (timeoutId) clearTimeout(timeoutId);
+      lastError = err;
+      const errMsg = err instanceof Error ? err.message : String(err);
+      logAiEvent("warn", "cascade", `Model ${currentModel} error, advancing in cascade if budget permits`, {
+        error: errMsg.slice(0, 100),
+        elapsed: Date.now() - startTime,
+      });
     }
   }
 
   throw lastError || new Error("Alle KI-Modelle waren vorübergehend nicht erreichbar.");
 }
+
+// ---------------------------------------------------------------------------
+// 5. Zod Request Validation Schemas
+// ---------------------------------------------------------------------------
+const substituteRequestSchema = z.object({
+  recipeTitle: z.string().min(1).max(200).default("Rezept"),
+  missingIngredients: z.array(z.string().min(1).max(100)).min(1).max(20),
+  availableIngredients: z.array(z.string().max(100)).max(50).optional().default([]),
+  currentIngredients: z.array(z.any()).max(50).optional().default([]),
+});
+
+const fridgeCookRequestSchema = z.object({
+  ingredients: z.array(z.string().min(1).max(80)).min(1, "Bitte wähle mindestens eine Zutat aus deiner Vorratskammer aus.").max(30),
+  isVegan: z.boolean().optional().default(false),
+  maxTimeMinutes: z.number().int().min(10).max(180).optional().default(25),
+  difficulty: z.string().max(40).optional().default("Einfach"),
+  mealType: z.string().max(50).optional().default("Hauptgericht"),
+  extraWishes: z.string().max(200).optional().default(""),
+  maxAdditionalIngredients: z.number().int().min(0).max(10).optional().default(2),
+  includeBasics: z.boolean().optional().default(true),
+});
+
+const mealPlanRequestSchema = z.object({
+  isVegan: z.boolean().optional().default(false),
+  peopleCount: z.number().int().min(1).max(12).optional().default(2),
+  focus: z.string().max(100).optional().default("Ausgewogen & proteinreich"),
+  maxMinutesPerMeal: z.number().int().min(10).max(120).optional().default(35),
+  mealOption: z.enum(["lunch", "dinner", "both"]).optional().default("both"),
+});
+
+const veganizeRequestSchema = z.object({
+  recipe: z.object({
+    title: z.string().min(1).max(200).default("Rezept"),
+    category: z.string().max(80).optional(),
+    ingredients: z
+      .array(
+        z.object({
+          name: z.string().max(120),
+          amount: z.union([z.string(), z.number()]).optional(),
+          unit: z.string().max(40).optional(),
+        })
+      )
+      .optional()
+      .default([]),
+    steps: z.array(z.any()).optional().default([]),
+  }),
+});
+
+const createRecipeRequestSchema = z
+  .object({
+    prompt: z.string().max(300).optional(),
+    title: z.string().max(200).optional(),
+    isVegan: z.boolean().optional().default(true),
+    category: z.string().max(80).optional().default("Schnelle Küche"),
+    targetCalories: z.number().int().min(150).max(2500).optional(),
+    targetProtein: z.number().int().min(5).max(150).optional(),
+    maxTimeMinutes: z.number().int().min(10).max(180).optional().default(25),
+    styleTags: z.array(z.string().max(50)).max(10).optional().default([]),
+    includedIngredients: z.array(z.string().max(80)).max(20).optional().default([]),
+  })
+  .refine(
+    (data) => Boolean((data.title && data.title.trim()) || (data.prompt && data.prompt.trim())),
+    {
+      message: "Bitte gib einen Namen oder eine Wunsch-Beschreibung für das Gericht ein.",
+    }
+  );
+
+const ALLOWED_SCAN_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+] as const;
+
+const scanRecipeRequestSchema = z.object({
+  imageBase64: z.string().min(1, "Kein Bild übermittelt"),
+  mimeType: z.string().optional().default("image/jpeg"),
+  userNotes: z.string().max(300).optional().default(""),
+  isVegan: z.boolean().optional().default(true),
+});
+
+// ---------------------------------------------------------------------------
+// 6. Official Gemini responseSchema Definitions (@google/genai)
+// ---------------------------------------------------------------------------
+const substituteResponseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    substitutions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          original: { type: Type.STRING },
+          replacement: { type: Type.STRING },
+          reason: { type: Type.STRING },
+          usageTip: { type: Type.STRING },
+        },
+        required: ["original", "replacement", "reason", "usageTip"],
+      },
+    },
+    advice: { type: Type.STRING },
+    adaptedStepsSummary: { type: Type.STRING },
+  },
+  required: ["substitutions", "advice", "adaptedStepsSummary"],
+};
+
+const structuredRecipeResponseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING },
+    subtitle: { type: Type.STRING },
+    category: { type: Type.STRING },
+    isVegan: { type: Type.BOOLEAN },
+    prepTimeMinutes: { type: Type.INTEGER },
+    cookTimeMinutes: { type: Type.INTEGER },
+    difficulty: { type: Type.STRING },
+    servings: { type: Type.INTEGER },
+    nutrients: {
+      type: Type.OBJECT,
+      properties: {
+        calories: { type: Type.INTEGER },
+        protein: { type: Type.INTEGER },
+        carbs: { type: Type.INTEGER },
+        fat: { type: Type.INTEGER },
+        fiber: { type: Type.INTEGER },
+        iron: { type: Type.NUMBER },
+      },
+      required: ["calories", "protein", "carbs", "fat", "fiber"],
+    },
+    tags: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+    },
+    chefTips: { type: Type.STRING },
+    ingredients: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          amount: { type: Type.NUMBER },
+          unit: { type: Type.STRING },
+          category: { type: Type.STRING },
+          origin: { type: Type.STRING },
+        },
+        required: ["name", "amount", "unit", "category"],
+      },
+    },
+    steps: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          stepNumber: { type: Type.INTEGER },
+          title: { type: Type.STRING },
+          text: { type: Type.STRING },
+          timerMinutes: { type: Type.INTEGER },
+        },
+        required: ["stepNumber", "title", "text"],
+      },
+    },
+  },
+  required: [
+    "title",
+    "subtitle",
+    "category",
+    "isVegan",
+    "prepTimeMinutes",
+    "cookTimeMinutes",
+    "difficulty",
+    "servings",
+    "nutrients",
+    "ingredients",
+    "steps",
+  ],
+};
+
+const mealPlanResponseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    planTitle: { type: Type.STRING },
+    focusDescription: { type: Type.STRING },
+    days: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          dayName: { type: Type.STRING },
+          lunch: { type: Type.STRING },
+          lunchTime: { type: Type.STRING },
+          dinner: { type: Type.STRING },
+          dinnerTime: { type: Type.STRING },
+          calories: { type: Type.INTEGER },
+          protein: { type: Type.INTEGER },
+          highlightNutrient: { type: Type.STRING },
+        },
+        required: ["dayName"],
+      },
+    },
+    shoppingCategories: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          category: { type: Type.STRING },
+          items: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+          },
+        },
+        required: ["category", "items"],
+      },
+    },
+    prepSummary: { type: Type.STRING },
+  },
+  required: ["planTitle", "focusDescription", "days", "shoppingCategories"],
+};
+
+const veganizeResponseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING },
+    subtitle: { type: Type.STRING },
+    ingredients: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          amount: { type: Type.STRING },
+          unit: { type: Type.STRING },
+        },
+        required: ["name"],
+      },
+    },
+    veganReplacements: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          original: { type: Type.STRING },
+          replacement: { type: Type.STRING },
+          tip: { type: Type.STRING },
+        },
+        required: ["original", "replacement"],
+      },
+    },
+    steps: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+    },
+    chefTips: { type: Type.STRING },
+  },
+  required: ["title", "subtitle", "ingredients", "veganReplacements", "steps"],
+};
 
 // ---------------------------------------------------------------------------
 // 3. Curated High-Resolution Food Image Resolution
@@ -787,21 +1122,21 @@ app.get("/api/health", (_req, res) => {
 });
 
 // 1. AI Ingredient Substitution & Recipe Adaptation
-app.post("/api/ai/substitute", async (req, res) => {
-  const {
-    recipeTitle = "Rezept",
-    missingIngredients = [],
-    availableIngredients = [],
-    currentIngredients = [],
-  } = req.body || {};
+app.post("/api/ai/substitute", async (req: Request, res: Response) => {
+  const parseResult = substituteRequestSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      success: false,
+      error: parseResult.error.issues.map((i) => i.message).join(", "),
+    });
+  }
 
-  const safeTitle = typeof recipeTitle === "string" ? recipeTitle.trim().slice(0, 150) : "Rezept";
-  const safeMissing = Array.isArray(missingIngredients)
-    ? missingIngredients.filter((i) => typeof i === "string" && i.trim().length > 0).slice(0, 20)
-    : [];
-  const safeAvailable = Array.isArray(availableIngredients)
-    ? availableIngredients.filter((i) => typeof i === "string" && i.trim().length > 0).slice(0, 50)
-    : [];
+  const {
+    recipeTitle,
+    missingIngredients,
+    availableIngredients,
+    currentIngredients,
+  } = parseResult.data;
 
   try {
     const ai = getGenAI();
@@ -810,42 +1145,31 @@ app.post("/api/ai/substitute", async (req, res) => {
         success: true,
         isFallback: true,
         ...buildFallbackSubstitutions({
-          recipeTitle: safeTitle,
-          missingIngredients: safeMissing,
-          availableIngredients: safeAvailable,
+          recipeTitle,
+          missingIngredients,
+          availableIngredients,
         }),
       });
     }
 
     const prompt = `Du bist ein erfahrener vegetarischer & veganer Sternekoch und Ernährungswissenschaftler.
-Der Benutzer kocht das vegetarische/vegane Gericht "${safeTitle}".
-Folgende Zutaten fehlen: ${JSON.stringify(safeMissing)}
-Vorhandene Zutaten im Haushalt: ${JSON.stringify(safeAvailable)}
-Aktuelle Rezept-Zutaten: ${JSON.stringify(Array.isArray(currentIngredients) ? currentIngredients.slice(0, 30) : [])}
+Der Benutzer kocht das vegetarische/vegane Gericht "${recipeTitle}".
+Folgende Zutaten fehlen: ${JSON.stringify(missingIngredients)}
+Vorhandene Zutaten im Haushalt: ${JSON.stringify(availableIngredients)}
+Aktuelle Rezept-Zutaten: ${JSON.stringify(currentIngredients.slice(0, 30))}
 
 Bitte erstelle smarte, rein vegetarische/vegane Alternativen für die fehlenden Zutaten. Berücksichtige Geschmack, Textur und Nährwerte (besonders Protein).
-Gib deine Antwort ausschließlich als gültiges JSON in folgendem Format zurück:
-{
-  "substitutions": [
-    {
-      "original": "Name der fehlenden Zutat",
-      "replacement": "Vorgeschlagene vegetarische/vegane Alternative mit Mengenangabe",
-      "reason": "Warum diese Alternative perfekt passt (Geschmack, Bindung, Protein etc.)",
-      "usageTip": "Praktischer Zubereitungstipp beim Tausch"
-    }
-  ],
-  "advice": "Gesamter kulinarischer Tipp für das Gericht mit diesen Tauschzutaten",
-  "adaptedStepsSummary": "Kurze Anleitung, wie sich die Zubereitungsschritte durch den Tausch ändern"
-}`;
+Gib deine Antwort als strukturiertes JSON zurück.`;
 
     const response = await callGeminiWithRetry(ai, {
       model: "gemini-3.1-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
+        responseSchema: substituteResponseSchema,
         temperature: 0.7,
       },
-      timeoutMs: 20000,
+      timeoutMs: 9000,
     });
 
     const parsed = safeExtractJson(response.text, null);
@@ -853,69 +1177,66 @@ Gib deine Antwort ausschließlich als gültiges JSON in folgendem Format zurück
       throw new Error("Unvollständige Antwort vom KI-Dienst");
     }
 
+    logAiEvent("info", "/api/ai/substitute", "Generated substitutions successfully", {
+      recipeTitle,
+      missingCount: missingIngredients.length,
+    });
+
     res.json({ success: true, ...parsed });
-  } catch (error: any) {
-    console.warn("Fallback triggered for /api/ai/substitute:", error?.message || error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    logAiEvent("warn", "/api/ai/substitute", "Fallback triggered for substitute", { error: errMsg });
     res.json({
       success: true,
       isFallback: true,
       ...buildFallbackSubstitutions({
-        recipeTitle: safeTitle,
-        missingIngredients: safeMissing,
-        availableIngredients: safeAvailable,
+        recipeTitle,
+        missingIngredients,
+        availableIngredients,
       }),
     });
   }
 });
 
 // 2. Fridge Cook (Kühlschrank-Zauberer / Resteverwerter)
-app.post("/api/ai/fridge-cook", async (req, res) => {
-  const {
-    ingredients = [],
-    isVegan = false,
-    maxTimeMinutes = 25,
-    difficulty = "Einfach",
-    mealType = "Hauptgericht",
-    extraWishes = "",
-    maxAdditionalIngredients = 2,
-    includeBasics = true,
-  } = req.body || {};
-
-  const cleanIngredients = Array.isArray(ingredients)
-    ? ingredients.filter((i) => typeof i === "string" && i.trim().length > 0).map((i) => i.trim()).slice(0, 30)
-    : [];
-
-  if (cleanIngredients.length === 0) {
+app.post("/api/ai/fridge-cook", async (req: Request, res: Response) => {
+  const parseResult = fridgeCookRequestSchema.safeParse(req.body);
+  if (!parseResult.success) {
     return res.status(400).json({
       success: false,
-      error: "Bitte wähle mindestens eine Zutat aus deiner Vorratskammer aus.",
+      error: parseResult.error.issues.map((i) => i.message).join(", "),
     });
   }
 
-  const safeMaxTime = Math.max(10, Math.min(180, Number(maxTimeMinutes) || 25));
-  const safeMaxExtras = Math.max(0, Math.min(10, Number(maxAdditionalIngredients) || 2));
-  const safeDifficulty = typeof difficulty === "string" ? difficulty.slice(0, 30) : "Einfach";
-  const safeMealType = typeof mealType === "string" ? mealType.slice(0, 50) : "Hauptgericht";
-  const safeWishes = typeof extraWishes === "string" ? extraWishes.trim().slice(0, 200) : "";
+  const {
+    ingredients,
+    isVegan,
+    maxTimeMinutes,
+    difficulty,
+    mealType,
+    extraWishes,
+    maxAdditionalIngredients,
+    includeBasics,
+  } = parseResult.data;
 
   const ai = getGenAI();
   if (!ai) {
     const fallback = buildFallbackFridgeRecipe({
-      ingredients: cleanIngredients,
-      isVegan: Boolean(isVegan),
-      maxTimeMinutes: safeMaxTime,
-      difficulty: safeDifficulty,
-      mealType: safeMealType,
-      extraWishes: safeWishes,
-      maxAdditionalIngredients: safeMaxExtras,
-      includeBasics: Boolean(includeBasics),
+      ingredients,
+      isVegan,
+      maxTimeMinutes,
+      difficulty,
+      mealType,
+      extraWishes,
+      maxAdditionalIngredients,
+      includeBasics,
     });
     return res.json({
       success: true,
       isFallback: true,
       recipe: {
         ...fallback,
-        image: getMatchingFoodImage(fallback.title, fallback.category, Boolean(isVegan)),
+        image: getMatchingFoodImage(fallback.title, fallback.category, isVegan),
       },
     });
   }
@@ -928,120 +1249,89 @@ app.post("/api/ai/fridge-cook", async (req, res) => {
     const prompt = `Du bist ein erfahrener Küchenchef für gesunde, alltagstaugliche pflanzliche Küche.
 Erstelle ein harmonisches, gelingsicheres Rezept, das die vorhandenen Zutaten aus der Vorratskammer sinnvoll verwertet.
 
-VORHANDENE ZUTATEN: ${JSON.stringify(cleanIngredients)}
+VORHANDENE ZUTATEN: ${JSON.stringify(ingredients)}
 KÜCHEN-BASICS (Salz, Pfeffer, Speiseöl, Wasser): ${includeBasics ? "Vorhanden" : "Nicht vorhanden"}
-MAXIMAL ZUSÄTZLICHE ZUTATEN: ${safeMaxExtras} zusätzliche Zutat(en).
+MAXIMAL ZUSÄTZLICHE ZUTATEN: ${maxAdditionalIngredients} zusätzliche Zutat(en).
 ERNÄHRUNG: ${dietString}
-MAX. ZUBEREITUNGSZEIT: ${safeMaxTime} Minuten
-SCHWIERIGKEITSGRAD: ${safeDifficulty}
-MAHLZEITEN-ART: ${safeMealType}
-BESONDERE WÜNSCHE: ${safeWishes || "keine"}
+MAX. ZUBEREITUNGSZEIT: ${maxTimeMinutes} Minuten
+SCHWIERIGKEITSGRAD: ${difficulty}
+MAHLZEITEN-ART: ${mealType}
+BESONDERE WÜNSCHE: ${extraWishes || "keine"}
 
 STRIKTE REGELN:
-1. Die vorhandenen Vorratszutaten (${cleanIngredients.join(", ")}) MÜSSEN Hauptbestandteile des Gerichts sein.
-2. Falls die Zutaten unvereinbar sind, antworte mit JSON { "error": "Diese Zutatenkombination ist leider nicht harmonisch kombinierbar." }.
-3. 4 bis 6 dynamische, praxisnahe Schritte mit klarem Titel, Beschreibung und ggf. Koch-/Backzeit (timerMinutes).
-4. Realistische Nährwerte für 2 Portionen.
-
-Antworte ausschließlich im folgenden JSON-Format:
-{
-  "title": "Kreativer Name des Gerichts auf Deutsch",
-  "subtitle": "Appetitliche Kurzbeschreibung in 1 Satz",
-  "category": "Schnelle Küche",
-  "isVegan": ${Boolean(isVegan)},
-  "prepTimeMinutes": 10,
-  "cookTimeMinutes": 15,
-  "difficulty": "${safeDifficulty}",
-  "servings": 2,
-  "calories": 480,
-  "protein": 22,
-  "carbs": 55,
-  "fat": 16,
-  "fiber": 9,
-  "iron": 4.2,
-  "ingredients": [
-    { "name": "Zutat", "amount": 200, "unit": "g", "category": "gemuese", "origin": "pantry" }
-  ],
-  "steps": [
-    { "stepNumber": 1, "title": "Vorbereitung", "text": "...", "timerMinutes": null },
-    { "stepNumber": 2, "title": "Anbraten", "text": "...", "timerMinutes": 6 },
-    { "stepNumber": 3, "title": "Garen", "text": "...", "timerMinutes": 10 },
-    { "stepNumber": 4, "title": "Anrichten", "text": "...", "timerMinutes": null }
-  ],
-  "chefTips": "Profi-Tipp des Kochs für besten Geschmack",
-  "matchedPantryCount": ${cleanIngredients.length}
-}`;
+1. Die vorhandenen Vorratszutaten (${ingredients.join(", ")}) MÜSSEN Hauptbestandteile des Gerichts sein.
+2. 4 bis 6 dynamische, praxisnahe Schritte mit klarem Titel, Beschreibung und ggf. Koch-/Backzeit (timerMinutes).
+3. Realistische Nährwerte für 2 Portionen.
+Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
       model: "gemini-3.1-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
+        responseSchema: structuredRecipeResponseSchema,
         temperature: 0.6,
       },
-      timeoutMs: 25000,
+      timeoutMs: 9000,
     });
 
     const parsed = safeExtractJson(response.text, null);
 
-    if (!parsed || parsed.error) {
-      if (parsed?.error) {
-        return res.status(400).json({ success: false, error: parsed.error });
-      }
-      throw new Error("Ungültiges JSON-Rezeptformat von KI");
-    }
-
-    if (!parsed.title || !Array.isArray(parsed.ingredients) || parsed.ingredients.length === 0) {
+    if (!parsed || !parsed.title || !Array.isArray(parsed.ingredients) || parsed.ingredients.length === 0) {
       throw new Error("Rezept unvollständig strukturiert");
     }
 
-    parsed.matchedPantryCount = cleanIngredients.length;
-    parsed.image = getMatchingFoodImage(parsed.title, parsed.category, Boolean(isVegan));
+    parsed.matchedPantryCount = ingredients.length;
+    parsed.image = getMatchingFoodImage(parsed.title, parsed.category, isVegan);
+
+    logAiEvent("info", "/api/ai/fridge-cook", "Fridge cook recipe created successfully", {
+      title: parsed.title,
+      pantryCount: ingredients.length,
+    });
 
     res.json({ success: true, recipe: parsed });
-  } catch (error: any) {
-    console.warn("Fallback triggered for /api/ai/fridge-cook:", error?.message || error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    logAiEvent("warn", "/api/ai/fridge-cook", "Fallback triggered for fridge-cook", { error: errMsg });
     const fallback = buildFallbackFridgeRecipe({
-      ingredients: cleanIngredients,
-      isVegan: Boolean(isVegan),
-      maxTimeMinutes: safeMaxTime,
-      difficulty: safeDifficulty,
-      mealType: safeMealType,
-      extraWishes: safeWishes,
-      maxAdditionalIngredients: safeMaxExtras,
-      includeBasics: Boolean(includeBasics),
+      ingredients,
+      isVegan,
+      maxTimeMinutes,
+      difficulty,
+      mealType,
+      extraWishes,
+      maxAdditionalIngredients,
+      includeBasics,
     });
     res.json({
       success: true,
       isFallback: true,
       recipe: {
         ...fallback,
-        image: getMatchingFoodImage(fallback.title, fallback.category, Boolean(isVegan)),
+        image: getMatchingFoodImage(fallback.title, fallback.category, isVegan),
       },
     });
   }
 });
 
 // 3. AI Weekly Meal Plan Generator
-app.post("/api/ai/meal-plan", async (req, res) => {
-  const {
-    isVegan = false,
-    peopleCount = 2,
-    focus = "Ausgewogen & proteinreich",
-    maxMinutesPerMeal = 35,
-    mealOption = "both",
-  } = req.body || {};
+app.post("/api/ai/meal-plan", async (req: Request, res: Response) => {
+  const parseResult = mealPlanRequestSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      success: false,
+      error: parseResult.error.issues.map((i) => i.message).join(", "),
+    });
+  }
 
-  const safePeople = Math.max(1, Math.min(12, Number(peopleCount) || 2));
-  const safeMinutes = Math.max(10, Math.min(120, Number(maxMinutesPerMeal) || 35));
-  const safeFocus = typeof focus === "string" ? focus.slice(0, 100) : "Ausgewogen & proteinreich";
+  const { isVegan, peopleCount, focus, maxMinutesPerMeal, mealOption } = parseResult.data;
 
   const ai = getGenAI();
   if (!ai) {
     return res.json({
       success: true,
       isFallback: true,
-      ...buildFallbackMealPlan({ isVegan: Boolean(isVegan), peopleCount: safePeople, focus: safeFocus }),
+      ...buildFallbackMealPlan({ isVegan, peopleCount, focus }),
     });
   }
 
@@ -1061,58 +1351,24 @@ app.post("/api/ai/meal-plan", async (req, res) => {
       : `100% VEGETARISCH:
 - Kein Fleisch, kein Fisch. Pflanzliche Zutaten, Milchprodukte und Eier sind erlaubt.`;
 
-    const prompt = `Erstelle einen ausgewogenen 7-Tage-Wochenplan (Montag bis Sonntag) für ${safePeople} Personen.
+    const prompt = `Erstelle einen ausgewogenen 7-Tage-Wochenplan (Montag bis Sonntag) für ${peopleCount} Personen.
 Ernährungsvorgabe:
 ${dietInstruction}
 
 Mahlzeiten-Auswahl: ${mealInstruction}
-Max. Kochzeit pro Gericht: ca. ${safeMinutes} Minuten
-
-Antworte ausschließlich im folgenden JSON-Format:
-{
-  "planTitle": "Titel des Wochenplans auf Deutsch",
-  "focusDescription": "Kurze Erklärung des Wochenplans",
-  "days": [
-    {
-      "dayName": "Montag",
-      "lunch": "Mittagsgericht Name oder null",
-      "lunchTime": "20 Min oder null",
-      "dinner": "Abendessen Name oder null",
-      "dinnerTime": "25 Min oder null",
-      "calories": 1750,
-      "protein": 65,
-      "highlightNutrient": "Reich an Eisen & Zink"
-    }
-  ],
-  "shoppingCategories": [
-    {
-      "category": "Gemüse & Frischekräuter",
-      "items": ["500g Blattspinat", "1kg Tomaten"]
-    },
-    {
-      "category": "Proteine & Hülsenfrüchte",
-      "items": ["2 Pck. Tofu", "3 Dosen Kichererbsen"]
-    },
-    {
-      "category": "Kühlregal & Pflanzliche Alternativen",
-      "items": ${isVegan ? '["2x Hafercuisine", "1x Pflanzendrink"]' : '["1x Hafercuisine", "1x Feta"]'}
-    },
-    {
-      "category": "Vorratskammer & Getreide",
-      "items": ["500g Pasta", "1kg Reis"]
-    }
-  ],
-  "prepSummary": "Ein praktischer Meal-Prep-Tipp für die Woche"
-}`;
+Max. Kochzeit pro Gericht: ca. ${maxMinutesPerMeal} Minuten
+Fokus: ${focus}
+Antworte als strukturiertes JSON.`;
 
     const response = await callGeminiWithRetry(ai, {
       model: "gemini-3.1-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
+        responseSchema: mealPlanResponseSchema,
         temperature: 0.7,
       },
-      timeoutMs: 30000,
+      timeoutMs: 9000,
     });
 
     const parsed = safeExtractJson(response.text, null);
@@ -1148,20 +1404,35 @@ Antworte ausschließlich im folgenden JSON-Format:
       });
     }
 
+    logAiEvent("info", "/api/ai/meal-plan", "Meal plan generated successfully", {
+      isVegan,
+      peopleCount,
+      daysCount: parsed.days.length,
+    });
+
     res.json({ success: true, ...parsed });
-  } catch (error: any) {
-    console.warn("Fallback triggered for /api/ai/meal-plan:", error?.message || error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    logAiEvent("warn", "/api/ai/meal-plan", "Fallback triggered for meal-plan", { error: errMsg });
     res.json({
       success: true,
       isFallback: true,
-      ...buildFallbackMealPlan({ isVegan: Boolean(isVegan), peopleCount: safePeople, focus: safeFocus }),
+      ...buildFallbackMealPlan({ isVegan, peopleCount, focus }),
     });
   }
 });
 
 // 4. AI Recipe "Veganize"
-app.post("/api/ai/veganize", async (req, res) => {
-  const { recipe } = req.body || {};
+app.post("/api/ai/veganize", async (req: Request, res: Response) => {
+  const parseResult = veganizeRequestSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      success: false,
+      error: parseResult.error.issues.map((i) => i.message).join(", "),
+    });
+  }
+
+  const { recipe } = parseResult.data;
 
   try {
     const ai = getGenAI();
@@ -1173,48 +1444,20 @@ app.post("/api/ai/veganize", async (req, res) => {
       });
     }
 
-    const cleanRecipe = {
-      title: recipe?.title || "Rezept",
-      category: recipe?.category,
-      ingredients: (recipe?.ingredients || []).map((i: any) => ({
-        name: i?.name,
-        amount: i?.amount,
-        unit: i?.unit,
-      })),
-      steps: (recipe?.steps || []).map((s: any) =>
-        typeof s === "string" ? s : s?.text || s?.title || ""
-      ),
-    };
-
     const prompt = `Du bist ein Meister der veganen Gourmetküche.
 Wandle das folgende vegetarische Rezept in eine 100% vegane Version um, ohne Kompromisse bei Geschmack, Schmelz und Cremigkeit:
-Original-Rezept: ${JSON.stringify(cleanRecipe)}
-
-Antworte ausschließlich im JSON-Format:
-{
-  "title": "Veganisierter Titel",
-  "subtitle": "Kurze Beschreibung des veganen Geschmackserlebnisses",
-  "ingredients": [
-    { "name": "Zutat (vegan angepasst falls nötig)", "amount": "200", "unit": "g" }
-  ],
-  "veganReplacements": [
-    { "original": "Originale Zutat (z.B. Parmesan)", "replacement": "Vegane Alternative (z.B. Cashew-Hefeflocken-Topping)", "tip": "Tipp für maximales Umami" }
-  ],
-  "steps": [
-    "Schritt 1...",
-    "Schritt 2..."
-  ],
-  "chefTips": "Profi-Tipp für die perfekte vegane Zubereitung"
-}`;
+Original-Rezept: ${JSON.stringify(recipe)}
+Antworte als strukturiertes JSON.`;
 
     const response = await callGeminiWithRetry(ai, {
       model: "gemini-3.1-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
+        responseSchema: veganizeResponseSchema,
         temperature: 0.7,
       },
-      timeoutMs: 20000,
+      timeoutMs: 9000,
     });
 
     const parsed = safeExtractJson(response.text, null);
@@ -1222,9 +1465,14 @@ Antworte ausschließlich im JSON-Format:
       throw new Error("Ungültiges veganisiertes Rezept erhalten");
     }
 
+    logAiEvent("info", "/api/ai/veganize", "Recipe veganized successfully", {
+      title: parsed.title,
+    });
+
     res.json({ success: true, veganRecipe: parsed });
-  } catch (error: any) {
-    console.warn("Fallback triggered for /api/ai/veganize:", error?.message || error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    logAiEvent("warn", "/api/ai/veganize", "Fallback triggered for veganize", { error: errMsg });
     res.json({
       success: true,
       isFallback: true,
@@ -1234,18 +1482,26 @@ Antworte ausschließlich im JSON-Format:
 });
 
 // 5. KI: Eigenes Gericht generieren (nach Vorlieben, Zutaten, Kalorien, Stil)
-app.post("/api/ai/create-recipe", async (req, res) => {
+app.post("/api/ai/create-recipe", async (req: Request, res: Response) => {
+  const parseResult = createRecipeRequestSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      success: false,
+      error: parseResult.error.issues.map((i) => i.message).join(", "),
+    });
+  }
+
   const {
     prompt,
     title,
-    isVegan = true,
+    isVegan,
     category,
     targetCalories,
     targetProtein,
     maxTimeMinutes,
-    styleTags = [],
-    includedIngredients = [],
-  } = req.body || {};
+    styleTags,
+    includedIngredients,
+  } = parseResult.data;
 
   const dishTitleOrIdea = String(title || prompt || "").trim().slice(0, 200);
   if (!dishTitleOrIdea) {
@@ -1255,16 +1511,12 @@ app.post("/api/ai/create-recipe", async (req, res) => {
     });
   }
 
-  const safeCategory = typeof category === "string" ? category.slice(0, 50) : "Schnelle Küche";
-  const safeMaxTime = Math.max(10, Math.min(180, Number(maxTimeMinutes) || 25));
-  const safeCalories = targetCalories ? Math.max(150, Math.min(2500, Number(targetCalories))) : undefined;
-  const safeProtein = targetProtein ? Math.max(5, Math.min(150, Number(targetProtein))) : undefined;
-  const safeIncluded = Array.isArray(includedIngredients)
-    ? includedIngredients.filter((i) => typeof i === "string" && i.trim().length > 0).slice(0, 20)
-    : [];
-  const safeStyles = Array.isArray(styleTags)
-    ? styleTags.filter((s) => typeof s === "string").slice(0, 10)
-    : [];
+  const safeCategory = category || "Schnelle Küche";
+  const safeMaxTime = maxTimeMinutes || 25;
+  const safeCalories = targetCalories;
+  const safeProtein = targetProtein;
+  const safeIncluded = includedIngredients || [];
+  const safeStyles = styleTags || [];
 
   const ai = getGenAI();
   if (!ai) {
@@ -1308,65 +1560,25 @@ ${safeStyles.length > 0 ? `Stil / Notizen: ${safeStyles.join(", ")}` : ""}
 
 STRIKTE REGELN:
 1. Das Rezept MUSS präzise das gewünschte Gericht "${dishTitleOrIdea}" umsetzen.
-2. Wenn die Eingabe reiner Unsinn ist, antworte mit { "error": "Bitte gib einen verständlichen Gerichtsnamen oder eine Rezeptidee ein." }.
-3. Dynamische Zubereitungsschritte nach HelloFresh-Vorbild (typischerweise 4 bis 6 logische Schritte).
-4. Jeder Schritt hat einen klaren Titel, Text und optional 'timerMinutes' (Zahl in Minuten oder null).
-5. Exakte Mengenangaben pro Zutat für 2 Portionen.
-6. category des Rezepts MUSS eine dieser Kategorien sein: "Pasta & Gnocchi", "Bowls & Salate", "Currys & Eintöpfe", "Ofengerichte", "Schnelle Küche", "Frühstück & Süßes", "Snacks & Dips", "Festlich".
-7. Zutaten-Kategorien (category) müssen genau eine von diesen sein: "gemuese", "kuehlregal", "trockenwaren", "gewuerze", "huelsenfruechte".
-
-Antworte AUSSCHLIESSLICH als valides JSON in dieser Struktur:
-{
-  "title": "Passender Gerichtsname",
-  "subtitle": "Appetitliche Kurzbeschreibung in 1 Satz",
-  "category": "${safeCategory}",
-  "isVegan": ${Boolean(isVegan)},
-  "isVegetarian": true,
-  "prepTimeMinutes": 10,
-  "cookTimeMinutes": 15,
-  "difficulty": "Einfach",
-  "servings": 2,
-  "rating": 4.95,
-  "reviewCount": 1,
-  "season": "Ganzjährig",
-  "nutrients": {
-    "calories": 550,
-    "protein": 24,
-    "carbs": 60,
-    "fat": 18,
-    "fiber": 8,
-    "iron": 4.5,
-    "zinc": 3.5,
-    "calcium": 160
-  },
-  "tags": ["${isVegan ? "100% Vegan" : "Vegetarisch"}", "Frisch gekocht"],
-  "chefTip": "Praktischer Profi-Tipp des Küchenchefs",
-  "ingredients": [
-    { "name": "Zutat", "amount": 200, "unit": "g", "category": "gemuese", "isEssential": true }
-  ],
-  "steps": [
-    { "stepNumber": 1, "title": "Vorbereitung", "text": "...", "timerMinutes": null },
-    { "stepNumber": 2, "title": "Anbraten", "text": "...", "timerMinutes": 5 },
-    { "stepNumber": 3, "title": "Garen", "text": "...", "timerMinutes": 10 },
-    { "stepNumber": 4, "title": "Anrichten", "text": "...", "timerMinutes": null }
-  ]
-}`;
+2. Dynamische Zubereitungsschritte nach HelloFresh-Vorbild (typischerweise 4 bis 6 logische Schritte).
+3. Jeder Schritt hat einen klaren Titel, Text und optional 'timerMinutes' (Zahl in Minuten oder null).
+4. Exakte Mengenangaben pro Zutat für 2 Portionen.
+5. category des Rezepts MUSS eine dieser Kategorien sein: "Pasta & Gnocchi", "Bowls & Salate", "Currys & Eintöpfe", "Ofengerichte", "Schnelle Küche", "Frühstück & Süßes", "Snacks & Dips", "Festlich".
+6. Zutaten-Kategorien (category) müssen genau eine von diesen sein: "gemuese", "kuehlregal", "trockenwaren", "gewuerze", "huelsenfruechte".
+Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
       model: "gemini-3.1-flash-lite",
       contents: aiPrompt,
       config: {
         responseMimeType: "application/json",
+        responseSchema: structuredRecipeResponseSchema,
         temperature: 0.6,
       },
-      timeoutMs: 25000,
+      timeoutMs: 9000,
     });
 
     const parsed = safeExtractJson(response.text, null);
-
-    if (parsed?.error) {
-      return res.status(400).json({ success: false, error: parsed.error });
-    }
 
     if (!parsed || !parsed.title || !Array.isArray(parsed.ingredients) || parsed.ingredients.length === 0) {
       throw new Error("Ungültiges Rezeptformat von KI empfangen");
@@ -1386,9 +1598,15 @@ Antworte AUSSCHLIESSLICH als valides JSON in dieser Struktur:
       reviewCount: 1,
     };
 
+    logAiEvent("info", "/api/ai/create-recipe", "Custom recipe created successfully", {
+      dishTitleOrIdea,
+      title: parsed.title,
+    });
+
     res.json({ success: true, recipe: resultRecipe });
-  } catch (error: any) {
-    console.warn("Fallback triggered for /api/ai/create-recipe:", error?.message || error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    logAiEvent("warn", "/api/ai/create-recipe", "Fallback triggered for create-recipe", { error: errMsg });
     const fallbackRecipe = buildFallbackCreatedRecipe({
       dishTitleOrIdea,
       category: safeCategory,
@@ -1417,14 +1635,16 @@ Antworte AUSSCHLIESSLICH als valides JSON in dieser Struktur:
 });
 
 // 6. KI: Foto-zu-Rezept Scanner (Multimodal via Kamera oder Foto-Upload)
-app.post("/api/ai/scan-recipe", async (req, res) => {
-  const { imageBase64, mimeType = "image/jpeg", userNotes, isVegan = true } = req.body || {};
-
-  if (!imageBase64 || typeof imageBase64 !== "string") {
-    return res.status(400).json({ success: false, error: "Kein Bild übermittelt" });
+app.post("/api/ai/scan-recipe", async (req: Request, res: Response) => {
+  const parseResult = scanRecipeRequestSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      success: false,
+      error: parseResult.error.issues.map((i) => i.message).join(", "),
+    });
   }
 
-  const safeNotes = typeof userNotes === "string" ? userNotes.slice(0, 200) : "";
+  const { imageBase64, mimeType = "image/jpeg", userNotes, isVegan } = parseResult.data;
 
   // Derive mime type accurately if imageBase64 is a data URI
   let detectedMime = mimeType;
@@ -1433,12 +1653,29 @@ app.post("/api/ai/scan-recipe", async (req, res) => {
     detectedMime = mimeMatch[1];
   }
 
+  if (!(ALLOWED_SCAN_MIME_TYPES as readonly string[]).includes(detectedMime)) {
+    return res.status(400).json({
+      success: false,
+      error: `Nicht unterstützter Bildtyp: ${detectedMime}. Erlaubt sind JPEG, PNG, WEBP, HEIC, HEIF.`,
+    });
+  }
+
   // Clean raw base64 string
   const cleanBase64 = imageBase64.replace(/^data:[a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+;base64,/, "").trim();
 
   if (!cleanBase64) {
     return res.status(400).json({ success: false, error: "Ungültige Bilddaten übermittelt" });
   }
+
+  // Check payload size (max ~4.5MB base64 string)
+  if (cleanBase64.length > 4.5 * 1024 * 1024) {
+    return res.status(400).json({
+      success: false,
+      error: "Bilddatei ist zu groß. Bitte lade ein Bild unter 4 MB hoch.",
+    });
+  }
+
+  const safeNotes = userNotes || "";
 
   const ai = getGenAI();
   if (!ai) {
@@ -1473,40 +1710,7 @@ app.post("/api/ai/scan-recipe", async (req, res) => {
 Entwickle daraus ein präzises, meisterhaftes deutsches Rezept.
 ${isVegan ? "WICHTIG: Das Rezept MUSS 100% VEGAN sein! Ersetze alle tierischen Produkte durch schmackhafte pflanzliche Alternativen." : "Das Rezept soll vegetarisch oder vegan sein."}
 ${safeNotes ? `Zusätzliche Benutzer-Notizen: "${safeNotes}"` : ""}
-
-Erstelle das Rezept als valides JSON in exakt dieser Struktur:
-{
-  "title": "Name des Gerichts",
-  "subtitle": "Appetitliche Kurzbeschreibung",
-  "category": "Pasta & Gnocchi",
-  "isVegan": ${Boolean(isVegan)},
-  "isVegetarian": true,
-  "prepTimeMinutes": 15,
-  "cookTimeMinutes": 20,
-  "difficulty": "Einfach",
-  "servings": 2,
-  "rating": 4.95,
-  "reviewCount": 1,
-  "season": "Ganzjährig",
-  "nutrients": {
-    "calories": 650,
-    "protein": 36,
-    "carbs": 65,
-    "fat": 24,
-    "fiber": 10,
-    "iron": 6.0,
-    "zinc": 4.0,
-    "calcium": 200
-  },
-  "tags": ["${isVegan ? "100% Vegan" : "Vegetarisch"}", "Foto-Scan"],
-  "chefTip": "Geling-Tipp des Küchenchefs",
-  "ingredients": [
-    { "name": "Zutat", "amount": 200, "unit": "g", "category": "gemuese", "isEssential": true }
-  ],
-  "steps": [
-    { "stepNumber": 1, "title": "Vorbereiten", "text": "...", "timerMinutes": 5 }
-  ]
-}`;
+Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
       model: "gemini-3.1-flash-lite",
@@ -1521,9 +1725,10 @@ Erstelle das Rezept als valides JSON in exakt dieser Struktur:
       ],
       config: {
         responseMimeType: "application/json",
+        responseSchema: structuredRecipeResponseSchema,
         temperature: 0.6,
       },
-      timeoutMs: 35000,
+      timeoutMs: 9000,
     });
 
     const parsed = safeExtractJson(response.text, null);
@@ -1548,9 +1753,15 @@ Erstelle das Rezept als valides JSON in exakt dieser Struktur:
       reviewCount: 1,
     };
 
+    logAiEvent("info", "/api/ai/scan-recipe", "Recipe successfully scanned from photo", {
+      title: parsed.title,
+      detectedMime,
+    });
+
     res.json({ success: true, recipe: resultRecipe });
-  } catch (error: any) {
-    console.warn("Fallback triggered for /api/ai/scan-recipe:", error?.message || error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    logAiEvent("warn", "/api/ai/scan-recipe", "Fallback triggered for scan-recipe", { error: errMsg });
     const title = safeNotes ? `Rezept-Kreation (${safeNotes.slice(0, 24)})` : "Pflanzliches Gourmet-Gericht";
     const fallbackRecipe = buildFallbackCreatedRecipe({
       dishTitleOrIdea: title,

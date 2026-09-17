@@ -114,22 +114,69 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
   if (!isOpen) return null;
 
-  // Handle Photo File Upload
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Helper for client-side canvas image compression (max 1200px, 0.7 JPEG)
+  const compressImageToDataUrl = (file: File, maxDimension = 1200, quality = 0.7): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(reader.result as string);
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressed);
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Handle Photo File Upload with client-side canvas compression
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setErrorMsg('Bitte wähle eine gültige Bilddatei aus.');
+      setErrorMsg('Bitte wähle eine gültige Bilddatei aus (JPG, PNG oder WebP).');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setScanImageBase64(reader.result as string);
+    try {
+      const compressedDataUrl = await compressImageToDataUrl(file, 1200, 0.7);
+      setScanImageBase64(compressedDataUrl);
       setErrorMsg(null);
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setScanImageBase64(reader.result as string);
+        setErrorMsg(null);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Submit AI Generation

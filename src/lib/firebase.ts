@@ -41,16 +41,27 @@ export function handleFirestoreError(error: unknown, operation: OperationType, p
   throw new Error(JSON.stringify(info));
 }
 
-// Resolved Firebase Configuration (supports both Vercel Environment Variables and local config)
+// Resolved Firebase Configuration (strictly prioritizes Vercel VITE_FIREBASE_* Environment Variables)
 const metaEnv = typeof import.meta !== 'undefined' ? (import.meta as any).env : {};
+
+const fallbackConfig = {
+  apiKey: 'AIzaSy_demo_fallback_key',
+  authDomain: 'veggiechef-demo.firebaseapp.com',
+  projectId: 'veggiechef-demo',
+  firestoreDatabaseId: '(default)',
+  storageBucket: 'veggiechef-demo.appspot.com',
+  messagingSenderId: '1234567890',
+  appId: '1:1234567890:web:abcdef123456',
+};
+
 const activeConfig = {
-  apiKey: metaEnv?.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey,
-  authDomain: metaEnv?.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain,
-  projectId: metaEnv?.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId,
-  firestoreDatabaseId: metaEnv?.VITE_FIREBASE_DATABASE_ID || firebaseConfig.firestoreDatabaseId,
-  storageBucket: metaEnv?.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket,
-  messagingSenderId: metaEnv?.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId,
-  appId: metaEnv?.VITE_FIREBASE_APP_ID || firebaseConfig.appId,
+  apiKey: metaEnv?.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey || fallbackConfig.apiKey,
+  authDomain: metaEnv?.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain || fallbackConfig.authDomain,
+  projectId: metaEnv?.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId || fallbackConfig.projectId,
+  firestoreDatabaseId: metaEnv?.VITE_FIREBASE_DATABASE_ID || firebaseConfig.firestoreDatabaseId || '(default)',
+  storageBucket: metaEnv?.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket || fallbackConfig.storageBucket,
+  messagingSenderId: metaEnv?.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId || fallbackConfig.messagingSenderId,
+  appId: metaEnv?.VITE_FIREBASE_APP_ID || firebaseConfig.appId || fallbackConfig.appId,
 };
 
 // Initialize Firebase App
@@ -79,13 +90,43 @@ export function ensureFirebaseAuth(): Promise<User | null> {
   }
 
   authInitPromise = new Promise((resolve) => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      currentAuthUser = user;
-      unsubscribe();
-      resolve(user);
-    });
-    // Fallback in case onAuthStateChanged is slow or user is unauthenticated
-    setTimeout(() => resolve(currentAuthUser), 100);
+    let resolved = false;
+    const finish = (u: User | null) => {
+      if (!resolved) {
+        resolved = true;
+        currentAuthUser = u;
+        resolve(u);
+      }
+    };
+
+    try {
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          unsubscribe();
+          finish(user);
+        } else {
+          try {
+            const cred = await signInAnonymously(auth);
+            unsubscribe();
+            finish(cred.user);
+          } catch (e) {
+            console.warn('[VeggieChef Auth] Anonymous auth error:', e);
+            unsubscribe();
+            finish(null);
+          }
+        }
+      });
+
+      // Safeguard timeout in case of connectivity delay
+      setTimeout(() => {
+        if (!resolved) {
+          finish(auth.currentUser);
+        }
+      }, 4000);
+    } catch (e) {
+      console.warn('[VeggieChef Auth] Auth setup error:', e);
+      finish(null);
+    }
   });
 
   return authInitPromise;
