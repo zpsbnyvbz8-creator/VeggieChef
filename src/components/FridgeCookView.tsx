@@ -531,11 +531,11 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-[#ECEBE8] pb-3 sm:pb-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="px-2.5 py-0.5 rounded-full bg-[#FDF6F0] text-[#D35400] border border-[#F5EADF] text-[10px] sm:text-xs font-semibold uppercase">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#FDF6F0] text-[#D35400] border border-[#F5EADF] text-xs font-semibold">
                   ✨ KI-Rezept
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-[10px] sm:text-xs font-semibold">
-                  {generatedRecipe.isVegan ? '🌱 Vegan' : '🧀 Vegetarisch'}
+                <span className="px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
+                  {generatedRecipe.isVegan ? '🌱 Vegan' : '🧀 Veggie'}
                 </span>
               </div>
               <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#2D3E40] tracking-tight">

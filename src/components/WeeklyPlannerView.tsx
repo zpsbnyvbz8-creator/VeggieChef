@@ -1499,7 +1499,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           >
             <div className="flex items-start justify-between border-b border-[#ECEBE8] pb-4">
               <div>
-                <span className="px-2.5 py-0.5 rounded-full bg-[#FDF6F0] text-[#D35400] border border-[#F5EADF] text-[11px] font-bold uppercase tracking-wider">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#FDF6F0] text-[#D35400] border border-[#F5EADF] text-xs font-semibold">
                   ✨ Gemini KI-Wochenplaner
                 </span>
                 <h3 className="text-lg sm:text-xl font-bold text-[#2D3E40] mt-1.5 leading-snug">
@@ -1788,7 +1788,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                           {w.title}
                         </span>
                         {isActive && (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#4A7856] text-white">
+                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#4A7856] text-white">
                             Aktiv
                           </span>
                         )}

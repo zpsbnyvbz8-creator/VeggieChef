@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ShoppingItem, Recipe } from '../types';
-import { loadFromLocalStorage, saveToLocalStorage } from '../utils/helpers';
+import { loadFromLocalStorage, saveToLocalStorage, mergeOrAddShoppingItems } from '../utils/helpers';
 import { subscribeToFamilyShopping } from '../lib/syncService';
 import { useToast } from './ToastContext';
 import { useSync } from './SyncContext';
@@ -86,7 +86,7 @@ export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       };
     });
 
-    setShoppingItems((prev) => [...prev, ...newItems]);
+    setShoppingItems((prev) => mergeOrAddShoppingItems(prev, newItems));
     showToast(`Zutaten für "${recipe.title}" auf die Einkaufsliste gesetzt!`);
   };
 
@@ -112,7 +112,7 @@ export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       allNewItems = [...allNewItems, ...converted];
     });
 
-    setShoppingItems((prev) => [...prev, ...allNewItems]);
+    setShoppingItems((prev) => mergeOrAddShoppingItems(prev, allNewItems));
     showToast(`Zutaten für ${items.length} Gerichte auf die Einkaufsliste gesetzt!`);
   };
 

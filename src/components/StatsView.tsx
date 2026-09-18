@@ -182,7 +182,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
 
       {/* Header */}
       <div className="bg-white rounded-2xl p-4 sm:p-7 border border-[#ECEBE8] shadow-xs space-y-1">
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold uppercase tracking-wider border border-[#ECEBE8]">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
           <BarChart3 className="w-3.5 h-3.5" />
           Deine Kochstatistik & Umweltbeitrag
         </div>
@@ -339,7 +339,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                 <h3 className="font-semibold text-[#2D3E40] text-sm sm:text-base">
                   Zuletzt gekocht
                 </h3>
-                <span className="px-2 py-0.5 rounded-full bg-[#FAF9F6] text-[#7A7E7B] border border-[#ECEBE8] text-xs font-bold">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#7A7E7B] border border-[#ECEBE8] text-xs font-semibold">
                   {logs.length}
                 </span>
               </div>
@@ -506,7 +506,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
               </div>
               <h3 className="text-sm sm:text-base font-semibold text-[#2D3E40] flex items-center gap-2">
                 <span>Erfolge & Trophäen</span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8]">
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8]">
                   {unlockedCount}/{achievements.length} freigeschaltet
                 </span>
               </h3>

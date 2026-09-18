@@ -60,6 +60,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
 
   const favoritesCount = props.favoritesCount ?? recipesCtx.favorites.length;
   const shoppingCount = props.shoppingCount ?? props.shoppingListCount ?? shoppingCtx.uncompletedCount;
+  const cookedCount = props.cookedCount ?? recipesCtx.cookedLogs.length;
   const searchQuery = props.searchQuery !== undefined ? props.searchQuery : recipesCtx.filters.searchQuery;
   
   const setSearchQuery = props.setSearchQuery ?? ((q: string) => {
@@ -268,6 +269,11 @@ export const Header: React.FC<HeaderProps> = (props) => {
           >
             <BarChart3 className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
             <span>Statistiken</span>
+            {cookedCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-[#4A7856] text-white text-[11px] sm:text-[10px] font-bold shrink-0">
+                {cookedCount}
+              </span>
+            )}
           </button>
         </nav>
       </div>

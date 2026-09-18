@@ -16,13 +16,18 @@ import {
   ChevronDown,
   Sparkles,
   Users,
-  Cloud
+  Cloud,
+  GripVertical
 } from 'lucide-react';
 import { ShoppingItem, IngredientCategory } from '../types';
 import { 
   generateShoppingListText, 
   detectIngredientCategory, 
-  parseNaturalLanguageGroceryItem 
+  parseNaturalLanguageGroceryItem,
+  mergeOrAddShoppingItem,
+  areIngredientsEquivalent,
+  loadFromLocalStorage,
+  saveToLocalStorage
 } from '../utils/helpers';
 import { SyncConfig } from '../lib/syncService';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
@@ -40,15 +45,24 @@ interface ShoppingListViewProps {
 
 const CATEGORY_META: Record<
   IngredientCategory,
-  { label: string; icon: string; badgeColor: string }
+  { label: string; icon: string }
 > = {
-  gemuese: { label: 'Frisches Gemüse & Kräuter', icon: '🥦', badgeColor: 'bg-[#F1F5F2] text-[#4A7856]' },
-  kuehlregal: { label: 'Kühlregal & Pflanzliche Alternativen', icon: '🥛', badgeColor: 'bg-[#FAF9F6] text-[#2D3E40]' },
-  huelsenfruechte: { label: 'Hülsenfrüchte & Tofu', icon: '🫘', badgeColor: 'bg-[#FDF6F0] text-[#D35400]' },
-  trockenwaren: { label: 'Vorratskammer, Pasta & Getreide', icon: '🌾', badgeColor: 'bg-[#FAF9F6] text-[#7A7E7B]' },
-  gewuerze: { label: 'Gewürze, Öle & Dips', icon: '🧂', badgeColor: 'bg-[#F1F5F2] text-[#2D3E40]' },
-  sonstiges: { label: 'Sonstiges', icon: '📦', badgeColor: 'bg-[#FAF9F6] text-[#7A7E7B]' },
+  gemuese: { label: 'Frisches Gemüse & Kräuter', icon: '🥦' },
+  kuehlregal: { label: 'Kühlregal & Alternativen', icon: '🥛' },
+  huelsenfruechte: { label: 'Hülsenfrüchte & Tofu', icon: '🫘' },
+  trockenwaren: { label: 'Vorratskammer & Pasta', icon: '🌾' },
+  gewuerze: { label: 'Gewürze, Öle & Dips', icon: '🧂' },
+  sonstiges: { label: 'Sonstiges', icon: '📦' },
 };
+
+const DEFAULT_SHELF_ORDER: IngredientCategory[] = [
+  'gemuese',
+  'kuehlregal',
+  'huelsenfruechte',
+  'trockenwaren',
+  'gewuerze',
+  'sonstiges',
+];
 
 export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const shoppingCtx = useShopping();
@@ -65,8 +79,19 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const [quickAddInput, setQuickAddInput] = useState('');
   const [categoryChoice, setCategoryChoice] = useState<'auto' | IngredientCategory>('auto');
   const [viewMode, setViewMode] = useState<'categorized' | 'flat'>('categorized');
+
+  // Shelf (Category) reorder state via drag and drop
+  const [shelfOrder, setShelfOrder] = useState<IngredientCategory[]>(() =>
+    loadFromLocalStorage('veggiechef_shelf_order', DEFAULT_SHELF_ORDER)
+  );
+  const [draggedShelf, setDraggedShelf] = useState<IngredientCategory | null>(null);
+  const [dragOverShelf, setDragOverShelf] = useState<IngredientCategory | null>(null);
+
+  // Item reorder state via drag and drop
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [dragOverItemId, setDragOverItemId] = useState<string | null>(null);
   
-  // Undo & bulk clear states
+  // Undo & bulk delete states
   const [undoBackup, setUndoBackup] = useState<ShoppingItem[] | null>(null);
   const [lastDeletedInfo, setLastDeletedInfo] = useState<{ type: 'all' | 'completed'; count: number } | null>(null);
   const [showUndoBanner, setShowUndoBanner] = useState(false);
@@ -142,24 +167,17 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
     return map;
   }, [items]);
 
-  // Auto-collapse category when all items in it are completed
-  useEffect(() => {
-    (Object.keys(CATEGORY_META) as IngredientCategory[]).forEach((catKey) => {
-      const catItems = grouped[catKey] || [];
-      if (catItems.length > 0) {
-        const allCompleted = catItems.every((it) => it.completed);
-        if (allCompleted) {
-          setCollapsedCategories((prev) => {
-            if (prev[catKey]) return prev;
-            return { ...prev, [catKey]: true };
-          });
-        }
-      }
-    });
-  }, [grouped]);
-
   const activeCount = items.filter((i) => !i.completed).length;
   const completedCount = items.filter((i) => i.completed).length;
+
+  // Active categories: Categories that have AT LEAST ONE uncompleted item.
+  // When all items in a category are completed, it disappears completely from the shelves!
+  const activeCategories = useMemo(() => {
+    return shelfOrder.filter((catKey) => {
+      const catItems = grouped[catKey] || [];
+      return catItems.some((it) => !it.completed);
+    });
+  }, [shelfOrder, grouped]);
 
   const toggleItem = (id: string) => {
     setItems((prev) =>
@@ -251,14 +269,15 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
     onCopyFeedback(`${count} erledigte ${count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`);
   };
 
-  const handleClearAll = () => {
+  // Leeren/Löschen der gesamten Einkaufsliste
+  const handleDeleteAll = () => {
     if (items.length === 0) return;
     const count = items.length;
     setUndoBackup([...items]);
     setLastDeletedInfo({ type: 'all', count });
     setItems([]);
     setShowUndoBanner(true);
-    onCopyFeedback(`Einkaufsliste (${count} ${count === 1 ? 'Zutat' : 'Zutaten'}) geleert.`);
+    onCopyFeedback(`Einkaufsliste (${count} ${count === 1 ? 'Zutat' : 'Zutaten'}) gelöscht.`);
   };
 
   const handleUndo = () => {
@@ -272,7 +291,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
     }
   };
 
-  // Smart Quick-Add: Natural language parsing for name, amount & unit
+  // Smart Quick-Add: Merges duplicates if same item name exists!
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     const raw = quickAddInput.trim();
@@ -297,22 +316,31 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       completed: false,
     };
 
-    setItems((prev) => [...prev, newItem]);
+    const existingMatch = items.find(
+      (it) => !it.completed && areIngredientsEquivalent(it.name, finalName)
+    );
+
+    setItems((prev) => mergeOrAddShoppingItem(prev, newItem));
     setQuickAddInput('');
     setCategoryChoice('auto');
     const catLabel = CATEGORY_META[assignedCategory]?.label || 'Sonstiges';
-    const amountStr = [finalAmount, finalUnit].filter(Boolean).join(' ');
-    onCopyFeedback(
-      amountStr
-        ? `"${finalName}" (${amountStr}) hinzugefügt (${catLabel})!`
-        : `"${finalName}" hinzugefügt (${catLabel})!`
-    );
+
+    if (existingMatch) {
+      onCopyFeedback(`Menge für "${finalName}" erhöht!`);
+    } else {
+      const amountStr = [finalAmount, finalUnit].filter(Boolean).join(' ');
+      onCopyFeedback(
+        amountStr
+          ? `"${finalName}" (${amountStr}) hinzugefügt (${catLabel})!`
+          : `"${finalName}" hinzugefügt (${catLabel})!`
+      );
+    }
   };
 
   const handleConfirmDeleteAction = () => {
     if (!confirmDeleteState) return;
     if (confirmDeleteState.type === 'all') {
-      handleClearAll();
+      handleDeleteAll();
     } else if (confirmDeleteState.type === 'completed') {
       clearCompleted();
     }
@@ -334,19 +362,104 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
     }));
   };
 
+  // --- Drag and Drop: Regale (Kategorien) ---
+  const handleDragStartShelf = (e: React.DragEvent, catKey: IngredientCategory) => {
+    e.dataTransfer.setData('text/plain', catKey);
+    setDraggedShelf(catKey);
+  };
+
+  const handleDragOverShelf = (e: React.DragEvent, catKey: IngredientCategory) => {
+    e.preventDefault();
+    if (dragOverShelf !== catKey) {
+      setDragOverShelf(catKey);
+    }
+  };
+
+  const handleDropShelf = (e: React.DragEvent, targetCatKey: IngredientCategory) => {
+    e.preventDefault();
+    if (!draggedShelf || draggedShelf === targetCatKey) {
+      setDraggedShelf(null);
+      setDragOverShelf(null);
+      return;
+    }
+
+    const fromIdx = shelfOrder.indexOf(draggedShelf);
+    const toIdx = shelfOrder.indexOf(targetCatKey);
+    if (fromIdx !== -1 && toIdx !== -1) {
+      const newOrder = [...shelfOrder];
+      const [moved] = newOrder.splice(fromIdx, 1);
+      newOrder.splice(toIdx, 0, moved);
+      setShelfOrder(newOrder);
+      saveToLocalStorage('veggiechef_shelf_order', newOrder);
+      onCopyFeedback('Regale-Reihenfolge gespeichert!');
+    }
+    setDraggedShelf(null);
+    setDragOverShelf(null);
+  };
+
+  // --- Drag and Drop: Items (Artikel) ---
+  const handleDragStartItem = (e: React.DragEvent, itemId: string) => {
+    e.stopPropagation();
+    e.dataTransfer.setData('text/plain', itemId);
+    setDraggedItemId(itemId);
+  };
+
+  const handleDragOverItem = (e: React.DragEvent, itemId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dragOverItemId !== itemId) {
+      setDragOverItemId(itemId);
+    }
+  };
+
+  const handleDropItem = (e: React.DragEvent, targetItemId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedItemId || draggedItemId === targetItemId) {
+      setDraggedItemId(null);
+      setDragOverItemId(null);
+      return;
+    }
+
+    const fromIdx = items.findIndex((i) => i.id === draggedItemId);
+    const toIdx = items.findIndex((i) => i.id === targetItemId);
+
+    if (fromIdx !== -1 && toIdx !== -1) {
+      const newItems = [...items];
+      const [moved] = newItems.splice(fromIdx, 1);
+      newItems.splice(toIdx, 0, moved);
+      setItems(newItems);
+      onCopyFeedback('Artikel verschoben!');
+    }
+    setDraggedItemId(null);
+    setDragOverItemId(null);
+  };
+
   // Active & completed item partition
   const activeItems = useMemo(() => items.filter((i) => !i.completed), [items]);
   const completedItems = useMemo(() => items.filter((i) => i.completed), [items]);
 
-  // Clean Item Row: Visuelle Ruhe + Inline Stepper + Mobile Swipe-to-Action Gesten
+  // Clean Item Row: Menge ganz links, Checkbox, Name, Drag Handle, Swipe-to-Action
   const renderItemRow = (item: ShoppingItem) => {
     const isEditing = editingItemId === item.id;
     const isSwiped = swipedItemId === item.id;
+    const isBeingDragged = draggedItemId === item.id;
+    const isDragOver = dragOverItemId === item.id;
 
     return (
       <div
         key={item.id}
-        className="relative overflow-hidden rounded-2xl select-none group touch-pan-y"
+        draggable={!isEditing}
+        onDragStart={(e) => handleDragStartItem(e, item.id)}
+        onDragOver={(e) => handleDragOverItem(e, item.id)}
+        onDrop={(e) => handleDropItem(e, item.id)}
+        onDragEnd={() => {
+          setDraggedItemId(null);
+          setDragOverItemId(null);
+        }}
+        className={`relative overflow-hidden rounded-2xl select-none group touch-pan-y transition-all ${
+          isBeingDragged ? 'opacity-40 scale-[0.98]' : 'opacity-100'
+        } ${isDragOver ? 'ring-2 ring-[#4A7856] ring-offset-1' : ''}`}
       >
         {/* Background Action Tray (revealed on swipe-left on mobile) */}
         <div className="absolute inset-y-0 right-0 flex items-center gap-1.5 pr-2 pl-4 z-0 bg-[#FAF9F6] border-y border-r border-[#ECEBE8] rounded-r-2xl">
@@ -379,7 +492,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           </button>
         </div>
 
-        {/* Foreground Swipable Row with smooth touch gesture support */}
+        {/* Foreground Row */}
         <div
           onTouchStart={(e) => {
             if (isEditing) return;
@@ -392,7 +505,6 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             const deltaX = touch.clientX - touchStartRef.current.x;
             const deltaY = touch.clientY - touchStartRef.current.y;
 
-            // Only recognize horizontal swipe if not scrolling vertically
             if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
               if (deltaX < -30) {
                 setSwipedItemId(item.id);
@@ -416,7 +528,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           style={{
             transform: isSwiped ? 'translateX(-100px)' : 'translateX(0px)',
           }}
-          className={`relative z-10 flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 ease-out gap-2.5 sm:gap-3 min-h-[58px] ${
+          className={`relative z-10 flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border transition-all duration-200 ease-out gap-2.5 sm:gap-3 min-h-[54px] ${
             isEditing
               ? 'cursor-default ring-2 ring-[#4A7856]/40 bg-[#FAF9F6]'
               : 'cursor-pointer active:scale-[0.995]'
@@ -426,21 +538,23 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/40 text-[#2D3E40] shadow-2xs'
           }`}
         >
-          {/* Left: Checkbox & Item Name */}
-          <div className="flex items-center gap-3 flex-1 min-w-0 pr-1">
+          {/* LEFT SIDE: Checkbox -> Name & Quelle */}
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
+            {/* Checkbox */}
             <div
-              className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-colors shrink-0 ${
+              className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors shrink-0 ${
                 item.completed
                   ? 'bg-[#4A7856] border-[#4A7856] text-white'
                   : 'border-[#D1D5D2] bg-[#FAF9F6]'
               }`}
             >
-              {item.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              {item.completed && <Check className="w-3 h-3 stroke-[3]" />}
             </div>
 
+            {/* Name & Quelle */}
             <div className="flex-1 min-w-0 flex flex-col justify-center">
               <span
-                className={`text-base sm:text-sm font-medium block break-words whitespace-normal leading-tight ${
+                className={`text-sm font-medium block break-words whitespace-normal leading-tight ${
                   item.completed ? 'line-through text-[#7A7E7B]' : 'text-[#2D3E40]'
                 }`}
               >
@@ -454,13 +568,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             </div>
           </div>
 
-          {/* Right: Inline Stepper OR Pure Quantity Badge */}
-          <div
-            className="flex items-center gap-1.5 shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
+          {/* RIGHT SIDE: Menge (ganz rechts) / Inline-Stepper + Desktop Hover Actions + Drag Handle */}
+          <div className="flex items-center gap-2 shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
+            {/* Menge ganz rechts */}
             {isEditing ? (
-              /* Inline Stepper without modal */
+              /* Inline Stepper */
               <div
                 ref={editContainerRef}
                 className="flex items-center gap-1 bg-white p-1 rounded-xl border-2 border-[#4A7856] shadow-md animate-in zoom-in-95 duration-150"
@@ -468,10 +580,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <button
                   type="button"
                   onClick={() => stepEditedAmount(-1)}
-                  className="w-8 h-8 rounded-lg bg-[#F1F5F2] hover:bg-[#E8EFEA] text-[#2D3E40] flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
+                  className="w-7 h-7 rounded-lg bg-[#F1F5F2] hover:bg-[#E8EFEA] text-[#2D3E40] flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
                   title="Menge verringern"
                 >
-                  <Minus className="w-3.5 h-3.5" />
+                  <Minus className="w-3 h-3" />
                 </button>
 
                 <input
@@ -488,97 +600,85 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   }}
                   autoFocus
                   placeholder="1 Stk"
-                  className="w-18 sm:w-20 px-1.5 py-1 text-center text-xs font-semibold text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg focus:border-[#4A7856] focus:outline-hidden"
+                  className="w-16 sm:w-18 px-1 py-0.5 text-center text-xs font-semibold text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg focus:border-[#4A7856] focus:outline-hidden"
                 />
 
                 <button
                   type="button"
                   onClick={() => stepEditedAmount(1)}
-                  className="w-8 h-8 rounded-lg bg-[#F1F5F2] hover:bg-[#E8EFEA] text-[#2D3E40] flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
+                  className="w-7 h-7 rounded-lg bg-[#F1F5F2] hover:bg-[#E8EFEA] text-[#2D3E40] flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
                   title="Menge erhöhen"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-3 h-3" />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => saveEditedAmount(item.id)}
-                  className="w-8 h-8 rounded-lg bg-[#4A7856] hover:bg-[#3D6447] text-white flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
+                  className="w-7 h-7 rounded-lg bg-[#4A7856] hover:bg-[#3D6447] text-white flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
                   title="Speichern"
                 >
-                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <Check className="w-3 h-3 stroke-[2.5]" />
                 </button>
 
                 <button
                   type="button"
                   onClick={cancelEditing}
-                  className="w-8 h-8 rounded-lg text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90"
+                  className="w-7 h-7 rounded-lg text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90"
                   title="Abbrechen"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-3 h-3" />
                 </button>
               </div>
-            ) : (
-              /* Visuelle Ruhe: Standardmäßig nur Mengen-Badge */
-              <div className="flex items-center gap-1.5">
-                {item.amount ? (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startEditingItem(item);
-                    }}
-                    className={`text-xs sm:text-sm font-semibold px-2.5 py-1 rounded-lg border select-none inline-flex items-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                      item.completed
-                        ? 'bg-[#ECEBE8] text-[#7A7E7B] border-[#ECEBE8]'
-                        : 'bg-[#F1F5F2] text-[#4A7856] border-[#ECEBE8] hover:bg-[#E3ECE5]'
-                    }`}
-                    title="Menge anpassen (- / +)"
-                  >
-                    {item.amount} {item.unit}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startEditingItem(item);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 text-[11px] text-[#7A7E7B] hover:text-[#4A7856] px-2 py-0.5 rounded-md hover:bg-[#F1F5F2] border border-dashed border-[#ECEBE8] transition-all cursor-pointer"
-                    title="Menge hinzufügen"
-                  >
-                    + Menge
-                  </button>
-                )}
+            ) : item.amount ? (
+              /* Einheitliches kompaktes Mengen-Badge ganz rechts */
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startEditingItem(item);
+                }}
+                className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border select-none inline-flex items-center transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap ${
+                  item.completed
+                    ? 'bg-[#ECEBE8] text-[#7A7E7B] border-[#ECEBE8]'
+                    : 'bg-[#F1F5F2] text-[#4A7856] border-[#ECEBE8] hover:bg-[#E3ECE5]'
+                }`}
+                title="Menge anpassen (- / +)"
+              >
+                {item.amount} {item.unit}
+              </button>
+            ) : null}
 
-                {/* Desktop hover actions (diskrete Hilfe auf dem PC) */}
-                <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startEditingItem(item);
-                    }}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#FAF9F6] text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] transition-all cursor-pointer active:scale-95"
-                    title="Menge bearbeiten"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteItem(item.id);
-                      onCopyFeedback(`"${item.name}" gelöscht.`);
-                    }}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#FAF9F6] text-rose-500 hover:text-rose-600 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer active:scale-95"
-                    title="Löschen"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Desktop hover actions */}
+            <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                type="button"
+                onClick={() => startEditingItem(item)}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#FAF9F6] text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] transition-all cursor-pointer active:scale-95"
+                title="Menge bearbeiten"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteItem(item.id);
+                  onCopyFeedback(`"${item.name}" gelöscht.`);
+                }}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#FAF9F6] text-rose-500 hover:text-rose-600 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer active:scale-95"
+                title="Löschen"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Drag Handle: Ziehen zum Sortieren */}
+            <div
+              className="p-1 text-[#B5B9B6] hover:text-[#2D3E40] cursor-grab active:cursor-grabbing transition-colors"
+              title="Gedrückt halten zum Verschieben"
+            >
+              <GripVertical className="w-4 h-4" />
+            </div>
           </div>
         </div>
       </div>
@@ -595,7 +695,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             <span className="text-xs">
               {lastDeletedInfo?.type === 'completed'
                 ? `${lastDeletedInfo.count} erledigte ${lastDeletedInfo.count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`
-                : `Einkaufsliste geleert (${lastDeletedInfo?.count || undoBackup.length} ${lastDeletedInfo?.count === 1 ? 'Zutat' : 'Zutaten'}).`}
+                : `Einkaufsliste gelöscht (${lastDeletedInfo?.count || undoBackup.length} ${lastDeletedInfo?.count === 1 ? 'Zutat' : 'Zutaten'}).`}
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -615,14 +715,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         </div>
       )}
 
-      {/* Header & Controls (Ohne redundante Badges) */}
+      {/* Header & Controls */}
       <div className="bg-white rounded-2xl p-4 sm:p-6 lg:p-8 border border-[#ECEBE8] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            {/* Status-Badge: Zeigt die aktiven Artikel ohne Wiederholung */}
+            {/* Einheitliches Status-Badge: Zeigt aktive Artikel ohne Redundanz */}
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
               <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
-              <span>{activeCount} {activeCount === 1 ? 'Artikel' : 'Artikel'} offen</span>
+              <span>{activeCount} offen</span>
             </div>
 
             {onOpenSyncModal && (
@@ -655,14 +755,13 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             Einkaufsliste
           </h2>
           <p className="text-xs sm:text-sm text-[#7A7E7B]">
-            Sortiert nach Supermarkt-Regalen oder als Gesamtansicht mit intelligenter Schnelleingabe.
+            Sortiert nach Supermarkt-Regalen oder als Gesamtansicht mit Drag & Drop Sortierung.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0 w-full md:w-auto">
-          {/* 1. View-Switch: Segmented-Control mit sanfter Slide-Animation (Pill-Slider) */}
+          {/* 1. View-Switch: Segmented-Control mit sanfter Slide-Animation */}
           <div className="relative flex items-center p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs font-medium">
-            {/* Sanft gleitende Pille */}
             <div
               className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-xs border border-[#ECEBE8] transition-all duration-250 ease-out pointer-events-none ${
                 viewMode === 'categorized' ? 'left-1' : 'left-[calc(50%+2px)]'
@@ -691,7 +790,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   ? 'text-[#2D3E40] font-semibold'
                   : 'text-[#7A7E7B] hover:text-[#2D3E40]'
               }`}
-              title="Alle Artikel in einer einfachen Liste"
+              title="Alle Artikel in einer sortierbaren Liste"
             >
               <List className="w-3.5 h-3.5" />
               <span>Liste</span>
@@ -710,22 +809,22 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             <span>{copied ? 'Kopiert!' : 'Kopieren'}</span>
           </button>
 
-          {/* Clear All Button */}
+          {/* Delete All Button (Löschen) */}
           {items.length > 0 && (
             <button
-              id="clear-entire-shopping-list-btn"
+              id="delete-entire-shopping-list-btn"
               onClick={() => setConfirmDeleteState({ type: 'all' })}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs border border-red-200 transition-colors cursor-pointer min-h-[40px] sm:min-h-0 active:scale-95 touch-manipulation"
-              title="Gesamte Liste leeren"
+              title="Gesamte Einkaufsliste löschen"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>Leeren</span>
+              <span>Löschen</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* 2. Smart Quick-Add Input (Natürliche Sprache: z.B. "400g Tofu", "2 Hafermilch", "1 Bund Petersilie") */}
+      {/* 2. Smart Quick-Add Input mit Duplikat-Zusammenführung */}
       <form
         onSubmit={handleAddItem}
         className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-2"
@@ -742,7 +841,6 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           </div>
 
           <div className="flex gap-2 shrink-0">
-            {/* Kategorie-Auswahl */}
             <select
               id="shopping-item-category-select"
               value={categoryChoice}
@@ -770,7 +868,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           </div>
         </div>
 
-        {/* Live-Erkennungs-Vorschau bei natürlicher Spracheingabe */}
+        {/* Live-Erkennungs-Vorschau */}
         {quickAddInput.trim() && parsedPreview.amount && (
           <div className="flex items-center gap-2 text-xs text-[#4A7856] bg-[#F1F5F2] px-3 py-1.5 rounded-xl border border-[#ECEBE8] animate-in fade-in duration-150">
             <Sparkles className="w-3.5 h-3.5 shrink-0 text-[#4A7856]" />
@@ -801,7 +899,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           </p>
         </div>
       ) : viewMode === 'flat' ? (
-        /* Gesamtansicht (Liste) */
+        /* Gesamtansicht (Liste mit Drag & Drop Sortierung) */
         <div className="space-y-4">
           <div className="bg-white rounded-2xl p-5 sm:p-6 border border-[#ECEBE8] shadow-xs space-y-3">
             <div className="flex items-center justify-between border-b border-[#ECEBE8] pb-3">
@@ -809,7 +907,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <List className="w-4 h-4 text-[#4A7856]" />
                 <span>Offene Artikel</span>
               </div>
-              <span className="text-xs font-medium text-[#7A7E7B]">
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#4A7856] border border-[#ECEBE8]">
                 {activeItems.length} offen
               </span>
             </div>
@@ -826,81 +924,112 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           </div>
         </div>
       ) : (
-        /* 4. Regale-Ansicht: Einklappbare Accordion-Karten mit Auto-Collapse bei vollständiger Erledigung */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
-          {(Object.keys(CATEGORY_META) as IngredientCategory[]).map((catKey) => {
-            const catItems = grouped[catKey] || [];
-            if (catItems.length === 0) return null;
+        /* Regale-Ansicht: Nur Kategorien anzeigen, die noch offene Artikel haben.
+           Kategorien können per Drag & Drop sortiert werden! */
+        activeCategories.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
+            {activeCategories.map((catKey) => {
+              const catItems = grouped[catKey] || [];
+              const activeInCat = catItems.filter((i) => !i.completed);
+              if (activeInCat.length === 0) return null;
 
-            const meta = CATEGORY_META[catKey];
-            const isCollapsed = Boolean(collapsedCategories[catKey]);
-            const totalInCat = catItems.length;
-            const completedInCat = catItems.filter((i) => i.completed).length;
-            const allDone = totalInCat > 0 && completedInCat === totalInCat;
-            const activeInCat = catItems.filter((i) => !i.completed);
+              const meta = CATEGORY_META[catKey];
+              const isCollapsed = Boolean(collapsedCategories[catKey]);
+              const isBeingDragged = draggedShelf === catKey;
+              const isDragOver = dragOverShelf === catKey;
 
-            return (
-              <div
-                key={catKey}
-                className={`bg-white rounded-2xl border border-[#ECEBE8] shadow-xs overflow-hidden transition-all duration-200 ${
-                  allDone ? 'opacity-85' : 'opacity-100'
-                }`}
-              >
-                {/* Accordion Header */}
-                <button
-                  type="button"
-                  onClick={() => toggleCategoryCollapse(catKey)}
-                  className="w-full flex items-center justify-between p-4 sm:p-5 text-left transition-colors cursor-pointer select-none hover:bg-[#FAF9F6]"
-                >
-                  <div className="flex items-center gap-2.5 font-semibold text-[#2D3E40] text-sm sm:text-base">
-                    <span className="text-xl">{meta.icon}</span>
-                    <span className="leading-tight">{meta.label}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0 ml-2">
-                    {/* Einziger, klarer Fortschrittszähler */}
-                    <span
-                      className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border transition-colors ${
-                        allDone
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8]'
-                      }`}
-                    >
-                      {allDone
-                        ? `✓ ${totalInCat}/${totalInCat} erledigt`
-                        : `${completedInCat} / ${totalInCat} abgehakt`}
-                    </span>
-
-                    <ChevronDown
-                      className={`w-4 h-4 text-[#7A7E7B] transition-transform duration-200 ${
-                        isCollapsed ? '-rotate-90' : 'rotate-0'
-                      }`}
-                    />
-                  </div>
-                </button>
-
-                {/* Accordion Content with smooth CSS height transition */}
+              return (
                 <div
-                  className={`grid transition-all duration-250 ease-in-out ${
-                    isCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
-                  }`}
+                  key={catKey}
+                  onDragOver={(e) => handleDragOverShelf(e, catKey)}
+                  onDrop={(e) => handleDropShelf(e, catKey)}
+                  className={`bg-white rounded-2xl border border-[#ECEBE8] shadow-xs overflow-hidden transition-all duration-200 ${
+                    isBeingDragged ? 'opacity-40 border-dashed border-[#4A7856]' : 'opacity-100'
+                  } ${isDragOver ? 'ring-2 ring-[#4A7856] ring-offset-2' : ''}`}
                 >
-                  <div className="overflow-hidden">
-                    <div className="px-4 pb-4 sm:px-5 sm:pb-5 space-y-2 border-t border-[#ECEBE8] pt-3">
-                      {activeInCat.length > 0 ? (
-                        activeInCat.map(renderItemRow)
-                      ) : (
-                        <p className="text-xs text-[#7A7E7B] py-1.5 text-center italic">
-                          Alle Artikel in diesem Regal sind erledigt.
-                        </p>
-                      )}
+                  {/* Shelf Header (Entire header is draggable for shelf re-ordering) */}
+                  <div
+                    draggable
+                    onDragStart={(e) => handleDragStartShelf(e, catKey)}
+                    onDragEnd={() => {
+                      setDraggedShelf(null);
+                      setDragOverShelf(null);
+                    }}
+                    className="flex items-center justify-between p-3.5 sm:p-4 hover:bg-[#FAF9F6] transition-colors border-b border-[#ECEBE8] cursor-grab active:cursor-grabbing select-none"
+                    title="Gedrückt halten und ziehen, um das Regal zu verschieben"
+                  >
+                    {/* Category Title & Drag Handle */}
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div
+                        className="p-1 text-[#B5B9B6] shrink-0 pointer-events-none"
+                      >
+                        <GripVertical className="w-4 h-4" />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleCategoryCollapse(catKey);
+                        }}
+                        className="flex items-center gap-2 text-left cursor-pointer select-none flex-1 min-w-0"
+                      >
+                        <span className="text-xl shrink-0 pointer-events-none">{meta.icon}</span>
+                        <span className="font-semibold text-[#2D3E40] text-sm sm:text-base truncate pointer-events-none">
+                          {meta.label}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Uniform small badge & collapse chevron */}
+                    <div
+                      className="flex items-center gap-2 shrink-0 ml-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#4A7856] border border-[#ECEBE8]">
+                        {activeInCat.length} offen
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => toggleCategoryCollapse(catKey)}
+                        className="p-1 text-[#7A7E7B] hover:text-[#2D3E40] cursor-pointer"
+                        title={isCollapsed ? 'Aufklappen' : 'Zuklappen'}
+                      >
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform duration-200 ${
+                            isCollapsed ? '-rotate-90' : 'rotate-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Shelf Content */}
+                  <div
+                    className={`grid transition-all duration-250 ease-in-out ${
+                      isCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
+                    }`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="p-3 sm:p-4 space-y-2">
+                        {activeInCat.map(renderItemRow)}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl p-8 text-center border border-[#ECEBE8] shadow-xs space-y-2">
+            <span className="text-2xl">🎉</span>
+            <h3 className="text-base font-semibold text-[#2D3E40]">Alle Regale sind abgehakt!</h3>
+            <p className="text-xs text-[#7A7E7B]">
+              Alle Artikel wurden erledigt und befinden sich im erledigten Bereich unten.
+            </p>
+          </div>
+        )
       )}
 
       {/* 3. Erledigte Items: Einklappbarer Bereich am Ende („Erledigt (X)“) */}
@@ -977,7 +1106,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 </span>
                 <h3 className="text-base sm:text-lg font-bold text-[#2D3E40] leading-snug">
                   {confirmDeleteState.type === 'all'
-                    ? 'Einkaufsliste wirklich leeren?'
+                    ? 'Einkaufsliste wirklich löschen?'
                     : 'Erledigte Zutaten entfernen?'}
                 </h3>
               </div>

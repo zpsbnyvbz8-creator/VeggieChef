@@ -318,6 +318,204 @@ export function parseNaturalLanguageGroceryItem(rawInput: string): ParsedGrocery
   };
 }
 
+/**
+ * Normalisiert einen Zutatennamen für den intelligenten Abgleich (z. B. Plural/Singular, Artikel, Adjektive)
+ */
+export function normalizeIngredientName(raw: string): string {
+  if (!raw) return '';
+  let s = raw.trim().toLowerCase();
+
+  // Entferne typische Füllwörter und Adjektive am Anfang
+  s = s.replace(/^(ein|eine|einen|einer|einem|etwas|frische[srn]?|bio|reife[srn]?|große[srn]?|kleine[srn]?|getrocknete[srn]?)\s+/i, '');
+
+  // Sonderfälle Deutsch Singular / Plural
+  const map: Record<string, string> = {
+    tomaten: 'tomate',
+    gurken: 'gurke',
+    zwiebeln: 'zwiebel',
+    karotten: 'karotte',
+    möhren: 'möhre',
+    kartoffeln: 'kartoffel',
+    paprikas: 'paprika',
+    avocados: 'avocado',
+    bananen: 'banane',
+    zitronen: 'zitrone',
+    limetten: 'limette',
+    äpfel: 'apfel',
+    birnen: 'birne',
+    champignons: 'champignon',
+    pilze: 'pilz',
+    knoblauchzehen: 'knoblauchzehe',
+    zehen: 'zehe',
+    dosen: 'dose',
+    gläser: 'glas',
+    packungen: 'packung',
+    becher: 'becher',
+    kichererbsen: 'kichererbsen',
+  };
+
+  const words = s.split(/\s+/);
+  const normalizedWords = words.map((w) => {
+    if (map[w]) return map[w];
+    if (w.endsWith('en') && w.length > 4) {
+      const candidate = w.slice(0, -2);
+      if (candidate.endsWith('e')) return candidate;
+      return w.slice(0, -1);
+    }
+    if (w.endsWith('n') && w.length > 4 && /[aeiouäöü]n$/i.test(w)) {
+      return w.slice(0, -1);
+    }
+    return w;
+  });
+
+  return normalizedWords.join(' ').trim();
+}
+
+/**
+ * Prüft, ob zwei Zutatenbezeichnungen dasselbe Lebensmittel meinen
+ */
+export function areIngredientsEquivalent(nameA: string, nameB: string): boolean {
+  const cleanA = nameA.trim().toLowerCase();
+  const cleanB = nameB.trim().toLowerCase();
+  if (!cleanA || !cleanB) return false;
+  if (cleanA === cleanB) return true;
+
+  const normA = normalizeIngredientName(cleanA);
+  const normB = normalizeIngredientName(cleanB);
+  if (normA === normB) return true;
+
+  if (normA.length >= 4 && normB.length >= 4) {
+    if (normA.includes(normB) || normB.includes(normA)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Erhöht die Menge eines bestehenden Einkaufsartikels intelligent oder fügt einen neuen hinzu.
+ * Verhindert redundante doppelte Einträge und summiert Mengen auch bei Einheiten und impliziten Zählungen.
+ */
+export function mergeOrAddShoppingItem(
+  existingItems: ShoppingItem[],
+  newItem: ShoppingItem
+): ShoppingItem[] {
+  const newName = newItem.name.trim();
+  if (!newName) return existingItems;
+
+  // Suche vorrangig nach einem noch nicht abgehakten Artikel mit gleichem oder äquivalentem Namen
+  const existingIdx = existingItems.findIndex(
+    (it) => !it.completed && areIngredientsEquivalent(it.name, newName)
+  );
+
+  if (existingIdx === -1) {
+    return [...existingItems, newItem];
+  }
+
+  const existing = existingItems[existingIdx];
+
+  // Helper zum Parsen von Zahlen inklusive Kommas und Brüchen (1/2 etc.)
+  const parseNum = (val: string | number | undefined): number | null => {
+    if (val === undefined || val === null || val === '') return null;
+    if (typeof val === 'number') return isNaN(val) ? null : val;
+    const str = String(val).trim().replace(',', '.');
+    if (str.includes('/')) {
+      const parts = str.split('/');
+      const num = parseFloat(parts[0]);
+      const den = parseFloat(parts[1]);
+      if (!isNaN(num) && !isNaN(den) && den !== 0) return num / den;
+    }
+    const parsed = parseFloat(str);
+    return isNaN(parsed) ? null : parsed;
+  };
+
+  const numA = parseNum(existing.amount);
+  const numB = parseNum(newItem.amount);
+
+  const unitA = (existing.unit || '').trim().toLowerCase();
+  const unitB = (newItem.unit || '').trim().toLowerCase();
+
+  let combinedAmount: string | number = '';
+  let combinedUnit = existing.unit || newItem.unit || '';
+
+  // Fall 1: Beide haben explizite Zahlenwerte
+  if (numA !== null && numB !== null) {
+    if (unitA === unitB || !unitA || !unitB) {
+      combinedAmount = Math.round((numA + numB) * 100) / 100;
+      combinedUnit = existing.unit || newItem.unit || '';
+    } else if ((unitA === 'kg' && unitB === 'g') || (unitA === 'g' && unitB === 'kg')) {
+      if (unitA === 'kg') {
+        combinedAmount = Math.round((numA + numB / 1000) * 100) / 100;
+        combinedUnit = 'kg';
+      } else {
+        combinedAmount = Math.round((numA + numB * 1000) * 100) / 100;
+        combinedUnit = 'g';
+      }
+    } else if ((unitA === 'l' && unitB === 'ml') || (unitA === 'ml' && unitB === 'l')) {
+      if (unitA === 'l') {
+        combinedAmount = Math.round((numA + numB / 1000) * 100) / 100;
+        combinedUnit = 'l';
+      } else {
+        combinedAmount = Math.round((numA + numB * 1000) * 100) / 100;
+        combinedUnit = 'ml';
+      }
+    } else {
+      // Inkompatible Einheiten (z.B. "1 Dose + 200g")
+      combinedAmount = `${existing.amount} ${existing.unit || ''} + ${newItem.amount} ${newItem.unit || ''}`.trim();
+      combinedUnit = '';
+    }
+  } 
+  // Fall 2: Nur B hat eine Zahl (A hatte keine Menge -> implizit 1)
+  else if (numA === null && numB !== null) {
+    if (unitB) {
+      combinedAmount = newItem.amount;
+      combinedUnit = newItem.unit || '';
+    } else {
+      combinedAmount = Math.round((1 + numB) * 100) / 100;
+      combinedUnit = existing.unit || newItem.unit || '';
+    }
+  } 
+  // Fall 3: Nur A hat eine Zahl (B wurde ohne Zahl hinzugefügt -> implizit +1)
+  else if (numA !== null && numB === null) {
+    combinedAmount = Math.round((numA + 1) * 100) / 100;
+    combinedUnit = existing.unit || '';
+  } 
+  // Fall 4: Weder A noch B haben eine Zahl (z. B. "Tofu" hinzugefügt wenn "Tofu" schon existiert -> 1 + 1 = 2)
+  else {
+    combinedAmount = 2;
+    combinedUnit = existing.unit || newItem.unit || '';
+  }
+
+  const combinedRecipeSource = [existing.recipeSource, newItem.recipeSource]
+    .filter(Boolean)
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .join(', ');
+
+  const updatedItem: ShoppingItem = {
+    ...existing,
+    amount: combinedAmount,
+    unit: combinedUnit,
+    category: existing.category || newItem.category,
+    recipeSource: combinedRecipeSource || existing.recipeSource,
+  };
+
+  const nextList = [...existingItems];
+  nextList[existingIdx] = updatedItem;
+  return nextList;
+}
+
+export function mergeOrAddShoppingItems(
+  existingItems: ShoppingItem[],
+  newItems: ShoppingItem[]
+): ShoppingItem[] {
+  let result = [...existingItems];
+  for (const item of newItems) {
+    result = mergeOrAddShoppingItem(result, item);
+  }
+  return result;
+}
+
 // LocalStorage helpers
 const STORAGE_KEYS = {
   FAVORITES: 'veggie_favorites_v1',
