@@ -246,26 +246,21 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Actions
   const toggleFavorite = (recipeId: string) => {
-    setFavorites((prev) => {
-      const exists = prev.includes(recipeId);
-      const updated = exists ? prev.filter((id) => id !== recipeId) : [...prev, recipeId];
-      showToast(exists ? 'Aus Favoriten entfernt' : 'Zu Favoriten hinzugefügt! ❤️');
-      return updated;
-    });
+    const isFav = favorites.includes(recipeId);
+    setFavorites((prev) => (isFav ? prev.filter((id) => id !== recipeId) : [...prev, recipeId]));
+    showToast(isFav ? 'Aus Favoriten entfernt' : 'Zu Favoriten hinzugefügt! ❤️');
   };
 
   const toggleDislike = (recipeId: string) => {
-    setDislikedIds((prev) => {
-      const exists = prev.includes(recipeId);
-      if (exists) {
-        showToast('Gericht wird wieder normal angezeigt.');
-        return prev.filter((id) => id !== recipeId);
-      } else {
-        setFavorites((favs) => favs.filter((id) => id !== recipeId));
-        showToast('Gericht als Dislike markiert – wird seltener angezeigt.');
-        return [...prev, recipeId];
-      }
-    });
+    const isDisliked = dislikedIds.includes(recipeId);
+    if (isDisliked) {
+      setDislikedIds((prev) => prev.filter((id) => id !== recipeId));
+      showToast('Gericht wird wieder normal angezeigt.');
+    } else {
+      setDislikedIds((prev) => [...prev, recipeId]);
+      setFavorites((prev) => prev.filter((id) => id !== recipeId));
+      showToast('Gericht als Dislike markiert – wird seltener angezeigt.');
+    }
   };
 
   const resetFilters = () => {

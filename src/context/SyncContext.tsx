@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import {
   SyncConfig,
   SyncStatus,
@@ -97,12 +97,12 @@ export const SyncProvider: React.FC<{ children: React.ReactNode }> = ({ children
   /**
    * Register domain contexts so they receive non-destructive merged data on join
    */
-  const registerDomainSync = (handlers: DomainSyncHandlers) => {
+  const registerDomainSync = useCallback((handlers: DomainSyncHandlers) => {
     domainHandlersRef.current.add(handlers);
     return () => {
       domainHandlersRef.current.delete(handlers);
     };
-  };
+  }, []);
 
   /**
    * Safe Join with non-destructive merge

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 
 export interface ToastContextType {
   toastMessage: string | null;
@@ -9,15 +9,23 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-  };
+  const showToast = useCallback((msg: string) => {
+    // Schedule state update outside current execution stack to prevent
+    // 'Cannot update a component while rendering a different component' errors
+    setTimeout(() => {
+      setToastMessage(msg);
+    }, 0);
+  }, []);
 
   useEffect(() => {
     if (toastMessage) {
-      const timer = setTimeout(() => setToastMessage(null), 3200);
-      return () => clearTimeout(timer);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setToastMessage(null), 3200);
+      return () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+      };
     }
   }, [toastMessage]);
 
