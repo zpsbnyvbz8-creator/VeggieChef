@@ -90,14 +90,14 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
           <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E67E22] text-white text-[11px] font-semibold shadow-xs">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#E67E22] text-white text-xs font-semibold border border-[#E67E22] shadow-xs">
               <Sparkles className="w-2.5 h-2.5" />
               <span>Tagesrezept</span>
             </span>
-            <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold shadow-xs ${
+            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border shadow-xs ${
               activeRecipe.isVegan 
-                ? 'bg-[#4A7856] text-white' 
-                : 'bg-white/95 text-[#4A7856]'
+                ? 'bg-[#4A7856] text-white border-[#4A7856]' 
+                : 'bg-white/95 text-[#4A7856] border-[#ECEBE8]'
             }`}>
               {activeRecipe.isVegan ? '🌱 Vegan' : '🧀 Veggie'}
             </span>
@@ -108,7 +108,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
         <div className="flex-1 h-full p-2.5 sm:p-3.5 flex flex-col justify-between overflow-hidden min-w-0">
           <div className="space-y-1 min-w-0">
             <div className="flex items-center justify-between gap-2 text-xs text-[#7A7E7B]">
-              <span className="uppercase tracking-wider font-semibold text-[#4A7856] text-[11px] truncate">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] shrink-0">
                 {activeRecipe.category}
               </span>
               <div className="flex items-center gap-2 sm:gap-3 text-xs shrink-0">

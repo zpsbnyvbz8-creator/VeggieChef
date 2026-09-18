@@ -624,146 +624,162 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   return (
     <div className="space-y-5 sm:space-y-8 animate-in fade-in duration-300">
       {/* Header & Controls */}
-      <div className="bg-white rounded-2xl p-4 sm:p-6 lg:p-8 border border-[#ECEBE8] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
-        <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-[11px] sm:text-xs font-semibold uppercase tracking-wider border border-[#ECEBE8] whitespace-nowrap shrink-0">
-              <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-              <span>Wöchentliche Essensplanung</span>
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-[#ECEBE8] shadow-xs space-y-4">
+        {/* Top: Header Info & Main Action CTAs */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1 min-w-0">
+            {/* Badges row: Status badge & Family sync button side by side on PC & Mobile */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] shrink-0">
+                <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+                <span>Wöchentliche Essensplanung</span>
+              </div>
+
+              {onOpenSyncModal && (
+                <button
+                  type="button"
+                  id="header-family-sync-btn"
+                  onClick={onOpenSyncModal}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer shrink-0 ${
+                    syncConfig?.mode === 'family' && syncConfig?.groupId
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                      : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                  }`}
+                  title="Synchronisationseinstellungen öffnen"
+                >
+                  {syncConfig?.mode === 'family' && syncConfig?.groupId ? (
+                    <>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                      <Users className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>Familie: {syncConfig.groupName || syncConfig.groupId}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Cloud className="w-3.5 h-3.5 text-[#7A7E7B]" />
+                      <span>Lokal • Mit Familie teilen?</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
 
-            {onOpenSyncModal && (
-              <button
-                type="button"
-                onClick={onOpenSyncModal}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
-                  syncConfig?.mode === 'family' && syncConfig?.groupId
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                    : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-[#F1F5F2]'
-                }`}
-                title="Synchronisationseinstellungen öffnen"
-              >
-                {syncConfig?.mode === 'family' && syncConfig?.groupId ? (
-                  <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                    <Users className="w-3 h-3 text-emerald-700" />
-                    <span>Familie: {syncConfig.groupName || syncConfig.groupId}</span>
-                  </>
-                ) : (
-                  <>
-                    <Cloud className="w-3 h-3 text-[#7A7E7B]" />
-                    <span>Lokal • Mit Familie teilen?</span>
-                  </>
-                )}
-              </button>
-            )}
+            {/* Title & Short Single-Line Subtitle */}
+            <h2 className="text-xl sm:text-2xl font-bold text-[#2D3E40] tracking-tight">
+              Dein Wochenplan
+            </h2>
+            <p className="text-xs sm:text-sm text-[#7A7E7B] truncate max-w-xl">
+              Mahlzeiten planen, Nährwerte prüfen & Zutaten einkaufen.
+            </p>
           </div>
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#2D3E40] tracking-tight">
-            Dein Wochenplan
-          </h2>
-          <p className="text-xs sm:text-sm text-[#7A7E7B] max-w-xl">
-            Plane deine Mahlzeiten für die Woche, behalte Nährwerte im Blick und übertrage alle Zutaten mit 1 Klick auf die Einkaufsliste.
-          </p>
+
+          {/* Primary Action Buttons */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+            {/* AI Generator Modal Trigger */}
+            <button
+              id="open-ai-meal-plan-modal-btn"
+              onClick={() => setShowAIGeneratorModal(true)}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl bg-[#2D3E40] hover:bg-[#1F2C2D] text-white font-semibold text-xs shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap"
+            >
+              <Sparkles className="w-4 h-4 text-[#4A7856]" />
+              <span>KI-Wochenplan</span>
+            </button>
+
+            {/* 1-Click All to Shopping List */}
+            <button
+              id="transfer-week-to-shopping-btn"
+              onClick={handleTransferAllToShopping}
+              disabled={totalPlannedMeals === 0}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white font-semibold text-xs shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <span>Alle Zutaten auf Liste</span>
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 shrink-0 w-full md:w-auto">
-          {/* Toggle Mittag anzeigen: dezenter Button in gleicher Größe wie die anderen */}
-          <button
-            type="button"
-            id="toggle-show-lunch-btn"
-            onClick={handleToggleLunchSlot}
-            className={`flex items-center justify-center gap-2 px-3.5 sm:px-3 py-2.5 sm:py-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer min-h-[42px] touch-manipulation active:scale-95 ${
-              showLunchSlot
-                ? 'bg-[#F1F5F2] border-[#4A7856]/40 text-[#4A7856] shadow-2xs'
-                : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-white'
-            }`}
-            title={showLunchSlot ? 'Mittagsgerichte ausblenden' : 'Mittagsgerichte anzeigen'}
-          >
-            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-              showLunchSlot ? 'bg-[#4A7856] border-[#4A7856] text-white' : 'border-[#CCD5CF] bg-white'
-            }`}>
-              {showLunchSlot && <Check className="w-3 h-3 stroke-[3]" />}
-            </div>
-            <span>Mittag anzeigen</span>
-          </button>
+        {/* Module Toolbar: Einstellungs- und Steuerungs-Module sauber strukturiert */}
+        <div className="bg-[#FAF9F6] rounded-xl p-2 sm:p-2.5 border border-[#ECEBE8] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          {/* Linke Module: Ansicht & Portionen */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            {/* Modul 1: Toggle Mittag anzeigen */}
+            <button
+              type="button"
+              id="toggle-show-lunch-btn"
+              onClick={handleToggleLunchSlot}
+              className={`h-8 sm:h-8.5 px-3 rounded-lg border text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 touch-manipulation active:scale-95 select-none ${
+                showLunchSlot
+                  ? 'bg-white border-[#4A7856]/40 text-[#4A7856] shadow-2xs'
+                  : 'bg-white/80 border-[#ECEBE8] text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-white'
+              }`}
+              title={showLunchSlot ? 'Mittagsgerichte ausblenden' : 'Mittagsgerichte anzeigen'}
+            >
+              <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${
+                showLunchSlot ? 'bg-[#4A7856] border-[#4A7856] text-white' : 'border-[#CCD5CF] bg-white'
+              }`}>
+                {showLunchSlot && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+              </div>
+              <span>Mittag anzeigen</span>
+            </button>
 
-          {/* Servings count selector for shopping list */}
-          <div className="flex items-center gap-1.5 sm:gap-1.5 bg-[#FAF9F6] p-1.5 rounded-2xl border border-[#ECEBE8] shadow-2xs min-h-[42px]">
-            <span className="text-xs sm:text-xs font-bold text-[#2D3E40] px-2 sm:px-1.5">Portionen:</span>
-            {[1, 2, 3, 4, 6].map((num) => (
-              <button
-                key={num}
-                type="button"
-                id={`plan-servings-${num}-btn`}
-                onClick={() => setPlanServings(num)}
-                className={`w-10 h-10 sm:w-8 sm:h-8 rounded-xl sm:rounded-lg text-sm sm:text-xs font-bold transition-all flex items-center justify-center touch-manipulation cursor-pointer active:scale-90 ${
-                  planServings === num
-                    ? 'bg-[#4A7856] text-white shadow-xs'
-                    : 'text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-white'
-                }`}
-                title={`${num} Portionen`}
-              >
-                {num}
-              </button>
-            ))}
+            {/* Modul 2: Portions-Auswahl */}
+            <div className="h-8 sm:h-8.5 flex items-center gap-1 bg-white px-2.5 rounded-lg border border-[#ECEBE8] shadow-2xs">
+              <span className="text-xs font-bold text-[#2D3E40] pr-1 select-none">Portionen:</span>
+              {[1, 2, 3, 4, 6].map((num) => (
+                <button
+                  key={num}
+                  type="button"
+                  id={`plan-servings-${num}-btn`}
+                  onClick={() => setPlanServings(num)}
+                  className={`w-6 h-6 sm:w-6.5 sm:h-6.5 rounded-md text-xs font-bold transition-all flex items-center justify-center touch-manipulation cursor-pointer active:scale-90 ${
+                    planServings === num
+                      ? 'bg-[#4A7856] text-white shadow-xs'
+                      : 'text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-[#F1F5F2]'
+                  }`}
+                  title={`${num} Portionen`}
+                >
+                  {num}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Clear entire meal plan button - also serves as drop zone to delete dragged recipe */}
-          <button
-            id="clear-entire-meal-plan-btn"
-            type="button"
-            onClick={() => {
-              if (!draggingItem) setShowConfirmClearAll(true);
-            }}
-            disabled={totalPlannedMeals === 0 && !draggingItem}
-            data-drop-trash="true"
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = 'move';
-              setIsDragOverTrash(true);
-            }}
-            onDragLeave={() => setIsDragOverTrash(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              if (draggingItem) {
-                handleDropToTrash(draggingItem.dayId, draggingItem.mealType);
-                setDraggingItem(null);
-                setIsDragOverTrash(false);
-              }
-            }}
-            className={`flex items-center justify-center gap-1.5 px-3.5 sm:px-3 py-2.5 sm:py-2.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer min-h-[42px] sm:min-h-0 touch-manipulation ${
-              isDragOverTrash
-                ? 'border-rose-600 bg-rose-600 text-white shadow-xs ring-2 ring-rose-400/50'
-                : draggingItem
-                ? 'border-rose-400 bg-rose-100 text-rose-700 ring-1 ring-rose-300'
-                : 'border-rose-200 bg-rose-50/70 hover:bg-rose-100/90 text-rose-600 disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-[#7A7E7B] disabled:hover:border-[#ECEBE8]'
-            }`}
-            title={draggingItem ? 'Rezept hier ablegen zum Entfernen aus dem Plan' : 'Gesamten Wochenplan leeren'}
-          >
-            <Trash2 className={`w-4 h-4 sm:w-3.5 sm:h-3.5 ${isDragOverTrash ? 'text-white' : 'text-rose-500'}`} />
-            <span className="hidden sm:inline">Plan leeren</span>
-          </button>
-
-          {/* AI Generator Modal Trigger */}
-          <button
-            id="open-ai-meal-plan-modal-btn"
-            onClick={() => setShowAIGeneratorModal(true)}
-            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2.5 sm:py-2.5 rounded-xl bg-[#2D3E40] hover:bg-[#1F2C2D] text-white font-medium text-xs shadow-xs transition-all cursor-pointer min-h-[42px] sm:min-h-0 touch-manipulation active:scale-95"
-          >
-            <Sparkles className="w-4 h-4 sm:w-4 sm:h-4 text-[#4A7856]" />
-            <span>KI-Wochenplan</span>
-          </button>
-
-          {/* 1-Click All to Shopping List */}
-          <button
-            id="transfer-week-to-shopping-btn"
-            onClick={handleTransferAllToShopping}
-            disabled={totalPlannedMeals === 0}
-            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2.5 sm:py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white font-medium text-xs shadow-xs transition-all cursor-pointer min-h-[42px] sm:min-h-0 touch-manipulation active:scale-95"
-          >
-            <ShoppingCart className="w-4 h-4 sm:w-4 sm:h-4" />
-            <span>Alle Zutaten auf Liste</span>
-          </button>
+          {/* Rechte Module: Plan leeren / Drop-Zone */}
+          <div className="flex items-center gap-2">
+            <button
+              id="clear-entire-meal-plan-btn"
+              type="button"
+              onClick={() => {
+                if (!draggingItem) setShowConfirmClearAll(true);
+              }}
+              disabled={totalPlannedMeals === 0 && !draggingItem}
+              data-drop-trash="true"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                setIsDragOverTrash(true);
+              }}
+              onDragLeave={() => setIsDragOverTrash(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (draggingItem) {
+                  handleDropToTrash(draggingItem.dayId, draggingItem.mealType);
+                  setDraggingItem(null);
+                  setIsDragOverTrash(false);
+                }
+              }}
+              className={`h-8 sm:h-8.5 px-3 rounded-lg border text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 touch-manipulation ${
+                isDragOverTrash
+                  ? 'border-rose-600 bg-rose-600 text-white shadow-xs ring-2 ring-rose-400/50'
+                  : draggingItem
+                  ? 'border-rose-400 bg-rose-100 text-rose-700 ring-1 ring-rose-300'
+                  : 'border-rose-200 bg-white hover:bg-rose-50 text-rose-600 disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-[#7A7E7B] disabled:hover:border-[#ECEBE8]'
+              }`}
+              title={draggingItem ? 'Rezept hier ablegen zum Entfernen aus dem Plan' : 'Gesamten Wochenplan leeren'}
+            >
+              <Trash2 className={`w-3.5 h-3.5 ${isDragOverTrash ? 'text-white' : 'text-rose-500'}`} />
+              <span>Plan leeren</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -822,7 +838,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   </span>
                 )}
               </div>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#EBF3ED] text-[#4A7856] font-semibold whitespace-nowrap shrink-0">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] whitespace-nowrap shrink-0">
                 {totalPlannedMeals} Gerichte
               </span>
             </div>
@@ -894,7 +910,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   {day.dayName}
                 </span>
                 {totalProtein > 0 && (
-                  <span className="text-xs font-semibold text-[#4A7856] bg-[#F1F5F2] px-2 py-0.5 rounded-full border border-[#ECEBE8]">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
                     {totalProtein}g Prot.
                   </span>
                 )}
@@ -964,12 +980,12 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                               <GripVertical className="w-3.5 h-3.5" />
                             </div>
                             {day.lunch.isVegan ? (
-                              <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded leading-tight inline-flex items-center gap-0.5">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
                                 <span>🌱</span>
                                 <span>Vegan</span>
                               </span>
                             ) : (
-                              <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded leading-tight inline-flex items-center gap-0.5">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white text-[#2D3E40] text-xs font-semibold border border-[#ECEBE8]">
                                 <span>🧀</span>
                                 <span>Veggie</span>
                               </span>
@@ -1131,12 +1147,12 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                             <GripVertical className="w-3.5 h-3.5" />
                           </div>
                           {day.dinner.isVegan ? (
-                            <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded leading-tight inline-flex items-center gap-0.5">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
                               <span>🌱</span>
                               <span>Vegan</span>
                             </span>
                           ) : (
-                            <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded leading-tight inline-flex items-center gap-0.5">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white text-[#2D3E40] text-xs font-semibold border border-[#ECEBE8]">
                               <span>🧀</span>
                               <span>Veggie</span>
                             </span>
@@ -1258,7 +1274,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         >
           <div className="w-2 h-2 rounded-full bg-[#4A7856] shrink-0" />
           <div className="min-w-0">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-[#4A7856] truncate">
+            <div className="text-[10px] font-semibold text-[#4A7856] truncate">
               {touchDragState.source.slot.isVegan ? '🌱 Vegan' : '🧀 Veggie'} • {touchDragState.source.mealType === 'lunch' ? 'Mittag' : 'Abend'}
             </div>
             <div className="text-xs font-bold text-[#2D3E40] truncate max-w-[180px]">
@@ -1281,7 +1297,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             {/* Header: Kompakt gehalten für maximalen Platz für Rezepte */}
             <div className="flex items-center justify-between border-b border-[#ECEBE8] pb-3 gap-3">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#4A7856] bg-[#F1F5F2] px-2.5 py-1 rounded-lg border border-[#D5DDD7] shrink-0">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold text-[#4A7856] bg-[#F1F5F2] border border-[#ECEBE8] shrink-0">
                   {mealPlan.find((d) => d.dayId === selectedDayId)?.dayName || 'Wochentag'} • {selectedMealType === 'lunch' ? 'Mittag' : 'Abend'}
                 </span>
                 <h3 className="text-base sm:text-lg font-bold text-[#2D3E40] truncate">
@@ -1421,16 +1437,18 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                             {recipe.isVegan ? (
-                              <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
-                                🌱 Vegan
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold text-[#4A7856] bg-[#F1F5F2] border border-[#ECEBE8]">
+                                <span>🌱</span>
+                                <span>Vegan</span>
                               </span>
                             ) : (
-                              <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
-                                🧀 Veggie
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold text-[#2D3E40] bg-white border border-[#ECEBE8]">
+                                <span>🧀</span>
+                                <span>Veggie</span>
                               </span>
                             )}
                             {isFav && (
-                              <span className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200">
                                 <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
                                 <span>Gelikt</span>
                               </span>

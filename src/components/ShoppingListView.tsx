@@ -893,7 +893,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             {/* Einheitliches Status-Badge: Zeigt aktive Artikel ohne Redundanz */}
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
+            <div className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] whitespace-nowrap">
               <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
               <span>{activeCount} offen</span>
             </div>
@@ -902,7 +902,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               <button
                 type="button"
                 onClick={onOpenSyncModal}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap ${
                   syncConfig?.mode === 'family' && syncConfig?.groupId
                     ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
                     : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-[#F1F5F2]'
@@ -1163,7 +1163,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <List className="w-4 h-4 text-[#4A7856]" />
                 <span>Offene Artikel</span>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#4A7856] border border-[#ECEBE8]">
+              <span className="inline-flex items-center justify-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#4A7856] border border-[#ECEBE8] whitespace-nowrap">
                 {activeItems.length} offen
               </span>
             </div>
@@ -1243,7 +1243,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       className="flex items-center gap-2 shrink-0 ml-2"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#4A7856] border border-[#ECEBE8]">
+                      <span className="inline-flex items-center justify-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#4A7856] border border-[#ECEBE8] whitespace-nowrap">
                         {activeInCat.length} offen
                       </span>
 

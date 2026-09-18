@@ -274,7 +274,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
       {/* Intro Banner - clean neutral card matching app theme */}
       <div className="bg-white rounded-2xl p-4 sm:p-6 text-[#2D3E40] shadow-xs border border-[#ECEBE8]">
         <div className="space-y-1.5 max-w-2xl">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-[11px] sm:text-xs font-semibold">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5 text-[#4A7856]" />
             Vorratskammer & KI-Rezeptsuche
           </div>
@@ -704,14 +704,14 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                   className="w-20 h-20 rounded-xl object-cover shrink-0 group-hover:scale-103 transition-transform"
                 />
                 <div className="flex flex-col justify-between flex-1 min-w-0">
-                  <div>
-                    <span className="text-[10px] uppercase font-semibold text-[#4A7856]">
+                  <div className="mb-1">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
                       {recipe.category}
                     </span>
-                    <h4 className="font-semibold text-xs sm:text-sm text-[#2D3E40] truncate group-hover:text-[#4A7856]">
-                      {recipe.title}
-                    </h4>
                   </div>
+                  <h4 className="font-semibold text-xs sm:text-sm text-[#2D3E40] truncate group-hover:text-[#4A7856]">
+                    {recipe.title}
+                  </h4>
                   <div className="flex items-center gap-3 text-[11px] text-[#7A7E7B]">
                     <span>⏱️ {recipe.totalTimeMinutes} Min.</span>
                     <span className="text-[#4A7856] font-medium">💪 {recipe.nutrients.protein}g</span>

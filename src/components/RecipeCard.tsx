@@ -94,20 +94,20 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
         <div className="absolute top-2 sm:top-3 left-2 sm:left-3 right-2 sm:right-3 flex items-center justify-between gap-2 pointer-events-none">
           <div className="flex flex-wrap gap-1 sm:gap-1.5 pointer-events-auto">
             {isDisliked ? (
-              <span className="px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-xs font-semibold tracking-tight shadow-xs flex items-center gap-1">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-xs font-semibold border border-rose-600 shadow-xs">
                 <ThumbsDown className="w-2.5 h-2.5" /> Seltener anzeigen
               </span>
             ) : recipe.isVegan ? (
-              <span className="px-2.5 py-0.5 rounded-full bg-[#4A7856] text-white text-xs font-semibold tracking-tight shadow-xs">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#4A7856] text-white text-xs font-semibold border border-[#4A7856] shadow-xs">
                 🌱 Vegan
               </span>
             ) : (
-              <span className="px-2.5 py-0.5 rounded-full bg-white/95 text-[#4A7856] text-xs font-semibold tracking-tight shadow-xs backdrop-blur-xs">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/95 text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] shadow-xs backdrop-blur-xs">
                 🧀 Veggie
               </span>
             )}
             {recipe.isCustomAi && (
-              <span className="px-2 py-0.5 rounded-full bg-[#FDF6F0] text-[#D35400] border border-[#F5EADF] text-xs font-semibold flex items-center gap-1 shadow-xs">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FDF6F0] text-[#D35400] border border-[#F5EADF] text-xs font-semibold shadow-xs">
                 <Sparkles className="w-2.5 h-2.5" /> KI
               </span>
             )}
@@ -160,8 +160,8 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
       {/* Content Body */}
       <div className="p-3.5 sm:p-5 flex flex-col flex-1 justify-between gap-2.5 sm:gap-3">
         <div>
-          <div className="flex items-center justify-between text-xs text-[#7A7E7B] mb-1">
-            <span className="font-semibold uppercase tracking-wider text-[#4A7856] text-xs">
+          <div className="flex items-center justify-between text-xs text-[#7A7E7B] mb-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
               {recipe.category}
             </span>
           </div>
