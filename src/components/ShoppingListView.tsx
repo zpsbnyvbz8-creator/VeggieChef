@@ -888,38 +888,6 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-300">
-      {/* Undo Floating Notification Banner */}
-      {showUndoBanner && undoBackup && (
-        <div className="p-3 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8] flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-top duration-200">
-          <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
-            <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4A7856] shrink-0" />
-            <span className="text-xs">
-              {lastDeletedInfo?.type === 'completed'
-                ? `${lastDeletedInfo.count} erledigte ${lastDeletedInfo.count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`
-                : lastDeletedInfo?.type === 'category'
-                ? `Regal "${lastDeletedInfo.name}" gelöscht (${lastDeletedInfo.count} ${lastDeletedInfo.count === 1 ? 'Artikel' : 'Artikel'}).`
-                : lastDeletedInfo?.type === 'single'
-                ? `"${lastDeletedInfo.name}" gelöscht.`
-                : `Einkaufsliste gelöscht (${lastDeletedInfo?.count || undoBackup.length} ${lastDeletedInfo?.count === 1 ? 'Zutat' : 'Zutaten'}).`}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={handleUndo}
-              className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[11px] sm:text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
-            >
-              Rückgängig
-            </button>
-            <button
-              onClick={() => setShowUndoBanner(false)}
-              className="p-1 text-white/70 hover:text-white text-xs cursor-pointer"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Header & Controls */}
       <div className="bg-white rounded-2xl p-4 sm:p-6 lg:p-8 border border-[#ECEBE8] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
         <div className="space-y-1">
@@ -1058,6 +1026,38 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           </button>
         </div>
       </div>
+
+      {/* Undo Notification Banner (Direkt unter dem Header, wie im Wochenplaner) */}
+      {showUndoBanner && undoBackup && (
+        <div className="p-3 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8] flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-top duration-200">
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
+            <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4A7856] shrink-0" />
+            <span className="text-xs">
+              {lastDeletedInfo?.type === 'completed'
+                ? `${lastDeletedInfo.count} erledigte ${lastDeletedInfo.count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`
+                : lastDeletedInfo?.type === 'category'
+                ? `Regal "${lastDeletedInfo.name}" gelöscht (${lastDeletedInfo.count} ${lastDeletedInfo.count === 1 ? 'Artikel' : 'Artikel'}).`
+                : lastDeletedInfo?.type === 'single'
+                ? `"${lastDeletedInfo.name}" gelöscht.`
+                : `Einkaufsliste gelöscht (${lastDeletedInfo?.count || undoBackup.length} ${lastDeletedInfo?.count === 1 ? 'Zutat' : 'Zutaten'}).`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleUndo}
+              className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[11px] sm:text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
+            >
+              Rückgängig
+            </button>
+            <button
+              onClick={() => setShowUndoBanner(false)}
+              className="p-1 text-white/70 hover:text-white text-xs cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 2. Smart Quick-Add Input mit Duplikat-Zusammenführung */}
       <form
@@ -1292,36 +1292,47 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       {/* 3. Erledigte Items: Einklappbarer Bereich am Ende („Erledigt (X)“) */}
       {completedCount > 0 && (
         <div className="bg-white rounded-2xl border border-[#ECEBE8] overflow-hidden shadow-xs mt-6">
-          <button
-            type="button"
+          <div
             onClick={() => setShowCompletedSection(!showCompletedSection)}
             className="w-full flex items-center justify-between p-4 sm:p-5 bg-[#FAF9F6] hover:bg-[#F5F4F0] text-left transition-colors cursor-pointer select-none"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setShowCompletedSection(!showCompletedSection);
+              }
+            }}
           >
             <div className="flex items-center gap-2 font-semibold text-[#2D3E40] text-sm sm:text-base">
               <CheckCheck className="w-4 h-4 text-[#4A7856]" />
               <span>Erledigt ({completedCount})</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setConfirmDeleteState({ type: 'completed' });
-                }}
+                onClick={() => setConfirmDeleteState({ type: 'completed' })}
                 className="text-xs font-semibold text-rose-600 hover:text-rose-700 px-2.5 py-1 rounded-lg hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer mr-1"
                 title="Erledigte Zutaten entfernen"
               >
                 Entfernen
               </button>
 
-              <ChevronDown
-                className={`w-4 h-4 text-[#7A7E7B] transition-transform duration-200 ${
-                  showCompletedSection ? 'rotate-180' : 'rotate-0'
-                }`}
-              />
+              <button
+                type="button"
+                onClick={() => setShowCompletedSection(!showCompletedSection)}
+                className="p-1 text-[#7A7E7B] hover:text-[#2D3E40] cursor-pointer"
+                title={showCompletedSection ? 'Zuklappen' : 'Aufklappen'}
+              >
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform duration-200 ${
+                    showCompletedSection ? 'rotate-180' : 'rotate-0'
+                  }`}
+                />
+              </button>
             </div>
-          </button>
+          </div>
 
           <div
             className={`grid transition-all duration-250 ease-in-out ${

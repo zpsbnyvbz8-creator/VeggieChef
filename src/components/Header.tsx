@@ -239,25 +239,6 @@ export const Header: React.FC<HeaderProps> = (props) => {
           </button>
 
           <button
-            id="nav-tab-shopping"
-            type="button"
-            onClick={() => handleNavigate('/shopping')}
-            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
-              activeTab === 'shopping'
-                ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
-                : 'text-[#7A7E7B] hover:bg-gray-50 hover:text-[#2D3E40]'
-            }`}
-          >
-            <ShoppingCart className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
-            <span>Einkaufsliste</span>
-            {shoppingCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-[#4A7856] text-white text-[11px] sm:text-[10px] font-bold shrink-0">
-                {shoppingCount}
-              </span>
-            )}
-          </button>
-
-          <button
             id="nav-tab-stats"
             type="button"
             onClick={() => handleNavigate('/stats')}

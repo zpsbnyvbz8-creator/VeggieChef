@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ShoppingItem, Recipe } from '../types';
-import { loadFromLocalStorage, saveToLocalStorage, mergeOrAddShoppingItems } from '../utils/helpers';
+import { loadFromLocalStorage, saveToLocalStorage, mergeOrAddShoppingItems, smartRoundGroceryAmount } from '../utils/helpers';
 import { subscribeToFamilyShopping } from '../lib/syncService';
 import { useToast } from './ToastContext';
 import { useSync } from './SyncContext';
@@ -94,9 +94,10 @@ export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Add Recipe ingredients to Shopping List
   const addToShoppingList = (recipe: Recipe, servings: number) => {
     const newItems: ShoppingItem[] = recipe.ingredients.map((ing) => {
-      let calcAmount = ing.amount;
+      let calcAmount: string | number = ing.amount;
       if (typeof ing.amount === 'number') {
-        calcAmount = Math.round(((ing.amount / recipe.servings) * servings) * 10) / 10;
+        const rawScaled = (ing.amount / recipe.servings) * servings;
+        calcAmount = smartRoundGroceryAmount(rawScaled, ing.unit, ing.name);
       }
       return {
         id: `shop-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
@@ -118,9 +119,10 @@ export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let allNewItems: ShoppingItem[] = [];
     items.forEach(({ recipe, servings }) => {
       const converted = recipe.ingredients.map((ing) => {
-        let calcAmount = ing.amount;
+        let calcAmount: string | number = ing.amount;
         if (typeof ing.amount === 'number') {
-          calcAmount = Math.round(((ing.amount / recipe.servings) * servings) * 10) / 10;
+          const rawScaled = (ing.amount / recipe.servings) * servings;
+          calcAmount = smartRoundGroceryAmount(rawScaled, ing.unit, ing.name);
         }
         return {
           id: `shop-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,

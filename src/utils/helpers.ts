@@ -163,7 +163,7 @@ export function detectIngredientCategory(name: string): IngredientCategory {
 
 export interface ParsedGroceryInput {
   name: string;
-  amount: string;
+  amount: string | number;
   unit: string;
 }
 
@@ -226,27 +226,93 @@ const COMMON_UNITS_MAP: Record<string, string> = {
   portionen: 'Portionen',
 };
 
+// Diskrete, zählbare Verpackungs- und Stückeinheiten, die beim Einkaufen nicht fraktioniert werden
+export const DISCRETE_COUNTABLE_UNITS: Set<string> = new Set([
+  'stk.', 'stk', 'stück', 'stueck',
+  'dose', 'dosen',
+  'glas', 'gläser', 'glaeser',
+  'packung', 'packungen', 'pck.', 'pck', 'pkg.', 'pkg',
+  'bund', 'bünde', 'buende',
+  'kopf', 'köpfe', 'koepfe',
+  'knolle', 'knollen',
+  'zehe', 'zehen', 'knoblauchzehe', 'knoblauchzehen',
+  'stange', 'stangen',
+  'tüte', 'tüten', 'tuete', 'tueten', 'beutel',
+  'flasche', 'flaschen', 'fl',
+  'scheibe', 'scheiben',
+]);
+
+// Typische zählbare Stück-Gemüse/Obst-Sorten, die im Supermarkt typischerweise als Ganzes gekauft werden
+export const COUNTABLE_PRODUCE_REGEX = /\b(zwiebel|paprika|gurke|avocado|zitrone|limette|apfel|birne|banane|orange|mango|aubergine|zucchini|knoblauch|granatapfel|blumenkohl|brokkoli|salatkopf|kohlrabi|fenchel|grapefruit|kiwi|kartoffel|s[üu]ßkartoffel)\b/i;
+
+/**
+ * Intelligentes Aufrunden von Mengenangaben beim Einkaufen:
+ * - Zählbare Stückgüter & Gemüse/Obst (z. B. 1.5 Zwiebeln -> 2 Stk, 0.5 Bund -> 1 Bund, 1.2 Dosen -> 2 Dosen)
+ * - Kontinuierliche Maße (EL, TL, g, kg, ml, l etc.) bleiben wie sie sind (z. B. 1.8 EL Olivenöl bleibt 1.8 EL).
+ * - "lieber zu wenig aufrunden oder gar nicht, als dass man durcheinander kommt."
+ */
+export function smartRoundGroceryAmount(
+  amount: number,
+  unit?: string,
+  name?: string
+): number {
+  if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
+    return amount;
+  }
+
+  const cleanUnit = (unit || '').trim().toLowerCase();
+  const cleanName = (name || '').trim().toLowerCase();
+
+  const isDiscreteUnit = DISCRETE_COUNTABLE_UNITS.has(cleanUnit);
+  const isCountableProduce =
+    (!cleanUnit || cleanUnit === 'stk.' || cleanUnit === 'stk' || cleanUnit === 'stück') &&
+    COUNTABLE_PRODUCE_REGEX.test(cleanName);
+
+  if (isDiscreteUnit || isCountableProduce) {
+    // Aufrunden auf ganze Einheiten im Supermarkt
+    return Math.ceil(amount);
+  }
+
+  // Kontinuierliche Einheiten (EL, TL, ml, l, g, kg):
+  // Auf maximal 1 Dezimalstelle runden, aber niemals künstlich zur nächsten ganzen Zahl aufrunden!
+  return Math.round(amount * 10) / 10;
+}
+
 // Intelligenter Natural Language Parser für Einkaufslisten-Eingaben
+// Unterstützt sowohl vorangestellte Mengen ("400g Tofu", "1.5 Zwiebeln") als auch
+// nachgestellte Mengen ("Tofu 400g", "Tofu 400 g", "Zwiebeln 2", "Zwiebeln 2 Stk", "Hafermilch 1l", "Olivenöl 1.8 EL")
 export function parseNaturalLanguageGroceryItem(rawInput: string): ParsedGroceryInput {
   const trimmed = rawInput.trim();
   if (!trimmed) return { name: '', amount: '', unit: '' };
 
-  // 1. Ziffern am Anfang erfassen (z. B. 400, 1.5, 1,5, 1/2, 3/4)
-  const regex = /^(\d+(?:[.,]\d+)?|\d+\/\d+)\s*([a-zA-ZäöüÄÖÜß.]+)?(?:\s+(.*))?$/;
-  const match = trimmed.match(regex);
+  // 1. Ziffern am ANFANG erfassen (z. B. 400, 1.5, 1,5, 1/2, 3/4)
+  const leadingRegex = /^(\d+(?:[.,]\d+)?|\d+\/\d+)\s*([a-zA-ZäöüÄÖÜß.]+)?(?:\s+(.*))?$/;
+  const match = trimmed.match(leadingRegex);
 
   if (match) {
     const rawNum = match[1].replace(',', '.');
     const attachedOrFirstWord = (match[2] || '').trim();
     const rest = (match[3] || '').trim();
 
+    let numVal: number | null = null;
+    if (rawNum.includes('/')) {
+      const parts = rawNum.split('/');
+      const num = parseFloat(parts[0]);
+      const den = parseFloat(parts[1]);
+      if (!isNaN(num) && !isNaN(den) && den !== 0) numVal = num / den;
+    } else {
+      const parsed = parseFloat(rawNum);
+      if (!isNaN(parsed)) numVal = parsed;
+    }
+
     if (attachedOrFirstWord) {
       const lowerWord = attachedOrFirstWord.toLowerCase();
 
       // Multiplikator wie "2x Hafermilch"
       if (lowerWord === 'x') {
+        const finalAmount = numVal !== null ? smartRoundGroceryAmount(numVal, '', rest) : rawNum;
         return {
-          amount: rawNum,
+          amount: finalAmount,
           unit: '',
           name: rest || '',
         };
@@ -255,8 +321,9 @@ export function parseNaturalLanguageGroceryItem(rawInput: string): ParsedGrocery
       // Bekannte Einheit direkt am Wort (z. B. "400g Tofu" oder "1 Bund Petersilie")
       const matchedUnit = COMMON_UNITS_MAP[lowerWord];
       if (matchedUnit) {
+        const finalAmount = numVal !== null ? smartRoundGroceryAmount(numVal, matchedUnit, rest) : rawNum;
         return {
-          amount: rawNum,
+          amount: finalAmount,
           unit: matchedUnit,
           name: rest || '',
         };
@@ -264,18 +331,21 @@ export function parseNaturalLanguageGroceryItem(rawInput: string): ParsedGrocery
 
       // Falls Wort keine bekannte Einheit ist, aber Rest leer ist (z. B. "2 Hafermilch")
       if (!rest) {
+        const finalAmount = numVal !== null ? smartRoundGroceryAmount(numVal, '', attachedOrFirstWord) : rawNum;
         return {
-          amount: rawNum,
+          amount: finalAmount,
           unit: '',
           name: attachedOrFirstWord,
         };
       }
 
       // Kein bekanntes Einheitswort, aber Text folgt (z. B. "2 Bio Hafermilch")
+      const combinedName = `${attachedOrFirstWord} ${rest}`.trim();
+      const finalAmount = numVal !== null ? smartRoundGroceryAmount(numVal, '', combinedName) : rawNum;
       return {
-        amount: rawNum,
+        amount: finalAmount,
         unit: '',
-        name: `${attachedOrFirstWord} ${rest}`.trim(),
+        name: combinedName,
       };
     }
 
@@ -287,16 +357,19 @@ export function parseNaturalLanguageGroceryItem(rawInput: string): ParsedGrocery
 
       const matchedUnit = COMMON_UNITS_MAP[tokenLower];
       if (matchedUnit) {
+        const ingName = parts.slice(1).join(' ').trim();
+        const finalAmount = numVal !== null ? smartRoundGroceryAmount(numVal, matchedUnit, ingName) : rawNum;
         return {
-          amount: rawNum,
+          amount: finalAmount,
           unit: matchedUnit,
-          name: parts.slice(1).join(' ').trim(),
+          name: ingName,
         };
       }
 
-      // Kein Einheits-Token: Das ganze 'rest' ist der Name (z. B. "2 Hafermilch")
+      // Kein Einheits-Token: Das ganze 'rest' ist der Name (z. B. "2 Hafermilch", "1.5 Zwiebeln")
+      const finalAmount = numVal !== null ? smartRoundGroceryAmount(numVal, '', rest) : rawNum;
       return {
-        amount: rawNum,
+        amount: finalAmount,
         unit: '',
         name: rest,
       };
@@ -310,7 +383,49 @@ export function parseNaturalLanguageGroceryItem(rawInput: string): ParsedGrocery
     };
   }
 
-  // Kein führender Zahlenwert -> Reine Textbezeichnung
+  // 2. Falls kein führender Zahlenwert, prüfen ob Menge & Einheit am ENDE stehen
+  // z. B. "Tofu 400g", "Tofu 400 g", "Zwiebeln 2", "Zwiebeln 2 Stk", "Hafermilch 1l", "Olivenöl 1.8 EL", "Bananen 3x", "Tomaten, 2 Stück"
+  const trailingRegex = /^(.*?)(?:,\s*|\s+)(\d+(?:[.,]\d+)?|\d+\/\d+)\s*([a-zA-ZäöüÄÖÜß.]+)?$/;
+  const trailingMatch = trimmed.match(trailingRegex);
+
+  if (trailingMatch) {
+    const rawName = trailingMatch[1].trim();
+    const rawNum = trailingMatch[2].replace(',', '.');
+    const rawUnitToken = (trailingMatch[3] || '').trim();
+
+    if (rawName) {
+      let numVal: number | null = null;
+      if (rawNum.includes('/')) {
+        const parts = rawNum.split('/');
+        const num = parseFloat(parts[0]);
+        const den = parseFloat(parts[1]);
+        if (!isNaN(num) && !isNaN(den) && den !== 0) numVal = num / den;
+      } else {
+        const parsed = parseFloat(rawNum);
+        if (!isNaN(parsed)) numVal = parsed;
+      }
+
+      let parsedUnit = '';
+      if (rawUnitToken) {
+        const lowerToken = rawUnitToken.toLowerCase();
+        if (lowerToken !== 'x') {
+          parsedUnit = COMMON_UNITS_MAP[lowerToken] || rawUnitToken;
+        }
+      }
+
+      const finalAmount = numVal !== null
+        ? smartRoundGroceryAmount(numVal, parsedUnit, rawName)
+        : rawNum;
+
+      return {
+        amount: finalAmount,
+        unit: parsedUnit,
+        name: rawName,
+      };
+    }
+  }
+
+  // Kein Zahlenwert gefunden -> Reine Textbezeichnung
   return {
     amount: '',
     unit: '',
@@ -442,8 +557,8 @@ export function mergeOrAddShoppingItem(
   // Fall 1: Beide haben explizite Zahlenwerte
   if (numA !== null && numB !== null) {
     if (unitA === unitB || !unitA || !unitB) {
-      combinedAmount = Math.round((numA + numB) * 100) / 100;
       combinedUnit = existing.unit || newItem.unit || '';
+      combinedAmount = smartRoundGroceryAmount(numA + numB, combinedUnit, existing.name);
     } else if ((unitA === 'kg' && unitB === 'g') || (unitA === 'g' && unitB === 'kg')) {
       if (unitA === 'kg') {
         combinedAmount = Math.round((numA + numB / 1000) * 100) / 100;
@@ -469,17 +584,17 @@ export function mergeOrAddShoppingItem(
   // Fall 2: Nur B hat eine Zahl (A hatte keine Menge -> implizit 1)
   else if (numA === null && numB !== null) {
     if (unitB) {
-      combinedAmount = newItem.amount;
+      combinedAmount = smartRoundGroceryAmount(numB, unitB, existing.name);
       combinedUnit = newItem.unit || '';
     } else {
-      combinedAmount = Math.round((1 + numB) * 100) / 100;
       combinedUnit = existing.unit || newItem.unit || '';
+      combinedAmount = smartRoundGroceryAmount(1 + numB, combinedUnit, existing.name);
     }
   } 
   // Fall 3: Nur A hat eine Zahl (B wurde ohne Zahl hinzugefügt -> implizit +1)
   else if (numA !== null && numB === null) {
-    combinedAmount = Math.round((numA + 1) * 100) / 100;
     combinedUnit = existing.unit || '';
+    combinedAmount = smartRoundGroceryAmount(numA + 1, combinedUnit, existing.name);
   } 
   // Fall 4: Weder A noch B haben eine Zahl (z. B. "Tofu" hinzugefügt wenn "Tofu" schon existiert -> 1 + 1 = 2)
   else {
