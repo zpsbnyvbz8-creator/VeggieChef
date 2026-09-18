@@ -624,19 +624,19 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   return (
     <div className="space-y-5 sm:space-y-8 animate-in fade-in duration-300">
       {/* Header & Controls */}
-      <div className="bg-white rounded-2xl p-4 sm:p-8 border border-[#ECEBE8] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
+      <div className="bg-white rounded-2xl p-4 sm:p-6 lg:p-8 border border-[#ECEBE8] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-[11px] sm:text-xs font-semibold uppercase tracking-wider border border-[#ECEBE8]">
-              <CalendarDays className="w-3.5 h-3.5" />
-              Wöchentliche Essensplanung
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-[11px] sm:text-xs font-semibold uppercase tracking-wider border border-[#ECEBE8] whitespace-nowrap shrink-0">
+              <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+              <span>Wöchentliche Essensplanung</span>
             </div>
 
             {onOpenSyncModal && (
               <button
                 type="button"
                 onClick={onOpenSyncModal}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
                   syncConfig?.mode === 'family' && syncConfig?.groupId
                     ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
                     : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-[#F1F5F2]'
@@ -876,13 +876,16 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         {mealPlan.map((day) => {
           const totalCalories = (day.lunch?.calories || 0) + (day.dinner?.calories || 0);
           const totalProtein = (day.lunch?.protein || 0) + (day.dinner?.protein || 0);
+          const hasAnyMeals = Boolean(day.lunch || day.dinner);
 
           return (
             <div
               key={day.dayId}
               id={`meal-plan-day-${day.dayId}`}
-              className={`bg-white rounded-2xl border border-[#ECEBE8] p-3.5 sm:p-4 flex flex-col justify-between gap-3 shadow-xs hover:border-[#4A7856]/40 hover:shadow-sm transition-all ${
-                showLunchSlot ? 'min-h-[240px]' : 'min-h-0 sm:min-h-[240px]'
+              className={`bg-white rounded-2xl border border-[#ECEBE8] p-3 sm:p-4 flex flex-col justify-between gap-2.5 sm:gap-3 shadow-xs hover:border-[#4A7856]/40 hover:shadow-sm transition-all ${
+                hasAnyMeals
+                  ? (showLunchSlot ? 'min-h-[240px]' : 'min-h-0 sm:min-h-[240px]')
+                  : 'min-h-0 sm:min-h-[240px]'
               } xl:min-h-[270px]`}
             >
               {/* Day Header */}
@@ -1229,9 +1232,15 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               </div>
 
               {/* Day Bottom Summary */}
-              <div className="text-xs text-[#7A7E7B] text-center pt-1.5 border-t border-[#ECEBE8]">
-                {totalCalories > 0 ? `${totalCalories} kcal geplant` : 'Keine Gerichte'}
-              </div>
+              {totalCalories > 0 ? (
+                <div className="text-xs text-[#7A7E7B] text-center pt-1.5 border-t border-[#ECEBE8]">
+                  {totalCalories} kcal geplant
+                </div>
+              ) : (
+                <div className="hidden sm:block text-xs text-[#7A7E7B] text-center pt-1.5 border-t border-[#ECEBE8]">
+                  Keine Gerichte
+                </div>
+              )}
             </div>
           );
         })}

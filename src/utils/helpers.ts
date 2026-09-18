@@ -161,6 +161,163 @@ export function detectIngredientCategory(name: string): IngredientCategory {
   return 'sonstiges';
 }
 
+export interface ParsedGroceryInput {
+  name: string;
+  amount: string;
+  unit: string;
+}
+
+const COMMON_UNITS_MAP: Record<string, string> = {
+  g: 'g',
+  gramm: 'g',
+  kg: 'kg',
+  kilo: 'kg',
+  kilogramm: 'kg',
+  mg: 'mg',
+  ml: 'ml',
+  milliliter: 'ml',
+  l: 'l',
+  liter: 'l',
+  cl: 'cl',
+  dl: 'dl',
+  el: 'EL',
+  esslöffel: 'EL',
+  tl: 'TL',
+  teelöffel: 'TL',
+  msp: 'Msp.',
+  messerspitze: 'Msp.',
+  prise: 'Prise',
+  prisen: 'Prisen',
+  bund: 'Bund',
+  bunde: 'Bund',
+  bündel: 'Bund',
+  dose: 'Dose',
+  dosen: 'Dosen',
+  glas: 'Glas',
+  gläser: 'Gläser',
+  flasche: 'Flasche',
+  flaschen: 'Flaschen',
+  fl: 'Flasche',
+  packung: 'Packung',
+  packungen: 'Packungen',
+  pck: 'Pck.',
+  'pck.': 'Pck.',
+  pkg: 'Pkg.',
+  tüte: 'Tüte',
+  tüten: 'Tüten',
+  beutel: 'Beutel',
+  zehe: 'Zehe',
+  zehen: 'Zehen',
+  knoblauchzehe: 'Zehe',
+  knoblauchzehen: 'Zehen',
+  kopf: 'Kopf',
+  köpfe: 'Köpfe',
+  stück: 'Stk.',
+  stk: 'Stk.',
+  'stk.': 'Stk.',
+  scheibe: 'Scheibe',
+  scheiben: 'Scheiben',
+  becher: 'Becher',
+  zweig: 'Zweig',
+  zweige: 'Zweige',
+  stange: 'Stange',
+  stangen: 'Stangen',
+  portion: 'Portion',
+  portionen: 'Portionen',
+};
+
+// Intelligenter Natural Language Parser für Einkaufslisten-Eingaben
+export function parseNaturalLanguageGroceryItem(rawInput: string): ParsedGroceryInput {
+  const trimmed = rawInput.trim();
+  if (!trimmed) return { name: '', amount: '', unit: '' };
+
+  // 1. Ziffern am Anfang erfassen (z. B. 400, 1.5, 1,5, 1/2, 3/4)
+  const regex = /^(\d+(?:[.,]\d+)?|\d+\/\d+)\s*([a-zA-ZäöüÄÖÜß.]+)?(?:\s+(.*))?$/;
+  const match = trimmed.match(regex);
+
+  if (match) {
+    const rawNum = match[1].replace(',', '.');
+    const attachedOrFirstWord = (match[2] || '').trim();
+    const rest = (match[3] || '').trim();
+
+    if (attachedOrFirstWord) {
+      const lowerWord = attachedOrFirstWord.toLowerCase();
+
+      // Multiplikator wie "2x Hafermilch"
+      if (lowerWord === 'x') {
+        return {
+          amount: rawNum,
+          unit: '',
+          name: rest || '',
+        };
+      }
+
+      // Bekannte Einheit direkt am Wort (z. B. "400g Tofu" oder "1 Bund Petersilie")
+      const matchedUnit = COMMON_UNITS_MAP[lowerWord];
+      if (matchedUnit) {
+        return {
+          amount: rawNum,
+          unit: matchedUnit,
+          name: rest || '',
+        };
+      }
+
+      // Falls Wort keine bekannte Einheit ist, aber Rest leer ist (z. B. "2 Hafermilch")
+      if (!rest) {
+        return {
+          amount: rawNum,
+          unit: '',
+          name: attachedOrFirstWord,
+        };
+      }
+
+      // Kein bekanntes Einheitswort, aber Text folgt (z. B. "2 Bio Hafermilch")
+      return {
+        amount: rawNum,
+        unit: '',
+        name: `${attachedOrFirstWord} ${rest}`.trim(),
+      };
+    }
+
+    // Wenn hinter der Zahl ein Leerzeichen war (z. B. "1 Bund Petersilie" oder "2 Hafermilch")
+    if (rest) {
+      const parts = rest.split(/\s+/);
+      const firstToken = parts[0];
+      const tokenLower = firstToken.toLowerCase();
+
+      const matchedUnit = COMMON_UNITS_MAP[tokenLower];
+      if (matchedUnit) {
+        return {
+          amount: rawNum,
+          unit: matchedUnit,
+          name: parts.slice(1).join(' ').trim(),
+        };
+      }
+
+      // Kein Einheits-Token: Das ganze 'rest' ist der Name (z. B. "2 Hafermilch")
+      return {
+        amount: rawNum,
+        unit: '',
+        name: rest,
+      };
+    }
+
+    // Nur Zahl eingegeben
+    return {
+      amount: rawNum,
+      unit: '',
+      name: '',
+    };
+  }
+
+  // Kein führender Zahlenwert -> Reine Textbezeichnung
+  return {
+    amount: '',
+    unit: '',
+    name: trimmed,
+  };
+}
+
 // LocalStorage helpers
 const STORAGE_KEYS = {
   FAVORITES: 'veggie_favorites_v1',
