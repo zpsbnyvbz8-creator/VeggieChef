@@ -90,10 +90,16 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   // Item reorder state via drag and drop
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dragOverItemId, setDragOverItemId] = useState<string | null>(null);
+  const [dragDropPosition, setDragDropPosition] = useState<'before' | 'after' | null>(null);
+  const [isDragOverDelete, setIsDragOverDelete] = useState(false);
   
   // Undo & bulk delete states
   const [undoBackup, setUndoBackup] = useState<ShoppingItem[] | null>(null);
-  const [lastDeletedInfo, setLastDeletedInfo] = useState<{ type: 'all' | 'completed'; count: number } | null>(null);
+  const [lastDeletedInfo, setLastDeletedInfo] = useState<{
+    type: 'all' | 'completed' | 'category' | 'single';
+    count: number;
+    name?: string;
+  } | null>(null);
   const [showUndoBanner, setShowUndoBanner] = useState(false);
 
   // Stepper & Item editing
@@ -101,9 +107,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const [editingAmountValue, setEditingAmountValue] = useState<string>('');
   const editContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Swipe-to-action mobile state
+  // Swipe-to-action mobile state (iOS Full Swipe Delete & Reveal)
   const [swipedItemId, setSwipedItemId] = useState<string | null>(null);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const [activeTouchItemId, setActiveTouchItemId] = useState<string | null>(null);
+  const [touchCurrentOffset, setTouchCurrentOffset] = useState<number>(0);
+  const touchStartRef = useRef<{ startX: number; startY: number; baseOffset: number } | null>(null);
 
   // Accordion states: completed section & categories
   const [showCompletedSection, setShowCompletedSection] = useState(false);
@@ -368,83 +376,213 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
     setDraggedShelf(catKey);
   };
 
-  const handleDragOverShelf = (e: React.DragEvent, catKey: IngredientCategory) => {
+  const handleDragOverShelf = (e: React.DragEvent, _catKey: IngredientCategory) => {
     e.preventDefault();
-    if (dragOverShelf !== catKey) {
-      setDragOverShelf(catKey);
-    }
   };
 
   const handleDropShelf = (e: React.DragEvent, targetCatKey: IngredientCategory) => {
     e.preventDefault();
+
+    // 1. Wenn ein ARTIKEL auf ein Regal fallen gelassen wird:
+    if (draggedItemId) {
+      const item = items.find((i) => i.id === draggedItemId);
+      if (item) {
+        setItems((prev) =>
+          prev.map((it) => (it.id === draggedItemId ? { ...it, category: targetCatKey } : it))
+        );
+        onCopyFeedback(`"${item.name}" in Regal "${CATEGORY_META[targetCatKey].label}" verschoben!`);
+      }
+      setDraggedItemId(null);
+      setDragOverItemId(null);
+      return;
+    }
+
+    // 2. Wenn ein REGAL verschoben wird (alle dahinter rücken nach hinten):
     if (!draggedShelf || draggedShelf === targetCatKey) {
       setDraggedShelf(null);
       setDragOverShelf(null);
       return;
     }
 
-    const fromIdx = shelfOrder.indexOf(draggedShelf);
-    const toIdx = shelfOrder.indexOf(targetCatKey);
-    if (fromIdx !== -1 && toIdx !== -1) {
-      const newOrder = [...shelfOrder];
-      const [moved] = newOrder.splice(fromIdx, 1);
-      newOrder.splice(toIdx, 0, moved);
-      setShelfOrder(newOrder);
-      saveToLocalStorage('veggiechef_shelf_order', newOrder);
+    const remaining = shelfOrder.filter((k) => k !== draggedShelf);
+    const toIdx = remaining.indexOf(targetCatKey);
+    if (toIdx !== -1) {
+      remaining.splice(toIdx, 0, draggedShelf);
+      setShelfOrder(remaining);
+      saveToLocalStorage('veggiechef_shelf_order', remaining);
       onCopyFeedback('Regale-Reihenfolge gespeichert!');
     }
     setDraggedShelf(null);
     setDragOverShelf(null);
   };
 
-  // --- Drag and Drop: Items (Artikel) ---
+  // --- Drag and Drop: Items (Artikel) - Geschmeidiges Verschieben & Nachrücken ---
   const handleDragStartItem = (e: React.DragEvent, itemId: string) => {
     e.stopPropagation();
     e.dataTransfer.setData('text/plain', itemId);
+    e.dataTransfer.effectAllowed = 'move';
     setDraggedItemId(itemId);
   };
 
   const handleDragOverItem = (e: React.DragEvent, itemId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (dragOverItemId !== itemId) {
+    e.dataTransfer.dropEffect = 'move';
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const pos = e.clientY > midY ? 'after' : 'before';
+
+    if (dragOverItemId !== itemId || dragDropPosition !== pos) {
       setDragOverItemId(itemId);
+      setDragDropPosition(pos);
     }
   };
 
   const handleDropItem = (e: React.DragEvent, targetItemId: string) => {
     e.preventDefault();
     e.stopPropagation();
+
     if (!draggedItemId || draggedItemId === targetItemId) {
       setDraggedItemId(null);
       setDragOverItemId(null);
+      setDragDropPosition(null);
       return;
     }
 
-    const fromIdx = items.findIndex((i) => i.id === draggedItemId);
-    const toIdx = items.findIndex((i) => i.id === targetItemId);
+    const draggedItem = items.find((i) => i.id === draggedItemId);
+    const targetItem = items.find((i) => i.id === targetItemId);
 
-    if (fromIdx !== -1 && toIdx !== -1) {
-      const newItems = [...items];
-      const [moved] = newItems.splice(fromIdx, 1);
-      newItems.splice(toIdx, 0, moved);
-      setItems(newItems);
-      onCopyFeedback('Artikel verschoben!');
+    if (!draggedItem || !targetItem) {
+      setDraggedItemId(null);
+      setDragOverItemId(null);
+      setDragDropPosition(null);
+      return;
     }
+
+    // Falls auf ein Item einer anderen Kategorie gezogen, Kategorie übernehmen
+    const updatedDraggedItem: ShoppingItem = {
+      ...draggedItem,
+      category: targetItem.category || draggedItem.category,
+    };
+
+    // Gezogenen Artikel aus Array filtern
+    const remaining = items.filter((i) => i.id !== draggedItemId);
+    // Position des Ziel-Items ermitteln
+    const targetIndex = remaining.findIndex((i) => i.id === targetItemId);
+
+    if (targetIndex !== -1) {
+      // Vor oder nach dem Ziel-Item einfügen: sauberes Nachrücken aller Elemente
+      const insertIndex = dragDropPosition === 'after' ? targetIndex + 1 : targetIndex;
+      remaining.splice(insertIndex, 0, updatedDraggedItem);
+      setItems(remaining);
+      onCopyFeedback(`"${draggedItem.name}" verschoben!`);
+    }
+
     setDraggedItemId(null);
     setDragOverItemId(null);
+    setDragDropPosition(null);
+  };
+
+  // Helper für Apple iOS Swipe-to-Delete
+  const handleDeleteBySwipe = (item: ShoppingItem) => {
+    setUndoBackup([...items]);
+    setLastDeletedInfo({
+      type: 'single',
+      count: 1,
+      name: item.name,
+    });
+    setShowUndoBanner(true);
+    deleteItem(item.id);
+    onCopyFeedback(`"${item.name}" gelöscht.`);
+    setSwipedItemId(null);
+    setActiveTouchItemId(null);
+    setTouchCurrentOffset(0);
+  };
+
+  // --- Drag and Drop: Drop auf den "Löschen"-Button ---
+  const handleDropOnDelete = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOverDelete(false);
+
+    // A. Regal (Kategorie) löschen
+    if (draggedShelf) {
+      const catKey = draggedShelf;
+      const catMeta = CATEGORY_META[catKey];
+      const itemsInCat = items.filter((it) => (it.category || 'sonstiges') === catKey);
+
+      if (itemsInCat.length > 0) {
+        setUndoBackup([...items]);
+        setLastDeletedInfo({
+          type: 'category',
+          count: itemsInCat.length,
+          name: catMeta?.label || catKey,
+        });
+        setItems((prev) => prev.filter((it) => (it.category || 'sonstiges') !== catKey));
+        setShowUndoBanner(true);
+        onCopyFeedback(
+          `Regal "${catMeta?.label || catKey}" (${itemsInCat.length} ${
+            itemsInCat.length === 1 ? 'Artikel' : 'Artikel'
+          }) gelöscht.`
+        );
+      } else {
+        onCopyFeedback(`Regal "${catMeta?.label || catKey}" ist bereits leer.`);
+      }
+
+      setDraggedShelf(null);
+      setDragOverShelf(null);
+      setDragDropPosition(null);
+      return;
+    }
+
+    // B. Einzelnen Artikel löschen
+    if (draggedItemId) {
+      const item = items.find((it) => it.id === draggedItemId);
+      if (item) {
+        setUndoBackup([...items]);
+        setLastDeletedInfo({
+          type: 'single',
+          count: 1,
+          name: item.name,
+        });
+        setItems((prev) => prev.filter((it) => it.id !== draggedItemId));
+        setShowUndoBanner(true);
+        onCopyFeedback(`"${item.name}" gelöscht.`);
+      }
+      setDraggedItemId(null);
+      setDragOverItemId(null);
+      setDragDropPosition(null);
+      return;
+    }
+
+    setDraggedShelf(null);
+    setDragOverShelf(null);
+    setDraggedItemId(null);
+    setDragOverItemId(null);
+    setDragDropPosition(null);
   };
 
   // Active & completed item partition
   const activeItems = useMemo(() => items.filter((i) => !i.completed), [items]);
   const completedItems = useMemo(() => items.filter((i) => i.completed), [items]);
 
-  // Clean Item Row: Menge ganz links, Checkbox, Name, Drag Handle, Swipe-to-Action
+  // Clean Item Row: Checkbox, Name, Desktop Actions LINKS von der Mengenangabe, Mengenangabe GANZ RECHTS, Drag Handle, iOS Full-Swipe
   const renderItemRow = (item: ShoppingItem) => {
     const isEditing = editingItemId === item.id;
     const isSwiped = swipedItemId === item.id;
     const isBeingDragged = draggedItemId === item.id;
     const isDragOver = dragOverItemId === item.id;
+
+    // Mobile Touch & Swipe Offset
+    const isThisItemTouching = activeTouchItemId === item.id;
+    const currentOffset = isThisItemTouching
+      ? touchCurrentOffset
+      : isSwiped
+      ? -96
+      : 0;
+
+    const isFullSwipeDelete = isThisItemTouching && currentOffset <= -135;
 
     return (
       <div
@@ -452,44 +590,79 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         draggable={!isEditing}
         onDragStart={(e) => handleDragStartItem(e, item.id)}
         onDragOver={(e) => handleDragOverItem(e, item.id)}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            if (dragOverItemId === item.id) {
+              setDragOverItemId(null);
+              setDragDropPosition(null);
+            }
+          }
+        }}
         onDrop={(e) => handleDropItem(e, item.id)}
         onDragEnd={() => {
           setDraggedItemId(null);
           setDragOverItemId(null);
+          setDragDropPosition(null);
+          setIsDragOverDelete(false);
         }}
         className={`relative overflow-hidden rounded-2xl select-none group touch-pan-y transition-all ${
-          isBeingDragged ? 'opacity-40 scale-[0.98]' : 'opacity-100'
-        } ${isDragOver ? 'ring-2 ring-[#4A7856] ring-offset-1' : ''}`}
+          isBeingDragged
+            ? 'opacity-40 scale-[0.98] border-dashed border-[#4A7856]'
+            : 'opacity-100'
+        }`}
       >
-        {/* Background Action Tray (revealed on swipe-left on mobile) */}
-        <div className="absolute inset-y-0 right-0 flex items-center gap-1.5 pr-2 pl-4 z-0 bg-[#FAF9F6] border-y border-r border-[#ECEBE8] rounded-r-2xl">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSwipedItemId(null);
-              startEditingItem(item);
-            }}
-            className="w-10 h-10 rounded-xl bg-white text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-xs"
-            title="Menge anpassen"
-            aria-label="Menge anpassen"
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSwipedItemId(null);
-              deleteItem(item.id);
-              onCopyFeedback(`"${item.name}" gelöscht.`);
-            }}
-            className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-xs"
-            title="Artikel löschen"
-            aria-label="Artikel löschen"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+        {/* Drop Insertion Line (Geschmeidige Vorschau ohne Layout-Shift) */}
+        {isDragOver && dragDropPosition === 'before' && (
+          <div className="absolute top-0 left-2 right-2 h-1 bg-[#4A7856] rounded-full z-30 pointer-events-none shadow-xs" />
+        )}
+        {isDragOver && dragDropPosition === 'after' && (
+          <div className="absolute bottom-0 left-2 right-2 h-1 bg-[#4A7856] rounded-full z-30 pointer-events-none shadow-xs" />
+        )}
+
+        {/* Background Action Tray (iOS-Style: wächst bei weitem Swipe und löscht beim Loslassen) */}
+        <div
+          className={`absolute inset-y-0 right-0 flex items-center justify-end z-0 rounded-r-2xl overflow-hidden transition-colors ${
+            isFullSwipeDelete
+              ? 'w-full bg-rose-600 px-6'
+              : 'bg-[#FAF9F6] border-y border-r border-[#ECEBE8] px-3 gap-1.5'
+          }`}
+        >
+          {isFullSwipeDelete ? (
+            /* Apple Full-Swipe: Roter Balken wird länger, Icon skaliert */
+            <div className="flex items-center gap-2 text-white font-bold text-sm">
+              <Trash2 className="w-5 h-5 stroke-[2.5] scale-125 transition-transform" />
+              <span>Löschen</span>
+            </div>
+          ) : (
+            /* Standard-Tray mit Bearbeiten & Löschen */
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSwipedItemId(null);
+                  startEditingItem(item);
+                }}
+                className="w-10 h-10 rounded-xl bg-white text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-xs"
+                title="Menge anpassen"
+                aria-label="Menge anpassen"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteBySwipe(item);
+                }}
+                className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-xs"
+                title="Artikel löschen"
+                aria-label="Artikel löschen"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
 
         {/* Foreground Row */}
@@ -497,24 +670,49 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           onTouchStart={(e) => {
             if (isEditing) return;
             const touch = e.touches[0];
-            touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+            touchStartRef.current = {
+              startX: touch.clientX,
+              startY: touch.clientY,
+              baseOffset: swipedItemId === item.id ? -96 : 0,
+            };
+            setActiveTouchItemId(item.id);
           }}
           onTouchMove={(e) => {
             if (!touchStartRef.current || isEditing) return;
             const touch = e.touches[0];
-            const deltaX = touch.clientX - touchStartRef.current.x;
-            const deltaY = touch.clientY - touchStartRef.current.y;
+            const diffX = touch.clientX - touchStartRef.current.startX;
+            const diffY = touch.clientY - touchStartRef.current.startY;
 
-            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
-              if (deltaX < -30) {
-                setSwipedItemId(item.id);
-              } else if (deltaX > 30) {
-                setSwipedItemId(null);
-              }
+            // Vertikales Scrollen durchlassen
+            if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffX) < 10) {
+              return;
             }
+
+            const rawOffset = touchStartRef.current.baseOffset + diffX;
+            // Nach links swipen (bis zu -260px) und nach rechts klemmen (max 0px)
+            const clamped = Math.min(0, Math.max(-260, rawOffset));
+            setTouchCurrentOffset(clamped);
           }}
           onTouchEnd={() => {
+            if (!touchStartRef.current) return;
             touchStartRef.current = null;
+
+            if (isThisItemTouching) {
+              if (touchCurrentOffset <= -135) {
+                // Apple iOS Full-Swipe: Löschen ausführen
+                handleDeleteBySwipe(item);
+              } else if (touchCurrentOffset < -45) {
+                // Menü öffnen (-96px)
+                setSwipedItemId(item.id);
+                setActiveTouchItemId(null);
+                setTouchCurrentOffset(0);
+              } else {
+                // Schließen (0px)
+                setSwipedItemId(null);
+                setActiveTouchItemId(null);
+                setTouchCurrentOffset(0);
+              }
+            }
           }}
           onClick={() => {
             if (isSwiped) {
@@ -526,9 +724,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             }
           }}
           style={{
-            transform: isSwiped ? 'translateX(-100px)' : 'translateX(0px)',
+            transform: `translateX(${currentOffset}px)`,
+            transition: isThisItemTouching ? 'none' : 'transform 0.2s ease-out',
           }}
-          className={`relative z-10 flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border transition-all duration-200 ease-out gap-2.5 sm:gap-3 min-h-[54px] ${
+          className={`relative z-10 flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border gap-2.5 sm:gap-3 min-h-[54px] ${
             isEditing
               ? 'cursor-default ring-2 ring-[#4A7856]/40 bg-[#FAF9F6]'
               : 'cursor-pointer active:scale-[0.995]'
@@ -568,9 +767,34 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             </div>
           </div>
 
-          {/* RIGHT SIDE: Menge (ganz rechts) / Inline-Stepper + Desktop Hover Actions + Drag Handle */}
-          <div className="flex items-center gap-2 shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
-            {/* Menge ganz rechts */}
+          {/* RIGHT SIDE: [Desktop Actions: Pencil & Trash (LINKS)] -> [Menge (GANZ RECHTS) / Stepper] -> [Drag Handle] */}
+          <div className="flex items-center gap-2 shrink-0 ml-auto" onClick={(e) => e.stopPropagation()}>
+            {/* Desktop hover actions: LINKS von der Mengenangabe */}
+            {!isEditing && (
+              <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  type="button"
+                  onClick={() => startEditingItem(item)}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#FAF9F6] text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] transition-all cursor-pointer active:scale-95 shadow-2xs"
+                  title="Menge bearbeiten"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    deleteItem(item.id);
+                    onCopyFeedback(`"${item.name}" gelöscht.`);
+                  }}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#FAF9F6] text-rose-500 hover:text-rose-600 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer active:scale-95 shadow-2xs"
+                  title="Löschen"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Menge ganz rechts / Inline Stepper */}
             {isEditing ? (
               /* Inline Stepper */
               <div
@@ -631,17 +855,17 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 </button>
               </div>
             ) : item.amount ? (
-              /* Einheitliches kompaktes Mengen-Badge ganz rechts */
+              /* Mengenangabe ganz rechts */
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   startEditingItem(item);
                 }}
-                className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border select-none inline-flex items-center transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap ${
+                className={`text-xs font-semibold px-2.5 py-1 rounded-full border select-none inline-flex items-center transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap shadow-2xs ${
                   item.completed
                     ? 'bg-[#ECEBE8] text-[#7A7E7B] border-[#ECEBE8]'
-                    : 'bg-[#F1F5F2] text-[#4A7856] border-[#ECEBE8] hover:bg-[#E3ECE5]'
+                    : 'bg-[#FAF9F6] text-[#4A7856] border-[#ECEBE8] hover:bg-[#E8EFEA]'
                 }`}
                 title="Menge anpassen (- / +)"
               >
@@ -649,35 +873,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               </button>
             ) : null}
 
-            {/* Desktop hover actions */}
-            <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                type="button"
-                onClick={() => startEditingItem(item)}
-                className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#FAF9F6] text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] transition-all cursor-pointer active:scale-95"
-                title="Menge bearbeiten"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  deleteItem(item.id);
-                  onCopyFeedback(`"${item.name}" gelöscht.`);
-                }}
-                className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#FAF9F6] text-rose-500 hover:text-rose-600 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer active:scale-95"
-                title="Löschen"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Drag Handle: Ziehen zum Sortieren */}
+            {/* Drag Handle am äußersten rechten Rand */}
             <div
-              className="p-1 text-[#B5B9B6] hover:text-[#2D3E40] cursor-grab active:cursor-grabbing transition-colors"
+              className="p-1 text-[#B5B9B6] hover:text-[#2D3E40] cursor-grab active:cursor-grabbing transition-colors hidden sm:flex items-center justify-center"
               title="Gedrückt halten zum Verschieben"
             >
-              <GripVertical className="w-4 h-4" />
+              <GripVertical className="w-3.5 h-3.5" />
             </div>
           </div>
         </div>
@@ -695,6 +896,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             <span className="text-xs">
               {lastDeletedInfo?.type === 'completed'
                 ? `${lastDeletedInfo.count} erledigte ${lastDeletedInfo.count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`
+                : lastDeletedInfo?.type === 'category'
+                ? `Regal "${lastDeletedInfo.name}" gelöscht (${lastDeletedInfo.count} ${lastDeletedInfo.count === 1 ? 'Artikel' : 'Artikel'}).`
+                : lastDeletedInfo?.type === 'single'
+                ? `"${lastDeletedInfo.name}" gelöscht.`
                 : `Einkaufsliste gelöscht (${lastDeletedInfo?.count || undoBackup.length} ${lastDeletedInfo?.count === 1 ? 'Zutat' : 'Zutaten'}).`}
             </span>
           </div>
@@ -760,10 +965,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0 w-full md:w-auto">
-          {/* 1. View-Switch: Segmented-Control mit sanfter Slide-Animation */}
-          <div className="relative flex items-center p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs font-medium">
+          {/* 1. View-Switch: Sanfter Standard-Hintergrund (#FAF9F6) mit klarem grünen Indikator */}
+          <div className="relative flex items-center p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs font-semibold select-none shadow-2xs">
             <div
-              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-xs border border-[#ECEBE8] transition-all duration-250 ease-out pointer-events-none ${
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#4A7856] rounded-lg shadow-xs transition-all duration-200 ease-out pointer-events-none ${
                 viewMode === 'categorized' ? 'left-1' : 'left-[calc(50%+2px)]'
               }`}
             />
@@ -771,10 +976,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             <button
               type="button"
               onClick={() => setViewMode('categorized')}
-              className={`relative z-10 w-24 sm:w-26 flex items-center justify-center gap-1.5 py-2 sm:py-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation min-h-[38px] sm:min-h-0 ${
+              className={`relative z-10 w-24 sm:w-26 flex items-center justify-center gap-1.5 py-2 sm:py-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation min-h-[38px] sm:min-h-0 select-none ${
                 viewMode === 'categorized'
-                  ? 'text-[#2D3E40] font-semibold'
-                  : 'text-[#7A7E7B] hover:text-[#2D3E40]'
+                  ? 'text-white font-bold'
+                  : 'text-[#7A7E7B] hover:text-[#2D3E40] font-medium'
               }`}
               title="Nach Supermarkt-Regalen gruppiert"
             >
@@ -785,10 +990,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             <button
               type="button"
               onClick={() => setViewMode('flat')}
-              className={`relative z-10 w-24 sm:w-26 flex items-center justify-center gap-1.5 py-2 sm:py-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation min-h-[38px] sm:min-h-0 ${
+              className={`relative z-10 w-24 sm:w-26 flex items-center justify-center gap-1.5 py-2 sm:py-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation min-h-[38px] sm:min-h-0 select-none ${
                 viewMode === 'flat'
-                  ? 'text-[#2D3E40] font-semibold'
-                  : 'text-[#7A7E7B] hover:text-[#2D3E40]'
+                  ? 'text-white font-bold'
+                  : 'text-[#7A7E7B] hover:text-[#2D3E40] font-medium'
               }`}
               title="Alle Artikel in einer sortierbaren Liste"
             >
@@ -809,18 +1014,48 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             <span>{copied ? 'Kopiert!' : 'Kopieren'}</span>
           </button>
 
-          {/* Delete All Button (Löschen) */}
-          {items.length > 0 && (
-            <button
-              id="delete-entire-shopping-list-btn"
-              onClick={() => setConfirmDeleteState({ type: 'all' })}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs border border-red-200 transition-colors cursor-pointer min-h-[40px] sm:min-h-0 active:scale-95 touch-manipulation"
-              title="Gesamte Einkaufsliste löschen"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Löschen</span>
-            </button>
-          )}
+          {/* Delete All / Drop-to-Delete Button (Stabile Größe & Zeile) */}
+          <button
+            id="delete-entire-shopping-list-btn"
+            type="button"
+            onClick={() => {
+              if (items.length > 0) {
+                setConfirmDeleteState({ type: 'all' });
+              }
+            }}
+            onDragOver={(e) => {
+              if (draggedShelf || draggedItemId) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = 'move';
+                if (!isDragOverDelete) setIsDragOverDelete(true);
+              }
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsDragOverDelete(false);
+            }}
+            onDrop={handleDropOnDelete}
+            disabled={items.length === 0 && !draggedShelf && !draggedItemId}
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-xs border transition-all cursor-pointer min-h-[40px] sm:min-h-0 min-w-[86px] select-none touch-manipulation ${
+              isDragOverDelete
+                ? 'bg-red-600 text-white border-red-600 shadow-md ring-2 ring-red-400'
+                : items.length > 0
+                ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200 active:scale-95'
+                : 'bg-[#FAF9F6] text-[#A0A5A2] border-[#ECEBE8] opacity-50 cursor-not-allowed'
+            }`}
+            title={
+              draggedShelf
+                ? 'Regal hier ablegen zum Löschen'
+                : draggedItemId
+                ? 'Artikel hier ablegen zum Löschen'
+                : 'Gesamte Einkaufsliste löschen'
+            }
+          >
+            <Trash2 className={`w-3.5 h-3.5 shrink-0 ${isDragOverDelete ? 'animate-bounce' : ''}`} />
+            <span>Löschen</span>
+          </button>
         </div>
       </div>
 
@@ -833,7 +1068,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           <div className="relative flex-1">
             <input
               type="text"
-              placeholder="Schnell hinzufügen (z. B. „400g Tofu“, „2 Hafermilch“, „1 Bund Petersilie“)..."
+              placeholder="Schnell hinzufügen (z. B. 400g Tofu)..."
               value={quickAddInput}
               onChange={(e) => setQuickAddInput(e.target.value)}
               className="w-full bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-2 text-[16px] sm:text-sm text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden focus:bg-white transition-all min-h-[44px] sm:min-h-0"
@@ -897,6 +1132,27 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           <p className="text-xs text-[#7A7E7B] max-w-sm mx-auto">
             Füge Zutaten direkt aus Rezepten oder dem Wochenplan hinzu, oder tippe oben z.B. „400g Tofu“ ein.
           </p>
+          {(() => {
+            const backup = loadFromLocalStorage<ShoppingItem[]>('veggiechef_shopping_backup', []);
+            if (backup && backup.length > 0) {
+              return (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setItems(backup);
+                      onCopyFeedback(`${backup.length} Zutaten wiederhergestellt! 🛒`);
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FAF9F6] hover:bg-[#E8EFEA] border border-[#ECEBE8] text-[#4A7856] text-xs font-semibold shadow-2xs transition-all cursor-pointer active:scale-95"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Gesicherte Liste wiederherstellen ({backup.length} {backup.length === 1 ? 'Zutat' : 'Zutaten'})</span>
+                  </button>
+                </div>
+              );
+            }
+            return null;
+          })()}
         </div>
       ) : viewMode === 'flat' ? (
         /* Gesamtansicht (Liste mit Drag & Drop Sortierung) */
@@ -943,9 +1199,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   key={catKey}
                   onDragOver={(e) => handleDragOverShelf(e, catKey)}
                   onDrop={(e) => handleDropShelf(e, catKey)}
-                  className={`bg-white rounded-2xl border border-[#ECEBE8] shadow-xs overflow-hidden transition-all duration-200 ${
-                    isBeingDragged ? 'opacity-40 border-dashed border-[#4A7856]' : 'opacity-100'
-                  } ${isDragOver ? 'ring-2 ring-[#4A7856] ring-offset-2' : ''}`}
+                  className={`bg-white rounded-2xl border border-[#ECEBE8] shadow-xs overflow-hidden transition-opacity duration-150 ${
+                    isBeingDragged ? 'opacity-40' : 'opacity-100'
+                  }`}
                 >
                   {/* Shelf Header (Entire header is draggable for shelf re-ordering) */}
                   <div
@@ -954,9 +1210,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                     onDragEnd={() => {
                       setDraggedShelf(null);
                       setDragOverShelf(null);
+                      setIsDragOverDelete(false);
                     }}
                     className="flex items-center justify-between p-3.5 sm:p-4 hover:bg-[#FAF9F6] transition-colors border-b border-[#ECEBE8] cursor-grab active:cursor-grabbing select-none"
-                    title="Gedrückt halten und ziehen, um das Regal zu verschieben"
+                    title="Gedrückt halten und ziehen, um das Regal zu sortieren oder auf 'Löschen' zu ziehen"
                   >
                     {/* Category Title & Drag Handle */}
                     <div className="flex items-center gap-2 flex-1 min-w-0">

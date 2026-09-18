@@ -534,6 +534,11 @@ export function subscribeToFamilyShopping(
           return;
         }
 
+        // Safety: Do not overwrite local shopping list with an empty snapshot (e.g. fresh group or initialization)
+        if (snapshot.empty) {
+          return;
+        }
+
         const items: ShoppingItem[] = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();

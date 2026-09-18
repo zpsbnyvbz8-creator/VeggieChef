@@ -27,20 +27,37 @@ export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const { showToast } = useToast();
   const { syncConfig, syncShoppingItems, registerDomainSync } = useSync();
 
-  const [shoppingItems, setShoppingItemsState] = useState<ShoppingItem[]>(() =>
-    loadFromLocalStorage('veggiechef_shopping', INITIAL_SHOPPING_ITEMS)
-  );
+  const [shoppingItems, setShoppingItemsState] = useState<ShoppingItem[]>(() => {
+    const loaded = loadFromLocalStorage<ShoppingItem[] | null>('veggiechef_shopping', null);
+    if (loaded && Array.isArray(loaded)) {
+      // If loaded has items, save backup
+      if (loaded.length > 0) {
+        saveToLocalStorage('veggiechef_shopping_backup', loaded);
+      }
+      return loaded;
+    }
+    const backup = loadFromLocalStorage<ShoppingItem[] | null>('veggiechef_shopping_backup', null);
+    if (backup && Array.isArray(backup) && backup.length > 0) {
+      return backup;
+    }
+    return INITIAL_SHOPPING_ITEMS;
+  });
 
-  // Sync state with localStorage
+  // Sync state with localStorage & maintain safety backup
   useEffect(() => {
     saveToLocalStorage('veggiechef_shopping', shoppingItems);
+    if (shoppingItems.length > 0) {
+      saveToLocalStorage('veggiechef_shopping_backup', shoppingItems);
+    }
   }, [shoppingItems]);
 
   // Register with SyncContext to receive non-destructive merged shopping items on join
   useEffect(() => {
     const unregister = registerDomainSync({
       onMergeShopping: (mergedItems) => {
-        setShoppingItemsState(mergedItems);
+        if (mergedItems && mergedItems.length > 0) {
+          setShoppingItemsState(mergedItems);
+        }
       },
     });
     return unregister;
@@ -51,7 +68,10 @@ export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (syncConfig.mode !== 'family' || !syncConfig.groupId) return;
 
     const unsubShopping = subscribeToFamilyShopping(syncConfig.groupId, (cloudItems) => {
-      setShoppingItemsState(cloudItems);
+      // Guard against empty cloud snapshot erasing populated local shopping list
+      if (cloudItems && cloudItems.length > 0) {
+        setShoppingItemsState(cloudItems);
+      }
     });
 
     return () => {
@@ -63,6 +83,9 @@ export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const setShoppingItems: React.Dispatch<React.SetStateAction<ShoppingItem[]>> = (updater) => {
     setShoppingItemsState((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (prev && prev.length > 0 && next.length === 0) {
+        saveToLocalStorage('veggiechef_shopping_backup', prev);
+      }
       syncShoppingItems(next, false);
       return next;
     });

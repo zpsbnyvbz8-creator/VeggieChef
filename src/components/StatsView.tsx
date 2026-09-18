@@ -92,7 +92,6 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
     setUndoBackup([...logs]);
     setLogs([]);
     setShowUndoBanner(true);
-    onCopyFeedback('Statistiken & Kochverlauf wurden geleert.');
   };
 
   const handleUndo = () => {
@@ -100,13 +99,11 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
       setLogs(undoBackup);
       setUndoBackup(null);
       setShowUndoBanner(false);
-      onCopyFeedback('Kochverlauf wiederhergestellt! 📊');
     }
   };
 
   const handleDeleteSingleLog = (id: string) => {
     setLogs((prev) => prev.filter((l) => l.id !== id));
-    onCopyFeedback('Eintrag gelöscht.');
   };
 
   // Sort logs by date descending

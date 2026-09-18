@@ -269,11 +269,6 @@ export const Header: React.FC<HeaderProps> = (props) => {
           >
             <BarChart3 className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
             <span>Statistiken</span>
-            {cookedCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-[#4A7856] text-white text-[11px] sm:text-[10px] font-bold shrink-0">
-                {cookedCount}
-              </span>
-            )}
           </button>
         </nav>
       </div>
