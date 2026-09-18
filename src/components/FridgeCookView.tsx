@@ -62,6 +62,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
 
   const [customInput, setCustomInput] = useState('');
   const [isVegan, setIsVegan] = useState(onlyVeganGlobal);
+  const [nutritionGoal, setNutritionGoal] = useState<'balanced' | 'high_protein' | 'high_calorie'>('balanced');
   const [maxTime, setMaxTime] = useState(25);
   const [maxExtraIngredients, setMaxExtraIngredients] = useState(2); // AI additional ingredient slider
   const [includeBasics, setIncludeBasics] = useState(true); // Basic staples (oil, salt, pepper, etc.)
@@ -109,6 +110,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             extraWishes,
             maxAdditionalIngredients: maxExtraIngredients,
             includeBasics,
+            nutritionGoal,
           }),
         });
 
@@ -127,7 +129,12 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
       if (!raw) {
         const primaryIng = selectedIngredients[0] || 'Frischem Gemüse';
         const otherIngs = selectedIngredients.slice(1);
-        const titleType = isVegan ? 'Aromatische Veggie-Pfanne' : 'Bunte Marktgemüse-Pfanne';
+        const prefix = nutritionGoal === 'high_protein' ? 'High-Protein ' : nutritionGoal === 'high_calorie' ? 'Herzhafte ' : '';
+        const titleType = isVegan ? `${prefix}Veggie-Pfanne` : `${prefix}Marktgemüse-Pfanne`;
+        const cal = nutritionGoal === 'high_calorie' ? 740 : nutritionGoal === 'high_protein' ? 520 : 430;
+        const prot = nutritionGoal === 'high_protein' ? 34 : nutritionGoal === 'high_calorie' ? 22 : (isVegan ? 18 : 21);
+        const fat = nutritionGoal === 'high_calorie' ? 28 : 14;
+        const carbs = nutritionGoal === 'high_calorie' ? 84 : 48;
         
         raw = {
           title: `${titleType} mit ${primaryIng}`,
@@ -138,10 +145,10 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           cookTimeMinutes: Math.max(10, maxTime - 10),
           difficulty: 'Einfach',
           servings: 2,
-          calories: 420,
-          protein: isVegan ? 16 : 18,
-          carbs: 48,
-          fat: 14,
+          calories: cal,
+          protein: prot,
+          carbs,
+          fat,
           fiber: 8,
           iron: 3.8,
           ingredients: [
@@ -261,13 +268,29 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   };
 
   // Find matching existing recipes
-  const matchedExistingRecipes = allRecipes.filter((r) => {
-    if (isVegan && !r.isVegan) return false;
-    const ingNames = r.ingredients.map((i) => i.name.toLowerCase());
-    return selectedIngredients.some((sel) =>
-      ingNames.some((ing) => ing.includes(sel.toLowerCase()) || sel.toLowerCase().includes(ing))
-    );
-  });
+  const matchedExistingRecipes = allRecipes
+    .filter((r) => {
+      if (isVegan && !r.isVegan) return false;
+      const ingNames = r.ingredients.map((i) => i.name.toLowerCase());
+      return selectedIngredients.some((sel) =>
+        ingNames.some((ing) => ing.includes(sel.toLowerCase()) || sel.toLowerCase().includes(ing))
+      );
+    })
+    .sort((a, b) => {
+      if (nutritionGoal === 'high_protein') {
+        return (b.nutrients?.protein || 0) - (a.nutrients?.protein || 0);
+      }
+      if (nutritionGoal === 'high_calorie') {
+        return (b.nutrients?.calories || 0) - (a.nutrients?.calories || 0);
+      }
+      const aMatches = selectedIngredients.filter((sel) =>
+        a.ingredients.some((i) => i.name.toLowerCase().includes(sel.toLowerCase()))
+      ).length;
+      const bMatches = selectedIngredients.filter((sel) =>
+        b.ingredients.some((i) => i.name.toLowerCase().includes(sel.toLowerCase()))
+      ).length;
+      return bMatches - aMatches;
+    });
 
   return (
     <div className="space-y-5 sm:space-y-8 animate-in fade-in duration-300">
@@ -281,8 +304,8 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-[#2D3E40]">
             Was hast du im Kühlschrank?
           </h2>
-          <p className="text-xs sm:text-sm text-[#7A7E7B] leading-relaxed">
-            Wähle deine vorhandenen Zutaten aus. Die KI kreiert daraus ein schnelles, einfaches Rezept genau nach deinen Vorräten.
+          <p className="text-xs sm:text-sm text-[#7A7E7B]">
+            Vorhandene Zutaten wählen und passende Gerichte oder KI-Rezepte entdecken.
           </p>
         </div>
       </div>
@@ -360,23 +383,23 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 <button
                   key={item}
                   onClick={() => togglePantryItem(item)}
-                  className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-medium transition-all select-none cursor-pointer touch-manipulation active:scale-95 flex items-center ${
+                  className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-medium transition-all select-none cursor-pointer touch-manipulation active:scale-95 flex items-center gap-1 ${
                     isSelected
                       ? 'bg-[#4A7856] text-white shadow-xs'
                       : 'bg-[#FAF9F6] text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#2D3E40] border border-[#ECEBE8]'
                   }`}
                 >
-                  {isSelected ? '✓ ' : '+ '}
-                  {item}
+                  <span>{isSelected ? '✓' : '+'}</span>
+                  <span>{item}</span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Recipe Preferences Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-[#ECEBE8]">
-          {/* Vegan / Veggie Toggle */}
+        {/* Recipe Preferences Grid (Ernährungsweise, Feintuning, Zeit, Wünsche) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-[#ECEBE8]">
+          {/* 1. Vegan / Veggie Toggle */}
           <div>
             <label className="block text-[11px] sm:text-xs font-semibold text-[#2D3E40] mb-1">
               Ernährungsweise
@@ -384,18 +407,20 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             <div className="grid grid-cols-2 gap-1.5 bg-[#FAF9F6] border border-[#ECEBE8] p-1 rounded-xl min-h-[44px]">
               <button
                 type="button"
+                id="fridge-diet-veggie-btn"
                 onClick={() => setIsVegan(false)}
                 className={`py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center touch-manipulation active:scale-95 cursor-pointer ${
-                  !isVegan ? 'bg-white text-[#2D3E40] shadow-xs' : 'text-[#7A7E7B]'
+                  !isVegan ? 'bg-white text-[#2D3E40] shadow-2xs border border-[#ECEBE8]' : 'text-[#7A7E7B]'
                 }`}
               >
                 🧀 Veggie
               </button>
               <button
                 type="button"
+                id="fridge-diet-vegan-btn"
                 onClick={() => setIsVegan(true)}
                 className={`py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center touch-manipulation active:scale-95 cursor-pointer ${
-                  isVegan ? 'bg-[#4A7856] text-white shadow-xs' : 'text-[#7A7E7B]'
+                  isVegan ? 'bg-[#4A7856] text-white shadow-2xs' : 'text-[#7A7E7B]'
                 }`}
               >
                 🌱 Vegan
@@ -403,7 +428,57 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             </div>
           </div>
 
-          {/* Time Selector */}
+          {/* 2. Dezent Feintuning Option (Beliebig / High Protein / Viele Kalorien) */}
+          <div>
+            <label className="block text-[11px] sm:text-xs font-semibold text-[#2D3E40] mb-1">
+              Feintuning (Nährwerte)
+            </label>
+            <div className="grid grid-cols-3 gap-1 bg-[#FAF9F6] border border-[#ECEBE8] p-1 rounded-xl min-h-[44px]">
+              <button
+                type="button"
+                id="fridge-tuning-balanced-btn"
+                onClick={() => setNutritionGoal('balanced')}
+                className={`py-2 px-1 text-xs font-semibold rounded-lg transition-all flex items-center justify-center text-center touch-manipulation active:scale-95 cursor-pointer ${
+                  nutritionGoal === 'balanced'
+                    ? 'bg-white text-[#2D3E40] shadow-2xs border border-[#ECEBE8]'
+                    : 'text-[#7A7E7B] hover:text-[#2D3E40]'
+                }`}
+                title="Ausgewogene, normale Nährwerte"
+              >
+                Beliebig
+              </button>
+              <button
+                type="button"
+                id="fridge-tuning-high-protein-btn"
+                onClick={() => setNutritionGoal('high_protein')}
+                className={`py-2 px-1 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1 text-center touch-manipulation active:scale-95 cursor-pointer ${
+                  nutritionGoal === 'high_protein'
+                    ? 'bg-[#4A7856] text-white shadow-2xs'
+                    : 'text-[#7A7E7B] hover:text-[#2D3E40]'
+                }`}
+                title="Mindestens 25g-35g+ Eiweiß pro Portion"
+              >
+                <Dumbbell className="w-3 h-3 shrink-0 hidden sm:inline" />
+                <span className="truncate">High Protein</span>
+              </button>
+              <button
+                type="button"
+                id="fridge-tuning-high-calorie-btn"
+                onClick={() => setNutritionGoal('high_calorie')}
+                className={`py-2 px-1 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1 text-center touch-manipulation active:scale-95 cursor-pointer ${
+                  nutritionGoal === 'high_calorie'
+                    ? 'bg-[#2D3E40] text-white shadow-2xs'
+                    : 'text-[#7A7E7B] hover:text-[#2D3E40]'
+                }`}
+                title="Energiereich & sättigend (650+ kcal)"
+              >
+                <Flame className="w-3 h-3 shrink-0 hidden sm:inline text-amber-400" />
+                <span className="truncate">Viele Kalorien</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 3. Time Selector */}
           <div>
             <label className="block text-[11px] sm:text-xs font-semibold text-[#2D3E40] mb-1">
               Max. Zeit: {maxTime} Min.
@@ -415,7 +490,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
               step="5"
               value={maxTime}
               onChange={(e) => setMaxTime(Number(e.target.value))}
-              className="w-full accent-[#4A7856] cursor-pointer"
+              className="w-full accent-[#4A7856] cursor-pointer mt-2"
             />
             <div className="flex justify-between text-[9px] sm:text-[10px] text-[#7A7E7B] mt-0.5">
               <span>15 Min. (Express)</span>
@@ -423,7 +498,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             </div>
           </div>
 
-          {/* Extra wishes */}
+          {/* 4. Extra wishes */}
           <div>
             <label className="block text-[11px] sm:text-xs font-semibold text-[#2D3E40] mb-1">
               Wünsche (optional)
@@ -513,12 +588,26 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             {isGenerating ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>KI kreiert dein Gericht...</span>
+                <span>
+                  {nutritionGoal === 'high_protein'
+                    ? 'KI kreiert dein High-Protein-Gericht...'
+                    : nutritionGoal === 'high_calorie'
+                    ? 'KI kreiert dein energiereiches Gericht...'
+                    : 'KI kreiert dein Gericht...'}
+                </span>
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4 text-white" />
-                <span>Rezept aus {selectedIngredients.length} Zutaten zaubern</span>
+                <span>
+                  {selectedIngredients.length === 0
+                    ? 'Wähle mindestens 1 Zutat aus'
+                    : nutritionGoal === 'high_protein'
+                    ? `High-Protein-Rezept aus ${selectedIngredients.length} Vorratszutat${selectedIngredients.length > 1 ? 'en' : ''} zaubern`
+                    : nutritionGoal === 'high_calorie'
+                    ? `Kalorienreiches Rezept aus ${selectedIngredients.length} Vorratszutat${selectedIngredients.length > 1 ? 'en' : ''} zaubern`
+                    : `Rezept aus ${selectedIngredients.length} Vorratszutat${selectedIngredients.length > 1 ? 'en' : ''} zaubern`}
+                </span>
               </>
             )}
           </button>
@@ -530,13 +619,25 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
         <div className="bg-white rounded-2xl p-4 sm:p-8 border border-[#ECEBE8] shadow-md space-y-4 sm:space-y-6 animate-in zoom-in-95 duration-300">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-[#ECEBE8] pb-3 sm:pb-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="px-2.5 py-0.5 rounded-full bg-[#FDF6F0] text-[#D35400] border border-[#F5EADF] text-xs font-semibold">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FDF6F0] text-[#D35400] border border-[#ECEBE8] text-xs font-semibold">
                   ✨ KI-Rezept
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
                   {generatedRecipe.isVegan ? '🌱 Vegan' : '🧀 Veggie'}
                 </span>
+                {nutritionGoal === 'high_protein' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
+                    <Dumbbell className="w-3 h-3" />
+                    High Protein
+                  </span>
+                )}
+                {nutritionGoal === 'high_calorie' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8] text-xs font-semibold">
+                    <Flame className="w-3 h-3 text-amber-500" />
+                    Viele Kalorien
+                  </span>
+                )}
               </div>
               <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#2D3E40] tracking-tight">
                 {generatedRecipe.title}
@@ -683,10 +784,24 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
       {/* Matched Database Recipes */}
       {matchedExistingRecipes.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-[#2D3E40]">
-              Oder entdecke passende Rezepte aus unserer Sammlung:
-            </h3>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-base sm:text-lg font-semibold text-[#2D3E40]">
+                Oder entdecke passende Rezepte aus unserer Sammlung:
+              </h3>
+              {nutritionGoal === 'high_protein' && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
+                  <Dumbbell className="w-3 h-3" />
+                  Nach Protein sortiert
+                </span>
+              )}
+              {nutritionGoal === 'high_calorie' && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#2D3E40] text-xs font-semibold border border-[#ECEBE8]">
+                  <Flame className="w-3 h-3 text-amber-500" />
+                  Nach Kalorien sortiert
+                </span>
+              )}
+            </div>
             <span className="text-xs text-[#7A7E7B]">{matchedExistingRecipes.length} Treffer</span>
           </div>
 

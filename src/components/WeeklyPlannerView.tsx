@@ -117,6 +117,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const [aiIsVegan, setAiIsVegan] = useState(onlyVeganGlobal);
   const [aiPeopleCount, setAiPeopleCount] = useState<number>(2);
   const [aiMaxMinutes, setAiMaxMinutes] = useState<number>(30);
+  const [aiWishes, setAiWishes] = useState<string>('');
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [planServings, setPlanServings] = useState<number>(3);
 
@@ -502,6 +503,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           peopleCount: aiPeopleCount,
           maxMinutesPerMeal: aiMaxMinutes || 35,
           mealOption: aiMealOption,
+          wishes: aiWishes.trim(),
         }),
       });
       let data: any = null;
@@ -572,7 +574,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
         setMealPlan(updatedDays);
         setShowAIGeneratorModal(false);
-        onCopyFeedback(`Wochenplan "${data.planTitle || '7-Tage-Plan'}" erfolgreich erstellt!`);
+        if (aiWishes.trim()) {
+          onCopyFeedback(`Wochenplan erstellt – deine Wünsche wurden berücksichtigt! ✨`);
+        } else {
+          onCopyFeedback(`Wochenplan "${data.planTitle || '7-Tage-Plan'}" erfolgreich erstellt!`);
+        }
       } else {
         throw new Error('API did not return valid days');
       }
@@ -1655,6 +1661,64 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       {opt.label}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* 5. Personal Wishes / Priorities */}
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                  <label className="block font-bold text-[#2D3E40] text-xs uppercase tracking-wider">
+                    5. Persönliche Wünsche & Vorlieben
+                  </label>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-[#ECEBE8] bg-[#E8F0EA] text-[#3D6447]">
+                    <Sparkles className="w-3 h-3 text-[#3D6447]" />
+                    Höchste Priorität
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  id="ai-meal-plan-wishes-input"
+                  value={aiWishes}
+                  onChange={(e) => setAiWishes(e.target.value)}
+                  placeholder="z.B. viel Pasta, asiatisch angehaucht, High-Protein, keine Pilze..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF9F6] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-xs sm:text-sm text-[#2D3E40] placeholder-[#A0A5A1] transition-all outline-none"
+                />
+                {/* Popular quick-wish chips */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {[
+                    { label: '🍝 Viel Pasta', val: 'viel Pasta' },
+                    { label: '🍛 Cremige Currys', val: 'cremige Currys' },
+                    { label: '💪 High Protein', val: 'High-Protein' },
+                    { label: '🥢 Asiatisch & Bowls', val: 'asiatisch angehaucht & Bowls' },
+                    { label: '⚡ Extra schnell', val: 'extra schnelle Zubereitung' },
+                    { label: '🥑 Leicht & frisch', val: 'leichte & frische Gerichte' },
+                    { label: '🚫 Ohne Pilze', val: 'ohne Pilze' },
+                  ].map((chip) => {
+                    const isSelected = aiWishes.toLowerCase().includes(chip.val.toLowerCase());
+                    return (
+                      <button
+                        key={chip.val}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            // Remove chip text
+                            const regex = new RegExp(`(,\\s*)?${chip.val}`, 'gi');
+                            setAiWishes((prev) => prev.replace(regex, '').replace(/^,\s*/, '').trim());
+                          } else {
+                            // Append chip text
+                            setAiWishes((prev) => (prev.trim() ? `${prev.trim()}, ${chip.val}` : chip.val));
+                          }
+                        }}
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border border-[#ECEBE8] transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                          isSelected
+                            ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs'
+                            : 'bg-[#FAF9F6] text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-white'
+                        }`}
+                      >
+                        {chip.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>

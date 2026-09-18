@@ -151,10 +151,10 @@ function getGenAI(): GoogleGenAI | null {
 // ---------------------------------------------------------------------------
 // 4. Verified Active Gemini Model Cascade & Safe Invocation (Max 9000ms Timeout)
 // ---------------------------------------------------------------------------
-// Primary: gemini-3.1-flash-lite (ultra-fast ~1s, official supported model)
+// Primary: gemini-3.8-flash (latest official flash model)
 // Fallback: gemini-flash-latest (fast official alias for guaranteed availability)
 const ACTIVE_MODELS = [
-  "gemini-3.1-flash-lite",
+  "gemini-3.8-flash",
   "gemini-flash-latest",
 ] as const;
 
@@ -227,7 +227,7 @@ async function callGeminiWithRetry(
   // Hard cap to 9000ms for Vercel 10s serverless limit
   const maxTotalBudgetMs = Math.min(options.timeoutMs || 9000, 9000);
   const startTime = Date.now();
-  const requestedModel = options.model || "gemini-3.1-flash-lite";
+  const requestedModel = options.model || "gemini-3.8-flash";
   const modelsToTry = Array.from(new Set([requestedModel, ...ACTIVE_MODELS]));
 
   let lastError: unknown = null;
@@ -300,6 +300,7 @@ const fridgeCookRequestSchema = z.object({
   extraWishes: z.string().max(200).optional().default(""),
   maxAdditionalIngredients: z.number().int().min(0).max(10).optional().default(2),
   includeBasics: z.boolean().optional().default(true),
+  nutritionGoal: z.enum(["balanced", "high_protein", "high_calorie"]).optional().default("balanced"),
 });
 
 const mealPlanRequestSchema = z.object({
@@ -308,6 +309,7 @@ const mealPlanRequestSchema = z.object({
   focus: z.string().max(100).optional().default("Ausgewogen & proteinreich"),
   maxMinutesPerMeal: z.number().int().min(10).max(120).optional().default(35),
   mealOption: z.enum(["lunch", "dinner", "both"]).optional().default("both"),
+  wishes: z.string().max(300).optional().default(""),
 });
 
 const veganizeRequestSchema = z.object({
@@ -662,6 +664,7 @@ function buildFallbackFridgeRecipe(params: {
   extraWishes?: string;
   maxAdditionalIngredients?: number;
   includeBasics?: boolean;
+  nutritionGoal?: "balanced" | "high_protein" | "high_calorie";
 }) {
   const {
     ingredients = [],
@@ -671,11 +674,13 @@ function buildFallbackFridgeRecipe(params: {
     extraWishes,
     maxAdditionalIngredients = 2,
     includeBasics = true,
+    nutritionGoal = "balanced",
   } = params;
 
   const leadIng = ingredients.slice(0, 3).join(", ") || "Gemüse & Vorräten";
   const primaryIng = ingredients[0] || "Gemüse";
-  const title = isVegan ? `Vegane Pfanne mit ${primaryIng}` : `Veggie-Pfanne mit ${primaryIng}`;
+  const titlePrefix = nutritionGoal === "high_protein" ? "High-Protein " : nutritionGoal === "high_calorie" ? "Herzhafte " : "";
+  const title = isVegan ? `${titlePrefix}Vegane Pfanne mit ${primaryIng}` : `${titlePrefix}Veggie-Pfanne mit ${primaryIng}`;
 
   const prepTime = Math.min(10, Math.max(5, Math.floor(maxTimeMinutes / 3)));
   const cookTime = Math.max(10, maxTimeMinutes - prepTime);
@@ -709,6 +714,11 @@ function buildFallbackFridgeRecipe(params: {
 
   const allowedExtras = possibleExtras.slice(0, Math.max(0, maxAdditionalIngredients));
 
+  const calories = nutritionGoal === "high_calorie" ? 720 : nutritionGoal === "high_protein" ? 510 : 440;
+  const protein = nutritionGoal === "high_protein" ? 32 : nutritionGoal === "high_calorie" ? 22 : 21;
+  const fat = nutritionGoal === "high_calorie" ? 28 : 14;
+  const carbs = nutritionGoal === "high_calorie" ? 82 : 48;
+
   return {
     title,
     subtitle: `Zubereitet aus deinen Vorräten: ${leadIng}.`,
@@ -719,46 +729,106 @@ function buildFallbackFridgeRecipe(params: {
     cookTimeMinutes: cookTime,
     difficulty,
     servings: 2,
-    calories: 440,
-    protein: 21,
-    carbs: 48,
-    fat: 14,
+    calories,
+    protein,
+    carbs,
+    fat,
     fiber: 9,
     iron: 3.8,
     extraIngredientsCount: allowedExtras.length,
     ingredients: [...pantryIngs, ...basicSeasonings, ...allowedExtras],
-    steps: [
-      {
-        stepNumber: 1,
-        title: "Vorbereitung",
-        text: `Die Zutaten (${ingredients.join(", ")}) waschen, putzen und in gleichmäßige mundgerechte Stücke schneiden.`,
-        timerMinutes: null,
-      },
-      {
-        stepNumber: 2,
-        title: "Anbraten",
-        text: includeBasics
-          ? "Etwas Öl in einer großen Pfanne auf mittlerer Stufe erhitzen und die festeren Zutaten zuerst 4-5 Minuten anbraten."
-          : "Eine beschichtete Pfanne auf mittlerer Stufe erhitzen und die festeren Zutaten zuerst 4-5 Minuten anbraten.",
-        timerMinutes: 5,
-      },
-      {
-        stepNumber: 3,
-        title: "Garen & Würzen",
-        text: `Die weicheren Zutaten hinzufügen. Mit Gewürzen abschmecken.${
-          allowedExtras.length > 0
-            ? ` Zusätzliche Zutaten (${allowedExtras.map((e) => e.name).join(", ")}) unterheben.`
-            : ""
-        }`,
-        timerMinutes: 8,
-      },
-      {
-        stepNumber: 4,
-        title: "Anrichten",
-        text: "Warm auf Tellern anrichten und genießen.",
-        timerMinutes: null,
-      },
-    ],
+    steps: (() => {
+      // Dynamic number of steps according to difficulty and preparation time
+      if (maxTimeMinutes <= 15 || difficulty === "Einfach") {
+        return [
+          {
+            stepNumber: 1,
+            title: "Vorbereitung",
+            text: `Die Zutaten (${ingredients.slice(0, 3).join(", ")}) waschen, putzen und mundgerecht schneiden.`,
+            timerMinutes: 4,
+          },
+          {
+            stepNumber: 2,
+            title: "Zubereiten & Würzen",
+            text: includeBasics
+              ? "Etwas Pflanzenöl in einer Pfanne erhitzen, Zutaten scharf anbraten und mit Salz, Pfeffer und Kräutern abschmecken."
+              : "Die Zutaten in einer Pfanne garen und nach Belieben würzen.",
+            timerMinutes: 8,
+          },
+          {
+            stepNumber: 3,
+            title: "Anrichten & Genießen",
+            text: "Warm auf Tellern anrichten und frisch servieren.",
+            timerMinutes: null,
+          },
+        ];
+      }
+      if (difficulty === "Schwer" || maxTimeMinutes >= 45) {
+        return [
+          {
+            stepNumber: 1,
+            title: "Mise en Place",
+            text: `Alle frischen Zutaten (${ingredients.join(", ")}) waschen, schälen und exakt zuschneiden.`,
+            timerMinutes: 8,
+          },
+          {
+            stepNumber: 2,
+            title: "Aromen anrösten",
+            text: includeBasics
+              ? "Gutes Speiseöl in einer großen Pfanne oder einem Bräter erhitzen. Feste Bestandteile und Gewürze anrösten, um Röststoffe aufzubauen."
+              : "Die festen Bestandteile bei mittlerer Hitze anbraten.",
+            timerMinutes: 6,
+          },
+          {
+            stepNumber: 3,
+            title: "Schmoren & Garen",
+            text: "Flüssigkeit oder Saucenbasis zugeben, Hitze reduzieren und zugedeckt sanft schmoren lassen.",
+            timerMinutes: 15,
+          },
+          {
+            stepNumber: 4,
+            title: "Feinabstimmung",
+            text: `Die zarteren Zutaten${allowedExtras.length > 0 ? ` sowie ${allowedExtras.map((e) => e.name).join(", ")}` : ""} unterheben und mit Säure (z.B. Zitrone) und Kräutern abrunden.`,
+            timerMinutes: 5,
+          },
+          {
+            stepNumber: 5,
+            title: "Präsentation",
+            text: "Auf vorgewärmten Tellern harmonisch anrichten und mit frischen Toppings garnieren.",
+            timerMinutes: null,
+          },
+        ];
+      }
+      // Standard 4 steps for balanced medium recipes
+      return [
+        {
+          stepNumber: 1,
+          title: "Vorbereitung",
+          text: `Die Zutaten (${ingredients.join(", ")}) waschen, putzen und in gleichmäßige Stücke schneiden.`,
+          timerMinutes: 5,
+        },
+        {
+          stepNumber: 2,
+          title: "Anbraten",
+          text: includeBasics
+            ? "Etwas Öl in einer Pfanne auf mittlerer Stufe erhitzen und die festeren Zutaten zuerst 4-5 Minuten anbraten."
+            : "Die Pfanne auf mittlerer Stufe erhitzen und die festeren Zutaten 4-5 Minuten anbraten.",
+          timerMinutes: 5,
+        },
+        {
+          stepNumber: 3,
+          title: "Garen & Würzen",
+          text: `Die weicheren Zutaten hinzufügen, mit Gewürzen abschmecken und ca. 8 Minuten durchziehen lassen.`,
+          timerMinutes: 8,
+        },
+        {
+          stepNumber: 4,
+          title: "Anrichten",
+          text: "Warm auf Tellern anrichten und genießen.",
+          timerMinutes: null,
+        },
+      ];
+    })(),
     chefTips: extraWishes
       ? `Wunsch "${extraWishes}" berücksichtigt. Guten Appetit!`
       : "Frische Kräuter runden das Gericht perfekt ab.",
@@ -811,11 +881,12 @@ function buildFallbackSubstitutions(params: {
   };
 }
 
-function buildFallbackMealPlan(params: { isVegan?: boolean; peopleCount?: number; focus?: string }) {
-  const { isVegan, peopleCount = 2, focus = "Ausgewogen & proteinreich" } = params;
+function buildFallbackMealPlan(params: { isVegan?: boolean; peopleCount?: number; focus?: string; wishes?: string }) {
+  const { isVegan, peopleCount = 2, focus = "Ausgewogen & proteinreich", wishes } = params;
+  const wishNote = wishes && wishes.trim() ? ` (Wunsch: ${wishes.trim()})` : "";
   return {
-    planTitle: isVegan ? "Veganer 7-Tage Vital-Wochenplan" : "Ausgewogener Vegetarischer Wochenplan",
-    focusDescription: `Speziell abgestimmt auf: ${focus} für ${peopleCount} Personen.`,
+    planTitle: isVegan ? `Veganer 7-Tage Vital-Wochenplan${wishNote}` : `Ausgewogener Vegetarischer Wochenplan${wishNote}`,
+    focusDescription: `Speziell abgestimmt auf: ${focus} für ${peopleCount} Personen.${wishes && wishes.trim() ? ` Persönliche Wünsche erfüllt: "${wishes.trim()}".` : ""}`,
     days: [
       {
         dayName: "Montag",
@@ -1174,7 +1245,7 @@ Bitte erstelle smarte, rein vegetarische/vegane Alternativen für die fehlenden 
 Gib deine Antwort als strukturiertes JSON zurück.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.1-flash-lite",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1229,6 +1300,7 @@ app.post("/api/ai/fridge-cook", async (req: Request, res: Response) => {
     extraWishes,
     maxAdditionalIngredients,
     includeBasics,
+    nutritionGoal = "balanced",
   } = parseResult.data;
 
   const ai = getGenAI();
@@ -1242,6 +1314,7 @@ app.post("/api/ai/fridge-cook", async (req: Request, res: Response) => {
       extraWishes,
       maxAdditionalIngredients,
       includeBasics,
+      nutritionGoal,
     });
     return res.json({
       success: true,
@@ -1258,6 +1331,34 @@ app.post("/api/ai/fridge-cook", async (req: Request, res: Response) => {
       ? "100% VEGAN (rein pflanzlich, strikt keine tierischen Produkte)"
       : "100% VEGETARISCH (fleisch- und fischfrei)";
 
+    let nutritionInstruction = "";
+    if (nutritionGoal === "high_protein") {
+      nutritionInstruction = "NÄHRWERT-FEINTUNING (HIGH PROTEIN): Das Gericht MUSS besonders proteinreich sein (mindestens 25g–35g+ Eiweiß pro Portion)! Betone proteinreiche Zutaten wie Tofu, Hülsenfrüchte (Linsen, Kichererbsen, Bohnen), Kerne, Nüsse oder Pflanzendrinks.";
+    } else if (nutritionGoal === "high_calorie") {
+      nutritionInstruction = "NÄHRWERT-FEINTUNING (VIELE KALORIEN / ENERGIEREICH): Das Gericht soll besonders energiereich, nahrhaft und sättigend sein (mindestens 650–850 kcal pro Portion)! Nutze z.B. gesunde Fette (Nussmus, Olivenöl, Saaten), reichhaltige Saucen oder sättigende Kohlenhydrate.";
+    } else {
+      nutritionInstruction = "NÄHRWERT-FEINTUNING (BELIEBIG): Ausgewogene, alltagstaugliche Nährwerte (ca. 400-550 kcal).";
+    }
+
+    const userWantsAllIngredients = Boolean(
+      extraWishes &&
+        /(alle\s+(vorräte|zutaten)|alles\s+(aufbrauchen|verwenden)|jeder\s+einzelne|resteverwertung)/i.test(
+          extraWishes
+        )
+    );
+
+    const pantryInstruction = userWantsAllIngredients
+      ? `⭐ OBERSTE PRIORITÄT (AUSDRÜCKLICHER NUTZERWUNSCH): Der Nutzer wünscht explizit, dass nach Möglichkeit ALLE angegebenen Vorratszutaten (${ingredients.join(
+          ", "
+        )}) verwendet werden! Finde die kulinarisch beste und kreativste Kombination, um sie schmackhaft und harmonisch einzusetzen.`
+      : `⭐ KULINARISCHE HARMONIE GEHT VOR (KEIN ZWANG ZUR VERWENDUNG ALLER VORRÄTE):
+Die angegebenen Zutaten (${ingredients.join(
+          ", "
+        )}) sind eine VORRATSAUSWAHL & INSPIRATION, jedoch KEIN MUSS!
+- Oberste Priorität hat immer ein wirklich köstliches, harmonisches und kulinarisch stimmiges Gericht.
+- Schustere NIEMALS auf Krampf Zutaten zusammen, die geschmacklich oder kulinarisch nicht harmonieren (wenn z.B. Kartoffeln und Pistazienmus, oder Gurke und Haferflocken ausgewählt wurden, lasse unpassende Zutaten EINFACH WEG).
+- Wähle aus den angegebenen Vorräten nur die sinnvolle, leckere Kombination aus und lass den Rest ungenutzt.`;
+
     const prompt = `Du bist ein erfahrener Küchenchef für gesunde, alltagstaugliche pflanzliche Küche.
 Erstelle ein harmonisches, gelingsicheres Rezept, das die vorhandenen Zutaten aus der Vorratskammer sinnvoll verwertet.
 
@@ -1268,16 +1369,22 @@ ERNÄHRUNG: ${dietString}
 MAX. ZUBEREITUNGSZEIT: ${maxTimeMinutes} Minuten
 SCHWIERIGKEITSGRAD: ${difficulty}
 MAHLZEITEN-ART: ${mealType}
+${nutritionInstruction}
 BESONDERE WÜNSCHE: ${extraWishes || "keine"}
 
 STRIKTE REGELN:
-1. Die vorhandenen Vorratszutaten (${ingredients.join(", ")}) MÜSSEN Hauptbestandteile des Gerichts sein.
-2. 4 bis 6 dynamische, praxisnahe Schritte mit klarem Titel, Beschreibung und ggf. Koch-/Backzeit (timerMinutes).
-3. Realistische Nährwerte für 2 Portionen.
+1. ${pantryInstruction}
+2. ANZAHL DER SCHRITTE VÖLLIG FREI WÄHLEN:
+Passe die Anzahl der Zubereitungsschritte ganz organisch der tatsächlichen Komplexität des Gerichts an! Du hast hier VÖLLIGEN FREIRAUM:
+- Ein sehr simples Gericht (z.B. schneller Salat, einfacher Dip, Blitz-Pfanne) benötigt vielleicht nur 2–3 prägnante Schritte.
+- Ein klassisches Alltagsgericht braucht ca. 4–6 Schritte.
+- Ein aufwendigeres, mehrstufiges oder komplexes Gericht kann 7–10 Schritte umfassen.
+Zwinge das Gericht niemals künstlich in 4 Schritte, sondern wähle genau so viele Schritte, wie für eine gelingsichere Zubereitung sinnvoll sind. Jeder Schritt hat 'stepNumber', 'title', 'text' und optional 'timerMinutes'.
+3. Realistische Nährwerte für 2 Portionen entsprechend des Nährwert-Fokus.
 Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.1-flash-lite",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1293,7 +1400,14 @@ Antworte als strukturiertes JSON-Objekt.`;
       throw new Error("Rezept unvollständig strukturiert");
     }
 
-    parsed.matchedPantryCount = ingredients.length;
+    // Accurately count how many pantry items were actually incorporated into the recipe
+    const usedPantryCount = ingredients.filter((p) =>
+      parsed.ingredients.some((ing: any) =>
+        (ing.name || "").toLowerCase().includes(p.toLowerCase()) ||
+        p.toLowerCase().includes((ing.name || "").toLowerCase())
+      )
+    ).length;
+    parsed.matchedPantryCount = usedPantryCount > 0 ? usedPantryCount : Math.min(ingredients.length, parsed.ingredients.length);
     parsed.image = getMatchingFoodImage(parsed.title, parsed.category, isVegan);
 
     logAiEvent("info", "/api/ai/fridge-cook", "Fridge cook recipe created successfully", {
@@ -1314,6 +1428,7 @@ Antworte als strukturiertes JSON-Objekt.`;
       extraWishes,
       maxAdditionalIngredients,
       includeBasics,
+      nutritionGoal,
     });
     res.json({
       success: true,
@@ -1336,14 +1451,14 @@ app.post("/api/ai/meal-plan", async (req: Request, res: Response) => {
     });
   }
 
-  const { isVegan, peopleCount, focus, maxMinutesPerMeal, mealOption } = parseResult.data;
+  const { isVegan, peopleCount, focus, maxMinutesPerMeal, mealOption, wishes } = parseResult.data;
 
   const ai = getGenAI();
   if (!ai) {
     return res.json({
       success: true,
       isFallback: true,
-      ...buildFallbackMealPlan({ isVegan, peopleCount, focus }),
+      ...buildFallbackMealPlan({ isVegan, peopleCount, focus, wishes }),
     });
   }
 
@@ -1363,17 +1478,25 @@ app.post("/api/ai/meal-plan", async (req: Request, res: Response) => {
       : `100% VEGETARISCH:
 - Kein Fleisch, kein Fisch. Pflanzliche Zutaten, Milchprodukte und Eier sind erlaubt.`;
 
+    const wishesInstruction = wishes && wishes.trim()
+      ? `\n⭐ BESONDERE PRIORITÄT - PERSÖNLICHE WÜNSCHE DES NUTZERS:
+Der Nutzer hat folgende Wünsche für diesen 7-Tage-Plan angegeben: "${wishes.trim()}".
+WICHTIG: Erfülle diese Wünsche UNBEDINGT und mit oberster Priorität!
+- Jedes geplante Gericht soll sich vorrangig an diesen Wünschen orientieren (z.B. gewünschte Zutaten, Länderküchen wie asiatisch/italienisch/mexikanisch, Ausschlüsse, Schärfe oder Ernährungsziele wie High-Protein).
+- Wenn der Nutzer konkrete Vorlieben äußert (z.B. "viel Pasta", "keine Pilze", "asiatisch angehaucht", "proteinreich"), MÜSSEN diese im Wochenplan deutlich und konsequent umgesetzt werden.\n`
+      : "";
+
     const prompt = `Erstelle einen ausgewogenen 7-Tage-Wochenplan (Montag bis Sonntag) für ${peopleCount} Personen.
 Ernährungsvorgabe:
 ${dietInstruction}
-
+${wishesInstruction}
 Mahlzeiten-Auswahl: ${mealInstruction}
 Max. Kochzeit pro Gericht: ca. ${maxMinutesPerMeal} Minuten
 Fokus: ${focus}
 Antworte als strukturiertes JSON.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.1-flash-lite",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1429,7 +1552,7 @@ Antworte als strukturiertes JSON.`;
     res.json({
       success: true,
       isFallback: true,
-      ...buildFallbackMealPlan({ isVegan, peopleCount, focus }),
+      ...buildFallbackMealPlan({ isVegan, peopleCount, focus, wishes }),
     });
   }
 });
@@ -1462,7 +1585,7 @@ Original-Rezept: ${JSON.stringify(recipe)}
 Antworte als strukturiertes JSON.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.1-flash-lite",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1572,7 +1695,12 @@ ${safeStyles.length > 0 ? `Stil / Notizen: ${safeStyles.join(", ")}` : ""}
 
 STRIKTE REGELN:
 1. Das Rezept MUSS präzise das gewünschte Gericht "${dishTitleOrIdea}" umsetzen.
-2. Dynamische Zubereitungsschritte nach HelloFresh-Vorbild (typischerweise 4 bis 6 logische Schritte).
+2. ANZAHL DER SCHRITTE VÖLLIG FREI WÄHLEN:
+Passe die Anzahl der Zubereitungsschritte ganz flexibel der tatsächlichen Komplexität des Gerichts an! Du hast VÖLLIGEN FREIRAUM:
+- 2–3 prägnante Schritte für sehr einfache, schnelle Rezepte (z.B. knackige Salate, Bowls, Dips oder schnelle Blitz-Pfannen).
+- 4–6 Schritte für klassische Alltagsrezepte.
+- Bis zu 8–10 Schritte für mehrstufige, anspruchsvolle oder raffinierte Festtagsgerichte, Schmorgerichte oder Gebäck.
+Zwinge das Rezept niemals künstlich in 4 Schritte!
 3. Jeder Schritt hat einen klaren Titel, Text und optional 'timerMinutes' (Zahl in Minuten oder null).
 4. Exakte Mengenangaben pro Zutat für 2 Portionen.
 5. category des Rezepts MUSS eine dieser Kategorien sein: "Pasta & Gnocchi", "Bowls & Salate", "Currys & Eintöpfe", "Ofengerichte", "Schnelle Küche", "Frühstück & Süßes", "Snacks & Dips", "Festlich".
@@ -1580,7 +1708,7 @@ STRIKTE REGELN:
 Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.1-flash-lite",
+      model: "gemini-3.8-flash",
       contents: aiPrompt,
       config: {
         responseMimeType: "application/json",
@@ -1722,10 +1850,11 @@ app.post("/api/ai/scan-recipe", async (req: Request, res: Response) => {
 Entwickle daraus ein präzises, meisterhaftes deutsches Rezept.
 ${isVegan ? "WICHTIG: Das Rezept MUSS 100% VEGAN sein! Ersetze alle tierischen Produkte durch schmackhafte pflanzliche Alternativen." : "Das Rezept soll vegetarisch oder vegan sein."}
 ${safeNotes ? `Zusätzliche Benutzer-Notizen: "${safeNotes}"` : ""}
+WICHTIG ZUR ZUBEREITUNG: Wähle die Anzahl der Schritte (steps) völlig frei und passend zur echten Komplexität des Gerichts (von 2–3 einfachen Schritten bei schnellen Gerichten bis zu 8–10 Schritten bei mehrstufigen Rezepten).
 Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.1-flash-lite",
+      model: "gemini-3.8-flash",
       contents: [
         {
           inlineData: {

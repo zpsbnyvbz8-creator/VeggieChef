@@ -2599,41 +2599,46 @@ export const INITIAL_RECIPES: Recipe[] = [
 ];
 
 export const PANTRY_QUICK_ITEMS = [
-  'Veganes Hack',
-  'Vegane Filetspitzen',
-  'Seitan',
-  'Räuchertofu',
-  'Tempeh',
-  'Tofu',
-  'Kichererbsen',
-  'Rote Linsen',
-  'Schwarze Bohnen',
-  'Edamame',
-  'Mandel-Feta',
-  'Veganer Cheddar',
-  'Hefeflocken',
-  'Cashewkerne',
-  'Spinat',
+  // Frisches Gemüse & Vorräte
+  'Zwiebeln',
+  'Knoblauch',
+  'Kartoffeln',
   'Tomaten',
-  'Zucchini',
-  'Auberginen',
   'Paprika',
-  'Champignons / Kräuterseitlinge',
+  'Möhren',
+  'Zucchini',
+  'Gurke',
+  'Champignons',
+  'Spinat',
   'Brokkoli',
-  'Avocado',
-  'Süßkartoffeln',
-  'Knoblauch & Zwiebeln',
-  'Pasta / Rigatoni',
-  'Gnocchi',
-  'Reis / Quinoa',
+  'Zitrone',
+
+  // Vorratsschrank & Hülsenfrüchte
+  'Nudeln / Pasta',
+  'Reis',
+  'Gehackte Tomaten (Dose)',
+  'Kichererbsen',
+  'Kidneybohnen',
+  'Linsen',
   'Haferflocken',
   'Kokosmilch',
-  'Hafer-Kochcreme',
-  'Pistazienmus',
+  'Mais',
+
+  // Kühlregal & Proteine
+  'Käse / Reibekäse',
+  'Feta',
+  'Eier',
+  'Tofu / Räuchertofu',
+  'Milch / Pflanzendrink',
+  'Naturjoghurt',
+  'Sahne / Kochcreme',
+  'Butter / Margarine',
+
+  // Würze & Basics
+  'Tomatenmark',
+  'Sojasauce',
   'Erdnussbutter',
-  'Gochujang-Paste',
-  'Sojasauce / Tamari',
-  'Zitrone / Limette'
+  'Senf'
 ];
 
 import { DayPlan } from '../types';
