@@ -443,19 +443,23 @@ export function cleanIngredientNameForShopping(rawName: string): string {
   let name = rawName.trim();
 
   // 1. Zubereitungshinweise in Klammern entfernen:
-  // z.B. (in Ringen), (in feinen Ringen), (in Scheiben), (gewürfelt), (fein gehackt), (abgetropft), (entkernt), (in Röllchen) etc.
-  const prepInParentheses = /\s*\((?:[^)]*(?:ring|würfel|wuerfel|hack|schnitt|schneid|schäl|schael|reib|rasp|tropf|koch|brat|back|gar|streif|scheib|viertel|halb|zerdrück|zerdrueck|zupf|röllchen|roellchen|saft|abrieb|geputzt|vorgekocht|aufgetaut|mariniert|gewaschen|warm|kalt|optional|nach\s+belieben|nach\s+geschmack)[^)]*)\)/gi;
+  // z.B. (in Ringen), (in feinen Ringen), (in Scheiben), (in Spalten), (gewürfelt), (fein gehackt), (abgetropft), (entkernt), (in Röllchen) etc.
+  const prepInParentheses = /\s*\((?:[^)]*(?:ring|würfel|wuerfel|hack|schnitt|schneid|schäl|schael|reib|rasp|tropf|koch|brat|back|gar|streif|scheib|spalt|stif|viertel|halb|zerdrück|zerdrueck|zupf|röllchen|roellchen|saft|abrieb|geputzt|vorgekocht|aufgetaut|mariniert|gewaschen|warm|kalt|heiß|heiss|zimmerwarm|optional|nach\s+belieben|nach\s+geschmack|entsteint|geviertelt|halbiert|gepresst|entkernt|zerkleinert|grob|fein|dünn|duenn)[^)]*)\)/gi;
   name = name.replace(prepInParentheses, '');
 
-  // 2. Generelle Klammern mit reinen Zubereitungszuständen
-  name = name.replace(/\s*\((?:fein|grob|frisch|geputzt|halbiert|geviertelt|gegart|gebraten|vorgegart|blanchiert)\)/gi, '');
+  // 2. Generelle Klammern mit reinen Zubereitungszuständen oder Herkunftsnotizen
+  name = name.replace(/\s*\((?:fein|grob|frisch|geputzt|halbiert|geviertelt|gegart|gebraten|vorgegart|blanchiert|gepresst|abgespült|abgespuelt|gewaschen)\)/gi, '');
 
   // 3. Zubereitungshinweise nach Komma entfernen:
   // z.B. "Zwiebel, in Ringen", "Tofu, gewürfelt", "Knoblauch, fein gehackt"
-  const prepAfterComma = /,\s*(?:in\s+[^,]+|fein\s+[^,]+|grob\s+[^,]+|gewürfelt|wuerfelt|gehackt|geschnitten|geschält|geschaelt|gerieben|geraspelt|abgetropft|entkernt|zerdrückt|zerdrueckt|in\s+Ringen|in\s+Scheiben|in\s+Streifen|in\s+Würfeln?|in\s+Röllchen|geputzt|halbiert|geviertelt|nach\s+Belieben|nach\s+Geschmack)\s*$/i;
+  const prepAfterComma = /,\s*(?:in\s+[^,]+|fein\s+[^,]+|grob\s+[^,]+|dünn\s+[^,]+|duenn\s+[^,]+|gewürfelt|wuerfelt|gehackt|geschnitten|geschält|geschaelt|gerieben|geraspelt|abgetropft|entkernt|entsteint|zerdrückt|zerdrueckt|in\s+Ringen|in\s+Scheiben|in\s+Streifen|in\s+Würfeln?|in\s+Röllchen|in\s+Spalten|in\s+Stiften|geputzt|halbiert|geviertelt|gepresst|nach\s+Belieben|nach\s+Geschmack)\s*$/i;
   name = name.replace(prepAfterComma, '');
 
-  // 4. Mehrfache Leerzeichen und verwaiste Satzzeichen bereinigen
+  // 4. Zubereitungszustand am Zeilenende ohne Komma oder Klammern (z. B. "große Zwiebel in Ringen", "Tofu gewürfelt", "Knoblauch fein gehackt")
+  const prepAtEnd = /\s+(?:in\s+(?:feinen?\s+)?(?:Ringen?|Scheiben?|Streifen?|Würfeln?|Wuerfeln?|Spalten?|Röllchen?|Stiften?)|fein\s+(?:gehackt|geschnitten|gerieben|geraspelt|gewürfelt)|grob\s+(?:gehackt|geschnitten|geraspelt)|gewürfelt|wuerfelt|fein\s+gehackt|gehackt|geschält|geschaelt|gerieben|geraspelt|abgetropft|entkernt|entsteint|zerdrückt|zerdrueckt)$/i;
+  name = name.replace(prepAtEnd, '');
+
+  // 5. Mehrfache Leerzeichen und verwaiste Satzzeichen bereinigen
   name = name.replace(/\s{2,}/g, ' ').trim();
   name = name.replace(/[,;:-]$/, '').trim();
 

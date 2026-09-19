@@ -112,6 +112,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const [activeTouchItemId, setActiveTouchItemId] = useState<string | null>(null);
   const [touchCurrentOffset, setTouchCurrentOffset] = useState<number>(0);
   const touchStartRef = useRef<{ startX: number; startY: number; baseOffset: number; itemWidth?: number } | null>(null);
+  const justClosedSwipeMenuRef = useRef<boolean>(false);
 
   // Auto-close swiped menu when tapping anywhere on the screen
   useEffect(() => {
@@ -125,6 +126,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       }
       // Ansonsten schließt jeder Klick/Tap irgendwo auf den Bildschirm das Menü
       setSwipedItemId(null);
+      justClosedSwipeMenuRef.current = true;
+      setTimeout(() => {
+        justClosedSwipeMenuRef.current = false;
+      }, 300);
     };
 
     // Leichte Verzögerung damit nicht das Loslassen des Touches sofort schließt
@@ -656,16 +661,16 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
         {/* Background Action Tray (iOS-Style: wächst bei weitem Swipe und löscht beim Loslassen) */}
         <div
-          className={`absolute inset-y-0 right-0 flex items-center justify-end z-0 rounded-r-2xl overflow-hidden transition-all duration-200 ${
+          className={`absolute inset-y-0 right-0 flex items-center justify-end z-0 rounded-r-2xl overflow-hidden transition-[background-color,padding] duration-200 ease-out ${
             isFullSwipeDelete
-              ? 'w-full bg-rose-600 px-6'
-              : 'bg-[#FAF9F6] border-y border-r border-[#ECEBE8] px-3 gap-1.5'
+              ? 'w-full bg-[#E54D2E] px-6'
+              : 'bg-[#FAF9F6] border-y border-r border-[#ECEBE8] px-3 gap-2'
           }`}
         >
           {isFullSwipeDelete ? (
-            /* Apple Full-Swipe: Roter Balken wird länger, Icon skaliert */
-            <div className="flex items-center gap-2 text-white font-bold text-sm">
-              <Trash2 className="w-5 h-5 stroke-[2.5] scale-125 transition-transform" />
+            /* Apple Full-Swipe: Icon skaliert elastisch mit Feedback-Text */
+            <div className="flex items-center gap-2.5 text-white font-semibold text-sm animate-in fade-in zoom-in-95 duration-150">
+              <Trash2 className="w-5 h-5 stroke-[2.5] scale-110 transition-transform" />
               <span>Löschen</span>
             </div>
           ) : (
@@ -679,7 +684,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   setSwipedItemId(null);
                   startEditingItem(item);
                 }}
-                className="w-10 h-10 rounded-xl bg-white text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-xs"
+                className="w-10 h-10 rounded-xl bg-white text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs"
                 title="Menge anpassen"
                 aria-label="Menge anpassen"
               >
@@ -692,7 +697,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   e.stopPropagation();
                   handleDeleteBySwipe(item);
                 }}
-                className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-xs"
+                className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs"
                 title="Artikel löschen"
                 aria-label="Artikel löschen"
               >
@@ -727,15 +732,21 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             const diffX = touch.clientX - touchStartRef.current.startX;
             const diffY = touch.clientY - touchStartRef.current.startY;
 
-            // Vertikales Scrollen durchlassen
-            if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffX) < 10) {
+            // Vertikales Scrollen durchlassen falls mehr vertikal als horizontal
+            if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffX) < 12) {
               return;
             }
 
             const width = touchStartRef.current.itemWidth || 360;
             const rawOffset = touchStartRef.current.baseOffset + diffX;
-            // Nach links swipen (bis zum linken Bildschirmrand: -width) und nach rechts klemmen (max 0px)
-            const clamped = Math.min(0, Math.max(-width, rawOffset));
+            // Nach links swipen (bis zum linken Bildschirmrand: -width) und nach rechts mit Dämpfung (Rubber-Banding)
+            let clamped: number;
+            if (rawOffset > 0) {
+              // Elastisches Rubber-Banding beim Ziehen nach rechts
+              clamped = Math.min(15, rawOffset * 0.2);
+            } else {
+              clamped = Math.max(-width, rawOffset);
+            }
             setTouchCurrentOffset(clamped);
           }}
           onTouchEnd={() => {
@@ -748,13 +759,13 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               if (touchCurrentOffset <= -deleteThreshold) {
                 // Erst wenn bis ca. 70% der Breite gezogen wurde: direkt löschen
                 handleDeleteBySwipe(item);
-              } else if (touchCurrentOffset < -35) {
+              } else if (touchCurrentOffset < -40) {
                 // Sonst öffnet sich das Menü (-96px)
                 setSwipedItemId(item.id);
                 setActiveTouchItemId(null);
                 setTouchCurrentOffset(0);
               } else {
-                // Unter 35px: zurückfedern (0px)
+                // Unter 40px: geschmeidig zurückfedern (0px)
                 setSwipedItemId(null);
                 setActiveTouchItemId(null);
                 setTouchCurrentOffset(0);
@@ -762,8 +773,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             }
           }}
           onClick={(e) => {
-            // Wenn ein Menü offen ist, schließt ein Klick nur das Menü und hakt das Item NICHT ab
-            if (isAnySwiped) {
+            // Wenn ein Menü offen ist oder gerade geschlossen wurde: Klick abfangen und Item NICHT abhaken
+            if (isAnySwiped || isSwiped || justClosedSwipeMenuRef.current) {
+              e.preventDefault();
               e.stopPropagation();
               setSwipedItemId(null);
               return;
@@ -773,8 +785,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             }
           }}
           style={{
-            transform: `translateX(${currentOffset}px)`,
-            transition: isThisItemTouching ? 'none' : 'transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1)',
+            transform: `translate3d(${currentOffset}px, 0, 0)`,
+            transition: isThisItemTouching ? 'none' : 'transform 0.32s cubic-bezier(0.16, 1, 0.3, 1)',
+            willChange: isThisItemTouching ? 'transform' : 'auto',
           }}
           className={`relative z-10 flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border gap-2.5 sm:gap-3 min-h-[54px] ${
             isEditing
@@ -791,7 +804,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             {/* Checkbox */}
             <div
               onClick={(e) => {
-                if (isAnySwiped) {
+                if (isAnySwiped || isSwiped || justClosedSwipeMenuRef.current) {
+                  e.preventDefault();
                   e.stopPropagation();
                   setSwipedItemId(null);
                   return;
@@ -1087,38 +1101,6 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         </div>
       </div>
 
-      {/* Undo Notification Banner (Direkt unter dem Header, wie im Wochenplaner) */}
-      {showUndoBanner && undoBackup && (
-        <div className="p-3 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8] flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-top duration-200">
-          <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
-            <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4A7856] shrink-0" />
-            <span className="text-xs">
-              {lastDeletedInfo?.type === 'completed'
-                ? `${lastDeletedInfo.count} erledigte ${lastDeletedInfo.count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`
-                : lastDeletedInfo?.type === 'category'
-                ? `Regal "${lastDeletedInfo.name}" gelöscht (${lastDeletedInfo.count} ${lastDeletedInfo.count === 1 ? 'Artikel' : 'Artikel'}).`
-                : lastDeletedInfo?.type === 'single'
-                ? `"${lastDeletedInfo.name}" gelöscht.`
-                : `Einkaufsliste gelöscht (${lastDeletedInfo?.count || undoBackup.length} ${lastDeletedInfo?.count === 1 ? 'Zutat' : 'Zutaten'}).`}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={handleUndo}
-              className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[11px] sm:text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
-            >
-              Rückgängig
-            </button>
-            <button
-              onClick={() => setShowUndoBanner(false)}
-              className="p-1 text-white/70 hover:text-white text-xs cursor-pointer"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* 2. Smart Quick-Add Input mit Duplikat-Zusammenführung */}
       <form
         onSubmit={handleAddItem}
@@ -1410,6 +1392,38 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Undo Notification Banner (Nach unten gerückt: hinter 'Erledigt', sowohl Mobile als auch PC) */}
+      {showUndoBanner && undoBackup && (
+        <div className="p-3 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8] flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-bottom duration-200 mt-2">
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
+            <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4A7856] shrink-0" />
+            <span className="text-xs">
+              {lastDeletedInfo?.type === 'completed'
+                ? `${lastDeletedInfo.count} erledigte ${lastDeletedInfo.count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`
+                : lastDeletedInfo?.type === 'category'
+                ? `Regal "${lastDeletedInfo.name}" gelöscht (${lastDeletedInfo.count} ${lastDeletedInfo.count === 1 ? 'Artikel' : 'Artikel'}).`
+                : lastDeletedInfo?.type === 'single'
+                ? `"${lastDeletedInfo.name}" gelöscht.`
+                : `Einkaufsliste gelöscht (${lastDeletedInfo?.count || undoBackup.length} ${lastDeletedInfo?.count === 1 ? 'Zutat' : 'Zutaten'}).`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleUndo}
+              className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[11px] sm:text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
+            >
+              Rückgängig
+            </button>
+            <button
+              onClick={() => setShowUndoBanner(false)}
+              className="p-1 text-white/70 hover:text-white text-xs cursor-pointer"
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}

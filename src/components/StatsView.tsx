@@ -73,6 +73,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
   const [activeTouchLogId, setActiveTouchLogId] = useState<string | null>(null);
   const [touchCurrentOffset, setTouchCurrentOffset] = useState<number>(0);
   const touchStartRef = useRef<{ startX: number; startY: number; baseOffset: number; itemWidth?: number } | null>(null);
+  const justClosedSwipeLogMenuRef = useRef<boolean>(false);
 
   // Auto-close inline confirmation when clicking outside
   useEffect(() => {
@@ -93,6 +94,10 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
       const target = e.target as HTMLElement | null;
       if (target?.closest('[data-swipe-action="true"]')) return;
       setSwipedLogId(null);
+      justClosedSwipeLogMenuRef.current = true;
+      setTimeout(() => {
+        justClosedSwipeLogMenuRef.current = false;
+      }, 300);
     };
     const timer = setTimeout(() => {
       window.addEventListener('pointerdown', handleGlobalTap, true);
@@ -497,15 +502,15 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                 >
                   {/* Background Action Tray (iOS-Style für Mobile) */}
                   <div
-                    className={`absolute inset-y-0 right-0 flex items-center justify-end z-0 rounded-r-2xl overflow-hidden transition-all duration-200 ${
+                    className={`absolute inset-y-0 right-0 flex items-center justify-end z-0 rounded-r-2xl overflow-hidden transition-[background-color,padding] duration-200 ease-out ${
                       isFullSwipeDelete
-                        ? 'w-full bg-rose-600 px-6'
-                        : 'bg-[#FAF9F6] border-y border-r border-[#ECEBE8] px-3 gap-1.5'
+                        ? 'w-full bg-[#E54D2E] px-6'
+                        : 'bg-[#FAF9F6] border-y border-r border-[#ECEBE8] px-3 gap-2'
                     }`}
                   >
                     {isFullSwipeDelete ? (
-                      <div className="flex items-center gap-2 text-white font-bold text-sm">
-                        <Trash2 className="w-5 h-5 stroke-[2.5] scale-125 transition-transform" />
+                      <div className="flex items-center gap-2.5 text-white font-semibold text-sm animate-in fade-in zoom-in-95 duration-150">
+                        <Trash2 className="w-5 h-5 stroke-[2.5] scale-110 transition-transform" />
                         <span>Löschen</span>
                       </div>
                     ) : (
@@ -516,7 +521,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                           e.stopPropagation();
                           handleDeleteBySwipeLog(log);
                         }}
-                        className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-xs"
+                        className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs"
                         title="Eintrag entfernen"
                         aria-label="Eintrag entfernen"
                       >
@@ -548,13 +553,18 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                       const diffX = touch.clientX - touchStartRef.current.startX;
                       const diffY = touch.clientY - touchStartRef.current.startY;
 
-                      if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffX) < 10) {
+                      if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffX) < 12) {
                         return;
                       }
 
                       const width = touchStartRef.current.itemWidth || 360;
                       const rawOffset = touchStartRef.current.baseOffset + diffX;
-                      const clamped = Math.min(0, Math.max(-width, rawOffset));
+                      let clamped: number;
+                      if (rawOffset > 0) {
+                        clamped = Math.min(15, rawOffset * 0.2);
+                      } else {
+                        clamped = Math.max(-width, rawOffset);
+                      }
                       setTouchCurrentOffset(clamped);
                     }}
                     onTouchEnd={() => {
@@ -566,7 +576,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                       if (isThisItemTouching) {
                         if (touchCurrentOffset <= -deleteThreshold) {
                           handleDeleteBySwipeLog(log);
-                        } else if (touchCurrentOffset < -35) {
+                        } else if (touchCurrentOffset < -40) {
                           setSwipedLogId(log.id);
                           setActiveTouchLogId(null);
                           setTouchCurrentOffset(0);
@@ -577,56 +587,73 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                         }
                       }
                     }}
-                    onClick={() => {
-                      if (swipedLogId) {
+                    onClick={(e) => {
+                      if (swipedLogId || justClosedSwipeLogMenuRef.current) {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setSwipedLogId(null);
                       }
                     }}
                     style={{
-                      transform: `translateX(${currentOffset}px)`,
-                      transition: isThisItemTouching ? 'none' : 'transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1)',
+                      transform: `translate3d(${currentOffset}px, 0, 0)`,
+                      transition: isThisItemTouching ? 'none' : 'transform 0.32s cubic-bezier(0.16, 1, 0.3, 1)',
+                      willChange: isThisItemTouching ? 'transform' : 'auto',
                     }}
-                    className="relative z-10 p-3 sm:p-3.5 bg-[#FAF9F6] rounded-2xl border border-[#ECEBE8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors hover:bg-white hover:border-[#DCDAD5]"
+                    className="relative z-10 p-3 sm:p-3.5 bg-white sm:bg-[#FAF9F6] rounded-2xl border border-[#ECEBE8] flex items-center justify-between gap-2.5 sm:gap-3 transition-colors hover:bg-white hover:border-[#DCDAD5] shadow-2xs"
                   >
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <span className="font-semibold text-[#2D3E40] text-xs sm:text-sm break-words whitespace-normal leading-snug">
+                    {/* Log Card Body: Clean mobile arrangement */}
+                    <div className="space-y-1.5 min-w-0 flex-1">
+                      {/* Top Row: Title + Badge */}
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-semibold text-[#2D3E40] text-xs sm:text-sm truncate">
                           {log.recipeTitle}
                         </span>
                         {log.isVegan ? (
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] shrink-0">
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] shrink-0">
                             🌱 Vegan
                           </span>
                         ) : (
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white text-[#2D3E40] border border-[#ECEBE8] shrink-0">
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[#FAF9F6] text-[#7A7E7B] border border-[#ECEBE8] shrink-0">
                             🧀 Veggie
                           </span>
                         )}
                       </div>
 
+                      {/* Notes (if any) */}
                       {log.notes && (
-                        <p className="text-xs text-[#7A7E7B] italic line-clamp-1">
+                        <p className="text-[11px] text-[#7A7E7B] italic truncate">
                           "{log.notes}"
                         </p>
                       )}
 
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs text-[#7A7E7B]">
-                        <span>📅 {formattedDate}</span>
-                        <span>👥 {log.servingsCooked || 2} Port.</span>
-                        <span className="text-[#4A7856] font-medium">🌱 {log.savedCO2Kg} kg CO₂</span>
-                        <span>💧 {log.savedWaterLiters.toLocaleString('de-DE')} L</span>
+                      {/* Clean Scannable Metrics Badges (Apple-Style Clean Pills) */}
+                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-[#7A7E7B]">
+                        <span className="bg-[#FAF9F6] px-2 py-0.5 rounded-md border border-[#ECEBE8]">
+                          📅 {formattedDate}
+                        </span>
+                        <span className="bg-[#FAF9F6] px-2 py-0.5 rounded-md border border-[#ECEBE8]">
+                          👥 {log.servingsCooked || 2} Port.
+                        </span>
+                        <span className="bg-[#F1F5F2] text-[#4A7856] font-medium px-2 py-0.5 rounded-md border border-[#ECEBE8]">
+                          🌱 {log.savedCO2Kg} kg CO₂
+                        </span>
+                        <span className="bg-[#FAF9F6] px-2 py-0.5 rounded-md border border-[#ECEBE8] hidden xs:inline">
+                          💧 {log.savedWaterLiters.toLocaleString('de-DE')} L
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center" onClick={(e) => e.stopPropagation()}>
+                    {/* Right Side: Rezept Button & PC Delete / Inline Confirm */}
+                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-center" onClick={(e) => e.stopPropagation()}>
                       {matchedRecipe && (
                         <button
                           type="button"
                           onClick={() => onSelectRecipe(matchedRecipe)}
-                          className="px-3.5 sm:px-3 py-2 sm:py-1.5 rounded-xl bg-white hover:bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer min-h-[42px] sm:min-h-0 touch-manipulation active:scale-95"
+                          className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#FAF9F6] sm:bg-white hover:bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors cursor-pointer min-h-[38px] sm:min-h-0 touch-manipulation active:scale-95"
+                          title="Rezept ansehen"
                         >
-                          <BookOpen className="w-4 h-4" />
-                          <span>Rezept</span>
+                          <BookOpen className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Rezept</span>
                         </button>
                       )}
 
@@ -662,7 +689,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                         <button
                           type="button"
                           onClick={() => setConfirmDeleteLogId(log.id)}
-                          className="w-10.5 h-10.5 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-white sm:bg-[#FAF9F6] text-rose-500 hover:text-rose-600 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs shrink-0"
+                          className="hidden sm:flex w-9 h-9 items-center justify-center rounded-xl bg-[#FAF9F6] text-rose-500 hover:text-rose-600 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs shrink-0"
                           title="Eintrag entfernen (Bestätigung erforderlich)"
                           aria-label="Eintrag entfernen"
                         >
