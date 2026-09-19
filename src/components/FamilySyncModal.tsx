@@ -160,7 +160,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
                 {isFamilyActive ? (
                   <>
                     <span>🟢 Echtzeit-Synchronisation aktiv</span>
-                    <span className="px-2 py-0.2 rounded-full bg-white text-[#4A7856] font-mono text-[10px] border border-[#ECEBE8]">
+                    <span className="px-2.5 py-0.5 rounded-full bg-white text-[#4A7856] font-mono text-xs font-semibold border border-[#ECEBE8]">
                       Code: {syncConfig.groupId}
                     </span>
                   </>

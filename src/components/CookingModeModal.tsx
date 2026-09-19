@@ -237,7 +237,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
             <ChefHat className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div>
-            <div className="text-[10px] sm:text-xs text-[#8DB898] font-semibold uppercase tracking-wider flex items-center gap-1.5">
+            <div className="text-xs text-[#8DB898] font-semibold uppercase tracking-wider flex items-center gap-1.5">
               <span>Fokus-Kochmodus ({servings} Port.)</span>
               <span className="w-1.5 h-1.5 rounded-full bg-[#4A7856] animate-pulse" title="WakeLock aktiv: Display bleibt an" />
             </div>

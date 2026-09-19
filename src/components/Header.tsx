@@ -89,7 +89,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-base sm:text-xl font-bold tracking-tight text-[#2D3E40]">VeggieChef</span>
-                <span className="hidden lg:inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8]">
+                <span className="hidden lg:inline-flex text-xs uppercase font-semibold tracking-wider px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8]">
                   Veggie & Vegan
                 </span>
               </div>

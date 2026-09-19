@@ -863,14 +863,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             {/* Name & Quelle */}
             <div className="flex-1 min-w-0 flex flex-col justify-center">
               <span
-                className={`text-sm font-medium block break-words whitespace-normal leading-tight ${
-                  item.completed ? 'line-through text-[#7A7E7B]' : 'text-[#2D3E40]'
+                className={`text-[15px] sm:text-sm font-medium block break-words whitespace-normal leading-tight ${
+                  item.completed ? 'line-through text-stone-400' : 'text-stone-800'
                 }`}
               >
                 {item.name}
               </span>
               {item.recipeSource && (
-                <span className="text-[11px] text-[#7A7E7B] truncate">
+                <span className="text-xs text-stone-500 truncate">
                   aus {item.recipeSource}
                 </span>
               )}
@@ -1038,10 +1038,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               </button>
             )}
           </div>
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#2D3E40] tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight text-stone-900">
             Einkaufsliste
-          </h2>
-          <p className="text-xs sm:text-sm text-[#7A7E7B]">
+          </h1>
+          <p className="text-sm font-medium text-stone-500">
             Sortiert nach Supermarkt-Regalen oder als Gesamtansicht mit Drag & Drop Sortierung.
           </p>
         </div>
@@ -1322,7 +1322,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
                     {/* Clean & minimal count pill + chevron */}
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                      <span className="text-[12px] font-medium text-[#7A7E7B] bg-[#F4F3F0] px-2 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums">
+                      <span className="text-xs font-semibold text-stone-500 bg-[#F4F3F0] px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#ECEBE8]">
                         {activeInCat.length} offen
                       </span>
 

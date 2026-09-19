@@ -84,7 +84,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
               className="w-14 h-14 rounded-lg object-cover shrink-0"
             />
             <div className="min-w-0 flex-1">
-              <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1 ${
+              <span className={`inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full mb-1 border border-[#ECEBE8] ${
                 recipe.isVegan ? 'bg-[#EBF3ED] text-[#4A7856]' : 'bg-[#FAF2EC] text-[#E67E22]'
               }`}>
                 {recipe.isVegan ? '🌱 100% Vegan' : '🧀 Vegetarisch'}

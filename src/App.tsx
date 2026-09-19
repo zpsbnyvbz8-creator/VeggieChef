@@ -94,29 +94,29 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
             id="explorer-add-recipe-btn"
             type="button"
             onClick={() => setIsAddRecipeOpen(true)}
-            className="flex items-center gap-2 h-10 px-4 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
+            className="flex items-center gap-2 h-12 px-5 rounded-xl text-base font-semibold bg-[#4A7856] hover:bg-[#3D6447] text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
             title="Neues Gericht per KI, Foto oder manuell hinzufügen"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-5 h-5" />
             <span>Neues Gericht</span>
           </button>
 
           {/* Live Search Bar */}
-          <div className="relative flex-1 sm:w-72">
+          <div className="relative flex-1 sm:w-80">
             <input
               id="recipe-search-input"
               type="text"
               placeholder="Rezept oder Zutat suchen..."
               value={filters.searchQuery}
               onChange={(e) => setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))}
-              className="w-full bg-white border border-[#ECEBE8] hover:border-[#4A7856]/40 rounded-xl pl-8 sm:pl-9 pr-4 py-2 sm:py-2.5 text-xs sm:text-sm text-[#2D3E40] focus:outline-hidden focus:border-[#4A7856] shadow-2xs transition-all placeholder-[#7A7E7B]"
+              className="w-full h-12 min-h-[48px] bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-xl pl-11 pr-10 py-2.5 text-base font-medium text-stone-800 placeholder:text-stone-400 focus:outline-hidden focus:border-[#4A7856] shadow-2xs transition-all"
             />
-            <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#7A7E7B] absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-5 h-5 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             {filters.searchQuery && (
               <button
                 type="button"
                 onClick={() => setFilters((prev) => ({ ...prev, searchQuery: '' }))}
-                className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 text-xs text-[#7A7E7B] hover:text-[#2D3E40] p-1 cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer"
               >
                 ✕
               </button>

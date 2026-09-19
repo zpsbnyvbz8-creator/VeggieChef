@@ -705,7 +705,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 {(() => {
                   const extraCount = generatedRecipe.ingredients.filter((i) => (i as any).source === 'extra').length;
                   return (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FAF9F6] border border-[#ECEBE8] text-[#4A7856] font-medium">
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#FAF9F6] border border-[#ECEBE8] text-[#4A7856] font-semibold">
                       {extraCount === 0 ? '0 Extras' : `${extraCount} Zusatz-Zutat${extraCount > 1 ? 'en' : ''}`}
                     </span>
                   );
@@ -762,7 +762,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                         {step.text}
                       </p>
                       {step.timerMinutes && (
-                        <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-[#ECEBE8] text-[#4A7856] text-[10px] font-semibold">
+                        <div className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-white border border-[#ECEBE8] text-[#4A7856] text-xs font-semibold">
                           <Clock className="w-3 h-3" />
                           Timer: {step.timerMinutes} Min.
                         </div>
