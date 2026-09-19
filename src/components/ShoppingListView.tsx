@@ -612,16 +612,34 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
     // Mobile Touch & Swipe Offset
     const isThisItemTouching = activeTouchItemId === item.id;
+    const MENU_SWIPE_OFFSET = 124; // Großzügiger Abstand zwischen Stift und Item im geöffneten Menü
     const currentOffset = isThisItemTouching
       ? touchCurrentOffset
       : isSwiped
-      ? -96
+      ? -MENU_SWIPE_OFFSET
       : 0;
 
     // Mindestens 70% der Breite nach links ziehen, um direkt zu löschen
     const itemWidth = touchStartRef.current?.itemWidth || 360;
     const deleteThreshold = itemWidth * 0.7;
-    const isFullSwipeDelete = isThisItemTouching && currentOffset <= -deleteThreshold;
+    const pullDistance = Math.max(0, -currentOffset);
+    const isFullSwipeDelete = isThisItemTouching && pullDistance >= deleteThreshold;
+
+    // Wenn weiter links geswipt wird als das geöffnete Menü (pullDistance > 124px)
+    const isSwipingPastMenu = isThisItemTouching && pullDistance > MENU_SWIPE_OFFSET && !isFullSwipeDelete;
+    const extraPull = isSwipingPastMenu ? pullDistance - MENU_SWIPE_OFFSET : 0;
+
+    // Stift verblasst geschmeidig, sobald der Mülleimer sich verlängert
+    const pencilOpacity = isSwipingPastMenu
+      ? Math.max(0, 1 - extraPull / 24)
+      : isFullSwipeDelete
+      ? 0
+      : 1;
+
+    // Mülleimer wird dynamisch immer länger, bis er bei ~70% vollflächig wird
+    const expandingTrashWidth = isSwipingPastMenu
+      ? Math.min(itemWidth - 28, 40 + extraPull * 1.25)
+      : 40;
 
     return (
       <div
@@ -659,19 +677,24 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           <div className="absolute bottom-0 left-2 right-2 h-1 bg-[#4A7856] rounded-full z-30 pointer-events-none shadow-xs" />
         )}
 
-        {/* Background Action Tray (Immer vollflächig im Menü-Hintergrund #FAF9F6) */}
+        {/* Background Action Tray: Im Grundzustand/Swipe #FAF9F6, bei >=70% dunkleres Rot (#C93B2B) */}
         <div
-          className="absolute inset-0 z-0 rounded-2xl bg-[#FAF9F6] border border-[#ECEBE8] flex items-center justify-end px-3 gap-2 overflow-hidden"
+          className={`absolute inset-0 z-0 rounded-2xl overflow-hidden flex items-center justify-end transition-[background-color,border-color] duration-150 ease-out ${
+            isFullSwipeDelete
+              ? 'bg-[#C93B2B] border border-[#C93B2B]'
+              : 'bg-[#FAF9F6] border border-[#ECEBE8] px-3.5'
+          }`}
         >
           {isFullSwipeDelete ? (
-            /* Apple Full-Swipe: Dezente rote Löschen-Pille auf dem Menü-Hintergrund (#FAF9F6) */
-            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#E54D2E] text-white font-semibold text-xs shadow-xs animate-in fade-in zoom-in-95 duration-150">
-              <Trash2 className="w-4 h-4 stroke-[2.5]" />
+            /* Apple Full-Swipe: Bei ~70% nimmt das dunklere Rot komplett den Background Space ein (Zeichen für Löschen) */
+            <div className="flex items-center justify-end w-full px-6 gap-2.5 text-white font-semibold text-sm animate-in fade-in zoom-in-95 duration-150">
+              <Trash2 className="w-5 h-5 stroke-[2.5] scale-110 transition-transform" />
               <span>Löschen</span>
             </div>
           ) : (
-            /* Standard-Tray mit Bearbeiten & Löschen */
-            <>
+            /* Standard-Tray mit Stift und dynamisch länger werdendem Mülleimer */
+            <div className="flex items-center justify-end gap-2 h-full py-1.5 overflow-hidden">
+              {/* Stift: Verblasst, wenn man über das Menü hinaus swipt */}
               <button
                 data-swipe-action="true"
                 type="button"
@@ -680,12 +703,20 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   setSwipedItemId(null);
                   startEditingItem(item);
                 }}
-                className="w-10 h-10 rounded-xl bg-white text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs"
+                style={{
+                  opacity: pencilOpacity,
+                  transform: `scale(${0.85 + 0.15 * pencilOpacity})`,
+                  pointerEvents: pencilOpacity < 0.2 ? 'none' : 'auto',
+                  transition: isThisItemTouching ? 'none' : 'opacity 0.2s, transform 0.2s',
+                }}
+                className="w-10 h-10 rounded-xl bg-white text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0"
                 title="Menge anpassen"
                 aria-label="Menge anpassen"
               >
                 <Pencil className="w-4 h-4" />
               </button>
+
+              {/* Mülleimer: Wird dynamisch länger, je weiter man nach links zieht */}
               <button
                 data-swipe-action="true"
                 type="button"
@@ -693,13 +724,26 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   e.stopPropagation();
                   handleDeleteBySwipe(item);
                 }}
-                className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs"
+                style={{
+                  width: isSwipingPastMenu ? `${expandingTrashWidth}px` : '40px',
+                  transition: isThisItemTouching ? 'none' : 'width 0.28s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s',
+                }}
+                className={`h-10 rounded-xl flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0 transition-colors ${
+                  isSwipingPastMenu
+                    ? 'bg-rose-100 text-rose-700 border border-rose-300 px-3'
+                    : 'w-10 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
+                }`}
                 title="Artikel löschen"
                 aria-label="Artikel löschen"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 shrink-0 stroke-[2.2]" />
+                {isSwipingPastMenu && expandingTrashWidth > 72 && (
+                  <span className="text-xs font-semibold whitespace-nowrap animate-in fade-in duration-100">
+                    Löschen
+                  </span>
+                )}
               </button>
-            </>
+            </div>
           )}
         </div>
 
@@ -717,7 +761,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             touchStartRef.current = {
               startX: touch.clientX,
               startY: touch.clientY,
-              baseOffset: swipedItemId === item.id ? -96 : 0,
+              baseOffset: swipedItemId === item.id ? -MENU_SWIPE_OFFSET : 0,
               itemWidth: width,
             };
             setActiveTouchItemId(item.id);
@@ -756,7 +800,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 // Erst wenn bis ca. 70% der Breite gezogen wurde: direkt löschen
                 handleDeleteBySwipe(item);
               } else if (touchCurrentOffset < -40) {
-                // Sonst öffnet sich das Menü (-96px)
+                // Sonst öffnet sich das Menü (-124px) mit angenehmer Lücke zum Stift
                 setSwipedItemId(item.id);
                 setActiveTouchItemId(null);
                 setTouchCurrentOffset(0);

@@ -484,15 +484,24 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
               // Mobile Touch & Swipe Offset
               const isSwiped = swipedLogId === log.id;
               const isThisItemTouching = activeTouchLogId === log.id;
+              const MENU_SWIPE_OFFSET = 72; // Angenehmer Abstand im geöffneten Zustand
               const currentOffset = isThisItemTouching
                 ? touchCurrentOffset
                 : isSwiped
-                ? -96
+                ? -MENU_SWIPE_OFFSET
                 : 0;
 
               const itemWidth = touchStartRef.current?.itemWidth || 360;
               const deleteThreshold = itemWidth * 0.7; // ~70% Schwelle
-              const isFullSwipeDelete = isThisItemTouching && currentOffset <= -deleteThreshold;
+              const pullDistance = Math.max(0, -currentOffset);
+              const isFullSwipeDelete = isThisItemTouching && pullDistance >= deleteThreshold;
+
+              // Wenn weiter links geswipt wird als das Menü
+              const isSwipingPastMenu = isThisItemTouching && pullDistance > MENU_SWIPE_OFFSET && !isFullSwipeDelete;
+              const extraPull = isSwipingPastMenu ? pullDistance - MENU_SWIPE_OFFSET : 0;
+              const expandingTrashWidth = isSwipingPastMenu
+                ? Math.min(itemWidth - 28, 40 + extraPull * 1.25)
+                : 40;
 
               return (
                 <div
@@ -500,16 +509,22 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                   data-swipe-log={log.id}
                   className="relative overflow-hidden rounded-2xl select-none group touch-pan-y"
                 >
-                  {/* Background Action Tray (Immer vollflächig im Menü-Hintergrund #FAF9F6) */}
+                  {/* Background Action Tray: Im Grundzustand/Swipe #FAF9F6, bei >=70% dunkleres Rot (#C93B2B) */}
                   <div
-                    className="absolute inset-0 z-0 rounded-2xl bg-[#FAF9F6] border border-[#ECEBE8] flex items-center justify-end px-3 gap-2 overflow-hidden"
+                    className={`absolute inset-0 z-0 rounded-2xl overflow-hidden flex items-center justify-end transition-[background-color,border-color] duration-150 ease-out ${
+                      isFullSwipeDelete
+                        ? 'bg-[#C93B2B] border border-[#C93B2B]'
+                        : 'bg-[#FAF9F6] border border-[#ECEBE8] px-3.5'
+                    }`}
                   >
                     {isFullSwipeDelete ? (
-                      <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#E54D2E] text-white font-semibold text-xs shadow-xs animate-in fade-in zoom-in-95 duration-150">
-                        <Trash2 className="w-4 h-4 stroke-[2.5]" />
+                      /* Apple Full-Swipe: Bei ~70% nimmt das dunklere Rot komplett den Background Space ein */
+                      <div className="flex items-center justify-end w-full px-6 gap-2.5 text-white font-semibold text-sm animate-in fade-in zoom-in-95 duration-150">
+                        <Trash2 className="w-5 h-5 stroke-[2.5] scale-110 transition-transform" />
                         <span>Löschen</span>
                       </div>
                     ) : (
+                      /* Mülleimer wird dynamisch länger, wenn weiter links gewischt wird */
                       <button
                         data-swipe-action="true"
                         type="button"
@@ -517,11 +532,24 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                           e.stopPropagation();
                           handleDeleteBySwipeLog(log);
                         }}
-                        className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs"
+                        style={{
+                          width: isSwipingPastMenu ? `${expandingTrashWidth}px` : '40px',
+                          transition: isThisItemTouching ? 'none' : 'width 0.28s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s',
+                        }}
+                        className={`h-10 rounded-xl flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0 transition-colors ${
+                          isSwipingPastMenu
+                            ? 'bg-rose-100 text-rose-700 border border-rose-300 px-3'
+                            : 'w-10 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
+                        }`}
                         title="Eintrag entfernen"
                         aria-label="Eintrag entfernen"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4 shrink-0 stroke-[2.2]" />
+                        {isSwipingPastMenu && expandingTrashWidth > 72 && (
+                          <span className="text-xs font-semibold whitespace-nowrap animate-in fade-in duration-100">
+                            Löschen
+                          </span>
+                        )}
                       </button>
                     )}
                   </div>
@@ -538,7 +566,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                       touchStartRef.current = {
                         startX: touch.clientX,
                         startY: touch.clientY,
-                        baseOffset: swipedLogId === log.id ? -96 : 0,
+                        baseOffset: swipedLogId === log.id ? -MENU_SWIPE_OFFSET : 0,
                         itemWidth: width,
                       };
                       setActiveTouchLogId(log.id);
