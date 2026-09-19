@@ -211,7 +211,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
         servings: raw.servings || 2,
         rating: 5.0,
         reviewCount: 1,
-        tags: ['KI-Kreation', isVegan ? 'Vegan' : 'Vegetarisch', 'Resteverwertung'],
+        tags: [isVegan ? 'Vegan' : 'Vegetarisch', 'Resteverwertung', 'Schnelle Küche'],
         nutrients: {
           calories: raw.calories || 450,
           protein: raw.protein || 20,

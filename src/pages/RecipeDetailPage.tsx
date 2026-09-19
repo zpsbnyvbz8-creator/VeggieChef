@@ -393,11 +393,6 @@ export const RecipeDetailPage: React.FC = () => {
               <span className="px-2.5 py-1 rounded-full bg-white/20 text-white text-xs backdrop-blur-xs font-medium">
                 {recipe.category}
               </span>
-              {recipe.isCustomAi && (
-                <span className="px-2.5 py-1 rounded-full bg-[#E67E22] text-white text-xs font-semibold flex items-center gap-1 shadow-xs">
-                  <Sparkles className="w-3 h-3" /> KI-Kreation
-                </span>
-              )}
             </div>
             <h1 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight leading-tight">
               {recipe.title}

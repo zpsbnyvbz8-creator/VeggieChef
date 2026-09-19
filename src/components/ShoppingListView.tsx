@@ -111,7 +111,32 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const [swipedItemId, setSwipedItemId] = useState<string | null>(null);
   const [activeTouchItemId, setActiveTouchItemId] = useState<string | null>(null);
   const [touchCurrentOffset, setTouchCurrentOffset] = useState<number>(0);
-  const touchStartRef = useRef<{ startX: number; startY: number; baseOffset: number } | null>(null);
+  const touchStartRef = useRef<{ startX: number; startY: number; baseOffset: number; itemWidth?: number } | null>(null);
+
+  // Auto-close swiped menu when tapping anywhere on the screen
+  useEffect(() => {
+    if (!swipedItemId) return;
+
+    const handleGlobalTap = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      // Falls auf einen Aktionsbutton im Menü geklickt wird, Aktion ausführen lassen
+      if (target?.closest('[data-swipe-action="true"]')) {
+        return;
+      }
+      // Ansonsten schließt jeder Klick/Tap irgendwo auf den Bildschirm das Menü
+      setSwipedItemId(null);
+    };
+
+    // Leichte Verzögerung damit nicht das Loslassen des Touches sofort schließt
+    const timer = setTimeout(() => {
+      window.addEventListener('pointerdown', handleGlobalTap, true);
+    }, 40);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('pointerdown', handleGlobalTap, true);
+    };
+  }, [swipedItemId]);
 
   // Accordion states: completed section & categories
   const [showCompletedSection, setShowCompletedSection] = useState(false);
@@ -418,6 +443,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
   // --- Drag and Drop: Items (Artikel) - Geschmeidiges Verschieben & Nachrücken ---
   const handleDragStartItem = (e: React.DragEvent, itemId: string) => {
+    // Ein Item mit geöffnetem Menü oder solange ein Menü offen ist, kann nicht verschoben werden
+    if (swipedItemId !== null) {
+      e.preventDefault();
+      return;
+    }
     e.stopPropagation();
     e.dataTransfer.setData('text/plain', itemId);
     e.dataTransfer.effectAllowed = 'move';
@@ -571,6 +601,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const renderItemRow = (item: ShoppingItem) => {
     const isEditing = editingItemId === item.id;
     const isSwiped = swipedItemId === item.id;
+    const isAnySwiped = swipedItemId !== null;
     const isBeingDragged = draggedItemId === item.id;
     const isDragOver = dragOverItemId === item.id;
 
@@ -582,12 +613,16 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       ? -96
       : 0;
 
-    const isFullSwipeDelete = isThisItemTouching && currentOffset <= -135;
+    // Mindestens 70% der Breite nach links ziehen, um direkt zu löschen
+    const itemWidth = touchStartRef.current?.itemWidth || 360;
+    const deleteThreshold = itemWidth * 0.7;
+    const isFullSwipeDelete = isThisItemTouching && currentOffset <= -deleteThreshold;
 
     return (
       <div
         key={item.id}
-        draggable={!isEditing}
+        data-swipe-item={item.id}
+        draggable={!isEditing && !isSwiped && !isAnySwiped}
         onDragStart={(e) => handleDragStartItem(e, item.id)}
         onDragOver={(e) => handleDragOverItem(e, item.id)}
         onDragLeave={(e) => {
@@ -621,7 +656,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
         {/* Background Action Tray (iOS-Style: wächst bei weitem Swipe und löscht beim Loslassen) */}
         <div
-          className={`absolute inset-y-0 right-0 flex items-center justify-end z-0 rounded-r-2xl overflow-hidden transition-colors ${
+          className={`absolute inset-y-0 right-0 flex items-center justify-end z-0 rounded-r-2xl overflow-hidden transition-all duration-200 ${
             isFullSwipeDelete
               ? 'w-full bg-rose-600 px-6'
               : 'bg-[#FAF9F6] border-y border-r border-[#ECEBE8] px-3 gap-1.5'
@@ -637,6 +672,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             /* Standard-Tray mit Bearbeiten & Löschen */
             <>
               <button
+                data-swipe-action="true"
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -650,6 +686,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <Pencil className="w-4 h-4" />
               </button>
               <button
+                data-swipe-action="true"
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -669,11 +706,18 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         <div
           onTouchStart={(e) => {
             if (isEditing) return;
+            // Falls bereits ein anderes Menü offen ist, dieses zuerst schließen
+            if (swipedItemId && swipedItemId !== item.id) {
+              setSwipedItemId(null);
+            }
             const touch = e.touches[0];
+            const targetEl = e.currentTarget as HTMLElement;
+            const width = targetEl.offsetWidth || window.innerWidth;
             touchStartRef.current = {
               startX: touch.clientX,
               startY: touch.clientY,
               baseOffset: swipedItemId === item.id ? -96 : 0,
+              itemWidth: width,
             };
             setActiveTouchItemId(item.id);
           }}
@@ -688,34 +732,39 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               return;
             }
 
+            const width = touchStartRef.current.itemWidth || 360;
             const rawOffset = touchStartRef.current.baseOffset + diffX;
-            // Nach links swipen (bis zu -260px) und nach rechts klemmen (max 0px)
-            const clamped = Math.min(0, Math.max(-260, rawOffset));
+            // Nach links swipen (bis zum linken Bildschirmrand: -width) und nach rechts klemmen (max 0px)
+            const clamped = Math.min(0, Math.max(-width, rawOffset));
             setTouchCurrentOffset(clamped);
           }}
           onTouchEnd={() => {
             if (!touchStartRef.current) return;
+            const width = touchStartRef.current.itemWidth || 360;
+            const deleteThreshold = width * 0.7; // Exakt ~70% der Breite
             touchStartRef.current = null;
 
             if (isThisItemTouching) {
-              if (touchCurrentOffset <= -135) {
-                // Apple iOS Full-Swipe: Löschen ausführen
+              if (touchCurrentOffset <= -deleteThreshold) {
+                // Erst wenn bis ca. 70% der Breite gezogen wurde: direkt löschen
                 handleDeleteBySwipe(item);
-              } else if (touchCurrentOffset < -45) {
-                // Menü öffnen (-96px)
+              } else if (touchCurrentOffset < -35) {
+                // Sonst öffnet sich das Menü (-96px)
                 setSwipedItemId(item.id);
                 setActiveTouchItemId(null);
                 setTouchCurrentOffset(0);
               } else {
-                // Schließen (0px)
+                // Unter 35px: zurückfedern (0px)
                 setSwipedItemId(null);
                 setActiveTouchItemId(null);
                 setTouchCurrentOffset(0);
               }
             }
           }}
-          onClick={() => {
-            if (isSwiped) {
+          onClick={(e) => {
+            // Wenn ein Menü offen ist, schließt ein Klick nur das Menü und hakt das Item NICHT ab
+            if (isAnySwiped) {
+              e.stopPropagation();
               setSwipedItemId(null);
               return;
             }
@@ -725,7 +774,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           }}
           style={{
             transform: `translateX(${currentOffset}px)`,
-            transition: isThisItemTouching ? 'none' : 'transform 0.2s ease-out',
+            transition: isThisItemTouching ? 'none' : 'transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1)',
           }}
           className={`relative z-10 flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border gap-2.5 sm:gap-3 min-h-[54px] ${
             isEditing
@@ -741,6 +790,13 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           <div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
             {/* Checkbox */}
             <div
+              onClick={(e) => {
+                if (isAnySwiped) {
+                  e.stopPropagation();
+                  setSwipedItemId(null);
+                  return;
+                }
+              }}
               className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors shrink-0 ${
                 item.completed
                   ? 'bg-[#4A7856] border-[#4A7856] text-white'
@@ -875,8 +931,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
             {/* Drag Handle am äußersten rechten Rand */}
             <div
-              className="p-1 text-[#B5B9B6] hover:text-[#2D3E40] cursor-grab active:cursor-grabbing transition-colors hidden sm:flex items-center justify-center"
-              title="Gedrückt halten zum Verschieben"
+              className={`p-1 transition-colors hidden sm:flex items-center justify-center ${
+                isAnySwiped
+                  ? 'text-[#E0E2E0] opacity-30 cursor-not-allowed pointer-events-none'
+                  : 'text-[#B5B9B6] hover:text-[#2D3E40] cursor-grab active:cursor-grabbing'
+              }`}
+              title={isAnySwiped ? 'Verschieben gesperrt' : 'Gedrückt halten zum Verschieben'}
             >
               <GripVertical className="w-3.5 h-3.5" />
             </div>

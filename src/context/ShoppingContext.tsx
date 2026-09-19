@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ShoppingItem, Recipe } from '../types';
-import { loadFromLocalStorage, saveToLocalStorage, mergeOrAddShoppingItems, smartRoundGroceryAmount } from '../utils/helpers';
+import { loadFromLocalStorage, saveToLocalStorage, mergeOrAddShoppingItems, smartRoundGroceryAmount, cleanIngredientNameForShopping } from '../utils/helpers';
 import { subscribeToFamilyShopping } from '../lib/syncService';
 import { useToast } from './ToastContext';
 import { useSync } from './SyncContext';
@@ -101,7 +101,7 @@ export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       return {
         id: `shop-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        name: ing.name,
+        name: cleanIngredientNameForShopping(ing.name),
         amount: calcAmount,
         unit: ing.unit,
         category: ing.category,
@@ -126,7 +126,7 @@ export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
         return {
           id: `shop-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-          name: ing.name,
+          name: cleanIngredientNameForShopping(ing.name),
           amount: calcAmount,
           unit: ing.unit,
           category: ing.category,

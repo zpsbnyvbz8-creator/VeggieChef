@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   BarChart3, 
@@ -65,6 +65,44 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
   // Mobile clean view toggle: 'history' or 'achievements'
   const [activeMobileTab, setActiveMobileTab] = useState<'history' | 'achievements'>('history');
 
+  // Inline-Bestätigung für PC beim Löschen eines Eintrags (kein Pop-up)
+  const [confirmDeleteLogId, setConfirmDeleteLogId] = useState<string | null>(null);
+
+  // Mobile Swipe-to-Delete state (70% Schwelle & Menü)
+  const [swipedLogId, setSwipedLogId] = useState<string | null>(null);
+  const [activeTouchLogId, setActiveTouchLogId] = useState<string | null>(null);
+  const [touchCurrentOffset, setTouchCurrentOffset] = useState<number>(0);
+  const touchStartRef = useRef<{ startX: number; startY: number; baseOffset: number; itemWidth?: number } | null>(null);
+
+  // Auto-close inline confirmation when clicking outside
+  useEffect(() => {
+    if (!confirmDeleteLogId) return;
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('[data-inline-confirm="true"]')) return;
+      setConfirmDeleteLogId(null);
+    };
+    window.addEventListener('pointerdown', handleOutsideClick);
+    return () => window.removeEventListener('pointerdown', handleOutsideClick);
+  }, [confirmDeleteLogId]);
+
+  // Auto-close swiped log menu when clicking or tapping anywhere on screen
+  useEffect(() => {
+    if (!swipedLogId) return;
+    const handleGlobalTap = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('[data-swipe-action="true"]')) return;
+      setSwipedLogId(null);
+    };
+    const timer = setTimeout(() => {
+      window.addEventListener('pointerdown', handleGlobalTap, true);
+    }, 40);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('pointerdown', handleGlobalTap, true);
+    };
+  }, [swipedLogId]);
+
   useLockBodyScroll(showConfirmModal);
 
   // Auto-dismiss undo banner after 10s
@@ -104,6 +142,14 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
 
   const handleDeleteSingleLog = (id: string) => {
     setLogs((prev) => prev.filter((l) => l.id !== id));
+  };
+
+  const handleDeleteBySwipeLog = (log: CookedLog) => {
+    handleDeleteSingleLog(log.id);
+    setSwipedLogId(null);
+    setActiveTouchLogId(null);
+    setTouchCurrentOffset(0);
+    onCopyFeedback(`"${log.recipeTitle}" aus Verlauf entfernt.`);
   };
 
   // Sort logs by date descending
@@ -430,60 +476,200 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                 (r) => r.id === log.recipeId || r.title.toLowerCase() === log.recipeTitle.toLowerCase()
               );
 
+              // Mobile Touch & Swipe Offset
+              const isSwiped = swipedLogId === log.id;
+              const isThisItemTouching = activeTouchLogId === log.id;
+              const currentOffset = isThisItemTouching
+                ? touchCurrentOffset
+                : isSwiped
+                ? -96
+                : 0;
+
+              const itemWidth = touchStartRef.current?.itemWidth || 360;
+              const deleteThreshold = itemWidth * 0.7; // ~70% Schwelle
+              const isFullSwipeDelete = isThisItemTouching && currentOffset <= -deleteThreshold;
+
               return (
                 <div
                   key={log.id}
-                  className="p-3 sm:p-3.5 bg-[#FAF9F6] rounded-2xl border border-[#ECEBE8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors hover:bg-white hover:border-[#DCDAD5]"
+                  data-swipe-log={log.id}
+                  className="relative overflow-hidden rounded-2xl select-none group touch-pan-y"
                 >
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                      <span className="font-semibold text-[#2D3E40] text-xs sm:text-sm break-words whitespace-normal leading-snug">
-                        {log.recipeTitle}
-                      </span>
-                      {log.isVegan ? (
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] shrink-0">
-                          🌱 Vegan
-                        </span>
-                      ) : (
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white text-[#2D3E40] border border-[#ECEBE8] shrink-0">
-                          🧀 Veggie
-                        </span>
-                      )}
-                    </div>
-
-                    {log.notes && (
-                      <p className="text-xs text-[#7A7E7B] italic line-clamp-1">
-                        "{log.notes}"
-                      </p>
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs text-[#7A7E7B]">
-                      <span>📅 {formattedDate}</span>
-                      <span>👥 {log.servingsCooked || 2} Port.</span>
-                      <span className="text-[#4A7856] font-medium">🌱 {log.savedCO2Kg} kg CO₂</span>
-                      <span>💧 {log.savedWaterLiters.toLocaleString('de-DE')} L</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                    {matchedRecipe && (
+                  {/* Background Action Tray (iOS-Style für Mobile) */}
+                  <div
+                    className={`absolute inset-y-0 right-0 flex items-center justify-end z-0 rounded-r-2xl overflow-hidden transition-all duration-200 ${
+                      isFullSwipeDelete
+                        ? 'w-full bg-rose-600 px-6'
+                        : 'bg-[#FAF9F6] border-y border-r border-[#ECEBE8] px-3 gap-1.5'
+                    }`}
+                  >
+                    {isFullSwipeDelete ? (
+                      <div className="flex items-center gap-2 text-white font-bold text-sm">
+                        <Trash2 className="w-5 h-5 stroke-[2.5] scale-125 transition-transform" />
+                        <span>Löschen</span>
+                      </div>
+                    ) : (
                       <button
-                        onClick={() => onSelectRecipe(matchedRecipe)}
-                        className="px-3.5 sm:px-3 py-2 sm:py-1.5 rounded-xl bg-white hover:bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer min-h-[42px] sm:min-h-0 touch-manipulation active:scale-95"
+                        data-swipe-action="true"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteBySwipeLog(log);
+                        }}
+                        className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-xs"
+                        title="Eintrag entfernen"
+                        aria-label="Eintrag entfernen"
                       >
-                        <BookOpen className="w-4 h-4" />
-                        <span>Rezept</span>
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     )}
+                  </div>
 
-                    <button
-                      onClick={() => handleDeleteSingleLog(log.id)}
-                      className="w-10.5 h-10.5 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-white sm:bg-[#FAF9F6] text-rose-500 hover:text-rose-600 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs shrink-0"
-                      title="Eintrag entfernen"
-                      aria-label="Eintrag entfernen"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  {/* Foreground Log Card */}
+                  <div
+                    onTouchStart={(e) => {
+                      if (swipedLogId && swipedLogId !== log.id) {
+                        setSwipedLogId(null);
+                      }
+                      const touch = e.touches[0];
+                      const targetEl = e.currentTarget as HTMLElement;
+                      const width = targetEl.offsetWidth || window.innerWidth;
+                      touchStartRef.current = {
+                        startX: touch.clientX,
+                        startY: touch.clientY,
+                        baseOffset: swipedLogId === log.id ? -96 : 0,
+                        itemWidth: width,
+                      };
+                      setActiveTouchLogId(log.id);
+                    }}
+                    onTouchMove={(e) => {
+                      if (!touchStartRef.current) return;
+                      const touch = e.touches[0];
+                      const diffX = touch.clientX - touchStartRef.current.startX;
+                      const diffY = touch.clientY - touchStartRef.current.startY;
+
+                      if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffX) < 10) {
+                        return;
+                      }
+
+                      const width = touchStartRef.current.itemWidth || 360;
+                      const rawOffset = touchStartRef.current.baseOffset + diffX;
+                      const clamped = Math.min(0, Math.max(-width, rawOffset));
+                      setTouchCurrentOffset(clamped);
+                    }}
+                    onTouchEnd={() => {
+                      if (!touchStartRef.current) return;
+                      const width = touchStartRef.current.itemWidth || 360;
+                      const deleteThreshold = width * 0.7;
+                      touchStartRef.current = null;
+
+                      if (isThisItemTouching) {
+                        if (touchCurrentOffset <= -deleteThreshold) {
+                          handleDeleteBySwipeLog(log);
+                        } else if (touchCurrentOffset < -35) {
+                          setSwipedLogId(log.id);
+                          setActiveTouchLogId(null);
+                          setTouchCurrentOffset(0);
+                        } else {
+                          setSwipedLogId(null);
+                          setActiveTouchLogId(null);
+                          setTouchCurrentOffset(0);
+                        }
+                      }
+                    }}
+                    onClick={() => {
+                      if (swipedLogId) {
+                        setSwipedLogId(null);
+                      }
+                    }}
+                    style={{
+                      transform: `translateX(${currentOffset}px)`,
+                      transition: isThisItemTouching ? 'none' : 'transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1)',
+                    }}
+                    className="relative z-10 p-3 sm:p-3.5 bg-[#FAF9F6] rounded-2xl border border-[#ECEBE8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors hover:bg-white hover:border-[#DCDAD5]"
+                  >
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <span className="font-semibold text-[#2D3E40] text-xs sm:text-sm break-words whitespace-normal leading-snug">
+                          {log.recipeTitle}
+                        </span>
+                        {log.isVegan ? (
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] shrink-0">
+                            🌱 Vegan
+                          </span>
+                        ) : (
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white text-[#2D3E40] border border-[#ECEBE8] shrink-0">
+                            🧀 Veggie
+                          </span>
+                        )}
+                      </div>
+
+                      {log.notes && (
+                        <p className="text-xs text-[#7A7E7B] italic line-clamp-1">
+                          "{log.notes}"
+                        </p>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs text-[#7A7E7B]">
+                        <span>📅 {formattedDate}</span>
+                        <span>👥 {log.servingsCooked || 2} Port.</span>
+                        <span className="text-[#4A7856] font-medium">🌱 {log.savedCO2Kg} kg CO₂</span>
+                        <span>💧 {log.savedWaterLiters.toLocaleString('de-DE')} L</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center" onClick={(e) => e.stopPropagation()}>
+                      {matchedRecipe && (
+                        <button
+                          type="button"
+                          onClick={() => onSelectRecipe(matchedRecipe)}
+                          className="px-3.5 sm:px-3 py-2 sm:py-1.5 rounded-xl bg-white hover:bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer min-h-[42px] sm:min-h-0 touch-manipulation active:scale-95"
+                        >
+                          <BookOpen className="w-4 h-4" />
+                          <span>Rezept</span>
+                        </button>
+                      )}
+
+                      {/* PC Inline-Bestätigung (Kein Pop-up) */}
+                      {confirmDeleteLogId === log.id ? (
+                        <div
+                          data-inline-confirm="true"
+                          className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-xl p-1 animate-in fade-in zoom-in-95 duration-150"
+                        >
+                          <span className="text-[11px] font-semibold text-rose-700 px-1.5 hidden sm:inline whitespace-nowrap">
+                            Wirklich löschen?
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleDeleteSingleLog(log.id);
+                              setConfirmDeleteLogId(null);
+                              onCopyFeedback(`"${log.recipeTitle}" aus Verlauf entfernt.`);
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer active:scale-95 touch-manipulation"
+                          >
+                            Löschen
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteLogId(null)}
+                            className="px-2 py-1.5 rounded-lg bg-white hover:bg-[#ECEBE8] text-[#7A7E7B] hover:text-[#2D3E40] border border-[#ECEBE8] text-xs font-semibold transition-colors cursor-pointer active:scale-95 touch-manipulation"
+                          >
+                            Abbrechen
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteLogId(log.id)}
+                          className="w-10.5 h-10.5 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-white sm:bg-[#FAF9F6] text-rose-500 hover:text-rose-600 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs shrink-0"
+                          title="Eintrag entfernen (Bestätigung erforderlich)"
+                          aria-label="Eintrag entfernen"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

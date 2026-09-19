@@ -434,6 +434,35 @@ export function parseNaturalLanguageGroceryItem(rawInput: string): ParsedGrocery
 }
 
 /**
+ * Bereinigt einen Zutatennamen für die Einkaufsliste:
+ * Entfernt Schnittformen, Zubereitungshinweise und Vorbereitungszustände
+ * wie z. B. "(in Ringen)", ", fein gehackt", "(gewürfelt)", "(geschält)", "(in Streifen)".
+ */
+export function cleanIngredientNameForShopping(rawName: string): string {
+  if (!rawName || typeof rawName !== 'string') return '';
+  let name = rawName.trim();
+
+  // 1. Zubereitungshinweise in Klammern entfernen:
+  // z.B. (in Ringen), (in feinen Ringen), (in Scheiben), (gewürfelt), (fein gehackt), (abgetropft), (entkernt), (in Röllchen) etc.
+  const prepInParentheses = /\s*\((?:[^)]*(?:ring|würfel|wuerfel|hack|schnitt|schneid|schäl|schael|reib|rasp|tropf|koch|brat|back|gar|streif|scheib|viertel|halb|zerdrück|zerdrueck|zupf|röllchen|roellchen|saft|abrieb|geputzt|vorgekocht|aufgetaut|mariniert|gewaschen|warm|kalt|optional|nach\s+belieben|nach\s+geschmack)[^)]*)\)/gi;
+  name = name.replace(prepInParentheses, '');
+
+  // 2. Generelle Klammern mit reinen Zubereitungszuständen
+  name = name.replace(/\s*\((?:fein|grob|frisch|geputzt|halbiert|geviertelt|gegart|gebraten|vorgegart|blanchiert)\)/gi, '');
+
+  // 3. Zubereitungshinweise nach Komma entfernen:
+  // z.B. "Zwiebel, in Ringen", "Tofu, gewürfelt", "Knoblauch, fein gehackt"
+  const prepAfterComma = /,\s*(?:in\s+[^,]+|fein\s+[^,]+|grob\s+[^,]+|gewürfelt|wuerfelt|gehackt|geschnitten|geschält|geschaelt|gerieben|geraspelt|abgetropft|entkernt|zerdrückt|zerdrueckt|in\s+Ringen|in\s+Scheiben|in\s+Streifen|in\s+Würfeln?|in\s+Röllchen|geputzt|halbiert|geviertelt|nach\s+Belieben|nach\s+Geschmack)\s*$/i;
+  name = name.replace(prepAfterComma, '');
+
+  // 4. Mehrfache Leerzeichen und verwaiste Satzzeichen bereinigen
+  name = name.replace(/\s{2,}/g, ' ').trim();
+  name = name.replace(/[,;:-]$/, '').trim();
+
+  return name || rawName.trim();
+}
+
+/**
  * Normalisiert einen Zutatennamen für den intelligenten Abgleich (z. B. Plural/Singular, Artikel, Adjektive)
  */
 export function normalizeIngredientName(raw: string): string {
@@ -516,7 +545,12 @@ export function mergeOrAddShoppingItem(
   existingItems: ShoppingItem[],
   newItem: ShoppingItem
 ): ShoppingItem[] {
-  const newName = newItem.name.trim();
+  const cleanedNewName = cleanIngredientNameForShopping(newItem.name);
+  const sanitizedItem: ShoppingItem = {
+    ...newItem,
+    name: cleanedNewName || newItem.name.trim(),
+  };
+  const newName = sanitizedItem.name;
   if (!newName) return existingItems;
 
   // Suche vorrangig nach einem noch nicht abgehakten Artikel mit gleichem oder äquivalentem Namen
@@ -525,7 +559,7 @@ export function mergeOrAddShoppingItem(
   );
 
   if (existingIdx === -1) {
-    return [...existingItems, newItem];
+    return [...existingItems, sanitizedItem];
   }
 
   const existing = existingItems[existingIdx];

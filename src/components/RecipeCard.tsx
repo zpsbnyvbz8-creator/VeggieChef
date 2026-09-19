@@ -8,7 +8,6 @@ import {
   Copy, 
   Check, 
   ShoppingCart, 
-  Sparkles, 
   ChefHat,
   Plus,
   ThumbsDown,
@@ -104,11 +103,6 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
             ) : (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/95 text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] shadow-xs backdrop-blur-xs">
                 🧀 Veggie
-              </span>
-            )}
-            {recipe.isCustomAi && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FDF6F0] text-[#D35400] border border-[#F5EADF] text-xs font-semibold shadow-xs">
-                <Sparkles className="w-2.5 h-2.5" /> KI
               </span>
             )}
           </div>
