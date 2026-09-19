@@ -693,7 +693,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             </div>
           ) : (
             /* Standard-Tray mit Stift und dynamisch länger werdendem Mülleimer */
-            <div className="flex items-center justify-end gap-2 h-full py-1.5 overflow-hidden">
+            <div className="flex items-center justify-end gap-2 h-full py-1 overflow-hidden">
               {/* Stift: Verblasst, wenn man über das Menü hinaus swipt */}
               <button
                 data-swipe-action="true"
@@ -709,11 +709,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   pointerEvents: pencilOpacity < 0.2 ? 'none' : 'auto',
                   transition: isThisItemTouching ? 'none' : 'opacity 0.2s, transform 0.2s',
                 }}
-                className="w-10 h-10 rounded-xl bg-white text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0"
+                className="w-9 h-9 rounded-xl bg-white text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0"
                 title="Menge anpassen"
                 aria-label="Menge anpassen"
               >
-                <Pencil className="w-4 h-4" />
+                <Pencil className="w-3.5 h-3.5" />
               </button>
 
               {/* Mülleimer: Wird dynamisch länger, je weiter man nach links zieht */}
@@ -725,18 +725,18 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   handleDeleteBySwipe(item);
                 }}
                 style={{
-                  width: isSwipingPastMenu ? `${expandingTrashWidth}px` : '40px',
+                  width: isSwipingPastMenu ? `${expandingTrashWidth}px` : '36px',
                   transition: isThisItemTouching ? 'none' : 'width 0.28s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s',
                 }}
-                className={`h-10 rounded-xl flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0 transition-colors ${
+                className={`h-9 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0 transition-colors ${
                   isSwipingPastMenu
                     ? 'bg-rose-100 text-rose-700 border border-rose-300 px-3'
-                    : 'w-10 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
+                    : 'w-9 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
                 }`}
                 title="Artikel löschen"
                 aria-label="Artikel löschen"
               >
-                <Trash2 className="w-4 h-4 shrink-0 stroke-[2.2]" />
+                <Trash2 className="w-3.5 h-3.5 shrink-0 stroke-[2.2]" />
                 {isSwipingPastMenu && expandingTrashWidth > 72 && (
                   <span className="text-xs font-semibold whitespace-nowrap animate-in fade-in duration-100">
                     Löschen
@@ -829,7 +829,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             transition: isThisItemTouching ? 'none' : 'transform 0.32s cubic-bezier(0.16, 1, 0.3, 1)',
             willChange: isThisItemTouching ? 'transform' : 'auto',
           }}
-          className={`relative z-10 flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border gap-2.5 sm:gap-3 min-h-[54px] ${
+          className={`relative z-10 flex items-center justify-between py-2.5 px-3.5 rounded-2xl border gap-2.5 sm:gap-3 min-h-[46px] ${
             isEditing
               ? 'cursor-default ring-2 ring-[#4A7856]/40 bg-[#FAF9F6]'
               : 'cursor-pointer active:scale-[0.995]'
@@ -1251,7 +1251,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             </div>
 
             {activeItems.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
                 {activeItems.map(renderItemRow)}
               </div>
             ) : (
@@ -1343,7 +1343,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                     }`}
                   >
                     <div className="overflow-hidden">
-                      <div className="p-3 sm:p-4 space-y-2">
+                      <div className="p-3 sm:p-4 space-y-1.5">
                         {activeInCat.map(renderItemRow)}
                       </div>
                     </div>
@@ -1418,8 +1418,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             }}
           >
             <div className="overflow-hidden">
-              <div className="p-4 sm:p-5 space-y-2 border-t border-[#ECEBE8] bg-white">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-2">
+              <div className="p-4 sm:p-5 border-t border-[#ECEBE8] bg-white">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
                   {completedItems.map(renderItemRow)}
                 </div>
               </div>
