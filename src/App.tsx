@@ -78,10 +78,10 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
       {/* View Header with Search Input */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#2D3E40] tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight text-stone-900">
             {isFavorites ? 'Deine Lieblingsrezepte ❤️' : 'Auswahl an Gerichten'}
-          </h2>
-          <p className="text-xs sm:text-sm text-[#7A7E7B] mt-0.5 font-normal">
+          </h1>
+          <p className="text-sm font-medium text-stone-500 mt-1">
             {isFavorites
               ? `${favorites.length} gespeicherte Favoriten`
               : '100% vegetarisch & vegan – nährstoffreich & gelingsicher'}
@@ -94,10 +94,10 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
             id="explorer-add-recipe-btn"
             type="button"
             onClick={() => setIsAddRecipeOpen(true)}
-            className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
+            className="flex items-center gap-2 h-10 px-4 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
             title="Neues Gericht per KI, Foto oder manuell hinzufügen"
           >
-            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <Plus className="w-4 h-4" />
             <span>Neues Gericht</span>
           </button>
 

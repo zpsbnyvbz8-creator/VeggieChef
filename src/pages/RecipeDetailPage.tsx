@@ -340,34 +340,34 @@ export const RecipeDetailPage: React.FC = () => {
         </button>
 
         <div className="flex items-center gap-2">
-          {/* Quick Dislike Button */}
+          {/* Quick Dislike Button: Minimaler Klickbereich 44x44px (w-11 h-11), Icon w-5 h-5 */}
           <button
             id="recipe-detail-dislike-btn"
             type="button"
             onClick={() => toggleDislike(recipe.id)}
-            className={`p-2.5 rounded-xl border transition-all cursor-pointer touch-manipulation active:scale-95 ${
+            className={`w-11 h-11 rounded-xl border flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
               isDisliked
                 ? 'bg-rose-50 border-rose-200 text-rose-600'
-                : 'bg-white border-[#ECEBE8] hover:bg-rose-50/50 hover:text-rose-600 text-[#7A7E7B]'
+                : 'bg-white border-[#ECEBE8] hover:bg-rose-50/50 hover:text-rose-600 text-stone-500'
             }`}
             title={isDisliked ? 'Nicht mehr ablehnen' : 'Gericht seltener anzeigen (Dislike)'}
           >
-            <ThumbsDown className="w-4 h-4" />
+            <ThumbsDown className="w-5 h-5" />
           </button>
 
-          {/* Quick Favorite Button */}
+          {/* Quick Favorite Button: Minimaler Klickbereich 44x44px (w-11 h-11), Icon w-5 h-5 */}
           <button
             id="recipe-detail-fav-btn"
             type="button"
             onClick={() => toggleFavorite(recipe.id)}
-            className={`p-2.5 rounded-xl border transition-all cursor-pointer touch-manipulation active:scale-95 ${
+            className={`w-11 h-11 rounded-xl border flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
               isFavorite
                 ? 'bg-[#FDF6F0] border-[#F5EADF] text-[#D35400]'
-                : 'bg-white border-[#ECEBE8] hover:bg-[#FDF6F0]/50 hover:text-[#D35400] text-[#7A7E7B]'
+                : 'bg-white border-[#ECEBE8] hover:bg-[#FDF6F0]/50 hover:text-[#D35400] text-stone-500'
             }`}
             title="Favorit umschalten"
           >
-            <Heart className={`w-4 h-4 ${isFavorite ? 'fill-[#D35400] text-[#D35400]' : ''}`} />
+            <Heart className={`w-5 h-5 ${isFavorite ? 'fill-[#D35400] text-[#D35400]' : ''}`} />
           </button>
         </div>
       </div>

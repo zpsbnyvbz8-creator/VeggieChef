@@ -92,7 +92,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
   return (
     <div className="space-y-3 bg-white p-3 sm:p-4 rounded-2xl border border-[#ECEBE8] shadow-xs">
       {/* Category Pills & Vegan Filter */}
-      <div className="flex flex-wrap items-center gap-2 pb-1.5 border-b border-[#ECEBE8]">
+      <div className="flex flex-wrap items-center gap-2.5 pb-2 border-b border-[#ECEBE8]">
         {CATEGORIES.map((cat) => {
           const isSelected = filters.category === cat;
           const label = cat === 'all' ? 'Alle Rezepte' : cat;
@@ -101,7 +101,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               key={cat}
               id={`cat-filter-${cat}`}
               onClick={() => setFilters((prev) => ({ ...prev, category: cat }))}
-              className={`min-h-[38px] px-3.5 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center border ${
+              className={`h-10 min-h-[40px] px-3.5 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center border ${
                 isSelected
                   ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs font-semibold'
                   : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#2D3E40]'
@@ -117,7 +117,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
           id="filter-vegan-pill-btn"
           type="button"
           onClick={() => setFilters((prev) => ({ ...prev, onlyVegan: !prev.onlyVegan }))}
-          className={`min-h-[38px] px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border touch-manipulation active:scale-95 flex items-center justify-center ${
+          className={`h-10 min-h-[40px] px-3.5 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all cursor-pointer border touch-manipulation active:scale-95 flex items-center justify-center ${
             filters.onlyVegan
               ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs'
               : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#4A7856] hover:bg-[#F1F5F2]'

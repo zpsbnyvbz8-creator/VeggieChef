@@ -670,34 +670,34 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             </div>
 
             {/* Title & Short Single-Line Subtitle */}
-            <h2 className="text-xl sm:text-2xl font-bold text-[#2D3E40] tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight text-stone-900">
               Dein Wochenplan
-            </h2>
-            <p className="text-xs sm:text-sm text-[#7A7E7B] truncate max-w-xl">
+            </h1>
+            <p className="text-sm font-medium text-stone-500 truncate max-w-xl">
               Mahlzeiten planen, Nährwerte prüfen & Zutaten einkaufen.
             </p>
           </div>
 
-          {/* Primary Action Buttons */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+          {/* Primary Action Buttons: h-12 (48px) for primary CTA or comfortable h-11 on sub-actions */}
+          <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
             {/* AI Generator Modal Trigger */}
             <button
               id="open-ai-meal-plan-modal-btn"
               onClick={() => setShowAIGeneratorModal(true)}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl bg-[#2D3E40] hover:bg-[#1F2C2D] text-white font-semibold text-xs shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-12 px-4 rounded-xl bg-stone-800 hover:bg-stone-900 text-white font-semibold text-sm shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap"
             >
-              <Sparkles className="w-4 h-4 text-[#4A7856]" />
+              <Sparkles className="w-5 h-5 text-emerald-400" />
               <span>KI-Wochenplan</span>
             </button>
 
-            {/* 1-Click All to Shopping List */}
+            {/* 1-Click All to Shopping List - Primary CTA: h-12 (48px), rounded-xl, text-base, font-semibold */}
             <button
               id="transfer-week-to-shopping-btn"
               onClick={handleTransferAllToShopping}
               disabled={totalPlannedMeals === 0}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white font-semibold text-xs shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-12 px-5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white font-semibold text-base shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap"
             >
-              <ShoppingCart className="w-4 h-4" />
+              <ShoppingCart className="w-5 h-5" />
               <span>Alle Zutaten auf Liste</span>
             </button>
           </div>

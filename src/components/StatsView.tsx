@@ -234,10 +234,10 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
           <BarChart3 className="w-3.5 h-3.5" />
           Deine Kochstatistik & Umweltbeitrag
         </div>
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#2D3E40] tracking-tight">
+        <h1 className="text-2xl font-bold tracking-tight text-stone-900">
           Übersicht & Verlauf
-        </h2>
-        <p className="text-xs sm:text-sm text-[#7A7E7B]">
+        </h1>
+        <p className="text-sm font-medium text-stone-500">
           {totalCooked === 0
             ? 'Noch keine Gerichte gekocht. Markiere Rezepte als gekocht, um deine Erfolge zu tracken.'
             : `${totalCooked} Mahlzeiten zubereitet • ${totalPortions} Portionen • ${totalCO2Saved} kg CO₂ eingespart`}

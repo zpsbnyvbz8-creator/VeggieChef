@@ -128,7 +128,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
                 id="header-sync-modal-btn"
                 type="button"
                 onClick={onOpenSyncModal}
-                className={`flex items-center gap-1 sm:gap-1.5 h-10 px-2.5 sm:px-3 rounded-xl text-xs font-semibold transition-all border cursor-pointer touch-manipulation active:scale-95 ${
+                className={`flex items-center gap-1 sm:gap-1.5 min-h-[44px] px-3 rounded-xl text-xs font-semibold transition-all border cursor-pointer touch-manipulation active:scale-95 ${
                   syncConfig?.mode === 'family' && syncConfig?.groupId
                     ? 'bg-[#F1F5F2] text-[#4A7856] border-[#4A7856]/40 shadow-2xs hover:bg-[#e4ede6]'
                     : 'bg-white text-[#7A7E7B] border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-[#2D3E40]'
@@ -142,51 +142,51 @@ export const Header: React.FC<HeaderProps> = (props) => {
                 {syncConfig?.mode === 'family' && syncConfig?.groupId ? (
                   <>
                     <span className="w-2 h-2 rounded-full bg-[#4A7856] animate-pulse shrink-0" />
-                    <Users className="w-4 h-4 text-[#4A7856]" />
+                    <Users className="w-5 h-5 text-[#4A7856]" />
                     <span className="hidden sm:inline font-medium truncate max-w-[80px]">
                       {syncConfig.groupName || syncConfig.groupId}
                     </span>
                   </>
                 ) : (
                   <>
-                    <Cloud className="w-4 h-4 text-[#7A7E7B]" />
+                    <Cloud className="w-5 h-5 text-[#7A7E7B]" />
                     <span className="hidden sm:inline font-normal">Sync</span>
                   </>
                 )}
               </button>
             )}
 
-            {/* Favorites Icon Button */}
+            {/* Favorites Icon Button - 44x44px touch target (w-11 h-11), 20px icon (w-5 h-5) */}
             <button
               id="nav-tab-favorites"
               type="button"
               onClick={() => handleNavigate('/favorites')}
-              className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#D35400] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
+              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#D35400] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
                 activeTab === 'favorites' ? 'bg-[#FDF6F0] text-[#D35400] border-[#F5EADF]' : 'bg-white sm:bg-transparent border-[#ECEBE8] sm:border-transparent'
               }`}
               title="Gespeicherte Favoriten"
             >
               <Heart className={`w-5 h-5 ${favoritesCount > 0 && activeTab === 'favorites' ? 'fill-[#D35400] text-[#D35400]' : ''}`} />
               {favoritesCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#D35400] text-white rounded-full text-[10px] font-bold flex items-center justify-center shadow-xs">
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#D35400] text-white rounded-full text-xs font-semibold flex items-center justify-center shadow-xs">
                   {favoritesCount}
                 </span>
               )}
             </button>
 
-            {/* Shopping List Quick Icon Button */}
+            {/* Shopping List Quick Icon Button - 44x44px touch target (w-11 h-11), 20px icon (w-5 h-5) */}
             <button
               id="nav-tab-shopping-badge"
               type="button"
               onClick={() => handleNavigate('/shopping')}
-              className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
+              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
                 activeTab === 'shopping' ? 'bg-[#F1F5F2] text-[#4A7856] border-[#4A7856]/30' : 'bg-white sm:bg-transparent border-[#ECEBE8] sm:border-transparent'
               }`}
               title="Einkaufsliste"
             >
               <ShoppingCart className="w-5 h-5" />
               {shoppingCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#4A7856] text-white rounded-full text-[10px] font-bold flex items-center justify-center shadow-xs">
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#4A7856] text-white rounded-full text-xs font-semibold flex items-center justify-center shadow-xs">
                   {shoppingCount}
                 </span>
               )}

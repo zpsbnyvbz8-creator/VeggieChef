@@ -275,15 +275,15 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
             <span className="hidden xs:inline text-xs font-semibold">Minimieren</span>
           </button>
 
-          {/* Close Cooking Mode */}
+          {/* Close Cooking Mode: 44x44px touch target, 20x20px icon */}
           <button
             id="cooking-mode-close-btn"
             type="button"
             onClick={onClose}
-            className="p-1.5 sm:p-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/90 transition-colors cursor-pointer"
+            className="w-11 h-11 rounded-xl bg-white/10 hover:bg-white/15 text-white/90 flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95"
             title="Kochmodus beenden"
           >
-            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -477,26 +477,27 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
           type="button"
           disabled={currentStepIndex === 0}
           onClick={handlePrev}
-          className="flex items-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[40px] px-4 sm:px-5 py-2.5 sm:py-2.5 rounded-xl bg-white/10 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold text-xs sm:text-sm transition-all cursor-pointer touch-manipulation active:scale-95"
+          className="flex items-center gap-2 h-12 px-5 rounded-xl bg-white/10 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold text-sm transition-all cursor-pointer touch-manipulation active:scale-95"
         >
-          <ChevronLeft className="w-5 h-5 sm:w-5 sm:h-5" />
+          <ChevronLeft className="w-5 h-5" />
           <span>Zurück</span>
         </button>
 
-        <span className="text-xs sm:text-xs font-semibold text-white/70">
+        <span className="text-xs font-semibold text-white/70">
           {currentStepIndex + 1} / {recipe.steps.length}
         </span>
 
+        {/* Primary CTA: Immer h-12 (48px), rounded-xl, text-base, font-semibold */}
         <button
           id="cooking-mode-next-btn"
           type="button"
           onClick={handleNext}
-          className="flex items-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[40px] px-5 sm:px-6 py-2.5 sm:py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-semibold text-xs sm:text-sm shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
+          className="flex items-center gap-2 h-12 px-6 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-semibold text-base shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
         >
           <span>
             {currentStepIndex === recipe.steps.length - 1 ? 'Fertig! 🎉' : 'Weiter'}
           </span>
-          <ChevronRight className="w-5 h-5 sm:w-5 sm:h-5" />
+          <ChevronRight className="w-5 h-5" />
         </button>
       </div>
     </div>
