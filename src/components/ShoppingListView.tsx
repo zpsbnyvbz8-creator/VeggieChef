@@ -1245,7 +1245,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <List className="w-4 h-4 text-[#4A7856]" />
                 <span>Offene Artikel</span>
               </div>
-              <span className="inline-flex items-center justify-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#4A7856] border border-[#ECEBE8] whitespace-nowrap">
+              <span className="text-[12px] font-medium text-[#7A7E7B] bg-[#F4F3F0] px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums">
                 {activeItems.length} offen
               </span>
             </div>
@@ -1320,27 +1320,19 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       </button>
                     </div>
 
-                    {/* Uniform small badge & collapse chevron */}
-                    <div
-                      className="flex items-center gap-2 shrink-0 ml-2"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <span className="inline-flex items-center justify-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#4A7856] border border-[#ECEBE8] whitespace-nowrap">
+                    {/* Clean & minimal count pill + chevron */}
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      <span className="text-[12px] font-medium text-[#7A7E7B] bg-[#F4F3F0] px-2 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums">
                         {activeInCat.length} offen
                       </span>
 
-                      <button
-                        type="button"
-                        onClick={() => toggleCategoryCollapse(catKey)}
-                        className="p-1 text-[#7A7E7B] hover:text-[#2D3E40] cursor-pointer"
-                        title={isCollapsed ? 'Aufklappen' : 'Zuklappen'}
-                      >
+                      <div className="p-1 text-[#9BA09C] group-hover:text-[#2D3E40] transition-colors">
                         <ChevronDown
                           className={`w-4 h-4 transition-transform duration-200 ${
                             isCollapsed ? '-rotate-90' : 'rotate-0'
                           }`}
                         />
-                      </button>
+                      </div>
                     </div>
                   </div>
 
