@@ -500,17 +500,13 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                   data-swipe-log={log.id}
                   className="relative overflow-hidden rounded-2xl select-none group touch-pan-y"
                 >
-                  {/* Background Action Tray (iOS-Style für Mobile) */}
+                  {/* Background Action Tray (Immer vollflächig im Menü-Hintergrund #FAF9F6) */}
                   <div
-                    className={`absolute inset-y-0 right-0 flex items-center justify-end z-0 rounded-r-2xl overflow-hidden transition-[background-color,padding] duration-200 ease-out ${
-                      isFullSwipeDelete
-                        ? 'w-full bg-[#E54D2E] px-6'
-                        : 'bg-[#FAF9F6] border-y border-r border-[#ECEBE8] px-3 gap-2'
-                    }`}
+                    className="absolute inset-0 z-0 rounded-2xl bg-[#FAF9F6] border border-[#ECEBE8] flex items-center justify-end px-3 gap-2 overflow-hidden"
                   >
                     {isFullSwipeDelete ? (
-                      <div className="flex items-center gap-2.5 text-white font-semibold text-sm animate-in fade-in zoom-in-95 duration-150">
-                        <Trash2 className="w-5 h-5 stroke-[2.5] scale-110 transition-transform" />
+                      <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#E54D2E] text-white font-semibold text-xs shadow-xs animate-in fade-in zoom-in-95 duration-150">
+                        <Trash2 className="w-4 h-4 stroke-[2.5]" />
                         <span>Löschen</span>
                       </div>
                     ) : (
