@@ -127,10 +127,14 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const [showConfirmClearAll, setShowConfirmClearAll] = useState(false);
   const [showContextMenu, setShowContextMenu] = useState(false);
   const contextMenuRef = useRef<HTMLDivElement>(null);
+  const mobileContextMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const insideDesktop = contextMenuRef.current && contextMenuRef.current.contains(target);
+      const insideMobile = mobileContextMenuRef.current && mobileContextMenuRef.current.contains(target);
+      if (!insideDesktop && !insideMobile) {
         setShowContextMenu(false);
       }
     };
@@ -687,61 +691,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               )}
             </div>
 
-            {/* Title with Context Menu Icon Button (•••) */}
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900">
-                Dein Wochenplan
-              </h1>
-
-              {/* Context Menu Dropdown Trigger */}
-              <div className="relative shrink-0" ref={contextMenuRef}>
-                <button
-                  type="button"
-                  id="weekly-planner-context-menu-btn"
-                  onClick={() => setShowContextMenu((prev) => !prev)}
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                    showContextMenu
-                      ? 'bg-[#F1F5F2] border-[#CCD5CF] text-stone-900'
-                      : 'border-transparent hover:border-[#ECEBE8] hover:bg-[#FAF9F6] text-stone-500 hover:text-stone-800'
-                  }`}
-                  title="Weitere Optionen"
-                  aria-label="Weitere Optionen"
-                >
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
-
-                {showContextMenu && (
-                  <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-1.5 w-52 bg-white rounded-xl border border-[#ECEBE8] shadow-lg py-1.5 z-40 animate-in fade-in zoom-in-95 duration-100">
-                    <button
-                      type="button"
-                      id="context-menu-all-weeks-btn"
-                      onClick={() => {
-                        setShowContextMenu(false);
-                        setShowAllWeeksModal(true);
-                      }}
-                      className="w-full px-3 py-2 text-left text-xs sm:text-sm font-medium text-stone-700 hover:bg-[#FAF9F6] flex items-center gap-2.5 transition-colors cursor-pointer"
-                    >
-                      <Layers className="w-4 h-4 text-stone-500" />
-                      <span>Alle Wochen anzeigen</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      id="context-menu-clear-plan-btn"
-                      onClick={() => {
-                        setShowContextMenu(false);
-                        setShowConfirmClearAll(true);
-                      }}
-                      disabled={totalPlannedMeals === 0}
-                      className="w-full px-3 py-2 text-left text-xs sm:text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-2.5 transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4 text-rose-500" />
-                      <span>Plan leeren</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Title */}
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900">
+              Dein Wochenplan
+            </h1>
             <p className="text-xs sm:text-sm font-medium text-stone-500 truncate max-w-xl">
               Mahlzeiten planen, Nährwerte prüfen & Zutaten einkaufen.
             </p>
@@ -749,6 +702,55 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
           {/* Primary Action Buttons */}
           <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+            {/* 3-Punkte-Menü Button direkt links neben dem KI-Wochenplan (auf Desktop) */}
+            <div className="relative shrink-0 hidden sm:block" ref={contextMenuRef}>
+              <button
+                type="button"
+                id="weekly-planner-context-menu-btn"
+                onClick={() => setShowContextMenu((prev) => !prev)}
+                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs border ${
+                  showContextMenu
+                    ? 'bg-[#E5EBE6] text-[#2D3E40] border-[#CCD5CF] ring-2 ring-[#4A7856]/25'
+                    : 'bg-[#F1F5F2] hover:bg-[#E5EBE6] text-[#2D3E40] hover:text-stone-900 border-[#ECEBE8] hover:border-[#CCD5CF]'
+                }`}
+                title="Weitere Optionen (Alle Wochen anzeigen, Plan leeren)"
+                aria-label="Weitere Optionen"
+              >
+                <MoreHorizontal className="w-5 h-5 text-[#2D3E40]" />
+              </button>
+
+              {showContextMenu && (
+                <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl border border-[#ECEBE8] shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-100">
+                  <button
+                    type="button"
+                    id="context-menu-all-weeks-btn"
+                    onClick={() => {
+                      setShowContextMenu(false);
+                      setShowAllWeeksModal(true);
+                    }}
+                    className="w-full px-3 py-2.5 text-left text-xs sm:text-sm font-medium text-stone-700 hover:bg-[#FAF9F6] flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <Layers className="w-4.5 h-4.5 text-stone-500" />
+                    <span>Alle Wochen anzeigen</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    id="context-menu-clear-plan-btn"
+                    onClick={() => {
+                      setShowContextMenu(false);
+                      setShowConfirmClearAll(true);
+                    }}
+                    disabled={totalPlannedMeals === 0}
+                    className="w-full px-3 py-2.5 text-left text-xs sm:text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-4.5 h-4.5 text-rose-500" />
+                    <span>Plan leeren</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* AI Generator Modal Trigger */}
             <button
               id="open-ai-meal-plan-modal-btn"
@@ -772,38 +774,91 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           </div>
         </div>
 
-        {/* Filter-Zeile: Links schlanker Switch für Mittag, rechts Portionen-Pill-Selector */}
-        <div className="bg-[#FAF9F6] rounded-xl px-3 py-2 border border-[#ECEBE8] flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
-          {/* Links: Schlanker Switch für Mittags-Slot */}
-          <button
-            type="button"
-            id="toggle-show-lunch-btn"
-            onClick={handleToggleLunchSlot}
-            role="switch"
-            aria-checked={showLunchSlot}
-            className="flex items-center gap-2.5 text-xs sm:text-sm font-medium text-stone-700 cursor-pointer select-none group touch-manipulation active:scale-98"
-            title={showLunchSlot ? 'Mittagsgerichte ausblenden' : 'Mittagsgerichte anzeigen'}
-          >
-            <div
-              className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 ease-in-out flex items-center ${
-                showLunchSlot ? 'bg-[#4A7856]' : 'bg-[#D5DDD7]'
-              }`}
+        {/* Filter-Zeile: Links komfortabler Switch für Mittag + 3-Punkte-Menü auf Mobile, rechts Portionen */}
+        <div className="bg-[#FAF9F6] rounded-xl px-3.5 py-2.5 border border-[#ECEBE8] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {/* Zeile auf Mobile: Switch für Mittags-Slot + 3-Punkte-Menü (auf Mobile) */}
+          <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+            <button
+              type="button"
+              id="toggle-show-lunch-btn"
+              onClick={handleToggleLunchSlot}
+              role="switch"
+              aria-checked={showLunchSlot}
+              className="flex items-center gap-3 text-xs sm:text-sm font-medium text-stone-700 cursor-pointer select-none group touch-manipulation active:scale-98 min-h-[44px]"
+              title={showLunchSlot ? 'Mittagsgerichte ausblenden' : 'Mittagsgerichte anzeigen'}
             >
               <div
-                className={`w-4 h-4 rounded-full bg-white shadow-xs transform transition-transform duration-200 ease-in-out ${
-                  showLunchSlot ? 'translate-x-4' : 'translate-x-0'
+                className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 ease-in-out flex items-center shadow-inner ${
+                  showLunchSlot ? 'bg-[#4A7856]' : 'bg-[#CCD5CF]'
                 }`}
-              />
-            </div>
-            <span className="font-medium text-stone-700 group-hover:text-stone-950 transition-colors">
-              Mittags-Slot anzeigen
-            </span>
-          </button>
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ease-in-out ${
+                    showLunchSlot ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </div>
+              <span className="font-semibold text-stone-700 group-hover:text-stone-950 transition-colors">
+                Mittags-Slot anzeigen
+              </span>
+            </button>
 
-          {/* Rechts: Hybrider Inline-Stepper für Portionen */}
-          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
-            <span className="text-xs font-semibold text-stone-600 select-none shrink-0">Portionen:</span>
-            <div className="w-full sm:w-72 max-w-[290px]">
+            {/* 3-Punkte-Menü Button auf Mobile in der Zeile vom Mittags-Slot */}
+            <div className="relative shrink-0 sm:hidden" ref={mobileContextMenuRef}>
+              <button
+                type="button"
+                id="mobile-weekly-planner-context-menu-btn"
+                onClick={() => setShowContextMenu((prev) => !prev)}
+                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs border ${
+                  showContextMenu
+                    ? 'bg-[#E5EBE6] text-[#2D3E40] border-[#CCD5CF] ring-2 ring-[#4A7856]/25'
+                    : 'bg-[#F1F5F2] hover:bg-[#E5EBE6] text-[#2D3E40] hover:text-stone-900 border-[#ECEBE8] hover:border-[#CCD5CF]'
+                }`}
+                title="Weitere Optionen (Alle Wochen anzeigen, Plan leeren)"
+                aria-label="Weitere Optionen"
+              >
+                <MoreHorizontal className="w-5 h-5 text-[#2D3E40]" />
+              </button>
+
+              {showContextMenu && (
+                <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl border border-[#ECEBE8] shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-100">
+                  <button
+                    type="button"
+                    id="mobile-context-menu-all-weeks-btn"
+                    onClick={() => {
+                      setShowContextMenu(false);
+                      setShowAllWeeksModal(true);
+                    }}
+                    className="w-full px-3 py-2.5 text-left text-xs sm:text-sm font-medium text-stone-700 hover:bg-[#FAF9F6] flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <Layers className="w-4.5 h-4.5 text-stone-500" />
+                    <span>Alle Wochen anzeigen</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    id="mobile-context-menu-clear-plan-btn"
+                    onClick={() => {
+                      setShowContextMenu(false);
+                      setShowConfirmClearAll(true);
+                    }}
+                    disabled={totalPlannedMeals === 0}
+                    className="w-full px-3 py-2.5 text-left text-xs sm:text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-4.5 h-4.5 text-rose-500" />
+                    <span>Plan leeren</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Rechts/Unten: Portionen-Auswahl direkt anschließend an die Beschriftung */}
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-start sm:justify-end">
+            <span className="text-xs sm:text-sm font-semibold text-stone-600 select-none shrink-0">
+              Portionen:
+            </span>
+            <div className="flex-1 sm:flex-initial sm:w-72 max-w-[280px]">
               <HybridPortionStepper
                 value={planServings}
                 onChange={setPlanServings}
