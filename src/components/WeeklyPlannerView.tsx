@@ -769,7 +769,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                     ? 'bg-[#E5EBE6] text-[#2D3E40] border-[#CCD5CF] ring-2 ring-[#4A7856]/25'
                     : 'bg-[#F1F5F2] hover:bg-[#E5EBE6] text-[#2D3E40] hover:text-stone-900 border-[#ECEBE8] hover:border-[#CCD5CF]'
                 }`}
-                title="Weitere Optionen (Alle Wochen anzeigen, Plan leeren)"
+                title="Weitere Optionen (Woche hinzufügen, Alle Wochen anzeigen, Plan leeren)"
                 aria-label="Weitere Optionen"
               >
                 <MoreHorizontal className="w-5 h-5 text-[#2D3E40]" />
@@ -777,6 +777,20 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
               {showContextMenu && (
                 <div className="absolute right-0 top-full mt-2 w-64 sm:w-72 bg-white rounded-2xl border border-[#ECEBE8] shadow-2xl p-2 z-40 animate-in fade-in zoom-in-95 duration-100 space-y-1">
+                  <button
+                    type="button"
+                    id="context-menu-add-week-btn"
+                    onClick={() => {
+                      setShowContextMenu(false);
+                      setNewWeekTitleInput('');
+                      setShowCreateWeekModal(true);
+                    }}
+                    className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl text-left text-[15px] sm:text-base font-semibold text-stone-800 hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
+                  >
+                    <Plus className="w-5 h-5 text-stone-500 shrink-0" />
+                    <span>Woche hinzufügen</span>
+                  </button>
+
                   <button
                     type="button"
                     id="context-menu-all-weeks-btn"
@@ -870,7 +884,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                     ? 'bg-[#E5EBE6] text-[#2D3E40] border-[#CCD5CF] ring-2 ring-[#4A7856]/25'
                     : 'bg-[#F1F5F2] hover:bg-[#E5EBE6] text-[#2D3E40] hover:text-stone-900 border-[#ECEBE8] hover:border-[#CCD5CF]'
                 }`}
-                title="Weitere Optionen (Alle Wochen anzeigen, Plan leeren)"
+                title="Weitere Optionen (Woche hinzufügen, Alle Wochen anzeigen, Plan leeren)"
                 aria-label="Weitere Optionen"
               >
                 <MoreHorizontal className="w-5 h-5 text-[#2D3E40]" />
@@ -878,6 +892,20 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
               {showContextMenu && (
                 <div className="absolute right-0 top-full mt-2 w-64 sm:w-72 bg-white rounded-2xl border border-[#ECEBE8] shadow-2xl p-2 z-40 animate-in fade-in zoom-in-95 duration-100 space-y-1">
+                  <button
+                    type="button"
+                    id="mobile-context-menu-add-week-btn"
+                    onClick={() => {
+                      setShowContextMenu(false);
+                      setNewWeekTitleInput('');
+                      setShowCreateWeekModal(true);
+                    }}
+                    className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl text-left text-[15px] sm:text-base font-semibold text-stone-800 hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
+                  >
+                    <Plus className="w-5 h-5 text-stone-500 shrink-0" />
+                    <span>Woche hinzufügen</span>
+                  </button>
+
                   <button
                     type="button"
                     id="mobile-context-menu-all-weeks-btn"
