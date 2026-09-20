@@ -457,7 +457,7 @@ export const RecipeDetailPage: React.FC = () => {
                 <Users className="w-4 h-4 text-[#4A7856]" />
                 <span>Portionen:</span>
               </div>
-              <div className="w-full sm:w-64">
+              <div className="w-full sm:w-72 max-w-[290px]">
                 <HybridPortionStepper
                   value={servings}
                   onChange={setServings}

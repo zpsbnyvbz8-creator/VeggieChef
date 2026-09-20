@@ -102,7 +102,7 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
   const QUICK_VALUES = [1, 2, 4];
 
   return (
-    <div className={`grid grid-cols-[repeat(3,minmax(38px,48px))_1fr] gap-1.5 sm:gap-2 w-full select-none ${className}`}>
+    <div className={`grid grid-cols-[repeat(3,minmax(34px,40px))_1fr] gap-1.5 sm:gap-2 w-full select-none ${className}`}>
       {/* Spalten 1, 2, 3: Statische Schnellwahl-Buttons für [1], [2], [4] */}
       {QUICK_VALUES.map((num) => {
         const isActive = !isStepperActive && value === num;
@@ -112,7 +112,7 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
             id={`${idPrefix}-quick-${num}`}
             type="button"
             onClick={() => handleQuickSelect(num)}
-            className={`h-12 min-h-[48px] rounded-xl font-bold text-base transition-all flex items-center justify-center touch-manipulation cursor-pointer active:scale-95 border ${
+            className={`h-12 min-h-[48px] rounded-xl font-bold text-sm sm:text-base transition-all flex items-center justify-center touch-manipulation cursor-pointer active:scale-95 border ${
               isActive
                 ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
                 : 'bg-white text-stone-700 border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-stone-900 hover:border-stone-300 shadow-2xs'
@@ -146,7 +146,7 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
           id={`${idPrefix}-stepper-minus`}
           onClick={handleDecrement}
           disabled={stepperValue <= min}
-          className={`w-9 sm:w-10 h-12 min-h-[48px] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 ${
+          className={`flex-1 max-w-[40px] min-w-[32px] h-12 min-h-[48px] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 ${
             isStepperActive
               ? 'text-white hover:bg-black/10 active:bg-black/20'
               : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100 active:bg-stone-200'
@@ -165,7 +165,7 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
 
         {/* Gespeicherter/Aktueller Stepper-Wert X */}
         <span
-          className={`flex-1 min-w-[24px] text-center text-base font-bold tabular-nums select-none px-1 ${
+          className={`flex-1 min-w-[20px] text-center text-sm sm:text-base font-bold tabular-nums select-none px-0.5 ${
             isStepperActive ? 'text-white' : 'text-stone-800'
           }`}
           aria-live="polite"
@@ -185,7 +185,7 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
           type="button"
           id={`${idPrefix}-stepper-plus`}
           onClick={handleIncrement}
-          className={`w-9 sm:w-10 h-12 min-h-[48px] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90 shrink-0 ${
+          className={`flex-1 max-w-[40px] min-w-[32px] h-12 min-h-[48px] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90 shrink-0 ${
             isStepperActive
               ? 'text-white hover:bg-black/10 active:bg-black/20'
               : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100 active:bg-stone-200'
