@@ -21,6 +21,7 @@ import {
 import { Recipe, RecipeCategory, RecipeIngredient, RecipeStep } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 import { useRecipes } from '../context/RecipeContext';
+import { HybridPortionStepper } from './HybridPortionStepper';
 
 interface AddRecipeModalProps {
   isOpen?: boolean;
@@ -591,6 +592,25 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                 </div>
               </div>
 
+              {/* Portion Adjuster in Preview */}
+              <div className="p-3.5 bg-[#FAF9F6] border border-[#ECEBE8] rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#2D3E40] uppercase tracking-wide">
+                    Portionen anpassen
+                  </span>
+                  <span className="text-xs text-[#7A7E7B]">
+                    {previewRecipe.servings || 2} {(previewRecipe.servings || 2) === 1 ? 'Portion' : 'Portionen'}
+                  </span>
+                </div>
+                <HybridPortionStepper
+                  value={previewRecipe.servings || 2}
+                  onChange={(newServings) => {
+                    setPreviewRecipe((prev) => prev ? { ...prev, servings: newServings } : null);
+                  }}
+                  idPrefix="preview-recipe-servings"
+                />
+              </div>
+
               {/* Ingredients List */}
               <div className="space-y-2.5">
                 <h4 className="text-sm font-bold text-[#2D3E40] flex items-center justify-between">
@@ -1063,6 +1083,18 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                         className="w-full px-2.5 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-xs font-medium text-[#2D3E40]"
                       />
                     </div>
+                  </div>
+
+                  {/* Portionen */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-[#7A7E7B] uppercase tracking-wider block">
+                      Portionen
+                    </label>
+                    <HybridPortionStepper
+                      value={manualServings}
+                      onChange={setManualServings}
+                      idPrefix="manual-recipe-servings"
+                    />
                   </div>
 
                   {/* Nutrients per Portion */}

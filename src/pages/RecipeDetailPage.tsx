@@ -24,6 +24,7 @@ import { useRecipes } from '../context/RecipeContext';
 import { useShopping } from '../context/ShoppingContext';
 import { usePlanner } from '../context/PlannerContext';
 import { useToast } from '../context/ToastContext';
+import { HybridPortionStepper } from '../components/HybridPortionStepper';
 
 export const RecipeDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -451,27 +452,17 @@ export const RecipeDetailPage: React.FC = () => {
           {/* Action Row: Portionen, Kopieren, Veganisieren, Einkaufsliste, Kochmodus */}
           <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 sm:p-4 bg-[#F1F5F2] border border-[#ECEBE8] rounded-2xl">
             {/* Portion Adjuster */}
-            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-start">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-[#2D3E40]">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-[#2D3E40] shrink-0">
                 <Users className="w-4 h-4 text-[#4A7856]" />
                 <span>Portionen:</span>
               </div>
-              <div className="flex items-center bg-white border border-[#ECEBE8] rounded-xl p-1 shadow-2xs gap-1 min-h-[42px]">
-                {[1, 2, 3, 4, 6, 8].map((num) => (
-                  <button
-                    key={num}
-                    id={`servings-btn-${num}`}
-                    type="button"
-                    onClick={() => setServings(num)}
-                    className={`w-9 h-9 sm:w-8 sm:h-8 rounded-xl sm:rounded-lg text-sm sm:text-xs font-bold transition-all flex items-center justify-center touch-manipulation cursor-pointer active:scale-90 ${
-                      servings === num
-                        ? 'bg-[#4A7856] text-white shadow-xs'
-                        : 'text-[#7A7E7B] hover:bg-[#FAF9F6] hover:text-[#2D3E40]'
-                    }`}
-                  >
-                    {num}
-                  </button>
-                ))}
+              <div className="w-full sm:w-64">
+                <HybridPortionStepper
+                  value={servings}
+                  onChange={setServings}
+                  idPrefix="recipe-detail-servings"
+                />
               </div>
             </div>
 

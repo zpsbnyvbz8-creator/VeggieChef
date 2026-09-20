@@ -36,6 +36,7 @@ import { useRecipes } from '../context/RecipeContext';
 import { useShopping } from '../context/ShoppingContext';
 import { useSync } from '../context/SyncContext';
 import { useToast } from '../context/ToastContext';
+import { HybridPortionStepper } from './HybridPortionStepper';
 
 interface WeeklyPlannerViewProps {
   mealPlan?: DayPlan[];
@@ -799,25 +800,16 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             </span>
           </button>
 
-          {/* Rechts: Kompakter Portionen-Pill-Selector */}
-          <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-[#ECEBE8] shadow-2xs">
-            <span className="text-xs font-semibold text-stone-600 pr-1 select-none">Portionen:</span>
-            {[1, 2, 3, 4, 6].map((num) => (
-              <button
-                key={num}
-                type="button"
-                id={`plan-servings-${num}-btn`}
-                onClick={() => setPlanServings(num)}
-                className={`w-6 h-6 rounded-md text-xs font-semibold transition-all flex items-center justify-center touch-manipulation cursor-pointer active:scale-90 ${
-                  planServings === num
-                    ? 'bg-[#4A7856] text-white shadow-xs'
-                    : 'text-stone-600 hover:text-stone-900 hover:bg-[#F1F5F2]'
-                }`}
-                title={`${num} Portionen`}
-              >
-                {num}
-              </button>
-            ))}
+          {/* Rechts: Hybrider Inline-Stepper für Portionen */}
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+            <span className="text-xs font-semibold text-stone-600 select-none shrink-0">Portionen:</span>
+            <div className="w-full sm:w-72 max-w-[290px]">
+              <HybridPortionStepper
+                value={planServings}
+                onChange={setPlanServings}
+                idPrefix="weekly-plan-servings"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -1616,22 +1608,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 <label className="block font-bold text-[#2D3E40] text-xs uppercase tracking-wider mb-2">
                   3. Personen / Portionen
                 </label>
-                <div className="flex items-center gap-2">
-                  {[1, 2, 3, 4, 6].map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      onClick={() => setAiPeopleCount(num)}
-                      className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all cursor-pointer touch-manipulation active:scale-95 min-h-[46px] flex items-center justify-center ${
-                        aiPeopleCount === num
-                          ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
-                          : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
-                      }`}
-                    >
-                      {num}
-                    </button>
-                  ))}
-                </div>
+                <HybridPortionStepper
+                  value={aiPeopleCount}
+                  onChange={setAiPeopleCount}
+                  idPrefix="ai-modal-people-count"
+                />
               </div>
 
               {/* 4. Max cooking time */}
