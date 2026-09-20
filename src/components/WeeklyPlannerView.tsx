@@ -1149,7 +1149,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                               const r = allRecipes.find((rec) => rec.id === day.lunch?.recipeId);
                               if (r) onSelectRecipe(r);
                             }}
-                            className="text-sm font-semibold text-stone-900 leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] transition-colors"
+                            className="text-base sm:text-sm font-semibold text-stone-900 leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] transition-colors"
                             title={day.lunch.recipeTitle}
                           >
                             {day.lunch.recipeTitle}
@@ -1316,7 +1316,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                             const r = allRecipes.find((rec) => rec.id === day.dinner?.recipeId);
                             if (r) onSelectRecipe(r);
                           }}
-                          className="text-sm font-semibold text-stone-900 leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] transition-colors"
+                          className="text-base sm:text-sm font-semibold text-stone-900 leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] transition-colors"
                           title={day.dinner.recipeTitle}
                         >
                           {day.dinner.recipeTitle}

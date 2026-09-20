@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Sparkles, RotateCcw, Clock, Flame, Dumbbell, Check, Lightbulb } from 'lucide-react';
+import { X, Sparkles, RotateCcw, Clock, Flame, Dumbbell, Check, Lightbulb, AlertTriangle } from 'lucide-react';
 import { FridgeCookIdea } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 
@@ -9,8 +9,10 @@ interface FridgeIdeaModalProps {
   idea: FridgeCookIdea | null;
   isLoadingIdea: boolean;
   isCreatingFinalRecipe: boolean;
+  errorMessage?: string | null;
   onConfirmCreate: () => void;
   onRetryIdea: () => void;
+  onRetryAfterError?: () => void;
   onCancel: () => void;
   isVegan: boolean;
   attemptNumber?: number;
@@ -22,8 +24,10 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
   idea,
   isLoadingIdea,
   isCreatingFinalRecipe,
+  errorMessage,
   onConfirmCreate,
   onRetryIdea,
+  onRetryAfterError,
   onCancel,
   isVegan,
   attemptNumber = 1,
@@ -43,22 +47,26 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
         {/* Modal Header */}
         <div className="p-4 sm:p-5 border-b border-[#ECEBE8] flex items-center justify-between bg-[#FAF9F6]">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-[#EBF3ED] text-[#4A7856]">
-              <Lightbulb className="w-5 h-5 text-[#4A7856]" />
+            <span className={`p-1.5 rounded-lg ${errorMessage ? 'bg-amber-100 text-amber-700' : 'bg-[#EBF3ED] text-[#4A7856]'}`}>
+              {errorMessage ? (
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+              ) : (
+                <Lightbulb className="w-5 h-5 text-[#4A7856]" />
+              )}
             </span>
             <div>
               <div className="flex items-center gap-2">
                 <h3 id="fridge-idea-title" className="text-base sm:text-lg font-bold text-stone-900">
-                  Vorgeschlagene Rezeptidee
+                  {errorMessage ? 'Rezept konnte nicht erstellt werden' : 'Vorgeschlagene Rezeptidee'}
                 </h3>
-                {attemptNumber > 1 && (
+                {!errorMessage && attemptNumber > 1 && (
                   <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-stone-200 text-stone-700">
                     Vorschlag #{attemptNumber}
                   </span>
                 )}
               </div>
               <p className="text-xs text-stone-500">
-                Gefällt dir diese Idee für deine Vorräte?
+                {errorMessage ? 'Hinweis zur Rezeptgenerierung' : 'Gefällt dir diese Idee für deine Vorräte?'}
               </p>
             </div>
           </div>
@@ -75,7 +83,24 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-4">
-          {isLoadingIdea ? (
+          {errorMessage ? (
+            <div className="py-6 px-2 flex flex-col items-center justify-center text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shadow-2xs">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5 max-w-sm">
+                <h4 className="text-base font-bold text-stone-900">
+                  Generierung fehlgeschlagen
+                </h4>
+                <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+                  {errorMessage}
+                </p>
+                <p className="text-xs text-stone-500 pt-1">
+                  Es wurde kein unpassendes Fantasierezept erzeugt. Bitte versuche es mit einem Klick auf „Erneut versuchen“ noch einmal.
+                </p>
+              </div>
+            </div>
+          ) : isLoadingIdea ? (
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
               <div className="w-10 h-10 border-3 border-[#ECEBE8] border-t-[#4A7856] rounded-full animate-spin" />
               <div className="space-y-1">
@@ -205,44 +230,69 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
           )}
         </div>
 
-        {/* Modal Footer: The 3 User-Requested Options */}
+        {/* Modal Footer */}
         <div className="p-4 sm:p-5 border-t border-[#ECEBE8] bg-[#FAF9F6] space-y-2.5">
-          {/* Option 1: Gericht endgültig erstellen */}
-          <button
-            id="fridge-idea-confirm-btn"
-            type="button"
-            disabled={isLoadingIdea || isCreatingFinalRecipe || !idea}
-            onClick={onConfirmCreate}
-            className="w-full h-12 min-h-[48px] rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-50 text-white font-semibold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
-          >
-            <Sparkles className="w-5 h-5" />
-            <span>Gericht endgültig erstellen</span>
-          </button>
+          {errorMessage ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                id="fridge-error-retry-btn"
+                onClick={onRetryAfterError || onRetryIdea}
+                className="flex-1 h-12 min-h-[48px] rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Erneut versuchen</span>
+              </button>
+              <button
+                type="button"
+                id="fridge-error-cancel-btn"
+                onClick={onCancel}
+                className="flex-1 h-12 min-h-[48px] rounded-xl bg-white hover:bg-stone-100 border border-[#ECEBE8] text-stone-700 font-semibold text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer touch-manipulation"
+              >
+                <X className="w-4 h-4" />
+                <span>Abbrechen</span>
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Option 1: Gericht endgültig erstellen */}
+              <button
+                id="fridge-idea-confirm-btn"
+                type="button"
+                disabled={isLoadingIdea || isCreatingFinalRecipe || !idea}
+                onClick={onConfirmCreate}
+                className="w-full h-12 min-h-[48px] rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-50 text-white font-semibold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>Gericht endgültig erstellen</span>
+              </button>
 
-          {/* Options 2 & 3: Neu probieren & Abbrechen */}
-          <div className="flex items-center gap-2">
-            <button
-              id="fridge-idea-retry-btn"
-              type="button"
-              disabled={isLoadingIdea || isCreatingFinalRecipe}
-              onClick={onRetryIdea}
-              className="flex-1 h-11 min-h-[44px] rounded-xl bg-white hover:bg-stone-50 disabled:opacity-50 border border-[#ECEBE8] text-stone-700 font-semibold text-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-            >
-              <RotateCcw className="w-4 h-4 text-[#4A7856]" />
-              <span>Neu probieren</span>
-            </button>
+              {/* Options 2 & 3: Neu probieren & Abbrechen */}
+              <div className="flex items-center gap-2">
+                <button
+                  id="fridge-idea-retry-btn"
+                  type="button"
+                  disabled={isLoadingIdea || isCreatingFinalRecipe}
+                  onClick={onRetryIdea}
+                  className="flex-1 h-11 min-h-[44px] rounded-xl bg-white hover:bg-stone-50 disabled:opacity-50 border border-[#ECEBE8] text-stone-700 font-semibold text-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                >
+                  <RotateCcw className="w-4 h-4 text-[#4A7856]" />
+                  <span>Neu probieren</span>
+                </button>
 
-            <button
-              id="fridge-idea-cancel-btn"
-              type="button"
-              disabled={isCreatingFinalRecipe}
-              onClick={onCancel}
-              className="flex-1 h-11 min-h-[44px] rounded-xl bg-transparent hover:bg-stone-200/60 disabled:opacity-50 text-stone-600 font-medium text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-              <span>Abbrechen</span>
-            </button>
-          </div>
+                <button
+                  id="fridge-idea-cancel-btn"
+                  type="button"
+                  disabled={isCreatingFinalRecipe}
+                  onClick={onCancel}
+                  className="flex-1 h-11 min-h-[44px] rounded-xl bg-transparent hover:bg-stone-200/60 disabled:opacity-50 text-stone-600 font-medium text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Abbrechen</span>
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

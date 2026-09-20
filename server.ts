@@ -149,12 +149,14 @@ function getGenAI(): GoogleGenAI | null {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Verified Active Gemini Model Cascade & Safe Invocation (Max 9000ms Timeout)
+// 4. Verified Active Gemini Model Cascade & Safe Invocation
 // ---------------------------------------------------------------------------
-// Primary: gemini-3.8-flash (latest official flash model)
-// Fallback: gemini-flash-latest (fast official alias for guaranteed availability)
+// Primary: gemini-3.8-flash (highest reasoning & culinary knowledge)
+// Ultra-fast Secondary: gemini-3.1-flash-lite (< 1.5s latency, robust availability)
+// Fallback: gemini-flash-latest (official alias)
 const ACTIVE_MODELS = [
   "gemini-3.8-flash",
+  "gemini-3.1-flash-lite",
   "gemini-flash-latest",
 ] as const;
 
@@ -212,8 +214,9 @@ function safeExtractJson<T = any>(rawText: string, fallback: T): T {
 }
 
 /**
- * Executes Gemini generateContent strictly capped at 9000ms max total timeout
- * to safely ensure compliance with Vercel's 10-second serverless execution window.
+ * Executes Gemini generateContent with an intelligent multi-model cascade.
+ * Prioritizes high-intelligence models while instantly falling back to ultra-fast
+ * lightweight models if the primary model is busy or times out.
  */
 async function callGeminiWithRetry(
   ai: GoogleGenAI,
@@ -224,8 +227,7 @@ async function callGeminiWithRetry(
     timeoutMs?: number;
   }
 ): Promise<{ text: string }> {
-  // Hard cap to 9000ms for Vercel 10s serverless limit
-  const maxTotalBudgetMs = Math.min(options.timeoutMs || 9000, 9000);
+  const maxTotalBudgetMs = options.timeoutMs || 25000;
   const startTime = Date.now();
   const requestedModel = options.model || "gemini-3.8-flash";
   const modelsToTry = Array.from(new Set([requestedModel, ...ACTIVE_MODELS]));
@@ -236,8 +238,7 @@ async function callGeminiWithRetry(
     const elapsed = Date.now() - startTime;
     const remainingTime = maxTotalBudgetMs - elapsed;
 
-    // If less than 1.5 seconds remaining, do not launch next call to avoid exceeding Vercel 10s timeout
-    if (remainingTime < 1500) {
+    if (remainingTime < 2000) {
       logAiEvent("warn", "cascade", "Not enough execution budget remaining for model cascade", {
         elapsed,
         remainingTime,
@@ -245,7 +246,8 @@ async function callGeminiWithRetry(
       break;
     }
 
-    const currentTimeout = Math.min(remainingTime, 6000);
+    // Allocate up to 12s per model call, or remaining budget
+    const currentTimeout = Math.min(remainingTime, 12000);
     let timeoutId: NodeJS.Timeout | null = null;
 
     try {
@@ -271,7 +273,7 @@ async function callGeminiWithRetry(
       if (timeoutId) clearTimeout(timeoutId);
       lastError = err;
       const errMsg = err instanceof Error ? err.message : String(err);
-      logAiEvent("warn", "cascade", `Model ${currentModel} error, advancing in cascade if budget permits`, {
+      logAiEvent("warn", "cascade", `Model ${currentModel} error, advancing in cascade to next model`, {
         error: errMsg.slice(0, 100),
         elapsed: Date.now() - startTime,
       });
@@ -472,12 +474,12 @@ const structuredRecipeResponseSchema = {
         type: Type.OBJECT,
         properties: {
           name: { type: Type.STRING },
-          amount: { type: Type.NUMBER },
+          amount: { type: Type.STRING },
           unit: { type: Type.STRING },
           category: { type: Type.STRING },
           origin: { type: Type.STRING },
         },
-        required: ["name", "amount", "unit", "category"],
+        required: ["name", "amount", "unit"],
       },
     },
     steps: {
@@ -1449,18 +1451,9 @@ app.post("/api/ai/fridge-cook-idea", async (req: Request, res: Response) => {
 
   const ai = getGenAI();
   if (!ai) {
-    const fallbackIdea = buildFallbackFridgeIdea({
-      ingredients,
-      isVegan,
-      maxTimeMinutes,
-      calorieFilter,
-      proteinFilter,
-      excludeTitles,
-    });
-    return res.json({
-      success: true,
-      isFallback: true,
-      idea: fallbackIdea,
+    return res.status(500).json({
+      success: false,
+      error: "Kein Gemini API-Schlüssel auf dem Server konfiguriert.",
     });
   }
 
@@ -1474,7 +1467,7 @@ app.post("/api/ai/fridge-cook-idea", async (req: Request, res: Response) => {
         ? `⭐ WICHTIG: Folgende Gerichte NICHT vorschlagen (wurde bereits abgelehnt): ${excludeTitles.join(", ")}. Erfinde ein komplett anderes Gerichtskonzept!`
         : "";
 
-    const prompt = `Du bist ein Spitzenkoch für moderne pflanzliche Alltagsküche.
+    const prompt = `Du bist ein erfahrener Spitzenkoch für moderne, gesunde pflanzliche Alltagsküche.
 Der Nutzer hat Vorräte ausgewählt. Schlage EINE EINZIGE, besonders kreative, harmonische und alltagstaugliche REZEPTIDEE vor, die diese Vorräte sinnvoll verwertet.
 
 VORHANDENE ZUTATEN: ${JSON.stringify(ingredients)}
@@ -1485,11 +1478,19 @@ NÄHRWERT-FOKUS: Kalorien=${calorieFilter}, Protein=${proteinFilter}
 BESONDERE WÜNSCHE: ${extraWishes || "keine"}
 ${excludeClause}
 
+KULINARISCHE ZUTATEN-LOGIK:
+- Verstehe die Konsistenz und Natur der Zutaten:
+  * Dips & Pasten (Hummus, Guacamole, Pesto, Erdnussbutter etc.) sind Saucen, Dressings oder Toppings.
+  * Reis, Quinoa, Couscous, Nudeln sind Getreidebeilagen, die gekocht werden.
+  * Frisches Gemüse wird gebraten, gedünstet oder im Ofen geröstet.
+  * Tofu/Tempeh wird gewürzt/mariniert und scharf angebraten oder gebacken.
+- Wähle eine stimmige Kombination, die diese Zutaten natürlich und köstlich zur Geltung bringt!
+
 STRIKTE VORGABEN:
-- Halte die Antwort EXTREM KURZ (nur die Rezeptidee, KEINE Zutatenliste mit Gramm, KEINE Einzelschritte!).
-- 'title': Appetitanregender, klarer Name des Gerichts
-- 'category': Passende Kategorie (z.B. "Schnelle Küche", "Currys & Eintöpfe", "Bowls & Salate", "Ofengerichte", "Pasta & Gnocchi")
-- 'dishType': Art des Gerichts (z.B. "Samtiges Kokos-Curry", "Cremige Blitz-Pfanne", "Knuspriges Blechgericht")
+- Halte die Antwort KOMPAKT (nur die Rezeptidee, KEINE Zutatenliste mit Gramm, KEINE Einzelschritte!).
+- 'title': Appetitanregender, kreativer und klarer Name des Gerichts
+- 'category': Passende Kategorie ("Schnelle Küche", "Currys & Eintöpfe", "Bowls & Salate", "Ofengerichte", "Pasta & Gnocchi")
+- 'dishType': Art des Gerichts (z.B. "Samtiges Kokos-Curry", "Cremige Blitz-Pfanne", "Knuspriges Blechgericht", "Nährstoffreiche Bowl")
 - 'pitch': 1-2 Sätze, warum dieses Gericht mit den vorhandenen Vorräten fantastisch schmeckt.
 - 'estimatedTimeMinutes': Geschätzte Kochzeit (z.B. 20)
 - 'estimatedCalories': Geschätzte Kalorien pro Portion
@@ -1506,7 +1507,7 @@ Antworte als strukturiertes JSON-Objekt.`;
         responseSchema: structuredRecipeIdeaSchema,
         temperature: 0.7,
       },
-      timeoutMs: 6000,
+      timeoutMs: 20000,
     });
 
     const parsed = safeExtractJson(response.text, null);
@@ -1522,16 +1523,11 @@ Antworte als strukturiertes JSON-Objekt.`;
     res.json({ success: true, idea: parsed });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    logAiEvent("warn", "/api/ai/fridge-cook-idea", "Fallback triggered for fridge-cook-idea", { error: errMsg });
-    const fallbackIdea = buildFallbackFridgeIdea({
-      ingredients,
-      isVegan,
-      maxTimeMinutes,
-      calorieFilter,
-      proteinFilter,
-      excludeTitles,
+    logAiEvent("error", "/api/ai/fridge-cook-idea", "Failed to generate fridge-cook-idea via Gemini", { error: errMsg });
+    res.status(503).json({
+      success: false,
+      error: `Die Rezeptidee konnte nicht erstellt werden (${errMsg.slice(0, 100)}). Bitte versuche es noch einmal.`,
     });
-    res.json({ success: true, isFallback: true, idea: fallbackIdea });
   }
 });
 
@@ -1564,29 +1560,9 @@ app.post("/api/ai/fridge-cook", async (req: Request, res: Response) => {
 
   const ai = getGenAI();
   if (!ai) {
-    const fallback = buildFallbackFridgeRecipe({
-      ingredients,
-      isVegan,
-      maxTimeMinutes,
-      difficulty,
-      mealType,
-      extraWishes,
-      maxAdditionalIngredients,
-      includeBasics,
-      nutritionGoal,
-      calorieFilter,
-      proteinFilter,
-    });
-    return res.json({
-      success: true,
-      isFallback: true,
-      recipe: {
-        ...fallback,
-        ...(chosenIdeaTitle ? { title: chosenIdeaTitle } : {}),
-        ...(chosenIdeaCategory ? { category: chosenIdeaCategory } : {}),
-        image: "",
-        isCustomAi: true,
-      },
+    return res.status(500).json({
+      success: false,
+      error: "Kein Gemini API-Schlüssel auf dem Server konfiguriert.",
     });
   }
 
@@ -1634,22 +1610,20 @@ app.post("/api/ai/fridge-cook", async (req: Request, res: Response) => {
       ? `⭐ OBERSTE PRIORITÄT (AUSDRÜCKLICHER NUTZERWUNSCH): Der Nutzer wünscht explizit, dass nach Möglichkeit ALLE angegebenen Vorratszutaten (${ingredients.join(
           ", "
         )}) verwendet werden! Finde die kulinarisch beste und kreativste Kombination, um sie schmackhaft und harmonisch einzusetzen.`
-      : `⭐ KULINARISCHE HARMONIE GEHT VOR (KEIN ZWANG ZUR VERWENDUNG ALLER VORRÄTE):
-Die angegebenen Zutaten (${ingredients.join(
-          ", "
-        )}) sind eine VORRATSAUSWAHL & INSPIRATION, jedoch KEIN MUSS!
+      : `⭐ KULINARISCHE HARMONIE GEHT VOR:
+Die angegebenen Zutaten (${ingredients.join(", ")}) sind eine VORRATSAUSWAHL & INSPIRATION.
 - Oberste Priorität hat immer ein wirklich köstliches, harmonisches und kulinarisch stimmiges Gericht.
 - Schustere NIEMALS auf Krampf Zutaten zusammen, die geschmacklich oder kulinarisch nicht harmonieren.
-- Wähle aus den angegebenen Vorräten nur die sinnvolle, leckere Kombination aus und lass den Rest ungenutzt.`;
+- Wähle aus den angegebenen Vorräten nur die sinnvolle, leckere Kombination aus.`;
 
     const chosenIdeaInstruction = chosenIdeaTitle
       ? `⭐ GEWÄHLTE REZEPTIDEE ZUR UMSETZUNG:
 Der Nutzer hat folgende Rezeptidee vorab ausgewählt: "${chosenIdeaTitle}" (Konzept: "${chosenIdeaPitch || ""}").
-Erstelle das vollständige Rezept für genau dieses Gericht! Passe den Titel bei Bedarf fein an, arbeite die Vorräte (${ingredients.join(", ")}) harmonisch ein und erstelle detaillierte Mengenangaben und Schritte.`
+Erstelle das vollständige Rezept für genau dieses Gericht! Passe den Titel bei Bedarf fein an, arbeite die Vorräte (${ingredients.join(", ")}) harmonisch ein und erstelle detaillierte Mengenangaben und meisterhafte Schritte.`
       : "";
 
-    const prompt = `Du bist ein erfahrener Küchenchef für gesunde, alltagstaugliche pflanzliche Küche.
-Erstelle ein harmonisches, gelingsicheres Rezept, das die vorhandenen Zutaten aus der Vorratskammer sinnvoll verwertet.
+    const prompt = `Du bist ein meisterhafter Küchenchef für gesunde, alltagstaugliche vegane und vegetarische Spitzenküche.
+Erstelle ein aromatisches, gelingsicheres Rezept, das die vorhandenen Zutaten aus der Vorratskammer sinnvoll und fachgerecht verwertet.
 
 ${chosenIdeaInstruction}
 VORHANDENE ZUTATEN: ${JSON.stringify(ingredients)}
@@ -1662,15 +1636,21 @@ MAHLZEITEN-ART: ${mealType}
 ${nutritionInstruction}
 BESONDERE WÜNSCHE: ${extraWishes || "keine"}
 
-STRIKTE REGELN:
-1. ${pantryInstruction}
-2. ANZAHL DER SCHRITTE VÖLLIG FREI WÄHLEN:
-Passe die Anzahl der Zubereitungsschritte ganz organisch der tatsächlichen Komplexität des Gerichts an! Du hast hier VÖLLIGEN FREIRAUM:
-- Ein sehr simples Gericht (z.B. schneller Salat, einfacher Dip, Blitz-Pfanne) benötigt vielleicht nur 2–3 prägnante Schritte.
-- Ein klassisches Alltagsgericht braucht ca. 4–6 Schritte.
-- Ein aufwendigeres, mehrstufiges oder komplexes Gericht kann 7–10 Schritte umfassen.
-Zwinge das Gericht niemals künstlich in 4 Schritte, sondern wähle genau so viele Schritte, wie für eine gelingsichere Zubereitung sinnvoll sind. Jeder Schritt hat 'stepNumber', 'title', 'text' und optional 'timerMinutes'.
-3. Realistische Nährwerte für 2 Portionen entsprechend des Nährwert-Fokus.
+STRIKTE KULINARISCHE REGELN (ZUTATEN-INTELLIGENZ):
+1. BEHANDLE JEDE ZUTAT NACH IHRER TATSÄCHLICHEN KULINARISCHEN BESCHAFFENHEIT:
+   - DIPS, PASTEN & AUFSTRICHE (z.B. Hummus, Guacamole, Pesto, Erdnussbutter, Senf): NIEMALS waschen! NIEMALS mundgerecht schneiden! NIEMALS pur scharf anbraten! Verwende sie als cremiges Dressing (z.B. mit etwas Zitronensaft/Wasser glattgerührt), als Sauce, als aromatischen Dip oder rühre sie am Schluss sanft unter.
+   - REIS, GETREIDE & NUDELN (z.B. Basmatireis, Quinoa, Couscous, Haferflocken, Spaghetti): Werden in gesalzenem Wasser oder Brühe gar gekocht bzw. gequellt. Niemals ungekocht schneiden!
+   - GEMÜSE & OBST (z.B. Brokkoli, Paprika, Zucchini, Tomaten): Waschen, putzen, in mundgerechte Stücke oder Röschen schneiden, in der Pfanne anbraten, dünsten oder im Ofen rösten.
+   - TOFU & TEMPEH: Würfeln oder zerkrümeln, nach Wunsch marinieren und knusprig anbraten oder backen.
+   - HÜLSENFRÜCHTE / KONSERVEN (z.B. Kichererbsen, Bohnen, Mais): Abgießen, abspülen und erwärmen oder anrösten.
+2. ECHTE, ATTRAKTIVE ZUBEREITUNGSSCHRITTE:
+   - Keine monotonen Standard-Texte! Jeder Schritt muss lebendig, präzise und authentisch für genau dieses Gericht geschrieben sein.
+   - Beschreibe Pfannentemperaturen (z.B. mittlere bis hohe Hitze), Pfannenart, Röstaromen, Garzeiten und das genaue Abschmecken.
+   - Wähle organisch so viele Schritte, wie das Gericht wirklich benötigt (3–6 Schritte). Jeder Schritt hat 'stepNumber', 'title', 'text' und optional 'timerMinutes'.
+3. REALISTISCHE NÄHRWERTE:
+   - Berechne exakte, realistische Nährwerte für 2 Portionen entsprechend der verwendeten Zutaten.
+
+${pantryInstruction}
 Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
@@ -1681,7 +1661,7 @@ Antworte als strukturiertes JSON-Objekt.`;
         responseSchema: structuredRecipeResponseSchema,
         temperature: 0.6,
       },
-      timeoutMs: 9000,
+      timeoutMs: 25000,
     });
 
     const parsed = safeExtractJson(response.text, null);
@@ -1710,30 +1690,10 @@ Antworte als strukturiertes JSON-Objekt.`;
     res.json({ success: true, recipe: parsed });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    logAiEvent("warn", "/api/ai/fridge-cook", "Fallback triggered for fridge-cook", { error: errMsg });
-    const fallback = buildFallbackFridgeRecipe({
-      ingredients,
-      isVegan,
-      maxTimeMinutes,
-      difficulty,
-      mealType,
-      extraWishes,
-      maxAdditionalIngredients,
-      includeBasics,
-      nutritionGoal,
-      calorieFilter,
-      proteinFilter,
-    });
-    res.json({
-      success: true,
-      isFallback: true,
-      recipe: {
-        ...fallback,
-        ...(chosenIdeaTitle ? { title: chosenIdeaTitle } : {}),
-        ...(chosenIdeaCategory ? { category: chosenIdeaCategory } : {}),
-        image: "",
-        isCustomAi: true,
-      },
+    logAiEvent("error", "/api/ai/fridge-cook", "Failed to generate fridge-cook recipe via Gemini", { error: errMsg });
+    res.status(503).json({
+      success: false,
+      error: `Das Rezept konnte nicht erstellt werden (${errMsg.slice(0, 100)}). Bitte versuche es noch einmal.`,
     });
   }
 });

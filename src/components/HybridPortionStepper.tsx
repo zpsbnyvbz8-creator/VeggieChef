@@ -102,7 +102,7 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
   const QUICK_VALUES = [1, 2, 4];
 
   return (
-    <div className={`grid grid-cols-[repeat(3,minmax(34px,40px))_1fr] gap-1.5 sm:gap-2 w-full select-none ${className}`}>
+    <div className={`grid grid-cols-[repeat(3,minmax(28px,36px))_1fr] sm:grid-cols-[repeat(3,minmax(34px,40px))_1fr] gap-1 sm:gap-1.5 w-full select-none ${className}`}>
       {/* Spalten 1, 2, 3: Statische Schnellwahl-Buttons für [1], [2], [4] */}
       {QUICK_VALUES.map((num) => {
         const isActive = !isStepperActive && value === num;
@@ -146,7 +146,7 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
           id={`${idPrefix}-stepper-minus`}
           onClick={handleDecrement}
           disabled={stepperValue <= min}
-          className={`flex-1 max-w-[40px] min-w-[32px] h-12 min-h-[48px] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 ${
+          className={`w-8 sm:w-9 h-12 min-h-[48px] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 p-0 ${
             isStepperActive
               ? 'text-white hover:bg-black/10 active:bg-black/20'
               : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100 active:bg-stone-200'
@@ -165,7 +165,7 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
 
         {/* Gespeicherter/Aktueller Stepper-Wert X */}
         <span
-          className={`flex-1 min-w-[20px] text-center text-sm sm:text-base font-bold tabular-nums select-none px-0.5 ${
+          className={`flex-1 min-w-0 text-center text-sm sm:text-base font-bold tabular-nums select-none px-1 truncate ${
             isStepperActive ? 'text-white' : 'text-stone-800'
           }`}
           aria-live="polite"
@@ -180,12 +180,12 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
           }`}
         />
 
-        {/* Plus-Button (Mindesthöhe 48px) */}
+        {/* Plus-Button (Mindesthöhe 48px, sauberes Padding, nie abgeschnitten) */}
         <button
           type="button"
           id={`${idPrefix}-stepper-plus`}
           onClick={handleIncrement}
-          className={`flex-1 max-w-[40px] min-w-[32px] h-12 min-h-[48px] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90 shrink-0 ${
+          className={`w-8 sm:w-9 h-12 min-h-[48px] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90 shrink-0 p-0 ${
             isStepperActive
               ? 'text-white hover:bg-black/10 active:bg-black/20'
               : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100 active:bg-stone-200'

@@ -82,6 +82,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   const [currentIdea, setCurrentIdea] = useState<FridgeCookIdea | null>(null);
   const [isLoadingIdea, setIsLoadingIdea] = useState(false);
   const [isCreatingFinalRecipe, setIsCreatingFinalRecipe] = useState(false);
+  const [modalErrorMessage, setModalErrorMessage] = useState<string | null>(null);
   const [rejectedIdeaTitles, setRejectedIdeaTitles] = useState<string[]>([]);
   const [attemptNumber, setAttemptNumber] = useState(1);
 
@@ -124,98 +125,34 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   // Step 1: Lightweight Idea Generation (saves token usage)
   const fetchIdea = async (exclude: string[]) => {
     try {
-      let ideaResult: FridgeCookIdea | null = null;
-      try {
-        const response = await fetch('/api/ai/fridge-cook-idea', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ingredients: selectedIngredients,
-            isVegan,
-            maxTimeMinutes: maxTime,
-            difficulty: 'Einfach',
-            mealType: 'Hauptgericht',
-            extraWishes,
-            calorieFilter,
-            proteinFilter,
-            excludeTitles: exclude,
-          }),
-        });
+      setModalErrorMessage(null);
+      const response = await fetch('/api/ai/fridge-cook-idea', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ingredients: selectedIngredients,
+          isVegan,
+          maxTimeMinutes: maxTime,
+          difficulty: 'Einfach',
+          mealType: 'Hauptgericht',
+          extraWishes,
+          calorieFilter,
+          proteinFilter,
+          excludeTitles: exclude,
+        }),
+      });
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.success && data.idea) {
-            ideaResult = data.idea;
-          }
-        }
-      } catch (apiErr) {
-        console.warn('API /api/ai/fridge-cook-idea unavailable, using local idea fallback:', apiErr);
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.success || !data?.idea) {
+        const errorDetail = data?.error || 'Die Rezeptidee konnte nicht generiert werden. Bitte versuche es noch einmal.';
+        throw new Error(errorDetail);
       }
 
-      if (!ideaResult) {
-        const lead = selectedIngredients[0] || 'Gemüse';
-        const second = selectedIngredients[1] || (selectedIngredients.length > 1 ? selectedIngredients[1] : 'Kräutern');
-        const isHighProtein = proteinFilter === 'high' || proteinFilter === 'very-high';
-        const isHighCal = calorieFilter === 'high';
-        const isLowCal = calorieFilter === 'low';
-
-        const localPool: FridgeCookIdea[] = [
-          {
-            title: isVegan ? `Cremige ${lead}-Pfanne mit ${second}` : `Würzige ${lead}-Pfanne mit ${second}`,
-            category: 'Schnelle Küche',
-            dishType: 'Aromatische Blitz-Pfanne',
-            pitch: `Ein unkompliziertes 20-Minuten-Gericht, das ${lead} und ${second} perfekt miteinander verbindet.`,
-            estimatedTimeMinutes: Math.min(maxTime, 25),
-            estimatedCalories: isHighCal ? 760 : isLowCal ? 420 : 530,
-            estimatedProtein: proteinFilter === 'very-high' ? 42 : isHighProtein ? 32 : 22,
-            keyIngredientsUsed: selectedIngredients.slice(0, 3),
-            basicPantryItemsNeeded: includeBasics ? ['Speiseöl', 'Salz & Pfeffer'] : undefined,
-          },
-          {
-            title: isVegan ? `Wärmendes ${lead}-Curry mit ${second}` : `Aromatisches ${lead}-Curry mit ${second}`,
-            category: 'Currys & Eintöpfe',
-            dishType: 'Samtiges Kokos-Curry',
-            pitch: `Ein duftendes, samtiges Curry mit ${lead} in einer feinen aromatischen Sauce.`,
-            estimatedTimeMinutes: Math.min(maxTime, 30),
-            estimatedCalories: isHighCal ? 780 : isLowCal ? 450 : 560,
-            estimatedProtein: proteinFilter === 'very-high' ? 40 : isHighProtein ? 30 : 20,
-            keyIngredientsUsed: selectedIngredients.slice(0, 3),
-            basicPantryItemsNeeded: includeBasics ? ['Speiseöl', 'Currypulver', 'Salz'] : undefined,
-          },
-          {
-            title: `Bunte Nährstoff-Bowl mit ${lead} & ${second}`,
-            category: 'Bowls & Salate',
-            dishType: 'Knackig-frische Wohlfühl-Bowl',
-            pitch: `Eine nährstoffreiche Schüssel voller Frische und Texturen mit mariniertem ${lead}.`,
-            estimatedTimeMinutes: Math.min(maxTime, 20),
-            estimatedCalories: isHighCal ? 740 : isLowCal ? 410 : 510,
-            estimatedProtein: proteinFilter === 'very-high' ? 38 : isHighProtein ? 31 : 21,
-            keyIngredientsUsed: selectedIngredients.slice(0, 3),
-            basicPantryItemsNeeded: includeBasics ? ['Essig & Öl', 'Salz & Pfeffer'] : undefined,
-          },
-          {
-            title: `Herzhafte Ofen-Röstung mit ${lead}`,
-            category: 'Ofengerichte',
-            dishType: 'Knuspriges Blechgericht',
-            pitch: `Im Ofen goldbraun geröstet, entfaltet ${lead} seine Röstaromen besonders intensiv.`,
-            estimatedTimeMinutes: Math.min(maxTime, 25),
-            estimatedCalories: isHighCal ? 750 : isLowCal ? 430 : 520,
-            estimatedProtein: proteinFilter === 'very-high' ? 36 : isHighProtein ? 29 : 19,
-            keyIngredientsUsed: selectedIngredients.slice(0, 3),
-            basicPantryItemsNeeded: includeBasics ? ['Olivenöl', 'Rosmarin', 'Meersalz'] : undefined,
-          },
-        ];
-
-        const available = localPool.filter(
-          (p) => !exclude.some((ex) => ex.toLowerCase() === p.title.toLowerCase())
-        );
-        ideaResult = available.length > 0 ? available[0] : localPool[0];
-      }
-
-      setCurrentIdea(ideaResult);
+      setCurrentIdea(data.idea);
     } catch (err: any) {
       console.error('Failed to get fridge cook idea:', err);
-      setErrorMessage('Die Rezeptidee konnte nicht geladen werden. Bitte versuche es noch einmal.');
+      setModalErrorMessage(err?.message || 'Die Rezeptidee konnte nicht geladen werden. Bitte versuche es noch einmal.');
     } finally {
       setIsLoadingIdea(false);
       setIsGenerating(false);
@@ -228,6 +165,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
     setIsIdeaModalOpen(true);
     setIsLoadingIdea(true);
     setErrorMessage(null);
+    setModalErrorMessage(null);
     setAttemptNumber(1);
     setRejectedIdeaTitles([]);
 
@@ -240,6 +178,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
     setRejectedIdeaTitles(updatedRejected);
     setAttemptNumber((prev) => prev + 1);
     setIsLoadingIdea(true);
+    setModalErrorMessage(null);
 
     await fetchIdea(updatedRejected);
   };
@@ -249,115 +188,38 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
     if (!currentIdea || selectedIngredients.length === 0) return;
     setIsCreatingFinalRecipe(true);
     setErrorMessage(null);
+    setModalErrorMessage(null);
 
     try {
-      let raw: any = null;
-
-      try {
-        const response = await fetch('/api/ai/fridge-cook', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ingredients: selectedIngredients,
-            isVegan,
-            maxTimeMinutes: maxTime,
-            difficulty: 'Einfach',
-            mealType: 'Hauptgericht',
-            extraWishes,
-            maxAdditionalIngredients: maxExtraIngredients,
-            includeBasics,
-            nutritionGoal,
-            calorieFilter,
-            proteinFilter,
-            chosenIdeaTitle: currentIdea.title,
-            chosenIdeaPitch: currentIdea.pitch,
-            chosenIdeaCategory: currentIdea.category,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.success && data.recipe) {
-            raw = data.recipe;
-          }
-        }
-      } catch (fetchErr) {
-        console.warn('API /api/ai/fridge-cook unavailable, using local recipe fallback:', fetchErr);
-      }
-
-      if (!raw) {
-        const primaryIng = selectedIngredients[0] || 'Gemüse';
-        const otherIngs = selectedIngredients.slice(1);
-        const isHighProtein = proteinFilter === 'high' || proteinFilter === 'very-high';
-        const isExtraProtein = proteinFilter === 'very-high';
-        const isMediumProtein = proteinFilter === 'medium';
-        const isHighCal = calorieFilter === 'high';
-        const isLowCal = calorieFilter === 'low';
-        const isModerateCal = calorieFilter === 'moderate';
-
-        const cal = isHighCal ? 780 : isLowCal ? 420 : isModerateCal ? 580 : (isHighProtein ? 540 : 460);
-        const prot = isExtraProtein ? 42 : isHighProtein ? 34 : isMediumProtein ? 24 : (isVegan ? 18 : 21);
-        const fat = isHighCal ? 28 : isLowCal ? 9 : 14;
-        const carbs = isHighCal ? 84 : isLowCal ? 38 : 48;
-
-        raw = {
-          title: currentIdea.title,
-          subtitle: `Kreiert aus deinen Vorräten (${selectedIngredients.slice(0, 3).join(', ')})`,
-          category: currentIdea.category || 'Schnelle Küche',
+      const response = await fetch('/api/ai/fridge-cook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ingredients: selectedIngredients,
           isVegan,
-          prepTimeMinutes: Math.min(maxTime > 15 ? 10 : 5, maxTime),
-          cookTimeMinutes: Math.max(10, maxTime - 10),
+          maxTimeMinutes: maxTime,
           difficulty: 'Einfach',
-          servings: 2,
-          calories: cal,
-          protein: prot,
-          carbs,
-          fat,
-          fiber: 8,
-          iron: 3.8,
-          ingredients: [
-            ...selectedIngredients.map((ing) => ({
-              name: ing,
-              amount: 150,
-              unit: 'g',
-              origin: 'pantry',
-            })),
-            ...(includeBasics
-              ? [
-                  { name: 'Natives Olivenöl', amount: 2, unit: 'EL', origin: 'pantry' },
-                  { name: 'Meersalz & bunter Pfeffer', amount: 1, unit: 'Prise', origin: 'pantry' },
-                  { name: 'Frischer Knoblauch', amount: 1, unit: 'Zehe', origin: 'pantry' },
-                ]
-              : []),
-          ],
-          steps: [
-            {
-              stepNumber: 1,
-              title: 'Zutaten vorbereiten',
-              text: `${selectedIngredients.join(', ')} gründlich säubern, waschen und in gleichmäßige Stücke schneiden.`,
-              timerMinutes: 5,
-            },
-            {
-              stepNumber: 2,
-              title: 'Anbraten & Röstaromen',
-              text: `Etwas Öl in einer weiten Pfanne erhitzen. ${primaryIng} zuerst für 3–4 Minuten scharf anbraten.`,
-              timerMinutes: 4,
-            },
-            {
-              stepNumber: 3,
-              title: 'Sanft garen & verfeinern',
-              text: `${otherIngs.length > 0 ? otherIngs.join(', ') + ' und die' : 'Die'} restlichen Zutaten unterrühren. Mit Salz und Pfeffer abschmecken und 8–10 Minuten garen.`,
-              timerMinutes: 8,
-            },
-            {
-              stepNumber: 4,
-              title: 'Abschmecken & Anrichten',
-              text: 'Heiß auf Tellern anrichten und nach Geschmack mit frischen Kräutern verfeinern.',
-            },
-          ],
-          chefTips: currentIdea.pitch,
-        };
+          mealType: 'Hauptgericht',
+          extraWishes,
+          maxAdditionalIngredients: maxExtraIngredients,
+          includeBasics,
+          nutritionGoal,
+          calorieFilter,
+          proteinFilter,
+          chosenIdeaTitle: currentIdea.title,
+          chosenIdeaPitch: currentIdea.pitch,
+          chosenIdeaCategory: currentIdea.category,
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.success || !data?.recipe) {
+        const errorDetail = data?.error || 'Das finale Rezept konnte nicht erstellt werden. Bitte versuche es noch einmal.';
+        throw new Error(errorDetail);
       }
+
+      const raw = data.recipe;
 
       const newRec: Recipe = {
         id: `ai-rec-${Date.now()}`,
@@ -371,7 +233,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
         cookTimeMinutes: raw.cookTimeMinutes || 15,
         totalTimeMinutes: (raw.prepTimeMinutes || 10) + (raw.cookTimeMinutes || 15),
         difficulty: raw.difficulty || 'Einfach',
-        servings: raw.servings || 2,
+        servings: 2,
         rating: 5.0,
         reviewCount: 1,
         tags: [isVegan ? 'Vegan' : 'Vegetarisch', 'Resteverwertung', currentIdea.category || 'Schnelle Küche'],
@@ -419,9 +281,19 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
       navigate(`/recipes/${newRec.id}`);
     } catch (err: any) {
       console.error('Failed to create final recipe:', err);
-      setErrorMessage(err?.message || 'Das finale Rezept konnte nicht erstellt werden. Bitte versuche es noch einmal.');
+      setModalErrorMessage(err?.message || 'Das finale Rezept konnte nicht erstellt werden. Bitte versuche es noch einmal.');
     } finally {
       setIsCreatingFinalRecipe(false);
+    }
+  };
+
+  const handleRetryAfterError = async () => {
+    setModalErrorMessage(null);
+    if (currentIdea) {
+      await handleConfirmCreateFinalRecipe();
+    } else {
+      setIsLoadingIdea(true);
+      await fetchIdea(rejectedIdeaTitles);
     }
   };
 
@@ -1064,13 +936,21 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
       {/* Two-step Fridge Cook Idea Modal (pitch approval before full generation to save AI tokens) */}
       <FridgeIdeaModal
         isOpen={isIdeaModalOpen}
-        onClose={() => setIsIdeaModalOpen(false)}
+        onClose={() => {
+          setIsIdeaModalOpen(false);
+          setModalErrorMessage(null);
+        }}
         idea={currentIdea}
         isLoadingIdea={isLoadingIdea}
         isCreatingFinalRecipe={isCreatingFinalRecipe}
+        errorMessage={modalErrorMessage}
         onConfirmCreate={handleConfirmCreateFinalRecipe}
         onRetryIdea={handleRetryIdea}
-        onCancel={() => setIsIdeaModalOpen(false)}
+        onRetryAfterError={handleRetryAfterError}
+        onCancel={() => {
+          setIsIdeaModalOpen(false);
+          setModalErrorMessage(null);
+        }}
         isVegan={isVegan}
         attemptNumber={attemptNumber}
       />
