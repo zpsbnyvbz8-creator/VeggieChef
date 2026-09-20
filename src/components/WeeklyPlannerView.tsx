@@ -25,7 +25,9 @@ import {
   Heart,
   ArrowUpDown,
   GripVertical,
-  MoreHorizontal
+  MoreHorizontal,
+  ChefHat,
+  ChevronDown
 } from 'lucide-react';
 import { DayPlan, MealPlanSlot, Recipe, WeekPlan } from '../types';
 import { SyncConfig } from '../lib/syncService';
@@ -118,7 +120,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const [aiMealOption, setAiMealOption] = useState<'lunch' | 'dinner' | 'both'>('both');
   const [aiIsVegan, setAiIsVegan] = useState(onlyVeganGlobal);
   const [aiPeopleCount, setAiPeopleCount] = useState<number>(2);
-  const [aiMaxMinutes, setAiMaxMinutes] = useState<number>(30);
+  const [aiMaxMinutes, setAiMaxMinutes] = useState<number>(0); // 0 = Standardmäßig "Beliebig"
+  const [aiCalorieFilter, setAiCalorieFilter] = useState<string>('all'); // 'all', 'high', 'low', 'moderate'
+  const [aiProteinFilter, setAiProteinFilter] = useState<string>('all'); // 'all', 'high', 'very-high', 'medium'
+  const [aiDifficultyFilter, setAiDifficultyFilter] = useState<string>('all'); // 'all', 'Einfach', 'Mittel', 'Anspruchsvoll'
   const [aiWishes, setAiWishes] = useState<string>('');
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [planServings, setPlanServings] = useState<number>(3);
@@ -517,15 +522,48 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     };
 
     try {
+      // Compile combined wishes incorporating nutrition/difficulty filters
+      const wishParts: string[] = [];
+
+      if (aiCalorieFilter === 'high') {
+        wishParts.push('High Calorie (energiereich, mindestens 750 kcal pro Mahlzeit)');
+      } else if (aiCalorieFilter === 'low') {
+        wishParts.push('Kalorienarm (unter 500 kcal pro Mahlzeit, leicht)');
+      } else if (aiCalorieFilter === 'moderate') {
+        wishParts.push('Ausgewogener Kaloriengehalt (ca. 500–700 kcal pro Mahlzeit)');
+      }
+
+      if (aiProteinFilter === 'high') {
+        wishParts.push('High Protein (mindestens 30g Protein pro Mahlzeit mit Tofu, Hülsenfrüchten, Tempeh, etc.)');
+      } else if (aiProteinFilter === 'very-high') {
+        wishParts.push('Extra High Protein (mindestens 40g Protein pro Mahlzeit)');
+      } else if (aiProteinFilter === 'medium') {
+        wishParts.push('Guter Proteingehalt (mindestens 20g Protein pro Mahlzeit)');
+      }
+
+      if (aiDifficultyFilter !== 'all') {
+        wishParts.push(`Schwierigkeitsgrad: ${aiDifficultyFilter}`);
+      }
+
+      if (aiMaxMinutes > 0) {
+        wishParts.push(`Zubereitungszeit: max. ${aiMaxMinutes} Minuten`);
+      }
+
+      if (aiWishes.trim()) {
+        wishParts.push(aiWishes.trim());
+      }
+
+      const combinedWishes = wishParts.join(', ');
+
       const response = await fetch('/api/ai/meal-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           isVegan: aiIsVegan,
           peopleCount: aiPeopleCount,
-          maxMinutesPerMeal: aiMaxMinutes || 35,
+          maxMinutesPerMeal: aiMaxMinutes > 0 ? aiMaxMinutes : 60,
           mealOption: aiMealOption,
-          wishes: aiWishes.trim(),
+          wishes: combinedWishes,
         }),
       });
       let data: any = null;
@@ -606,30 +644,48 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       }
     } catch (err) {
       console.warn('Fallback generation activated for meal plan', err);
+      // Filter recipePool by user preferences if sufficient recipes exist
+      let filteredPool = [...recipePool];
+      if (aiCalorieFilter === 'high') {
+        const highCal = filteredPool.filter(r => (r.nutrients?.calories || 0) >= 600);
+        if (highCal.length >= 3) filteredPool = highCal;
+      } else if (aiCalorieFilter === 'low') {
+        const lowCal = filteredPool.filter(r => (r.nutrients?.calories || 0) <= 550);
+        if (lowCal.length >= 3) filteredPool = lowCal;
+      }
+      if (aiProteinFilter === 'high' || aiProteinFilter === 'very-high') {
+        const highProt = filteredPool.filter(r => (r.nutrients?.protein || 0) >= 22);
+        if (highProt.length >= 3) filteredPool = highProt;
+      }
+      if (aiDifficultyFilter !== 'all') {
+        const diffMatches = filteredPool.filter(r => r.difficulty === aiDifficultyFilter);
+        if (diffMatches.length >= 3) filteredPool = diffMatches;
+      }
+
       // Guarantee reliable fallback recipes strictly conforming to vegan settings
       const fallbackDays = mealPlan.map((day, idx) => {
         const newDay = { ...day };
         if (aiMealOption === 'lunch' || aiMealOption === 'both') {
-          const rec = recipePool[idx % recipePool.length];
+          const rec = filteredPool[idx % filteredPool.length];
           newDay.lunch = {
             recipeId: rec?.id || `fb-lunch-${idx}`,
             recipeTitle: rec?.title || (aiIsVegan ? 'Kichererbsen-Avocado Bowl mit Zitronen-Tahini' : 'Mediterraner Hirten-Salat'),
             isVegan: aiIsVegan || Boolean(rec?.isVegan),
-            prepTime: rec?.totalTimeMinutes || 20,
-            calories: rec?.nutrients?.calories || 430,
-            protein: rec?.nutrients?.protein || 19,
+            prepTime: rec?.totalTimeMinutes || (aiMaxMinutes > 0 ? aiMaxMinutes : 20),
+            calories: rec?.nutrients?.calories || (aiCalorieFilter === 'high' ? 760 : 430),
+            protein: rec?.nutrients?.protein || (aiProteinFilter === 'high' ? 32 : 19),
             servings: aiPeopleCount,
           };
         }
         if (aiMealOption === 'dinner' || aiMealOption === 'both') {
-          const rec = recipePool[(idx + 3) % recipePool.length];
+          const rec = filteredPool[(idx + 3) % filteredPool.length];
           newDay.dinner = {
             recipeId: rec?.id || `fb-dinner-${idx}`,
             recipeTitle: rec?.title || (aiIsVegan ? 'Rote-Linsen Kokos-Curry mit Reis' : 'Ofen-Gnocchi mit Spinat'),
             isVegan: aiIsVegan || Boolean(rec?.isVegan),
-            prepTime: rec?.totalTimeMinutes || 25,
-            calories: rec?.nutrients?.calories || 510,
-            protein: rec?.nutrients?.protein || 23,
+            prepTime: rec?.totalTimeMinutes || (aiMaxMinutes > 0 ? aiMaxMinutes : 25),
+            calories: rec?.nutrients?.calories || (aiCalorieFilter === 'high' ? 820 : 510),
+            protein: rec?.nutrients?.protein || (aiProteinFilter === 'high' ? 35 : 23),
             servings: aiPeopleCount,
           };
         }
@@ -720,7 +776,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               </button>
 
               {showContextMenu && (
-                <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl border border-[#ECEBE8] shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute right-0 top-full mt-2 w-64 sm:w-72 bg-white rounded-2xl border border-[#ECEBE8] shadow-2xl p-2 z-40 animate-in fade-in zoom-in-95 duration-100 space-y-1">
                   <button
                     type="button"
                     id="context-menu-all-weeks-btn"
@@ -728,9 +784,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setShowContextMenu(false);
                       setShowAllWeeksModal(true);
                     }}
-                    className="w-full px-3 py-2.5 text-left text-xs sm:text-sm font-medium text-stone-700 hover:bg-[#FAF9F6] flex items-center gap-2.5 transition-colors cursor-pointer"
+                    className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl text-left text-[15px] sm:text-base font-semibold text-stone-800 hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
                   >
-                    <Layers className="w-4.5 h-4.5 text-stone-500" />
+                    <Layers className="w-5 h-5 text-stone-500 shrink-0" />
                     <span>Alle Wochen anzeigen</span>
                   </button>
 
@@ -742,9 +798,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setShowConfirmClearAll(true);
                     }}
                     disabled={totalPlannedMeals === 0}
-                    className="w-full px-3 py-2.5 text-left text-xs sm:text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-2.5 transition-colors cursor-pointer"
+                    className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl text-left text-[15px] sm:text-base font-semibold text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
                   >
-                    <Trash2 className="w-4.5 h-4.5 text-rose-500" />
+                    <Trash2 className="w-5 h-5 text-rose-500 shrink-0" />
                     <span>Plan leeren</span>
                   </button>
                 </div>
@@ -821,7 +877,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               </button>
 
               {showContextMenu && (
-                <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl border border-[#ECEBE8] shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute right-0 top-full mt-2 w-64 sm:w-72 bg-white rounded-2xl border border-[#ECEBE8] shadow-2xl p-2 z-40 animate-in fade-in zoom-in-95 duration-100 space-y-1">
                   <button
                     type="button"
                     id="mobile-context-menu-all-weeks-btn"
@@ -829,9 +885,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setShowContextMenu(false);
                       setShowAllWeeksModal(true);
                     }}
-                    className="w-full px-3 py-2.5 text-left text-xs sm:text-sm font-medium text-stone-700 hover:bg-[#FAF9F6] flex items-center gap-2.5 transition-colors cursor-pointer"
+                    className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl text-left text-[15px] sm:text-base font-semibold text-stone-800 hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
                   >
-                    <Layers className="w-4.5 h-4.5 text-stone-500" />
+                    <Layers className="w-5 h-5 text-stone-500 shrink-0" />
                     <span>Alle Wochen anzeigen</span>
                   </button>
 
@@ -843,9 +899,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setShowConfirmClearAll(true);
                     }}
                     disabled={totalPlannedMeals === 0}
-                    className="w-full px-3 py-2.5 text-left text-xs sm:text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-2.5 transition-colors cursor-pointer"
+                    className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl text-left text-[15px] sm:text-base font-semibold text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
                   >
-                    <Trash2 className="w-4.5 h-4.5 text-rose-500" />
+                    <Trash2 className="w-5 h-5 text-rose-500 shrink-0" />
                     <span>Plan leeren</span>
                   </button>
                 </div>
@@ -1563,7 +1619,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-7 space-y-5 shadow-2xl border border-[#ECEBE8] animate-in zoom-in-95 duration-200 overscroll-contain"
+            className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-7 space-y-5 shadow-2xl border border-[#ECEBE8] animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-start justify-between border-b border-[#ECEBE8] pb-4">
               <div>
@@ -1594,7 +1650,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   <button
                     type="button"
                     onClick={() => setAiMealOption('lunch')}
-                    className={`min-h-[46px] py-2.5 px-2 rounded-xl text-xs sm:text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center ${
+                    className={`min-h-[48px] py-2.5 px-2 rounded-xl text-xs sm:text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center ${
                       aiMealOption === 'lunch'
                         ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
                         : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
@@ -1605,7 +1661,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   <button
                     type="button"
                     onClick={() => setAiMealOption('dinner')}
-                    className={`min-h-[46px] py-2.5 px-2 rounded-xl text-xs sm:text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center ${
+                    className={`min-h-[48px] py-2.5 px-2 rounded-xl text-xs sm:text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center ${
                       aiMealOption === 'dinner'
                         ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
                         : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
@@ -1616,7 +1672,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   <button
                     type="button"
                     onClick={() => setAiMealOption('both')}
-                    className={`min-h-[46px] py-2.5 px-2 rounded-xl text-xs sm:text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center ${
+                    className={`min-h-[48px] py-2.5 px-2 rounded-xl text-xs sm:text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center ${
                       aiMealOption === 'both'
                         ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
                         : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
@@ -1636,7 +1692,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   <button
                     type="button"
                     onClick={() => setAiIsVegan(true)}
-                    className={`min-h-[46px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center ${
+                    className={`min-h-[48px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center ${
                       aiIsVegan
                         ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
                         : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
@@ -1647,7 +1703,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   <button
                     type="button"
                     onClick={() => setAiIsVegan(false)}
-                    className={`min-h-[46px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center ${
+                    className={`min-h-[48px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center ${
                       !aiIsVegan
                         ? 'bg-[#2D3E40] text-white border-[#2D3E40] shadow-xs'
                         : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
@@ -1670,24 +1726,25 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 />
               </div>
 
-              {/* 4. Max cooking time */}
+              {/* 4. Max cooking time - Standardmäßig "Beliebig" */}
               <div>
                 <label className="block font-bold text-[#2D3E40] text-xs uppercase tracking-wider mb-2">
                   4. Max. Zubereitungszeit
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
+                    { val: 0, label: '⏱️ Beliebig' },
                     { val: 20, label: '⚡ Bis 20 Min.' },
                     { val: 35, label: '🍲 Bis 35 Min.' },
-                    { val: 50, label: '⏱️ Beliebig' },
+                    { val: 50, label: '🍳 Bis 50 Min.' },
                   ].map((opt) => (
                     <button
                       key={opt.val}
                       type="button"
                       onClick={() => setAiMaxMinutes(opt.val)}
-                      className={`py-2.5 px-1.5 rounded-xl font-medium border text-center transition-all cursor-pointer min-h-[46px] flex items-center justify-center text-xs sm:text-sm touch-manipulation active:scale-95 ${
+                      className={`py-2.5 px-2 rounded-xl font-semibold border text-center transition-all cursor-pointer min-h-[48px] flex items-center justify-center text-xs sm:text-sm touch-manipulation active:scale-95 ${
                         aiMaxMinutes === opt.val
-                          ? 'bg-[#2D3E40] text-white border-[#2D3E40] shadow-xs font-semibold'
+                          ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
                           : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
                       }`}
                     >
@@ -1697,62 +1754,78 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 </div>
               </div>
 
-              {/* 5. Personal Wishes / Priorities */}
+              {/* 5. Nährwerte & Filter (Kalorien, Protein, Schwierigkeit - wie auf der Startseite) */}
               <div>
-                <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-                  <label className="block font-bold text-[#2D3E40] text-xs uppercase tracking-wider">
-                    5. Persönliche Wünsche & Vorlieben
-                  </label>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-[#ECEBE8] bg-[#E8F0EA] text-[#3D6447]">
-                    <Sparkles className="w-3 h-3 text-[#3D6447]" />
-                    Höchste Priorität
-                  </span>
+                <label className="block font-bold text-[#2D3E40] text-xs uppercase tracking-wider mb-2">
+                  5. Nährwerte & Filter (Kalorien, Protein, Schwierigkeit)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* Kalorien */}
+                  <div className="relative">
+                    <select
+                      id="ai-filter-calories"
+                      value={aiCalorieFilter}
+                      onChange={(e) => setAiCalorieFilter(e.target.value)}
+                      className="w-full appearance-none min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-xs sm:text-sm font-semibold rounded-xl pl-9 pr-8 py-2.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
+                    >
+                      <option value="all">Kalorien: Alle</option>
+                      <option value="high">High Calorie (750+ kcal)</option>
+                      <option value="low">Kalorienarm (&lt; 500 kcal)</option>
+                      <option value="moderate">Ausgewogen (500–700 kcal)</option>
+                    </select>
+                    <Flame className="w-4 h-4 text-[#7A7E7B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <ChevronDown className="w-4 h-4 text-[#7A7E7B] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+
+                  {/* Protein */}
+                  <div className="relative">
+                    <select
+                      id="ai-filter-protein"
+                      value={aiProteinFilter}
+                      onChange={(e) => setAiProteinFilter(e.target.value)}
+                      className="w-full appearance-none min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-xs sm:text-sm font-semibold rounded-xl pl-9 pr-8 py-2.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
+                    >
+                      <option value="all">Protein: Alle</option>
+                      <option value="high">High Protein (30g+)</option>
+                      <option value="very-high">Extra High Protein (40g+)</option>
+                      <option value="medium">20g+ Protein</option>
+                    </select>
+                    <Dumbbell className="w-4 h-4 text-[#7A7E7B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <ChevronDown className="w-4 h-4 text-[#7A7E7B] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+
+                  {/* Schwierigkeit */}
+                  <div className="relative">
+                    <select
+                      id="ai-filter-difficulty"
+                      value={aiDifficultyFilter}
+                      onChange={(e) => setAiDifficultyFilter(e.target.value)}
+                      className="w-full appearance-none min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-xs sm:text-sm font-semibold rounded-xl pl-9 pr-8 py-2.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
+                    >
+                      <option value="all">Schwierigkeit: Alle</option>
+                      <option value="Einfach">Einfach</option>
+                      <option value="Mittel">Mittel</option>
+                      <option value="Anspruchsvoll">Anspruchsvoll</option>
+                    </select>
+                    <ChefHat className="w-4 h-4 text-[#7A7E7B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <ChevronDown className="w-4 h-4 text-[#7A7E7B] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
+              </div>
+
+              {/* 6. Personal Wishes / Notes (optional) - Keine Badges oder Vorschlags-Chips mehr */}
+              <div>
+                <label className="block font-bold text-[#2D3E40] text-xs uppercase tracking-wider mb-2">
+                  6. Zusätzliche Wünsche & Notizen (optional)
+                </label>
                 <input
                   type="text"
                   id="ai-meal-plan-wishes-input"
                   value={aiWishes}
                   onChange={(e) => setAiWishes(e.target.value)}
-                  placeholder="z.B. viel Pasta, asiatisch angehaucht, High-Protein, keine Pilze..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF9F6] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-xs sm:text-sm text-[#2D3E40] placeholder-[#A0A5A1] transition-all outline-none"
+                  placeholder="z. B. keine Pilze, asiatisch angehaucht, viel Ofengemüse..."
+                  className="w-full px-3.5 py-3 rounded-xl bg-[#FAF9F6] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-sm sm:text-base text-[#2D3E40] placeholder-[#A0A5A1] transition-all outline-none"
                 />
-                {/* Popular quick-wish chips */}
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {[
-                    { label: '🍝 Viel Pasta', val: 'viel Pasta' },
-                    { label: '🍛 Cremige Currys', val: 'cremige Currys' },
-                    { label: '💪 High Protein', val: 'High-Protein' },
-                    { label: '🥢 Asiatisch & Bowls', val: 'asiatisch angehaucht & Bowls' },
-                    { label: '⚡ Extra schnell', val: 'extra schnelle Zubereitung' },
-                    { label: '🥑 Leicht & frisch', val: 'leichte & frische Gerichte' },
-                    { label: '🚫 Ohne Pilze', val: 'ohne Pilze' },
-                  ].map((chip) => {
-                    const isSelected = aiWishes.toLowerCase().includes(chip.val.toLowerCase());
-                    return (
-                      <button
-                        key={chip.val}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            // Remove chip text
-                            const regex = new RegExp(`(,\\s*)?${chip.val}`, 'gi');
-                            setAiWishes((prev) => prev.replace(regex, '').replace(/^,\s*/, '').trim());
-                          } else {
-                            // Append chip text
-                            setAiWishes((prev) => (prev.trim() ? `${prev.trim()}, ${chip.val}` : chip.val));
-                          }
-                        }}
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border border-[#ECEBE8] transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                          isSelected
-                            ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs'
-                            : 'bg-[#FAF9F6] text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-white'
-                        }`}
-                      >
-                        {chip.label}
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Minus, Plus } from 'lucide-react';
 
 export interface HybridPortionStepperProps {
@@ -18,8 +18,8 @@ export interface HybridPortionStepperProps {
  * Interaktions- & Farblogik:
  * - Klick auf [1], [2] oder [4]: Button wird dunkelgrün (#4A7856) hervorgehoben.
  *   Der Stepper in Spalte 4 zeigt den gewählten Wert im dezenten weißen/hellgrauen Inaktiv-Zustand.
- * - Klick auf [+] oder [–] im Stepper: Stepper wird dunkelgrün (#4A7856) mit weißer Schrift/Icons,
- *   die Schnellwahl-Buttons (1, 2, 4) werden deselektiert.
+ * - Klick auf [+] oder [–] im Stepper: Stepper bleibt dauerhaft dunkelgrün (#4A7856) aktiv,
+ *   auch wenn man auf Werte wie 1, 2 oder 4 steppt!
  * - Touch-Targets: Mindesthöhe 48px (h-12) für alle Klickbereiche.
  */
 export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
@@ -32,34 +32,71 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
   // Stepper ist aktiv im Fokus, wenn der Nutzer im Stepper navigiert hat oder der Wert nicht in [1, 2, 4] liegt
   const [isStepperActive, setIsStepperActive] = useState<boolean>(() => ![1, 2, 4].includes(value));
 
-  // Aktualisiere Stepper-Fokus bei externen Wertänderungen
+  // Speichert den individuell eingegebenen Stepper-Wert separat, damit er beim Klick auf
+  // Schnellwahl-Buttons (1, 2, 4) gespeichert bleibt und nicht auf 1, 2 oder 4 zurückgesetzt wird.
+  const [hasCustomValue, setHasCustomValue] = useState<boolean>(() => ![1, 2, 4].includes(value));
+  const [stepperValue, setStepperValue] = useState<number>(() => value);
+
+  // Verfolgt interne Klicks, damit beim Steppen auf 1, 2 oder 4 der Stepper AKTIV bleibt
+  // und nicht fälschlicherweise auf die Schnellauswahl-Buttons umspringt.
+  const lastInternalValRef = useRef<number | null>(null);
+
+  // Aktualisiere Stepper-Fokus & Wert bei externen Änderungen (z. B. wenn ein anderes Rezept geladen wird)
   useEffect(() => {
+    // Wenn die Wertänderung von unserer eigenen Benutzerinteraktion im Stepper oder Quick-Select kam,
+    // überschreiben wir isStepperActive NICHT!
+    if (lastInternalValRef.current === value) {
+      lastInternalValRef.current = null;
+      return;
+    }
+
     if (![1, 2, 4].includes(value)) {
       setIsStepperActive(true);
+      setStepperValue(value);
+      setHasCustomValue(true);
+    } else {
+      setIsStepperActive(false);
+      // Nur solange der Nutzer noch keinen eigenen Wert im Stepper eingestellt hat,
+      // synchronisieren wir den Anfangswert mit dem gewählten Preset.
+      if (!hasCustomValue) {
+        setStepperValue(value);
+      }
     }
-  }, [value]);
+  }, [value, hasCustomValue]);
 
   const handleQuickSelect = (num: number) => {
+    lastInternalValRef.current = num;
     setIsStepperActive(false);
+    // stepperValue wird hier BEWUSST NICHT überschrieben:
+    // Der vom Nutzer manuell eingestellte Stepper-Wert bleibt gespeichert!
     onChange(num);
   };
 
   const handleDecrement = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const nextVal = Math.max(min, stepperValue - 1);
+    lastInternalValRef.current = nextVal;
     setIsStepperActive(true);
-    const nextVal = Math.max(min, value - 1);
+    setHasCustomValue(true);
+    setStepperValue(nextVal);
     onChange(nextVal);
   };
 
   const handleIncrement = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const nextVal = stepperValue + 1;
+    lastInternalValRef.current = nextVal;
     setIsStepperActive(true);
-    const nextVal = value + 1;
+    setHasCustomValue(true);
+    setStepperValue(nextVal);
     onChange(nextVal);
   };
 
   const handleStepperContainerClick = () => {
+    lastInternalValRef.current = stepperValue;
     setIsStepperActive(true);
+    // Bei Klick auf den Stepper-Container (z. B. auf die Zahl) wird der gespeicherte Wert reaktiviert
+    onChange(stepperValue);
   };
 
   const QUICK_VALUES = [1, 2, 4];
@@ -97,14 +134,18 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
             ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
             : 'bg-white text-stone-700 border-[#ECEBE8] hover:border-stone-300 shadow-2xs'
         }`}
-        title={`Portionen im Stepper anpassen: aktuell ${value}`}
+        title={
+          isStepperActive
+            ? `Aktuell ${stepperValue} Portionen ausgewählt`
+            : `Gespeicherter Wert: ${stepperValue} Portionen (Klicken zum Aktivieren)`
+        }
       >
         {/* Minus-Button (Mindesthöhe 48px) */}
         <button
           type="button"
           id={`${idPrefix}-stepper-minus`}
           onClick={handleDecrement}
-          disabled={value <= min}
+          disabled={stepperValue <= min}
           className={`w-9 sm:w-10 h-12 min-h-[48px] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 ${
             isStepperActive
               ? 'text-white hover:bg-black/10 active:bg-black/20'
@@ -122,14 +163,14 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
           }`}
         />
 
-        {/* Aktueller Wert X */}
+        {/* Gespeicherter/Aktueller Stepper-Wert X */}
         <span
           className={`flex-1 min-w-[24px] text-center text-base font-bold tabular-nums select-none px-1 ${
             isStepperActive ? 'text-white' : 'text-stone-800'
           }`}
           aria-live="polite"
         >
-          {value}
+          {stepperValue}
         </span>
 
         {/* Vertikaler Teiler rechts */}
