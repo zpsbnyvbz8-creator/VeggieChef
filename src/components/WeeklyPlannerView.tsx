@@ -30,6 +30,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { DayPlan, MealPlanSlot, Recipe, WeekPlan } from '../types';
+import { RecipeImage } from './RecipeImage';
 import { SyncConfig } from '../lib/syncService';
 import { Users, Cloud } from 'lucide-react';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
@@ -118,7 +119,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   // AI Meal plan generator modal state - Reformed and simplified!
   const [showAIGeneratorModal, setShowAIGeneratorModal] = useState(false);
   const [aiMealOption, setAiMealOption] = useState<'lunch' | 'dinner' | 'both'>('both');
-  const [aiIsVegan, setAiIsVegan] = useState(onlyVeganGlobal);
+  const [aiIsVegan, setAiIsVegan] = useState(true);
   const [aiPeopleCount, setAiPeopleCount] = useState<number>(2);
   const [aiMaxMinutes, setAiMaxMinutes] = useState<number>(0); // 0 = Standardmäßig "Beliebig"
   const [aiCalorieFilter, setAiCalorieFilter] = useState<string>('all'); // 'all', 'high', 'low', 'moderate'
@@ -787,7 +788,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setNewWeekTitleInput('');
                       setShowCreateWeekModal(true);
                     }}
-                    className="w-full min-h-[38px] px-3 py-2 rounded-lg text-left text-xs sm:text-sm font-medium text-stone-800 hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                    className="w-full min-h-[38px] px-3 py-2 rounded-xl text-left text-xs sm:text-sm font-medium text-stone-800 hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
                   >
                     <Plus className="w-4 h-4 text-stone-500 shrink-0" />
                     <span>Woche hinzufügen</span>
@@ -800,7 +801,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setShowContextMenu(false);
                       setShowAllWeeksModal(true);
                     }}
-                    className="w-full min-h-[38px] px-3 py-2 rounded-lg text-left text-xs sm:text-sm font-medium text-stone-800 hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                    className="w-full min-h-[38px] px-3 py-2 rounded-xl text-left text-xs sm:text-sm font-medium text-stone-800 hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
                   >
                     <Layers className="w-4 h-4 text-stone-500 shrink-0" />
                     <span>Alle Wochen anzeigen</span>
@@ -814,7 +815,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setShowConfirmClearAll(true);
                     }}
                     disabled={totalPlannedMeals === 0}
-                    className="w-full min-h-[38px] px-3 py-2 rounded-lg text-left text-xs sm:text-sm font-medium text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                    className="w-full min-h-[38px] px-3 py-2 rounded-xl text-left text-xs sm:text-sm font-medium text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
                   >
                     <Trash2 className="w-4 h-4 text-rose-500 shrink-0" />
                     <span>Plan leeren</span>
@@ -1148,7 +1149,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                               const r = allRecipes.find((rec) => rec.id === day.lunch?.recipeId);
                               if (r) onSelectRecipe(r);
                             }}
-                            className="text-xs sm:text-sm font-semibold text-stone-900 leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] transition-colors"
+                            className="text-sm font-semibold text-stone-900 leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] transition-colors"
                             title={day.lunch.recipeTitle}
                           >
                             {day.lunch.recipeTitle}
@@ -1160,7 +1161,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                             removeSlot(day.dayId, 'lunch');
                             onCopyFeedback(`"${day.lunch?.recipeTitle || 'Mahlzeit'}" entfernt.`);
                           }}
-                          className="text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
+                          className="text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
                           title="Mahlzeit entfernen"
                         >
                           <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -1315,7 +1316,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                             const r = allRecipes.find((rec) => rec.id === day.dinner?.recipeId);
                             if (r) onSelectRecipe(r);
                           }}
-                          className="text-xs sm:text-sm font-semibold text-stone-900 leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] transition-colors"
+                          className="text-sm font-semibold text-stone-900 leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] transition-colors"
                           title={day.dinner.recipeTitle}
                         >
                           {day.dinner.recipeTitle}
@@ -1327,7 +1328,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                           removeSlot(day.dayId, 'dinner');
                           onCopyFeedback(`"${day.dinner?.recipeTitle || 'Mahlzeit'}" entfernt.`);
                         }}
-                        className="text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
+                        className="text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
                         title="Mahlzeit entfernen"
                       >
                         <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -1466,7 +1467,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 {pickerSearchQuery && (
                   <button
                     onClick={() => setPickerSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 w-8 h-8 flex items-center justify-center rounded-lg"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 w-8 h-8 flex items-center justify-center rounded-xl"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -1586,12 +1587,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                         }`}
                       >
                         {/* Bild-Header mit Badges und Favorit-Button */}
-                        <div className="relative h-36 sm:h-40 w-full overflow-hidden bg-stone-100 shrink-0">
-                          <img
-                            src={recipe.image || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80'}
+                        <div className="relative h-36 sm:h-40 w-full overflow-hidden bg-[#FAF9F6] shrink-0">
+                          <RecipeImage
+                            recipe={recipe}
+                            imgClassName="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             alt={recipe.title}
-                            referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                           
                           {/* Badges oben links */}

@@ -14,6 +14,7 @@ import {
   CalendarPlus
 } from 'lucide-react';
 import { Recipe } from '../types';
+import { RecipeImage } from './RecipeImage';
 import { generateRecipeIngredientsText } from '../utils/helpers';
 import { useRecipes } from '../context/RecipeContext';
 import { useShopping } from '../context/ShoppingContext';
@@ -81,12 +82,10 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
     >
       {/* Image Container */}
       <div className="relative aspect-4/3 overflow-hidden bg-[#FAF9F6]">
-        <img
-          src={recipe.image || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80'}
+        <RecipeImage
+          recipe={recipe}
+          imgClassName="w-full h-full object-cover group-hover:scale-104 transition-transform duration-500"
           alt={recipe.title}
-          referrerPolicy="no-referrer"
-          className="w-full h-full object-cover group-hover:scale-104 transition-transform duration-500"
-          loading="lazy"
         />
         
         {/* Top Badges Overlay */}

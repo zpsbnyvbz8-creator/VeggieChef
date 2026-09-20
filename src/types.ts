@@ -161,3 +161,16 @@ export interface CookingTimerState {
   isRunning: boolean;
 }
 
+export interface FridgeCookIdea {
+  title: string;
+  category: string;
+  dishType: string;
+  pitch: string;
+  estimatedTimeMinutes: number;
+  estimatedCalories: number;
+  estimatedProtein: number;
+  keyIngredientsUsed: string[];
+  basicPantryItemsNeeded?: string[];
+}
+
+

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Calendar, Clock, Flame, Dumbbell, Sun, Moon, Check } from 'lucide-react';
 import { Recipe, DayPlan, WeekPlan } from '../types';
+import { RecipeImage } from './RecipeImage';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 
 import { usePlanner } from '../context/PlannerContext';
@@ -77,12 +78,14 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Target Recipe Preview */}
           <div className="flex items-center gap-3 p-3 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8]">
-            <img
-              src={recipe.image || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=400&q=80'}
-              alt={recipe.title}
-              referrerPolicy="no-referrer"
-              className="w-14 h-14 rounded-lg object-cover shrink-0"
-            />
+            <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0">
+              <RecipeImage
+                recipe={recipe}
+                imgClassName="w-full h-full object-cover"
+                alt={recipe.title}
+                size="sm"
+              />
+            </div>
             <div className="min-w-0 flex-1">
               <span className={`inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full mb-1 border border-[#ECEBE8] ${
                 recipe.isVegan ? 'bg-[#EBF3ED] text-[#4A7856]' : 'bg-[#FAF2EC] text-[#E67E22]'

@@ -291,6 +291,19 @@ const substituteRequestSchema = z.object({
   currentIngredients: z.array(z.any()).max(50).optional().default([]),
 });
 
+const fridgeCookIdeaRequestSchema = z.object({
+  ingredients: z.array(z.string().min(1).max(80)).min(1, "Bitte wähle mindestens eine Zutat aus deiner Vorratskammer aus.").max(30),
+  isVegan: z.boolean().optional().default(false),
+  maxTimeMinutes: z.number().int().min(10).max(180).optional().default(25),
+  difficulty: z.string().max(40).optional().default("Einfach"),
+  mealType: z.string().max(50).optional().default("Hauptgericht"),
+  extraWishes: z.string().max(200).optional().default(""),
+  nutritionGoal: z.enum(["balanced", "high_protein", "high_calorie"]).optional().default("balanced"),
+  calorieFilter: z.string().max(40).optional().default("all"),
+  proteinFilter: z.string().max(40).optional().default("all"),
+  excludeTitles: z.array(z.string().max(200)).optional().default([]),
+});
+
 const fridgeCookRequestSchema = z.object({
   ingredients: z.array(z.string().min(1).max(80)).min(1, "Bitte wähle mindestens eine Zutat aus deiner Vorratskammer aus.").max(30),
   isVegan: z.boolean().optional().default(false),
@@ -301,6 +314,11 @@ const fridgeCookRequestSchema = z.object({
   maxAdditionalIngredients: z.number().int().min(0).max(10).optional().default(2),
   includeBasics: z.boolean().optional().default(true),
   nutritionGoal: z.enum(["balanced", "high_protein", "high_calorie"]).optional().default("balanced"),
+  calorieFilter: z.string().max(40).optional().default("all"),
+  proteinFilter: z.string().max(40).optional().default("all"),
+  chosenIdeaTitle: z.string().max(200).optional(),
+  chosenIdeaPitch: z.string().max(500).optional(),
+  chosenIdeaCategory: z.string().max(100).optional(),
 });
 
 const mealPlanRequestSchema = z.object({
@@ -387,6 +405,37 @@ const substituteResponseSchema = {
     adaptedStepsSummary: { type: Type.STRING },
   },
   required: ["substitutions", "advice", "adaptedStepsSummary"],
+};
+
+const structuredRecipeIdeaSchema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING },
+    category: { type: Type.STRING },
+    dishType: { type: Type.STRING },
+    pitch: { type: Type.STRING },
+    estimatedTimeMinutes: { type: Type.INTEGER },
+    estimatedCalories: { type: Type.INTEGER },
+    estimatedProtein: { type: Type.INTEGER },
+    keyIngredientsUsed: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+    },
+    basicPantryItemsNeeded: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+    },
+  },
+  required: [
+    "title",
+    "category",
+    "dishType",
+    "pitch",
+    "estimatedTimeMinutes",
+    "estimatedCalories",
+    "estimatedProtein",
+    "keyIngredientsUsed",
+  ],
 };
 
 const structuredRecipeResponseSchema = {
@@ -655,6 +704,94 @@ function getMatchingFoodImage(title: string, category?: string, isVegan = true):
 // ---------------------------------------------------------------------------
 // 4. Guaranteed Offline / High-Demand Fallback Generators
 // ---------------------------------------------------------------------------
+function buildFallbackFridgeIdea(params: {
+  ingredients: string[];
+  isVegan?: boolean;
+  maxTimeMinutes?: number;
+  calorieFilter?: string;
+  proteinFilter?: string;
+  excludeTitles?: string[];
+}) {
+  const {
+    ingredients = [],
+    isVegan = true,
+    maxTimeMinutes = 25,
+    calorieFilter = "all",
+    proteinFilter = "all",
+    excludeTitles = [],
+  } = params;
+
+  const lead = ingredients[0] || "Gemüse";
+  const second = ingredients[1] || (ingredients.length > 1 ? ingredients[1] : "Kräutern");
+
+  const isHighProtein = proteinFilter === "high" || proteinFilter === "very-high";
+  const isHighCalorie = calorieFilter === "high";
+  const isLowCalorie = calorieFilter === "low";
+
+  const time = Math.min(Math.max(15, maxTimeMinutes), 30);
+  const calories = isHighCalorie ? 780 : isLowCalorie ? 420 : 540;
+  const protein = proteinFilter === "very-high" ? 42 : isHighProtein ? 32 : 22;
+
+  const ideaTemplates = [
+    {
+      title: isVegan
+        ? `Cremige ${lead}-Pfanne mit ${second}`
+        : `Würzige ${lead}-Pfanne mit ${second}`,
+      category: "Schnelle Küche",
+      dishType: "Aromatische Blitz-Pfanne",
+      pitch: `Ein unkompliziertes 20-Minuten-Gericht, das ${lead} und ${second} perfekt miteinander verbindet.`,
+      basicPantryItemsNeeded: ["Olivenöl", "Salz & Pfeffer", "Kräuter der Provence"],
+    },
+    {
+      title: isVegan
+        ? `Wärmendes ${lead}-Curry mit ${second}`
+        : `Aromatisches ${lead}-Curry mit ${second}`,
+      category: "Currys & Eintöpfe",
+      dishType: "Samtiges Kokos-Curry",
+      pitch: `Ein herrlich duftendes Curry, bei dem ${lead} in einer feinen Gewürz-Sauce sanft gegart wird.`,
+      basicPantryItemsNeeded: ["Speiseöl", "Currypulver", "Salz"],
+    },
+    {
+      title: `Bunte Wohlfühl-Bowl mit ${lead} & ${second}`,
+      category: "Bowls & Salate",
+      dishType: "Knackig-frische Nährstoff-Bowl",
+      pitch: `Eine nährstoffreiche Schüssel voller Frische und Texturen mit harmonisch abgeschmecktem ${lead}.`,
+      basicPantryItemsNeeded: ["Essig & Öl", "Senf", "Salz & Pfeffer"],
+    },
+    {
+      title: `Herzhafte Ofen-Röstung mit ${lead}`,
+      category: "Ofengerichte",
+      dishType: "Knuspriges Blechgericht",
+      pitch: `Im Ofen goldbraun geröstet, entfaltet ${lead} seine köstlichen Aromen besonders intensiv.`,
+      basicPantryItemsNeeded: ["Olivenöl", "Rosmarin", "Meersalz"],
+    },
+    {
+      title: `Mediterrane ${lead}-Pasta mit ${second}`,
+      category: "Pasta & Gnocchi",
+      dishType: "Cremiges Pastagericht",
+      pitch: `Sättigende Wohlfühlküche: Eine aromatische Sauce mit ${lead}, verfeinert mit Knoblauch und Pfeffer.`,
+      basicPantryItemsNeeded: ["Olivenöl", "Knoblauch", "Salz & Pfeffer"],
+    },
+  ];
+
+  const available = ideaTemplates.filter(
+    (t) => !excludeTitles.some((ex) => ex.toLowerCase() === t.title.toLowerCase())
+  );
+  const chosen = available.length > 0 ? available[0] : ideaTemplates[0];
+
+  return {
+    title: chosen.title,
+    category: chosen.category,
+    dishType: chosen.dishType,
+    pitch: chosen.pitch,
+    estimatedTimeMinutes: time,
+    estimatedCalories: calories,
+    estimatedProtein: protein,
+    keyIngredientsUsed: ingredients.slice(0, Math.min(3, ingredients.length)),
+    basicPantryItemsNeeded: chosen.basicPantryItemsNeeded,
+  };
+}
+
 function buildFallbackFridgeRecipe(params: {
   ingredients: string[];
   isVegan?: boolean;
@@ -665,6 +802,8 @@ function buildFallbackFridgeRecipe(params: {
   maxAdditionalIngredients?: number;
   includeBasics?: boolean;
   nutritionGoal?: "balanced" | "high_protein" | "high_calorie";
+  calorieFilter?: string;
+  proteinFilter?: string;
 }) {
   const {
     ingredients = [],
@@ -675,11 +814,17 @@ function buildFallbackFridgeRecipe(params: {
     maxAdditionalIngredients = 2,
     includeBasics = true,
     nutritionGoal = "balanced",
+    calorieFilter = "all",
+    proteinFilter = "all",
   } = params;
 
   const leadIng = ingredients.slice(0, 3).join(", ") || "Gemüse & Vorräten";
   const primaryIng = ingredients[0] || "Gemüse";
-  const titlePrefix = nutritionGoal === "high_protein" ? "High-Protein " : nutritionGoal === "high_calorie" ? "Herzhafte " : "";
+  const isHighProtein = proteinFilter === "high" || proteinFilter === "very-high" || nutritionGoal === "high_protein";
+  const isHighCalorie = calorieFilter === "high" || nutritionGoal === "high_calorie";
+  const isLowCalorie = calorieFilter === "low";
+
+  const titlePrefix = isHighProtein ? "High-Protein " : isHighCalorie ? "Herzhafte " : isLowCalorie ? "Leichte " : "";
   const title = isVegan ? `${titlePrefix}Vegane Pfanne mit ${primaryIng}` : `${titlePrefix}Veggie-Pfanne mit ${primaryIng}`;
 
   const prepTime = Math.min(10, Math.max(5, Math.floor(maxTimeMinutes / 3)));
@@ -714,10 +859,10 @@ function buildFallbackFridgeRecipe(params: {
 
   const allowedExtras = possibleExtras.slice(0, Math.max(0, maxAdditionalIngredients));
 
-  const calories = nutritionGoal === "high_calorie" ? 720 : nutritionGoal === "high_protein" ? 510 : 440;
-  const protein = nutritionGoal === "high_protein" ? 32 : nutritionGoal === "high_calorie" ? 22 : 21;
-  const fat = nutritionGoal === "high_calorie" ? 28 : 14;
-  const carbs = nutritionGoal === "high_calorie" ? 82 : 48;
+  const calories = isHighCalorie ? 780 : isLowCalorie ? 420 : calorieFilter === "moderate" ? 590 : isHighProtein ? 530 : 450;
+  const protein = proteinFilter === "very-high" ? 42 : isHighProtein ? 33 : proteinFilter === "medium" ? 24 : isHighCalorie ? 22 : 20;
+  const fat = isHighCalorie ? 28 : isLowCalorie ? 9 : 14;
+  const carbs = isHighCalorie ? 82 : isLowCalorie ? 38 : 48;
 
   return {
     title,
@@ -1281,7 +1426,116 @@ Gib deine Antwort als strukturiertes JSON zurück.`;
   }
 });
 
-// 2. Fridge Cook (Kühlschrank-Zauberer / Resteverwerter)
+// 2a. Fridge Cook Idea Generator (Leichtgewichtige Vorab-Idee zur Token- & Usage-Einsparung)
+app.post("/api/ai/fridge-cook-idea", async (req: Request, res: Response) => {
+  const parseResult = fridgeCookIdeaRequestSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      success: false,
+      error: parseResult.error.issues.map((i) => i.message).join(", "),
+    });
+  }
+
+  const {
+    ingredients,
+    isVegan,
+    maxTimeMinutes,
+    mealType,
+    extraWishes,
+    calorieFilter = "all",
+    proteinFilter = "all",
+    excludeTitles = [],
+  } = parseResult.data;
+
+  const ai = getGenAI();
+  if (!ai) {
+    const fallbackIdea = buildFallbackFridgeIdea({
+      ingredients,
+      isVegan,
+      maxTimeMinutes,
+      calorieFilter,
+      proteinFilter,
+      excludeTitles,
+    });
+    return res.json({
+      success: true,
+      isFallback: true,
+      idea: fallbackIdea,
+    });
+  }
+
+  try {
+    const dietString = isVegan
+      ? "100% VEGAN (rein pflanzlich, strikt keine tierischen Produkte)"
+      : "100% VEGETARISCH (fleisch- und fischfrei)";
+
+    const excludeClause =
+      excludeTitles && excludeTitles.length > 0
+        ? `⭐ WICHTIG: Folgende Gerichte NICHT vorschlagen (wurde bereits abgelehnt): ${excludeTitles.join(", ")}. Erfinde ein komplett anderes Gerichtskonzept!`
+        : "";
+
+    const prompt = `Du bist ein Spitzenkoch für moderne pflanzliche Alltagsküche.
+Der Nutzer hat Vorräte ausgewählt. Schlage EINE EINZIGE, besonders kreative, harmonische und alltagstaugliche REZEPTIDEE vor, die diese Vorräte sinnvoll verwertet.
+
+VORHANDENE ZUTATEN: ${JSON.stringify(ingredients)}
+ERNÄHRUNGSWEISE: ${dietString}
+MAX. ZUBEREITUNGSZEIT: ca. ${maxTimeMinutes} Minuten
+MAHLZEITEN-ART: ${mealType}
+NÄHRWERT-FOKUS: Kalorien=${calorieFilter}, Protein=${proteinFilter}
+BESONDERE WÜNSCHE: ${extraWishes || "keine"}
+${excludeClause}
+
+STRIKTE VORGABEN:
+- Halte die Antwort EXTREM KURZ (nur die Rezeptidee, KEINE Zutatenliste mit Gramm, KEINE Einzelschritte!).
+- 'title': Appetitanregender, klarer Name des Gerichts
+- 'category': Passende Kategorie (z.B. "Schnelle Küche", "Currys & Eintöpfe", "Bowls & Salate", "Ofengerichte", "Pasta & Gnocchi")
+- 'dishType': Art des Gerichts (z.B. "Samtiges Kokos-Curry", "Cremige Blitz-Pfanne", "Knuspriges Blechgericht")
+- 'pitch': 1-2 Sätze, warum dieses Gericht mit den vorhandenen Vorräten fantastisch schmeckt.
+- 'estimatedTimeMinutes': Geschätzte Kochzeit (z.B. 20)
+- 'estimatedCalories': Geschätzte Kalorien pro Portion
+- 'estimatedProtein': Geschätztes Eiweiß in Gramm pro Portion
+- 'keyIngredientsUsed': Array der verwendeten Vorratszutaten
+- 'basicPantryItemsNeeded': Array weniger Küchen-Basics (z.B. Öl, Salz, Pfeffer)
+Antworte als strukturiertes JSON-Objekt.`;
+
+    const response = await callGeminiWithRetry(ai, {
+      model: "gemini-3.8-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: structuredRecipeIdeaSchema,
+        temperature: 0.7,
+      },
+      timeoutMs: 6000,
+    });
+
+    const parsed = safeExtractJson(response.text, null);
+    if (!parsed || !parsed.title || !parsed.pitch) {
+      throw new Error("Rezeptidee unvollständig strukturiert");
+    }
+
+    logAiEvent("info", "/api/ai/fridge-cook-idea", "Fridge cook idea generated successfully", {
+      title: parsed.title,
+      pantryCount: ingredients.length,
+    });
+
+    res.json({ success: true, idea: parsed });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    logAiEvent("warn", "/api/ai/fridge-cook-idea", "Fallback triggered for fridge-cook-idea", { error: errMsg });
+    const fallbackIdea = buildFallbackFridgeIdea({
+      ingredients,
+      isVegan,
+      maxTimeMinutes,
+      calorieFilter,
+      proteinFilter,
+      excludeTitles,
+    });
+    res.json({ success: true, isFallback: true, idea: fallbackIdea });
+  }
+});
+
+// 2b. Fridge Cook (Kühlschrank-Zauberer / Resteverwerter - Finales Rezept)
 app.post("/api/ai/fridge-cook", async (req: Request, res: Response) => {
   const parseResult = fridgeCookRequestSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -1301,6 +1555,11 @@ app.post("/api/ai/fridge-cook", async (req: Request, res: Response) => {
     maxAdditionalIngredients,
     includeBasics,
     nutritionGoal = "balanced",
+    calorieFilter = "all",
+    proteinFilter = "all",
+    chosenIdeaTitle,
+    chosenIdeaPitch,
+    chosenIdeaCategory,
   } = parseResult.data;
 
   const ai = getGenAI();
@@ -1315,13 +1574,18 @@ app.post("/api/ai/fridge-cook", async (req: Request, res: Response) => {
       maxAdditionalIngredients,
       includeBasics,
       nutritionGoal,
+      calorieFilter,
+      proteinFilter,
     });
     return res.json({
       success: true,
       isFallback: true,
       recipe: {
         ...fallback,
-        image: getMatchingFoodImage(fallback.title, fallback.category, isVegan),
+        ...(chosenIdeaTitle ? { title: chosenIdeaTitle } : {}),
+        ...(chosenIdeaCategory ? { category: chosenIdeaCategory } : {}),
+        image: "",
+        isCustomAi: true,
       },
     });
   }
@@ -1331,8 +1595,27 @@ app.post("/api/ai/fridge-cook", async (req: Request, res: Response) => {
       ? "100% VEGAN (rein pflanzlich, strikt keine tierischen Produkte)"
       : "100% VEGETARISCH (fleisch- und fischfrei)";
 
+    const nutritionParts: string[] = [];
+    if (calorieFilter === "high") {
+      nutritionParts.push("High Calorie / Energiereich: Mindestens 750–850 kcal pro Portion, sättigend und nahrhaft (gesunde Fette, reichhaltige Saucen, sättigende Kohlenhydrate)");
+    } else if (calorieFilter === "low") {
+      nutritionParts.push("Kalorienarm / Leicht: Unter 500 kcal pro Portion, leicht und bekömmlich");
+    } else if (calorieFilter === "moderate") {
+      nutritionParts.push("Ausgewogener Kaloriengehalt: ca. 500–700 kcal pro Portion");
+    }
+
+    if (proteinFilter === "high") {
+      nutritionParts.push("High Protein: Mindestens 30g Eiweiß pro Portion (betone proteinreiche Zutaten wie Tofu, Tempeh, Hülsenfrüchte, Nüsse)");
+    } else if (proteinFilter === "very-high") {
+      nutritionParts.push("Extra High Protein: Mindestens 40g Eiweiß pro Portion!");
+    } else if (proteinFilter === "medium") {
+      nutritionParts.push("Guter Proteingehalt: Mindestens 20g Eiweiß pro Portion");
+    }
+
     let nutritionInstruction = "";
-    if (nutritionGoal === "high_protein") {
+    if (nutritionParts.length > 0) {
+      nutritionInstruction = `NÄHRWERT-FEINTUNING: ${nutritionParts.join("; ")}.`;
+    } else if (nutritionGoal === "high_protein") {
       nutritionInstruction = "NÄHRWERT-FEINTUNING (HIGH PROTEIN): Das Gericht MUSS besonders proteinreich sein (mindestens 25g–35g+ Eiweiß pro Portion)! Betone proteinreiche Zutaten wie Tofu, Hülsenfrüchte (Linsen, Kichererbsen, Bohnen), Kerne, Nüsse oder Pflanzendrinks.";
     } else if (nutritionGoal === "high_calorie") {
       nutritionInstruction = "NÄHRWERT-FEINTUNING (VIELE KALORIEN / ENERGIEREICH): Das Gericht soll besonders energiereich, nahrhaft und sättigend sein (mindestens 650–850 kcal pro Portion)! Nutze z.B. gesunde Fette (Nussmus, Olivenöl, Saaten), reichhaltige Saucen oder sättigende Kohlenhydrate.";
@@ -1356,12 +1639,19 @@ Die angegebenen Zutaten (${ingredients.join(
           ", "
         )}) sind eine VORRATSAUSWAHL & INSPIRATION, jedoch KEIN MUSS!
 - Oberste Priorität hat immer ein wirklich köstliches, harmonisches und kulinarisch stimmiges Gericht.
-- Schustere NIEMALS auf Krampf Zutaten zusammen, die geschmacklich oder kulinarisch nicht harmonieren (wenn z.B. Kartoffeln und Pistazienmus, oder Gurke und Haferflocken ausgewählt wurden, lasse unpassende Zutaten EINFACH WEG).
+- Schustere NIEMALS auf Krampf Zutaten zusammen, die geschmacklich oder kulinarisch nicht harmonieren.
 - Wähle aus den angegebenen Vorräten nur die sinnvolle, leckere Kombination aus und lass den Rest ungenutzt.`;
+
+    const chosenIdeaInstruction = chosenIdeaTitle
+      ? `⭐ GEWÄHLTE REZEPTIDEE ZUR UMSETZUNG:
+Der Nutzer hat folgende Rezeptidee vorab ausgewählt: "${chosenIdeaTitle}" (Konzept: "${chosenIdeaPitch || ""}").
+Erstelle das vollständige Rezept für genau dieses Gericht! Passe den Titel bei Bedarf fein an, arbeite die Vorräte (${ingredients.join(", ")}) harmonisch ein und erstelle detaillierte Mengenangaben und Schritte.`
+      : "";
 
     const prompt = `Du bist ein erfahrener Küchenchef für gesunde, alltagstaugliche pflanzliche Küche.
 Erstelle ein harmonisches, gelingsicheres Rezept, das die vorhandenen Zutaten aus der Vorratskammer sinnvoll verwertet.
 
+${chosenIdeaInstruction}
 VORHANDENE ZUTATEN: ${JSON.stringify(ingredients)}
 KÜCHEN-BASICS (Salz, Pfeffer, Speiseöl, Wasser): ${includeBasics ? "Vorhanden" : "Nicht vorhanden"}
 MAXIMAL ZUSÄTZLICHE ZUTATEN: ${maxAdditionalIngredients} zusätzliche Zutat(en).
@@ -1408,7 +1698,9 @@ Antworte als strukturiertes JSON-Objekt.`;
       )
     ).length;
     parsed.matchedPantryCount = usedPantryCount > 0 ? usedPantryCount : Math.min(ingredients.length, parsed.ingredients.length);
-    parsed.image = getMatchingFoodImage(parsed.title, parsed.category, isVegan);
+    // KEINE Bilder für neu generierte Gerichte (spart Token & API-Usage wie vom Nutzer gewünscht)
+    parsed.image = "";
+    parsed.isCustomAi = true;
 
     logAiEvent("info", "/api/ai/fridge-cook", "Fridge cook recipe created successfully", {
       title: parsed.title,
@@ -1429,13 +1721,18 @@ Antworte als strukturiertes JSON-Objekt.`;
       maxAdditionalIngredients,
       includeBasics,
       nutritionGoal,
+      calorieFilter,
+      proteinFilter,
     });
     res.json({
       success: true,
       isFallback: true,
       recipe: {
         ...fallback,
-        image: getMatchingFoodImage(fallback.title, fallback.category, isVegan),
+        ...(chosenIdeaTitle ? { title: chosenIdeaTitle } : {}),
+        ...(chosenIdeaCategory ? { category: chosenIdeaCategory } : {}),
+        image: "",
+        isCustomAi: true,
       },
     });
   }
@@ -1669,7 +1966,7 @@ app.post("/api/ai/create-recipe", async (req: Request, res: Response) => {
     const resultRecipe = {
       ...fallbackRecipe,
       id: `custom-${Date.now()}`,
-      image: getMatchingFoodImage(fallbackRecipe.title, fallbackRecipe.category, Boolean(isVegan)),
+      image: "",
       prepTimeMinutes: prep,
       cookTimeMinutes: cook,
       totalTimeMinutes: prep + cook,
@@ -1729,7 +2026,7 @@ Antworte als strukturiertes JSON-Objekt.`;
     const resultRecipe = {
       ...parsed,
       id: `custom-${Date.now()}`,
-      image: getMatchingFoodImage(parsed.title, parsed.category, Boolean(isVegan)),
+      image: "",
       prepTimeMinutes: prep,
       cookTimeMinutes: cook,
       totalTimeMinutes: prep + cook,
@@ -1761,7 +2058,7 @@ Antworte als strukturiertes JSON-Objekt.`;
     const resultRecipe = {
       ...fallbackRecipe,
       id: `custom-${Date.now()}`,
-      image: getMatchingFoodImage(fallbackRecipe.title, fallbackRecipe.category, Boolean(isVegan)),
+      image: "",
       prepTimeMinutes: prep,
       cookTimeMinutes: cook,
       totalTimeMinutes: prep + cook,

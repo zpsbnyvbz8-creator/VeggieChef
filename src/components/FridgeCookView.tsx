@@ -16,10 +16,12 @@ import {
   Zap,
   ChevronDown
 } from 'lucide-react';
-import { Recipe } from '../types';
+import { Recipe, FridgeCookIdea } from '../types';
 import { PANTRY_QUICK_ITEMS } from '../data/recipes';
 import { useRecipes } from '../context/RecipeContext';
 import { useToast } from '../context/ToastContext';
+import { FridgeIdeaModal } from './FridgeIdeaModal';
+import { RecipeImage } from './RecipeImage';
 
 interface FridgeCookViewProps {
   allRecipes?: Recipe[];
@@ -62,8 +64,9 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   }, [selectedIngredients]);
 
   const [customInput, setCustomInput] = useState('');
-  const [isVegan, setIsVegan] = useState(onlyVeganGlobal);
-  const [nutritionGoal, setNutritionGoal] = useState<'balanced' | 'high_protein' | 'high_calorie'>('balanced');
+  const [isVegan, setIsVegan] = useState(true);
+  const [calorieFilter, setCalorieFilter] = useState<string>('all'); // 'all', 'high', 'low', 'moderate'
+  const [proteinFilter, setProteinFilter] = useState<string>('all'); // 'all', 'high', 'very-high', 'medium'
   const [maxTime, setMaxTime] = useState(25);
   const [maxExtraIngredients, setMaxExtraIngredients] = useState(2); // AI additional ingredient slider
   const [includeBasics, setIncludeBasics] = useState(true); // Basic staples (oil, salt, pepper, etc.)
@@ -73,6 +76,35 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   const [generatedRecipe, setGeneratedRecipe] = useState<Recipe | null>(null);
   const [hasSaved, setHasSaved] = useState(false);
   const [isPreferencesOpenOnMobile, setIsPreferencesOpenOnMobile] = useState(false);
+
+  // Two-step Idea Generation Flow States (saves AI token usage and lets user select concept)
+  const [isIdeaModalOpen, setIsIdeaModalOpen] = useState(false);
+  const [currentIdea, setCurrentIdea] = useState<FridgeCookIdea | null>(null);
+  const [isLoadingIdea, setIsLoadingIdea] = useState(false);
+  const [isCreatingFinalRecipe, setIsCreatingFinalRecipe] = useState(false);
+  const [rejectedIdeaTitles, setRejectedIdeaTitles] = useState<string[]>([]);
+  const [attemptNumber, setAttemptNumber] = useState(1);
+
+  const nutritionGoal =
+    proteinFilter === 'high' || proteinFilter === 'very-high'
+      ? 'high_protein'
+      : calorieFilter === 'high'
+      ? 'high_calorie'
+      : 'balanced';
+
+  const getFilterSummary = () => {
+    const parts: string[] = [];
+    if (calorieFilter === 'high') parts.push('High Cal (750+)');
+    else if (calorieFilter === 'low') parts.push('Leicht (< 500)');
+    else if (calorieFilter === 'moderate') parts.push('500–700 kcal');
+
+    if (proteinFilter === 'high') parts.push('High Prot (30g+)');
+    else if (proteinFilter === 'very-high') parts.push('Extra Prot (40g+)');
+    else if (proteinFilter === 'medium') parts.push('20g+ Protein');
+
+    if (parts.length === 0) return 'Ausgewogen';
+    return parts.join(' • ');
+  };
 
   const togglePantryItem = (item: string) => {
     setSelectedIngredients((prev) =>
@@ -89,11 +121,133 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
     }
   };
 
-  const handleGenerateAI = async () => {
+  // Step 1: Lightweight Idea Generation (saves token usage)
+  const fetchIdea = async (exclude: string[]) => {
+    try {
+      let ideaResult: FridgeCookIdea | null = null;
+      try {
+        const response = await fetch('/api/ai/fridge-cook-idea', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ingredients: selectedIngredients,
+            isVegan,
+            maxTimeMinutes: maxTime,
+            difficulty: 'Einfach',
+            mealType: 'Hauptgericht',
+            extraWishes,
+            calorieFilter,
+            proteinFilter,
+            excludeTitles: exclude,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.success && data.idea) {
+            ideaResult = data.idea;
+          }
+        }
+      } catch (apiErr) {
+        console.warn('API /api/ai/fridge-cook-idea unavailable, using local idea fallback:', apiErr);
+      }
+
+      if (!ideaResult) {
+        const lead = selectedIngredients[0] || 'Gemüse';
+        const second = selectedIngredients[1] || (selectedIngredients.length > 1 ? selectedIngredients[1] : 'Kräutern');
+        const isHighProtein = proteinFilter === 'high' || proteinFilter === 'very-high';
+        const isHighCal = calorieFilter === 'high';
+        const isLowCal = calorieFilter === 'low';
+
+        const localPool: FridgeCookIdea[] = [
+          {
+            title: isVegan ? `Cremige ${lead}-Pfanne mit ${second}` : `Würzige ${lead}-Pfanne mit ${second}`,
+            category: 'Schnelle Küche',
+            dishType: 'Aromatische Blitz-Pfanne',
+            pitch: `Ein unkompliziertes 20-Minuten-Gericht, das ${lead} und ${second} perfekt miteinander verbindet.`,
+            estimatedTimeMinutes: Math.min(maxTime, 25),
+            estimatedCalories: isHighCal ? 760 : isLowCal ? 420 : 530,
+            estimatedProtein: proteinFilter === 'very-high' ? 42 : isHighProtein ? 32 : 22,
+            keyIngredientsUsed: selectedIngredients.slice(0, 3),
+            basicPantryItemsNeeded: includeBasics ? ['Speiseöl', 'Salz & Pfeffer'] : undefined,
+          },
+          {
+            title: isVegan ? `Wärmendes ${lead}-Curry mit ${second}` : `Aromatisches ${lead}-Curry mit ${second}`,
+            category: 'Currys & Eintöpfe',
+            dishType: 'Samtiges Kokos-Curry',
+            pitch: `Ein duftendes, samtiges Curry mit ${lead} in einer feinen aromatischen Sauce.`,
+            estimatedTimeMinutes: Math.min(maxTime, 30),
+            estimatedCalories: isHighCal ? 780 : isLowCal ? 450 : 560,
+            estimatedProtein: proteinFilter === 'very-high' ? 40 : isHighProtein ? 30 : 20,
+            keyIngredientsUsed: selectedIngredients.slice(0, 3),
+            basicPantryItemsNeeded: includeBasics ? ['Speiseöl', 'Currypulver', 'Salz'] : undefined,
+          },
+          {
+            title: `Bunte Nährstoff-Bowl mit ${lead} & ${second}`,
+            category: 'Bowls & Salate',
+            dishType: 'Knackig-frische Wohlfühl-Bowl',
+            pitch: `Eine nährstoffreiche Schüssel voller Frische und Texturen mit mariniertem ${lead}.`,
+            estimatedTimeMinutes: Math.min(maxTime, 20),
+            estimatedCalories: isHighCal ? 740 : isLowCal ? 410 : 510,
+            estimatedProtein: proteinFilter === 'very-high' ? 38 : isHighProtein ? 31 : 21,
+            keyIngredientsUsed: selectedIngredients.slice(0, 3),
+            basicPantryItemsNeeded: includeBasics ? ['Essig & Öl', 'Salz & Pfeffer'] : undefined,
+          },
+          {
+            title: `Herzhafte Ofen-Röstung mit ${lead}`,
+            category: 'Ofengerichte',
+            dishType: 'Knuspriges Blechgericht',
+            pitch: `Im Ofen goldbraun geröstet, entfaltet ${lead} seine Röstaromen besonders intensiv.`,
+            estimatedTimeMinutes: Math.min(maxTime, 25),
+            estimatedCalories: isHighCal ? 750 : isLowCal ? 430 : 520,
+            estimatedProtein: proteinFilter === 'very-high' ? 36 : isHighProtein ? 29 : 19,
+            keyIngredientsUsed: selectedIngredients.slice(0, 3),
+            basicPantryItemsNeeded: includeBasics ? ['Olivenöl', 'Rosmarin', 'Meersalz'] : undefined,
+          },
+        ];
+
+        const available = localPool.filter(
+          (p) => !exclude.some((ex) => ex.toLowerCase() === p.title.toLowerCase())
+        );
+        ideaResult = available.length > 0 ? available[0] : localPool[0];
+      }
+
+      setCurrentIdea(ideaResult);
+    } catch (err: any) {
+      console.error('Failed to get fridge cook idea:', err);
+      setErrorMessage('Die Rezeptidee konnte nicht geladen werden. Bitte versuche es noch einmal.');
+    } finally {
+      setIsLoadingIdea(false);
+      setIsGenerating(false);
+    }
+  };
+
+  const handleStartIdeaGeneration = async () => {
     if (selectedIngredients.length === 0) return;
     setIsGenerating(true);
-    setGeneratedRecipe(null);
-    setHasSaved(false);
+    setIsIdeaModalOpen(true);
+    setIsLoadingIdea(true);
+    setErrorMessage(null);
+    setAttemptNumber(1);
+    setRejectedIdeaTitles([]);
+
+    await fetchIdea([]);
+  };
+
+  const handleRetryIdea = async () => {
+    if (!currentIdea) return;
+    const updatedRejected = [...rejectedIdeaTitles, currentIdea.title];
+    setRejectedIdeaTitles(updatedRejected);
+    setAttemptNumber((prev) => prev + 1);
+    setIsLoadingIdea(true);
+
+    await fetchIdea(updatedRejected);
+  };
+
+  // Step 2: Final Recipe Generation based on chosen idea
+  const handleConfirmCreateFinalRecipe = async () => {
+    if (!currentIdea || selectedIngredients.length === 0) return;
+    setIsCreatingFinalRecipe(true);
     setErrorMessage(null);
 
     try {
@@ -113,35 +267,43 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             maxAdditionalIngredients: maxExtraIngredients,
             includeBasics,
             nutritionGoal,
+            calorieFilter,
+            proteinFilter,
+            chosenIdeaTitle: currentIdea.title,
+            chosenIdeaPitch: currentIdea.pitch,
+            chosenIdeaCategory: currentIdea.category,
           }),
         });
 
-        const contentType = response.headers.get('content-type') || '';
-        if (response.ok && contentType.includes('application/json')) {
+        if (response.ok) {
           const data = await response.json();
           if (data && data.success && data.recipe) {
             raw = data.recipe;
           }
         }
       } catch (fetchErr) {
-        console.warn('API /api/ai/fridge-cook unavailable, applying local recipe fallback:', fetchErr);
+        console.warn('API /api/ai/fridge-cook unavailable, using local recipe fallback:', fetchErr);
       }
 
-      // Robust local fallback if cloud function is unreachable or returns non-JSON/error
       if (!raw) {
-        const primaryIng = selectedIngredients[0] || 'Frischem Gemüse';
+        const primaryIng = selectedIngredients[0] || 'Gemüse';
         const otherIngs = selectedIngredients.slice(1);
-        const prefix = nutritionGoal === 'high_protein' ? 'High-Protein ' : nutritionGoal === 'high_calorie' ? 'Herzhafte ' : '';
-        const titleType = isVegan ? `${prefix}Veggie-Pfanne` : `${prefix}Marktgemüse-Pfanne`;
-        const cal = nutritionGoal === 'high_calorie' ? 740 : nutritionGoal === 'high_protein' ? 520 : 430;
-        const prot = nutritionGoal === 'high_protein' ? 34 : nutritionGoal === 'high_calorie' ? 22 : (isVegan ? 18 : 21);
-        const fat = nutritionGoal === 'high_calorie' ? 28 : 14;
-        const carbs = nutritionGoal === 'high_calorie' ? 84 : 48;
-        
+        const isHighProtein = proteinFilter === 'high' || proteinFilter === 'very-high';
+        const isExtraProtein = proteinFilter === 'very-high';
+        const isMediumProtein = proteinFilter === 'medium';
+        const isHighCal = calorieFilter === 'high';
+        const isLowCal = calorieFilter === 'low';
+        const isModerateCal = calorieFilter === 'moderate';
+
+        const cal = isHighCal ? 780 : isLowCal ? 420 : isModerateCal ? 580 : (isHighProtein ? 540 : 460);
+        const prot = isExtraProtein ? 42 : isHighProtein ? 34 : isMediumProtein ? 24 : (isVegan ? 18 : 21);
+        const fat = isHighCal ? 28 : isLowCal ? 9 : 14;
+        const carbs = isHighCal ? 84 : isLowCal ? 38 : 48;
+
         raw = {
-          title: `${titleType} mit ${primaryIng}`,
+          title: currentIdea.title,
           subtitle: `Kreiert aus deinen Vorräten (${selectedIngredients.slice(0, 3).join(', ')})`,
-          category: 'Schnelle Küche',
+          category: currentIdea.category || 'Schnelle Küche',
           isVegan,
           prepTimeMinutes: Math.min(maxTime > 15 ? 10 : 5, maxTime),
           cookTimeMinutes: Math.max(10, maxTime - 10),
@@ -172,38 +334,37 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             {
               stepNumber: 1,
               title: 'Zutaten vorbereiten',
-              text: `${selectedIngredients.join(', ')} gründlich säubern, waschen und in gleichmäßige mundgerechte Stücke schneiden.`,
+              text: `${selectedIngredients.join(', ')} gründlich säubern, waschen und in gleichmäßige Stücke schneiden.`,
               timerMinutes: 5,
             },
             {
               stepNumber: 2,
-              title: 'Röstaromen erzeugen',
-              text: `Etwas Öl in einer weiten Pfanne auf mittlerer bis hoher Stufe erhitzen. ${primaryIng} und feste Zutaten zuerst für 3–4 Minuten anbraten.`,
+              title: 'Anbraten & Röstaromen',
+              text: `Etwas Öl in einer weiten Pfanne erhitzen. ${primaryIng} zuerst für 3–4 Minuten scharf anbraten.`,
               timerMinutes: 4,
             },
             {
               stepNumber: 3,
-              title: 'Sanft garen & würzen',
-              text: `${otherIngs.length > 0 ? otherIngs.join(', ') + ' und die' : 'Die'} restlichen Zutaten untermengen. Mit Salz und Pfeffer abschmecken und bei mittlerer Hitze zugedeckt ca. 8–10 Minuten bissfest köcheln lassen.`,
+              title: 'Sanft garen & verfeinern',
+              text: `${otherIngs.length > 0 ? otherIngs.join(', ') + ' und die' : 'Die'} restlichen Zutaten unterrühren. Mit Salz und Pfeffer abschmecken und 8–10 Minuten garen.`,
               timerMinutes: 8,
             },
             {
               stepNumber: 4,
-              title: 'Anrichten & Verfeinern',
-              text: 'Heiß auf Tellern anrichten. Nach Geschmack mit einem Spritzer Zitrone oder frischen Kräutern abrunden.',
+              title: 'Abschmecken & Anrichten',
+              text: 'Heiß auf Tellern anrichten und nach Geschmack mit frischen Kräutern verfeinern.',
             },
           ],
-          chefTips: 'Profitipp: Ein Schuss Pflanzensahne oder ein Teelöffel Hefeflocken verleiht der Soße noch mehr sämige Fülle!',
+          chefTips: currentIdea.pitch,
         };
       }
+
       const newRec: Recipe = {
         id: `ai-rec-${Date.now()}`,
-        title: raw.title || 'Kreative Veggie-Pfanne',
+        title: raw.title || currentIdea.title,
         subtitle: raw.subtitle || `Gekocht mit ${selectedIngredients.slice(0, 3).join(', ')}`,
-        image: raw.image || (isVegan 
-          ? 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1200&q=80'
-          : 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=1200&q=80'),
-        category: raw.category || 'Schnelle Küche',
+        image: '', // Keine Bilder für neu generierte Gerichte (spart Token & API-Usage wie gefordert)
+        category: raw.category || currentIdea.category || 'Schnelle Küche',
         isVegan: !!raw.isVegan,
         isVegetarian: true,
         prepTimeMinutes: raw.prepTimeMinutes || 10,
@@ -213,10 +374,10 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
         servings: raw.servings || 2,
         rating: 5.0,
         reviewCount: 1,
-        tags: [isVegan ? 'Vegan' : 'Vegetarisch', 'Resteverwertung', 'Schnelle Küche'],
+        tags: [isVegan ? 'Vegan' : 'Vegetarisch', 'Resteverwertung', currentIdea.category || 'Schnelle Küche'],
         nutrients: {
-          calories: raw.calories || 450,
-          protein: raw.protein || 20,
+          calories: raw.calories || currentIdea.estimatedCalories || 450,
+          protein: raw.protein || currentIdea.estimatedProtein || 20,
           carbs: raw.carbs || 50,
           fat: raw.fat || 15,
           fiber: raw.fiber || 9,
@@ -244,20 +405,23 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             timerMinutes: typeof step.timerMinutes === 'number' ? step.timerMinutes : undefined,
           };
         }),
-        chefTip: raw.chefTips || raw.chefTip || 'Frische Kräuter und Zitronensaft heben das Aroma auf das nächste Level!',
+        chefTip: raw.chefTips || raw.chefTip || currentIdea.pitch,
         isCustomAi: true,
       };
 
       setGeneratedRecipe(newRec);
-      // Automatically save to the global recipe collection so it appears in the recipe list!
       onSaveCustomRecipe(newRec);
       setHasSaved(true);
-      onCopyFeedback(`"${newRec.title}" wurde automatisch in deiner Rezeptsammlung gespeichert! 🌱`);
+      setIsIdeaModalOpen(false);
+      onCopyFeedback(`"${newRec.title}" erfolgreich erstellt! 🌱`);
+
+      // Navigiere direkt auf die Seite des neu erstellten Rezepts mit passender URL (/recipes/:id)
+      navigate(`/recipes/${newRec.id}`);
     } catch (err: any) {
-      console.error('Failed to generate fridge recipe', err);
-      setErrorMessage(err?.message || 'Die KI-Zubereitung für deine Vorräte ist aktuell leider nicht erreichbar. Bitte versuche es in wenigen Augenblicken noch einmal.');
+      console.error('Failed to create final recipe:', err);
+      setErrorMessage(err?.message || 'Das finale Rezept konnte nicht erstellt werden. Bitte versuche es noch einmal.');
     } finally {
-      setIsGenerating(false);
+      setIsCreatingFinalRecipe(false);
     }
   };
 
@@ -279,11 +443,17 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
       );
     })
     .sort((a, b) => {
-      if (nutritionGoal === 'high_protein') {
-        return (b.nutrients?.protein || 0) - (a.nutrients?.protein || 0);
+      if (proteinFilter === 'high' || proteinFilter === 'very-high') {
+        const diff = (b.nutrients?.protein || 0) - (a.nutrients?.protein || 0);
+        if (Math.abs(diff) > 4) return diff;
       }
-      if (nutritionGoal === 'high_calorie') {
-        return (b.nutrients?.calories || 0) - (a.nutrients?.calories || 0);
+      if (calorieFilter === 'high') {
+        const diff = (b.nutrients?.calories || 0) - (a.nutrients?.calories || 0);
+        if (Math.abs(diff) > 60) return diff;
+      }
+      if (calorieFilter === 'low') {
+        const diff = (a.nutrients?.calories || 0) - (b.nutrients?.calories || 0);
+        if (Math.abs(diff) > 60) return diff;
       }
       const aMatches = selectedIngredients.filter((sel) =>
         a.ingredients.some((i) => i.name.toLowerCase().includes(sel.toLowerCase()))
@@ -339,7 +509,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
               selectedIngredients.map((item) => (
                 <span
                   key={item}
-                  className="inline-flex items-center gap-2 h-10 min-h-[40px] px-3.5 py-2 rounded-lg bg-[#F1F5F2] text-[#4A7856] text-sm font-medium shadow-2xs border border-[#ECEBE8] animate-in zoom-in-95 duration-150"
+                  className="inline-flex items-center gap-2 h-10 min-h-[40px] px-3.5 py-2 rounded-xl bg-[#F1F5F2] text-[#4A7856] text-sm font-medium shadow-2xs border border-[#ECEBE8] animate-in zoom-in-95 duration-150"
                 >
                   <span>{item}</span>
                   <button
@@ -387,7 +557,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 <button
                   key={item}
                   onClick={() => togglePantryItem(item)}
-                  className={`h-10 min-h-[40px] px-3.5 py-2 rounded-lg text-sm font-medium transition-all select-none cursor-pointer touch-manipulation active:scale-95 flex items-center gap-1.5 ${
+                  className={`h-10 min-h-[40px] px-3.5 py-2 rounded-xl text-sm font-medium transition-all select-none cursor-pointer touch-manipulation active:scale-95 flex items-center gap-1.5 ${
                     isSelected
                       ? 'bg-[#4A7856] text-white shadow-xs font-semibold'
                       : 'bg-[#FAF9F6] text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#2D3E40] border border-[#ECEBE8]'
@@ -417,7 +587,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                   Ernährungsweise & Feintuning
                 </span>
                 <span className="text-xs text-[#7A7E7B] truncate block">
-                  {isVegan ? '🌱 Vegan' : '🧀 Veggie'} • {maxTime} Min. • {nutritionGoal === 'high_protein' ? 'High Protein' : nutritionGoal === 'high_calorie' ? 'Viele Kalorien' : 'Ausgewogen'}
+                  {isVegan ? '🌱 Vegan' : '🧀 Veggie'} • {maxTime} Min. • {getFilterSummary()}
                 </span>
               </div>
             </div>
@@ -436,8 +606,8 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
 
         {/* Recipe Preferences Block: ab Ernährungsweise auf Mobile einklappbar (standardmäßig eingeklappt), auf Desktop immer sichtbar */}
         <div className={`${isPreferencesOpenOnMobile ? 'block' : 'hidden sm:block'} space-y-3 sm:space-y-4`}>
-          {/* Recipe Preferences Grid (Ernährungsweise, Feintuning, Zeit, Wünsche) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-1 sm:pt-4 border-t-0 sm:border-t sm:border-[#ECEBE8]">
+          {/* Recipe Preferences Grid (Ernährungsweise, Feintuning Nährwerte, Zeit, Wünsche) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-1 sm:pt-4 border-t-0 sm:border-t sm:border-[#ECEBE8]">
             {/* 1. Vegan / Veggie Toggle */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#7A7E7B] mb-1.5">
@@ -448,7 +618,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                   type="button"
                   id="fridge-diet-veggie-btn"
                   onClick={() => setIsVegan(false)}
-                  className={`h-10 text-sm font-semibold rounded-lg transition-all flex items-center justify-center touch-manipulation active:scale-95 cursor-pointer ${
+                  className={`h-10 text-sm font-semibold rounded-xl transition-all flex items-center justify-center touch-manipulation active:scale-95 cursor-pointer ${
                     !isVegan ? 'bg-white text-stone-900 shadow-2xs border border-[#ECEBE8]' : 'text-[#7A7E7B]'
                   }`}
                 >
@@ -458,7 +628,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                   type="button"
                   id="fridge-diet-vegan-btn"
                   onClick={() => setIsVegan(true)}
-                  className={`h-10 text-sm font-semibold rounded-lg transition-all flex items-center justify-center touch-manipulation active:scale-95 cursor-pointer ${
+                  className={`h-10 text-sm font-semibold rounded-xl transition-all flex items-center justify-center touch-manipulation active:scale-95 cursor-pointer ${
                     isVegan ? 'bg-[#4A7856] text-white shadow-2xs' : 'text-[#7A7E7B]'
                   }`}
                 >
@@ -467,53 +637,45 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
               </div>
             </div>
 
-            {/* 2. Dezent Feintuning Option (Beliebig / High Protein / Viele Kalorien) */}
-            <div>
+            {/* 2. Feintuning (Nährwerte) - Kalorien & Protein wie im KI-Wochenplan */}
+            <div className="sm:col-span-2 lg:col-span-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-[#7A7E7B] mb-1.5">
                 Feintuning (Nährwerte)
               </label>
-              <div className="grid grid-cols-3 gap-1 bg-[#FAF9F6] border border-[#ECEBE8] p-1 rounded-xl h-12 min-h-[48px] items-center">
-                <button
-                  type="button"
-                  id="fridge-tuning-balanced-btn"
-                  onClick={() => setNutritionGoal('balanced')}
-                  className={`h-10 px-1 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center justify-center text-center touch-manipulation active:scale-95 cursor-pointer ${
-                    nutritionGoal === 'balanced'
-                      ? 'bg-white text-stone-900 shadow-2xs border border-[#ECEBE8]'
-                      : 'text-[#7A7E7B] hover:text-[#2D3E40]'
-                  }`}
-                  title="Ausgewogene, normale Nährwerte"
-                >
-                  Beliebig
-                </button>
-                <button
-                  type="button"
-                  id="fridge-tuning-high-protein-btn"
-                  onClick={() => setNutritionGoal('high_protein')}
-                  className={`h-10 px-1 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-1 text-center touch-manipulation active:scale-95 cursor-pointer ${
-                    nutritionGoal === 'high_protein'
-                      ? 'bg-[#4A7856] text-white shadow-2xs'
-                      : 'text-[#7A7E7B] hover:text-[#2D3E40]'
-                  }`}
-                  title="Mindestens 25g-35g+ Eiweiß pro Portion"
-                >
-                  <Dumbbell className="w-3.5 h-3.5 shrink-0 hidden sm:inline" />
-                  <span className="truncate">Protein</span>
-                </button>
-                <button
-                  type="button"
-                  id="fridge-tuning-high-calorie-btn"
-                  onClick={() => setNutritionGoal('high_calorie')}
-                  className={`h-10 px-1 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-1 text-center touch-manipulation active:scale-95 cursor-pointer ${
-                    nutritionGoal === 'high_calorie'
-                      ? 'bg-stone-800 text-white shadow-2xs'
-                      : 'text-[#7A7E7B] hover:text-[#2D3E40]'
-                  }`}
-                  title="Energiereich & sättigend (650+ kcal)"
-                >
-                  <Flame className="w-3.5 h-3.5 shrink-0 hidden sm:inline text-amber-400" />
-                  <span className="truncate">Kalorien</span>
-                </button>
+              <div className="grid grid-cols-2 gap-2">
+                {/* Kalorien Filter */}
+                <div className="relative">
+                  <select
+                    id="fridge-filter-calories"
+                    value={calorieFilter}
+                    onChange={(e) => setCalorieFilter(e.target.value)}
+                    className="w-full appearance-none h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-xs sm:text-[13px] font-semibold rounded-xl pl-8 pr-6 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
+                  >
+                    <option value="all">Alle Kalorien</option>
+                    <option value="high">High Cal (750+)</option>
+                    <option value="low">Leicht (&lt; 500)</option>
+                    <option value="moderate">500–700 kcal</option>
+                  </select>
+                  <Flame className="w-4 h-4 text-amber-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-3.5 h-3.5 text-[#7A7E7B] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+
+                {/* Protein Filter */}
+                <div className="relative">
+                  <select
+                    id="fridge-filter-protein"
+                    value={proteinFilter}
+                    onChange={(e) => setProteinFilter(e.target.value)}
+                    className="w-full appearance-none h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-xs sm:text-[13px] font-semibold rounded-xl pl-8 pr-6 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
+                  >
+                    <option value="all">Alle Protein</option>
+                    <option value="high">High Prot (30g+)</option>
+                    <option value="very-high">Extra Prot (40g+)</option>
+                    <option value="medium">20g+ Protein</option>
+                  </select>
+                  <Dumbbell className="w-4 h-4 text-[#4A7856] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-3.5 h-3.5 text-[#7A7E7B] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
             </div>
 
@@ -536,20 +698,20 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 <span>50 Min.</span>
               </div>
             </div>
+          </div>
 
-            {/* 4. Extra wishes */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#7A7E7B] mb-1.5">
-                Wünsche (optional)
-              </label>
-              <input
-                type="text"
-                placeholder="z.B. cremig, One-Pot..."
-                value={extraWishes}
-                onChange={(e) => setExtraWishes(e.target.value)}
-                className="w-full h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-3.5 text-sm font-medium text-stone-800 focus:outline-hidden focus:border-[#4A7856]"
-              />
-            </div>
+          {/* 4. Extra wishes */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#7A7E7B] mb-1.5">
+              Wünsche (optional)
+            </label>
+            <input
+              type="text"
+              placeholder="z.B. cremig, One-Pot, ohne Zwiebeln..."
+              value={extraWishes}
+              onChange={(e) => setExtraWishes(e.target.value)}
+              className="w-full h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-3.5 text-sm font-medium text-stone-800 focus:outline-hidden focus:border-[#4A7856]"
+            />
           </div>
 
           {/* AI Ingredient Limit Slider & Kitchen Staples */}
@@ -622,19 +784,13 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           <button
             id="generate-fridge-recipe-btn"
             disabled={isGenerating || selectedIngredients.length === 0}
-            onClick={handleGenerateAI}
+            onClick={handleStartIdeaGeneration}
             className="w-full h-12 min-h-[48px] rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-50 text-white font-semibold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
           >
             {isGenerating ? (
               <>
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>
-                  {nutritionGoal === 'high_protein'
-                    ? 'KI kreiert dein High-Protein-Gericht...'
-                    : nutritionGoal === 'high_calorie'
-                    ? 'KI kreiert dein energiereiches Gericht...'
-                    : 'KI kreiert dein Gericht...'}
-                </span>
+                <span>Kombiniere Vorräte zu einer Rezeptidee...</span>
               </>
             ) : (
               <>
@@ -642,11 +798,13 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 <span>
                   {selectedIngredients.length === 0
                     ? 'Wähle mindestens 1 Zutat aus'
-                    : nutritionGoal === 'high_protein'
-                    ? `High-Protein-Rezept aus ${selectedIngredients.length} Vorratszutat${selectedIngredients.length > 1 ? 'en' : ''} generieren`
-                    : nutritionGoal === 'high_calorie'
-                    ? `Kalorienreiches Rezept aus ${selectedIngredients.length} Vorratszutat${selectedIngredients.length > 1 ? 'en' : ''} generieren`
-                    : `Gericht aus ${selectedIngredients.length} Vorratszutat${selectedIngredients.length > 1 ? 'en' : ''} generieren`}
+                    : proteinFilter === 'high' || proteinFilter === 'very-high'
+                    ? `High-Protein-Idee aus ${selectedIngredients.length} Vorräten vorschlagen`
+                    : calorieFilter === 'high'
+                    ? `Kalorienreiche Rezeptidee aus ${selectedIngredients.length} Vorräten vorschlagen`
+                    : calorieFilter === 'low'
+                    ? `Leichte Rezeptidee aus ${selectedIngredients.length} Vorräten vorschlagen`
+                    : `Rezeptidee aus ${selectedIngredients.length} Vorratszutat${selectedIngredients.length > 1 ? 'en' : ''} vorschlagen`}
                 </span>
               </>
             )}
@@ -666,16 +824,33 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
                   {generatedRecipe.isVegan ? '🌱 Vegan' : '🧀 Veggie'}
                 </span>
-                {nutritionGoal === 'high_protein' && (
+                {(proteinFilter === 'high' || proteinFilter === 'very-high') && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
                     <Dumbbell className="w-3 h-3" />
-                    High Protein
+                    {proteinFilter === 'very-high' ? 'Extra Protein (40g+)' : 'High Protein (30g+)'}
                   </span>
                 )}
-                {nutritionGoal === 'high_calorie' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8] text-xs font-semibold">
+                {proteinFilter === 'medium' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
+                    <Dumbbell className="w-3 h-3" />
+                    20g+ Protein
+                  </span>
+                )}
+                {calorieFilter === 'high' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold">
                     <Flame className="w-3 h-3 text-amber-500" />
-                    Viele Kalorien
+                    High Cal (750+)
+                  </span>
+                )}
+                {calorieFilter === 'low' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
+                    <Flame className="w-3 h-3 text-emerald-600" />
+                    Leicht (&lt; 500 kcal)
+                  </span>
+                )}
+                {calorieFilter === 'moderate' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8] text-xs font-semibold">
+                    500–700 kcal
                   </span>
                 )}
               </div>
@@ -829,16 +1004,22 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
               <h3 className="text-base sm:text-lg font-semibold text-[#2D3E40]">
                 Oder entdecke passende Rezepte aus unserer Sammlung:
               </h3>
-              {nutritionGoal === 'high_protein' && (
+              {(proteinFilter === 'high' || proteinFilter === 'very-high') && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
                   <Dumbbell className="w-3 h-3" />
                   Nach Protein sortiert
                 </span>
               )}
-              {nutritionGoal === 'high_calorie' && (
+              {calorieFilter === 'high' && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#2D3E40] text-xs font-semibold border border-[#ECEBE8]">
                   <Flame className="w-3 h-3 text-amber-500" />
                   Nach Kalorien sortiert
+                </span>
+              )}
+              {calorieFilter === 'low' && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200">
+                  <Flame className="w-3 h-3 text-emerald-600" />
+                  Nach leichten Rezepten sortiert
                 </span>
               )}
             </div>
@@ -852,12 +1033,14 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 onClick={() => onSelectRecipe(recipe)}
                 className="flex gap-3 bg-white p-3 rounded-2xl border border-[#ECEBE8] hover:border-[#4A7856]/40 hover:shadow-xs transition-all cursor-pointer group"
               >
-                <img
-                  src={recipe.image}
-                  alt={recipe.title}
-                  referrerPolicy="no-referrer"
-                  className="w-20 h-20 rounded-xl object-cover shrink-0 group-hover:scale-103 transition-transform"
-                />
+                <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0">
+                  <RecipeImage
+                    recipe={recipe}
+                    alt={recipe.title}
+                    imgClassName="w-full h-full object-cover group-hover:scale-103 transition-transform"
+                    size="sm"
+                  />
+                </div>
                 <div className="flex flex-col justify-between flex-1 min-w-0">
                   <div className="mb-1">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
@@ -877,6 +1060,20 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           </div>
         </div>
       )}
+
+      {/* Two-step Fridge Cook Idea Modal (pitch approval before full generation to save AI tokens) */}
+      <FridgeIdeaModal
+        isOpen={isIdeaModalOpen}
+        onClose={() => setIsIdeaModalOpen(false)}
+        idea={currentIdea}
+        isLoadingIdea={isLoadingIdea}
+        isCreatingFinalRecipe={isCreatingFinalRecipe}
+        onConfirmCreate={handleConfirmCreateFinalRecipe}
+        onRetryIdea={handleRetryIdea}
+        onCancel={() => setIsIdeaModalOpen(false)}
+        isVegan={isVegan}
+        attemptNumber={attemptNumber}
+      />
     </div>
   );
 };

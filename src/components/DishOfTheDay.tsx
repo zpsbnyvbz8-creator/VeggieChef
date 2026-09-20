@@ -146,7 +146,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
                   e.stopPropagation();
                   onToggleFavorite(activeRecipe.id);
                 }}
-                className={`w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg border border-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
+                className={`w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-xl border border-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
                   isFavorite ? 'bg-[#FDF6F0] text-[#D35400]' : 'bg-white hover:bg-[#F1F5F2] text-[#7A7E7B]'
                 }`}
                 title={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
@@ -161,7 +161,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
                     e.stopPropagation();
                     onToggleDislike(activeRecipe.id);
                   }}
-                  className={`w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg border border-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
+                  className={`w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-xl border border-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
                     isDisliked ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white hover:bg-[#F1F5F2] text-[#7A7E7B]'
                   }`}
                   title={isDisliked ? 'Nicht mehr ablehnen' : 'Gericht weniger oft anzeigen'}
@@ -174,7 +174,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
                 <button
                   id="dish-of-the-day-plan-btn"
                   onClick={handleMealPlan}
-                  className="h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-lg bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                  className="h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
                   title="In Wochenplaner eintragen"
                 >
                   <CalendarPlus className="w-3.5 h-3.5 text-[#4A7856]" />
@@ -185,7 +185,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
               <button
                 id="dish-of-the-day-copy-btn"
                 onClick={handleCopyIngredients}
-                className="hidden md:flex h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-lg bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                className="hidden md:flex h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
                 title="Zutatenliste schnell kopieren"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <Copy className="w-3.5 h-3.5 text-[#7A7E7B]" />}
@@ -196,7 +196,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
                 <button
                   id="dish-of-the-day-shopping-btn"
                   onClick={handleShopping}
-                  className="h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-lg bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                  className="h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
                   title="Auf die Einkaufsliste setzen"
                 >
                   {addedShopping ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <ShoppingCart className="w-3.5 h-3.5 text-[#7A7E7B]" />}
@@ -208,7 +208,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
             <button
               id="dish-of-the-day-view-btn"
               onClick={() => handleSelect?.(activeRecipe)}
-              className="h-8 sm:h-8.5 flex items-center gap-1 px-2.5 sm:px-3 rounded-lg bg-[#4A7856] hover:bg-[#3D6447] text-white font-semibold text-xs shadow-xs transition-all active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
+              className="h-8 sm:h-8.5 flex items-center gap-1 px-2.5 sm:px-3 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-semibold text-xs shadow-xs transition-all active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
             >
               <span>Rezept öffnen</span>
               <ArrowRight className="w-3.5 h-3.5" />

@@ -101,7 +101,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               key={cat}
               id={`cat-filter-${cat}`}
               onClick={() => setFilters((prev) => ({ ...prev, category: cat }))}
-              className={`h-10 min-h-[40px] px-3.5 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center border ${
+              className={`h-10 min-h-[40px] px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center border ${
                 isSelected
                   ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs font-semibold'
                   : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#2D3E40]'
@@ -117,7 +117,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
           id="filter-vegan-pill-btn"
           type="button"
           onClick={() => setFilters((prev) => ({ ...prev, onlyVegan: !prev.onlyVegan }))}
-          className={`h-10 min-h-[40px] px-3.5 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all cursor-pointer border touch-manipulation active:scale-95 flex items-center justify-center ${
+          className={`h-10 min-h-[40px] px-3.5 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all cursor-pointer border touch-manipulation active:scale-95 flex items-center justify-center ${
             filters.onlyVegan
               ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs'
               : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#4A7856] hover:bg-[#F1F5F2]'

@@ -375,34 +375,74 @@ export const RecipeDetailPage: React.FC = () => {
 
       {/* Main Recipe Card Container */}
       <article className="bg-white rounded-3xl border border-[#ECEBE8] shadow-xs overflow-hidden">
-        {/* Hero Image Section */}
-        <div className="relative h-64 sm:h-80 md:h-96 w-full overflow-hidden bg-slate-900">
-          <img
-            src={recipe.image || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=1200&q=80'}
-            alt={recipe.title}
-            referrerPolicy="no-referrer"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-
-          {/* Title and Badges over Image */}
-          <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 text-white">
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2">
-              <span className="px-3 py-1 rounded-full bg-[#4A7856] text-white text-xs font-semibold shadow-xs">
-                {isVeganized || recipe.isVegan ? '🌱 Vegan' : '🧀 Vegetarisch'}
-              </span>
-              <span className="px-2.5 py-1 rounded-full bg-white/20 text-white text-xs backdrop-blur-xs font-medium">
-                {recipe.category}
-              </span>
+        {/* Hero Image / Brand Placeholder Section */}
+        {recipe.isCustomAi || !recipe.image || recipe.image.trim() === '' || recipe.image === 'veggiechef-placeholder' ? (
+          <div className="relative w-full bg-[#FAF9F6] border-b border-[#ECEBE8] p-5 sm:p-8 md:p-10 flex flex-col justify-between overflow-hidden">
+            {/* Subtle background VeggieChef logo watermark in light gray */}
+            <div className="absolute right-4 -bottom-6 sm:right-8 sm:-bottom-8 opacity-15 pointer-events-none select-none">
+              <div className="w-36 h-36 sm:w-48 sm:h-48 rounded-3xl bg-[#ECEBE8] flex items-center justify-center">
+                <Leaf className="w-20 h-20 sm:w-28 sm:h-28 text-[#7A7E7B]" />
+              </div>
             </div>
-            <h1 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight leading-tight">
-              {recipe.title}
-            </h1>
-            <p className="text-white/80 text-xs sm:text-sm mt-1 sm:mt-1.5 max-w-2xl line-clamp-2">
-              {recipe.subtitle}
-            </p>
+
+            {/* Subtle brand tag in light gray */}
+            <div className="flex items-center gap-2 mb-4 relative z-10">
+              <div className="w-8 h-8 rounded-xl bg-[#ECEBE8] flex items-center justify-center text-[#7A7E7B] shadow-2xs">
+                <Leaf className="w-4 h-4 text-[#7A7E7B]" />
+              </div>
+              <span className="text-xs font-bold tracking-tight text-[#7A7E7B]">VeggieChef</span>
+              <span className="text-xs text-[#9BA19D] font-medium">• KI-Rezept aus deiner Vorratskammer</span>
+            </div>
+
+            {/* Title and Badges */}
+            <div className="relative z-10 space-y-2.5 max-w-3xl">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="px-3 py-1 rounded-full bg-[#4A7856] text-white text-xs font-semibold shadow-xs">
+                  {isVeganized || recipe.isVegan ? '🌱 Vegan' : '🧀 Vegetarisch'}
+                </span>
+                <span className="px-2.5 py-1 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
+                  {recipe.category}
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-[#2D3E40] leading-tight">
+                {recipe.title}
+              </h1>
+              {recipe.subtitle && (
+                <p className="text-[#7A7E7B] text-sm sm:text-base leading-relaxed max-w-2xl">
+                  {recipe.subtitle}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="relative h-64 sm:h-80 md:h-96 w-full overflow-hidden bg-slate-900">
+            <img
+              src={recipe.image}
+              alt={recipe.title}
+              referrerPolicy="no-referrer"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+
+            {/* Title and Badges over Image */}
+            <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 text-white">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2">
+                <span className="px-3 py-1 rounded-full bg-[#4A7856] text-white text-xs font-semibold shadow-xs">
+                  {isVeganized || recipe.isVegan ? '🌱 Vegan' : '🧀 Vegetarisch'}
+                </span>
+                <span className="px-2.5 py-1 rounded-full bg-white/20 text-white text-xs backdrop-blur-xs font-medium">
+                  {recipe.category}
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight leading-tight">
+                {recipe.title}
+              </h1>
+              <p className="text-white/80 text-xs sm:text-sm mt-1 sm:mt-1.5 max-w-2xl line-clamp-2">
+                {recipe.subtitle}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Content Body */}
         <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
