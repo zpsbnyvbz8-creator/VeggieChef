@@ -930,7 +930,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   }}
                   autoFocus
                   placeholder="1 Stk"
-                  className="w-16 sm:w-18 px-1 py-0.5 text-center text-xs font-semibold text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg focus:border-[#4A7856] focus:outline-hidden"
+                  className="w-16 sm:w-18 px-1 py-0.5 text-center text-[14px] font-semibold text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg focus:border-[#4A7856] focus:outline-hidden"
                 />
 
                 <button
@@ -961,14 +961,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 </button>
               </div>
             ) : item.amount ? (
-              /* Mengenangabe ganz rechts: plain, crisp text without surrounding bordered pill tags */
+              /* Mengenangabe ganz rechts: plain, crisp 14px text */
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   startEditingItem(item);
                 }}
-                className={`text-xs sm:text-sm font-semibold select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline ${
+                className={`text-[14px] font-semibold select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline ${
                   item.completed
                     ? 'text-stone-400 line-through'
                     : 'text-[#4A7856] hover:text-[#3D6447]'
@@ -1044,11 +1044,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
         {/* Unified Action Row: single horizontal row with consistent sizing and alignment */}
         <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#ECEBE8]">
-          {/* Left side: View switcher ([ Regale ] / [ Liste ]) styled as cohesive toggle */}
-          <div className="relative flex items-center p-0.5 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs font-semibold select-none shadow-2xs h-12 sm:h-9">
+          {/* Left side: View switcher ([ Regale ] / [ Liste ]) styled as cohesive segmented control pill */}
+          <div className="relative flex items-center p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs font-semibold select-none shadow-2xs h-12 sm:h-9">
             <div
-              className={`absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] bg-[#4A7856] rounded-lg shadow-xs transition-all duration-200 ease-out pointer-events-none ${
-                viewMode === 'categorized' ? 'left-0.5' : 'left-[calc(50%+1px)]'
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#4A7856] rounded-lg shadow-xs transition-all duration-200 ease-out pointer-events-none ${
+                viewMode === 'categorized' ? 'left-1' : 'left-[calc(50%+2px)]'
               }`}
             />
 
@@ -1081,17 +1081,21 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             </button>
           </div>
 
-          {/* Right side: Direct action buttons ([ Kopieren ] and [ Löschen ]) */}
+          {/* Right side: Unified matching neutral action buttons ([ Kopieren ] and [ Löschen ]) */}
           <div className="flex items-center gap-2 shrink-0">
             <button
               id="copy-entire-shopping-list-btn"
               type="button"
               onClick={handleCopyFormattedList}
               disabled={items.length === 0}
-              className="h-12 sm:h-9 min-h-[48px] sm:min-h-0 px-4 sm:px-3.5 flex items-center justify-center gap-1.5 rounded-xl bg-[#2D3E40] hover:bg-[#1F2C2D] disabled:opacity-40 text-white font-medium text-xs shadow-xs transition-all active:scale-95 touch-manipulation cursor-pointer"
+              className="h-12 sm:h-9 min-h-[48px] sm:min-h-0 px-3.5 sm:px-3 flex items-center justify-center gap-1.5 rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#2D3E40] hover:text-[#1F2C2D] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#FAF9F6] font-medium text-xs shadow-2xs transition-all active:scale-95 touch-manipulation cursor-pointer group"
               title="Kopiert die Liste formatiert für WhatsApp & Notizen"
             >
-              {copied ? <Check className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[#4A7856]" /> : <Copy className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-white" />}
+              {copied ? (
+                <Check className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[#4A7856]" />
+              ) : (
+                <Copy className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[#7A7E7B] group-hover:text-[#2D3E40] transition-colors" />
+              )}
               <span>{copied ? 'Kopiert!' : 'Kopieren'}</span>
             </button>
 
@@ -1118,12 +1122,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               }}
               onDrop={handleDropOnDelete}
               disabled={items.length === 0 && !draggedShelf && !draggedItemId}
-              className={`h-12 sm:h-9 min-h-[48px] sm:min-h-0 px-4 sm:px-3.5 flex items-center justify-center gap-1.5 rounded-xl font-semibold text-xs border transition-all cursor-pointer select-none touch-manipulation ${
+              className={`h-12 sm:h-9 min-h-[48px] sm:min-h-0 px-3.5 sm:px-3 flex items-center justify-center gap-1.5 rounded-xl font-medium text-xs border transition-all select-none touch-manipulation group shadow-2xs ${
                 isDragOverDelete
-                  ? 'bg-red-600 text-white border-red-600 shadow-md ring-2 ring-red-400'
+                  ? 'bg-rose-600 text-white border-rose-600 shadow-md ring-2 ring-rose-400'
                   : items.length > 0
-                  ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200 active:scale-95'
-                  : 'bg-[#FAF9F6] text-[#A0A5A2] border-[#ECEBE8] opacity-50 cursor-not-allowed'
+                  ? 'bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#2D3E40] hover:text-rose-700 border-[#ECEBE8] hover:border-rose-200 active:scale-95 cursor-pointer'
+                  : 'bg-[#FAF9F6] text-[#A0A5A2] border-[#ECEBE8] opacity-40 cursor-not-allowed'
               }`}
               title={
                 draggedShelf
@@ -1133,7 +1137,15 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   : 'Gesamte Einkaufsliste löschen'
               }
             >
-              <Trash2 className={`w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0 ${isDragOverDelete ? 'animate-bounce' : ''}`} />
+              <Trash2
+                className={`w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0 transition-colors ${
+                  isDragOverDelete
+                    ? 'text-white animate-bounce'
+                    : items.length > 0
+                    ? 'text-rose-500/80 group-hover:text-rose-600'
+                    : 'text-[#A0A5A2]'
+                }`}
+              />
               <span>Löschen</span>
             </button>
           </div>
