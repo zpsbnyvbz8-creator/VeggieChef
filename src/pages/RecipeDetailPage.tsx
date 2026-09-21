@@ -10,7 +10,6 @@ import {
   Check, 
   ShoppingCart, 
   CalendarPlus, 
-  Sparkles, 
   Leaf, 
   ChefHat, 
   Users, 
@@ -22,7 +21,6 @@ import {
   Pencil,
   Trash2,
   Camera,
-  Info,
   CheckCircle2,
   FileText,
   ThumbsDown,
@@ -95,9 +93,8 @@ export const RecipeDetailPage: React.FC = () => {
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
-  // Step-specific image upload state
-  const stepFileInputRef = useRef<HTMLInputElement | null>(null);
-  const [uploadingStepNumber, setUploadingStepNumber] = useState<number | null>(null);
+  // Global Step Images Toggle
+  const [showStepImages, setShowStepImages] = useState(true);
 
   // Modals & Menu states
   const [isOverflowMenuOpen, setIsOverflowMenuOpen] = useState(false);
@@ -244,40 +241,6 @@ export const RecipeDetailPage: React.FC = () => {
     e.target.value = '';
   };
 
-  // Step-specific photo upload handler
-  const handleStepPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || uploadingStepNumber === null) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      if (!dataUrl) return;
-
-      const updatedSteps = recipe.steps.map((step, idx) => {
-        const stepNum = typeof step === 'string' ? idx + 1 : step.stepNumber;
-        if (stepNum === uploadingStepNumber) {
-          const stepObj: RecipeStep = typeof step === 'string' 
-            ? { stepNumber: stepNum, title: `Schritt ${stepNum}`, text: step, stepImages: [dataUrl] }
-            : { ...step, stepImages: [...(step.stepImages || []), dataUrl] };
-          return stepObj;
-        }
-        return step;
-      });
-
-      const updatedRecipe: Recipe = {
-        ...recipe,
-        steps: updatedSteps,
-      };
-
-      updateRecipe(updatedRecipe);
-      showToast(`Foto zu Schritt ${uploadingStepNumber} hinzugefügt! 📸`);
-      setUploadingStepNumber(null);
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  };
-
   // Set selected photo as cover photo
   const handleSetAsCover = (imgUrl: string) => {
     const updated: Recipe = {
@@ -397,38 +360,6 @@ export const RecipeDetailPage: React.FC = () => {
   const activeIngredients = (isVeganized && veganizedIngredients) ? veganizedIngredients : recipe.ingredients;
   const savings = calculateMealSavings(servings, recipe.isVegan || isVeganized);
 
-  // Compute utility badges (eliminating generic fluff, focusing on real functional badges)
-  const utilityBadges = useMemo(() => {
-    const badges: { label: string; tone: 'emerald' | 'amber' | 'slate' }[] = [];
-    
-    // Time-based utility badge
-    if (recipe.totalTimeMinutes <= 25) {
-      badges.push({ label: '⚡ Schnell (< 25 Min.)', tone: 'amber' });
-    } else if (recipe.totalTimeMinutes <= 35) {
-      badges.push({ label: '⏱️ Unter 35 Min.', tone: 'slate' });
-    }
-
-    // Protein badge
-    if (recipe.nutrients.protein >= 20) {
-      badges.push({ label: '💪 High Protein', tone: 'emerald' });
-    }
-
-    // One-pot badge check
-    const isOnePot = recipe.tags?.some(t => t.toLowerCase().includes('one-pot') || t.toLowerCase().includes('eintopf')) ||
-                     recipe.title.toLowerCase().includes('one-pot') ||
-                     recipe.title.toLowerCase().includes('eintopf');
-    if (isOnePot) {
-      badges.push({ label: '🍲 One-Pot', tone: 'emerald' });
-    }
-
-    // Calorie lightness
-    if (recipe.nutrients.calories < 450) {
-      badges.push({ label: '🥗 Kalorienbewusst', tone: 'slate' });
-    }
-
-    return badges;
-  }, [recipe]);
-
   return (
     <div className="min-h-screen bg-[#FAF9F6] text-[#2D3E40] selection:bg-[#F1F5F2] selection:text-[#4A7856] pb-28">
       {/* Hidden file input for uploading user cover photos */}
@@ -440,21 +371,12 @@ export const RecipeDetailPage: React.FC = () => {
         className="hidden"
       />
 
-      {/* Hidden file input for step photos */}
-      <input
-        ref={stepFileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleStepPhotoUpload}
-        className="hidden"
-      />
-
       {/* 1. LIQUID-GLASS STICKY APP BAR ON SCROLL & FLOATING TOP CONTROLS */}
       <nav
         aria-label="Rezept Navigation"
         className={`fixed top-0 inset-x-0 z-30 transition-all duration-300 ${
           isScrolled
-            ? 'bg-white/85 backdrop-blur-md border-b border-[#ECEBE8] shadow-xs py-2.5 px-4 text-[#2D3E40]'
+            ? 'bg-white/95 backdrop-blur-md border-b border-[#ECEBE8] shadow-xs py-2.5 px-4 text-[#2D3E40]'
             : 'bg-transparent py-4 px-4 text-white pointer-events-none'
         }`}
       >
@@ -466,7 +388,7 @@ export const RecipeDetailPage: React.FC = () => {
             onClick={handleGoBack}
             className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
               isScrolled
-                ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] shadow-2xs'
+                ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] border border-[#ECEBE8] shadow-2xs'
                 : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md'
             }`}
             aria-label="Zurück"
@@ -494,7 +416,7 @@ export const RecipeDetailPage: React.FC = () => {
               onClick={() => fileInputRef.current?.click()}
               className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                 isScrolled
-                  ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] shadow-2xs'
+                  ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] border border-[#ECEBE8] shadow-2xs'
                   : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md'
               }`}
               title="Eigenes Foto hochladen"
@@ -510,7 +432,7 @@ export const RecipeDetailPage: React.FC = () => {
               onClick={() => toggleFavorite(recipe.id)}
               className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                 isScrolled
-                  ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] shadow-2xs'
+                  ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] border border-[#ECEBE8] shadow-2xs'
                   : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md'
               }`}
               aria-label={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
@@ -530,7 +452,7 @@ export const RecipeDetailPage: React.FC = () => {
                 onClick={() => setIsOverflowMenuOpen(!isOverflowMenuOpen)}
                 className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                   isScrolled
-                    ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] shadow-2xs'
+                    ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] border border-[#ECEBE8] shadow-2xs'
                     : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md'
                 }`}
                 aria-label="Weitere Optionen"
@@ -695,33 +617,16 @@ export const RecipeDetailPage: React.FC = () => {
 
       {/* 3. MAIN BODY CONTENT */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-5 sm:pt-6 space-y-6 sm:space-y-8">
-        {/* Title, Functional Badges & Subtitle */}
+        {/* Title, Badges (Strictly max 2) & Subtitle */}
         <section className="space-y-3">
-          {/* Functional Utility Badges */}
+          {/* Metadata Badges: Strictly max 2 badges, no metric duplicates or generic fluff */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="px-3 py-1 rounded-full bg-[#4A7856] text-white text-xs font-semibold shadow-2xs">
               {isVeganized || recipe.isVegan ? '🌱 Vegan' : '🧀 Vegetarisch'}
             </span>
-            <span className="px-3 py-1 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
-              {recipe.category}
-            </span>
-            {recipe.difficulty && (
-              <span className="px-2.5 py-1 rounded-full bg-white text-[#7A7E7B] border border-[#ECEBE8] text-xs font-medium">
-                {recipe.difficulty}
-              </span>
-            )}
-            {/* Real utility badges (One-Pot, Schnell, High Protein, etc.) */}
-            {utilityBadges.map((badge, idx) => (
-              <span
-                key={idx}
-                className="px-2.5 py-1 rounded-full bg-white text-[#2D3E40] border border-[#ECEBE8] text-xs font-medium shadow-2xs"
-              >
-                {badge.label}
-              </span>
-            ))}
-            {recipe.season && (
-              <span className="px-2.5 py-1 rounded-full bg-white text-[#7A7E7B] border border-[#ECEBE8] text-xs font-medium">
-                ☀️ {recipe.season}
+            {recipe.category && (
+              <span className="px-3 py-1 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
+                {recipe.category}
               </span>
             )}
           </div>
@@ -739,7 +644,7 @@ export const RecipeDetailPage: React.FC = () => {
           )}
         </section>
 
-        {/* 4. QUICK-FACTS GRID (2x2 Mobile Hierarchy with Clean Eco-Score Tile) */}
+        {/* 4. QUICK-FACTS GRID (2x2 Mobile Hierarchy with Schwierigkeit Metric) */}
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Total Time */}
           <div className="p-3.5 bg-white rounded-2xl border border-[#ECEBE8] flex items-center gap-3 shadow-2xs">
@@ -786,36 +691,46 @@ export const RecipeDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Clean Restructured Eco-Score Tile matching the 2x2 grid hierarchy */}
-          <div 
-            onClick={() => setIsEcoModalOpen(true)}
-            className="p-3.5 bg-white hover:bg-[#F1F5F2]/60 border border-[#ECEBE8] rounded-2xl flex items-center gap-3 shadow-2xs cursor-pointer transition-colors group"
-            title="Klicken für Umwelt- & Eco-Score Details"
-          >
-            <div className="w-10 h-10 rounded-xl bg-[#4A7856] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
-              A+
+          {/* Schwierigkeit (Replaces Eco-Score with matching typography and weight) */}
+          <div className="p-3.5 bg-white rounded-2xl border border-[#ECEBE8] flex items-center gap-3 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center shrink-0">
+              <ChefHat className="w-5 h-5" />
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-semibold text-[#7A7E7B] uppercase tracking-wider flex items-center gap-1">
-                <span>Eco-Score</span>
-                <Info className="w-3 h-3 text-[#7A7E7B] group-hover:text-[#4A7856]" />
+            <div>
+              <div className="text-[11px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
+                Schwierigkeit
               </div>
-              <div className="font-bold text-[#4A7856] text-sm sm:text-base truncate">
-                -85% CO₂
+              <div className="font-bold text-[#2D3E40] text-sm sm:text-base truncate">
+                {recipe.difficulty || 'Einfach'}
               </div>
             </div>
           </div>
         </section>
 
-        {/* 5. SERVINGS CARD & BALANCED ACTION ROW */}
-        <section className="bg-white border border-[#ECEBE8] rounded-2xl p-4 sm:p-5 shadow-2xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* 5. SERVINGS CARD & BALANCED 3-COLUMN ACTION ROW */}
+        <section className="bg-white border border-[#ECEBE8] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             {/* Servings Stepper */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-[#2D3E40] flex items-center gap-1.5 shrink-0">
-                <Users className="w-4 h-4 text-[#4A7856]" />
-                <span>Portionen:</span>
-              </span>
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-[#4A7856]" />
+              <span className="text-sm font-semibold text-[#2D3E40]">Portionen anpassen:</span>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              {!recipe.isVegan && (
+                <button
+                  type="button"
+                  onClick={handleVeganize}
+                  className={`h-11 px-3.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                    isVeganized
+                      ? 'bg-[#4A7856] text-white border-[#4A7856]'
+                      : 'bg-[#FAF9F6] text-[#4A7856] border-[#ECEBE8] hover:border-[#4A7856]/40'
+                  }`}
+                >
+                  <Leaf className="w-3.5 h-3.5" />
+                  <span>{isVeganized ? '✓ Vegan' : 'Veganisieren'}</span>
+                </button>
+              )}
 
               <div className="inline-flex items-center bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl p-1 shadow-2xs">
                 <button
@@ -842,48 +757,46 @@ export const RecipeDetailPage: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* Balanced Action Row: In Wochenplaner + Einkaufsliste + Veganisieren (Zutaten kopieren in Overflow Menu) */}
-            <div className="flex flex-wrap items-center gap-2">
-              {!recipe.isVegan && (
-                <button
-                  type="button"
-                  onClick={handleVeganize}
-                  className={`h-11 px-3.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                    isVeganized
-                      ? 'bg-[#4A7856] text-white border-[#4A7856]'
-                      : 'bg-[#FAF9F6] text-[#4A7856] border-[#ECEBE8] hover:border-[#4A7856]/40'
-                  }`}
-                >
-                  <Leaf className="w-3.5 h-3.5" />
-                  <span>{isVeganized ? '✓ 100% Vegan' : 'Veganisieren'}</span>
-                </button>
+          {/* Under servings counter: Clean 3-Column Action Row */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-1 border-t border-[#ECEBE8]/70">
+            {/* 1. [ + Planer ] */}
+            <button
+              id="servings-add-to-plan-btn"
+              type="button"
+              onClick={() => setRecipeToAddToPlan(recipe)}
+              className="h-11 px-2 sm:px-3 rounded-xl text-xs font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+            >
+              <CalendarPlus className="w-4 h-4 text-[#4A7856] shrink-0" />
+              <span className="truncate">+ Planer</span>
+            </button>
+
+            {/* 2. [ + Einkaufsliste ] */}
+            <button
+              id="servings-add-to-shopping-btn"
+              type="button"
+              onClick={handleAddShopping}
+              className="h-11 px-2 sm:px-3 rounded-xl text-xs font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+            >
+              {addedShopping ? (
+                <Check className="w-4 h-4 text-[#4A7856] shrink-0" />
+              ) : (
+                <ShoppingCart className="w-4 h-4 text-[#4A7856] shrink-0" />
               )}
+              <span className="truncate">{addedShopping ? 'Auf Liste' : '+ Einkaufsliste'}</span>
+            </button>
 
-              {/* In Wochenplaner Button */}
-              <button
-                type="button"
-                onClick={() => setRecipeToAddToPlan(recipe)}
-                className="h-11 px-4 rounded-xl text-xs font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95"
-              >
-                <CalendarPlus className="w-3.5 h-3.5 text-[#4A7856]" />
-                <span>+ In Wochenplaner</span>
-              </button>
-
-              {/* In Einkaufsliste Button */}
-              <button
-                type="button"
-                onClick={handleAddShopping}
-                className="h-11 px-4 rounded-xl text-xs font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95"
-              >
-                {addedShopping ? (
-                  <Check className="w-3.5 h-3.5 text-[#4A7856]" />
-                ) : (
-                  <ShoppingCart className="w-3.5 h-3.5 text-[#7A7E7B]" />
-                )}
-                <span>{addedShopping ? 'Auf der Liste' : '+ Einkaufsliste'}</span>
-              </button>
-            </div>
+            {/* 3. [ Zutaten kopieren ] */}
+            <button
+              id="servings-copy-ingredients-btn"
+              type="button"
+              onClick={handleCopyIngredients}
+              className="h-11 px-2 sm:px-3 rounded-xl text-xs font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+            >
+              <Copy className="w-4 h-4 text-[#4A7856] shrink-0" />
+              <span className="truncate">Zutaten kopieren</span>
+            </button>
           </div>
         </section>
 
@@ -901,7 +814,7 @@ export const RecipeDetailPage: React.FC = () => {
             </span>
           </div>
 
-          {/* Clean Flat List with Dividers, No Repetitive Icons, Right-Aligned Quantities */}
+          {/* Clean Flat List with Dividers, No Replacement Icons, Right-Aligned Quantities */}
           <div className="border border-[#ECEBE8] rounded-2xl overflow-hidden bg-white shadow-2xs">
             <ul className="divide-y divide-[#ECEBE8]">
               {activeIngredients.map((ing) => {
@@ -911,13 +824,11 @@ export const RecipeDetailPage: React.FC = () => {
                 return (
                   <li
                     key={ing.name}
-                    className="flex items-center justify-between py-3.5 px-4 sm:px-5 hover:bg-[#FAF9F6] transition-colors select-none group"
+                    onClick={() => toggleCheckIngredient(ing.name)}
+                    className="flex items-center justify-between py-3.5 px-4 sm:px-5 hover:bg-[#FAF9F6] transition-colors select-none group cursor-pointer"
                   >
                     {/* Left: Custom Checkbox + Natural Wrapping Ingredient Name */}
-                    <div
-                      onClick={() => toggleCheckIngredient(ing.name)}
-                      className="flex items-start gap-3 flex-1 min-w-0 pr-3 cursor-pointer"
-                    >
+                    <div className="flex items-start gap-3 flex-1 min-w-0 pr-3">
                       <div
                         className={`w-5 h-5 rounded-md flex items-center justify-center border mt-0.5 transition-all shrink-0 ${
                           isChecked
@@ -939,31 +850,14 @@ export const RecipeDetailPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Right: Contextual Substitute trigger + Right-Aligned Quantities */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Contextual substitute button for THIS specific ingredient */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSubstitutingIngredient(ing);
-                        }}
-                        className="p-1.5 rounded-lg text-[#7A7E7B] hover:text-[#D35400] hover:bg-[#FDF6F0] transition-colors cursor-pointer"
-                        title={`Alternative für "${ing.name}" vorschlagen`}
-                        aria-label={`Alternative für ${ing.name}`}
-                      >
-                        <Sparkles className="w-4 h-4" />
-                      </button>
-
-                      {/* Right-aligned column for quantities & units */}
-                      <span
-                        className={`text-sm sm:text-base font-semibold text-right tabular-nums whitespace-nowrap min-w-[70px] ${
-                          isChecked ? 'line-through text-[#9BA19D] opacity-60' : 'text-[#4A7856]'
-                        }`}
-                      >
-                        {amountStr}
-                      </span>
-                    </div>
+                    {/* Right: Strictly Amount + Unit (No replacement icons inline) */}
+                    <span
+                      className={`text-sm sm:text-base font-semibold text-right tabular-nums whitespace-nowrap shrink-0 pl-2 ${
+                        isChecked ? 'line-through text-[#9BA19D] opacity-60' : 'text-[#4A7856]'
+                      }`}
+                    >
+                      {amountStr}
+                    </span>
                   </li>
                 );
               })}
@@ -1072,11 +966,25 @@ export const RecipeDetailPage: React.FC = () => {
 
         {/* 8. PREPARATION STEPS & TIMELINE WITH STEP-BY-STEP MEDIA */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold text-[#2D3E40]">
-              Zubereitung Schritt für Schritt
-            </h3>
-            <span className="text-xs text-[#7A7E7B]">Tippe zum Abhaken</span>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xl font-bold text-[#2D3E40]">
+                Zubereitung Schritt für Schritt
+              </h3>
+              <span className="text-xs text-[#7A7E7B]">Tippe zum Abhaken</span>
+            </div>
+
+            {/* Global Media Toggle Button */}
+            <button
+              id="toggle-step-images-btn"
+              type="button"
+              onClick={() => setShowStepImages(!showStepImages)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-xs font-semibold text-[#2D3E40] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
+              title={showStepImages ? 'Schritt-Bilder ausblenden' : 'Schritt-Bilder einblenden'}
+            >
+              <ImageIcon className="w-3.5 h-3.5 text-[#4A7856]" />
+              <span>{showStepImages ? '📷 Bilder ausblenden' : '📷 Bilder einblenden'}</span>
+            </button>
           </div>
 
           <div className="relative pl-1 sm:pl-3 space-y-6 sm:space-y-7 before:absolute before:left-[17px] sm:before:left-[23px] before:top-4 before:bottom-4 before:w-0.5 before:bg-[#ECEBE8]">
@@ -1137,37 +1045,28 @@ export const RecipeDetailPage: React.FC = () => {
                       </p>
                     </div>
 
-                    {/* Step-by-Step Media Thumbnails & Add Photo Trigger */}
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
-                      {stepImages.map((img, imgIdx) => (
-                        <div
-                          key={imgIdx}
-                          onClick={() => openLightbox(stepImages, imgIdx)}
-                          className="relative w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden border border-[#ECEBE8] shadow-2xs cursor-pointer group/thumb"
-                        >
-                          <img
-                            src={img}
-                            alt={`Foto zu Schritt ${stepObj.stepNumber}`}
-                            referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform"
-                          />
-                        </div>
-                      ))}
-
-                      {/* Small subtle + Foto button per step */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUploadingStepNumber(stepObj.stepNumber);
-                          stepFileInputRef.current?.click();
-                        }}
-                        className="h-8 px-2.5 rounded-lg bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#7A7E7B] hover:text-[#4A7856] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer touch-manipulation"
-                        title="Foto zu diesem Schritt hinzufügen"
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                        <span>+ Foto</span>
-                      </button>
-                    </div>
+                    {/* Step Images Layout: Clean, full-width rounded images below instruction text when toggled visible */}
+                    {showStepImages && stepImages.length > 0 && (
+                      <div className="space-y-3 pt-2">
+                        {stepImages.map((img, imgIdx) => (
+                          <div
+                            key={imgIdx}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openLightbox(stepImages, imgIdx);
+                            }}
+                            className="relative w-full rounded-2xl overflow-hidden border border-[#ECEBE8] shadow-2xs cursor-pointer group/stepimg bg-stone-100 max-h-72 sm:max-h-80"
+                          >
+                            <img
+                              src={img}
+                              alt={`Foto zu ${stepObj.title || `Schritt ${stepObj.stepNumber}`}`}
+                              referrerPolicy="no-referrer"
+                              className="w-full h-48 sm:h-64 md:h-72 object-cover group-hover/stepimg:scale-[1.01] transition-transform duration-200"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               );

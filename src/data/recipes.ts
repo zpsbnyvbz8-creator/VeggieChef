@@ -48,7 +48,8 @@ export const INITIAL_RECIPES: Recipe[] = [
             stepNumber: 1,
             title: 'Aromen anbraten',
             text: 'Zwiebel, Knoblauch und Ingwer fein hacken. Kokosöl in einer Pfanne erhitzen und die Mischung 2-3 Min. glasig dünsten.',
-            timerMinutes: 3
+            timerMinutes: 3,
+            stepImages: ['https://images.unsplash.com/photo-1596797038530-2c107229654b?auto=format&fit=crop&w=800&q=80']
       },
       {
             stepNumber: 2,
@@ -72,7 +73,8 @@ export const INITIAL_RECIPES: Recipe[] = [
             stepNumber: 5,
             title: 'Einköcheln lassen',
             text: 'Das Curry bei reduzierter Hitze etwa 10-12 Minuten sanft köcheln lassen, bis die Sauce schön sämig wird.',
-            timerMinutes: 12
+            timerMinutes: 12,
+            stepImages: ['https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80']
       },
       {
             stepNumber: 6,
