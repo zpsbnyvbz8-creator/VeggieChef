@@ -1045,7 +1045,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         {/* Unified Action Row: single horizontal row with consistent sizing and alignment */}
         <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#ECEBE8]">
           {/* Left side: View switcher ([ Regale ] / [ Liste ]) styled as cohesive segmented control pill */}
-          <div className="relative flex items-center p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs font-semibold select-none shadow-2xs h-12 sm:h-9">
+          <div className="relative flex items-center p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs font-semibold select-none shadow-2xs h-[44px]">
             <div
               className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#4A7856] rounded-lg shadow-xs transition-all duration-200 ease-out pointer-events-none ${
                 viewMode === 'categorized' ? 'left-1' : 'left-[calc(50%+2px)]'
@@ -1055,7 +1055,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             <button
               type="button"
               onClick={() => setViewMode('categorized')}
-              className={`relative z-10 px-3.5 sm:px-3 h-full min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation select-none ${
+              className={`relative z-10 px-3.5 sm:px-3 h-full flex items-center justify-center gap-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation select-none ${
                 viewMode === 'categorized'
                   ? 'text-white font-bold'
                   : 'text-[#7A7E7B] hover:text-[#2D3E40] font-medium'
@@ -1069,7 +1069,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             <button
               type="button"
               onClick={() => setViewMode('flat')}
-              className={`relative z-10 px-3.5 sm:px-3 h-full min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation select-none ${
+              className={`relative z-10 px-3.5 sm:px-3 h-full flex items-center justify-center gap-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation select-none ${
                 viewMode === 'flat'
                   ? 'text-white font-bold'
                   : 'text-[#7A7E7B] hover:text-[#2D3E40] font-medium'
@@ -1088,7 +1088,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               type="button"
               onClick={handleCopyFormattedList}
               disabled={items.length === 0}
-              className="h-12 sm:h-9 min-h-[48px] sm:min-h-0 px-3.5 sm:px-3 flex items-center justify-center gap-1.5 rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#2D3E40] hover:text-[#1F2C2D] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#FAF9F6] font-medium text-xs shadow-2xs transition-all active:scale-95 touch-manipulation cursor-pointer group"
+              className="h-[44px] px-3.5 sm:px-3 flex items-center justify-center gap-1.5 rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#2D3E40] hover:text-[#1F2C2D] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#FAF9F6] font-medium text-xs shadow-2xs transition-all active:scale-95 touch-manipulation cursor-pointer group"
               title="Kopiert die Liste formatiert für WhatsApp & Notizen"
             >
               {copied ? (
@@ -1122,7 +1122,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               }}
               onDrop={handleDropOnDelete}
               disabled={items.length === 0 && !draggedShelf && !draggedItemId}
-              className={`h-12 sm:h-9 min-h-[48px] sm:min-h-0 px-3.5 sm:px-3 flex items-center justify-center gap-1.5 rounded-xl font-medium text-xs border transition-all select-none touch-manipulation group shadow-2xs ${
+              className={`h-[44px] px-3.5 sm:px-3 flex items-center justify-center gap-1.5 rounded-xl font-medium text-xs border transition-all select-none touch-manipulation group shadow-2xs ${
                 isDragOverDelete
                   ? 'bg-rose-600 text-white border-rose-600 shadow-md ring-2 ring-rose-400'
                   : items.length > 0
