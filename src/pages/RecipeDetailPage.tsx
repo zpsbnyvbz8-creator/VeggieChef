@@ -1328,11 +1328,11 @@ export const RecipeDetailPage: React.FC = () => {
 
                               {stepObj.timerMinutes && (
                                 <span
-                                  className={`inline-flex items-center gap-1.5 text-xs font-semibold text-[#2D5437] bg-[#DFE9E1] border border-[#CCDCD0] px-2.5 py-0.5 rounded-full transition-opacity shadow-2xs ${
+                                  className={`inline-flex items-center gap-1.5 text-xs font-semibold text-[#457250] bg-[#E8EFEA] border border-[#D8E3DA] px-2.5 py-0.5 rounded-full transition-opacity ${
                                     isStepDone ? 'opacity-40' : ''
                                   }`}
                                 >
-                                  <Clock className="w-3.5 h-3.5 text-[#3D6946]" />
+                                  <Clock className="w-3.5 h-3.5 text-[#4A7856]" />
                                   {stepObj.timerMinutes} Min.
                                 </span>
                               )}
