@@ -663,9 +663,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           setDragDropPosition(null);
           setIsDragOverDelete(false);
         }}
-        className={`relative overflow-hidden rounded-2xl select-none group touch-pan-y transition-all ${
+        className={`relative overflow-hidden select-none group touch-pan-y transition-all ${
           isBeingDragged
-            ? 'opacity-40 scale-[0.98] border-dashed border-[#4A7856]'
+            ? 'opacity-40 border-dashed border-[#4A7856]'
             : 'opacity-100'
         }`}
       >
@@ -677,12 +677,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           <div className="absolute bottom-0 left-2 right-2 h-1 bg-[#4A7856] rounded-full z-30 pointer-events-none shadow-xs" />
         )}
 
-        {/* Background Action Tray: Im Grundzustand/Swipe #FAF9F6, bei >=70% dunkleres Rot (#C93B2B) */}
+        {/* Background Action Tray: Für Mobile-Swipe (auf Desktop sm:hidden, da dort Hover verwendet wird) */}
         <div
-          className={`absolute inset-0 z-0 rounded-2xl overflow-hidden flex items-center justify-end transition-[background-color,border-color] duration-150 ease-out ${
+          className={`absolute inset-0 z-0 overflow-hidden flex items-center justify-end transition-[background-color,border-color] duration-150 ease-out sm:hidden ${
             isFullSwipeDelete
-              ? 'bg-[#C93B2B] border border-[#C93B2B]'
-              : 'bg-[#FAF9F6] border border-[#ECEBE8] px-3.5'
+              ? 'bg-[#C93B2B]'
+              : 'bg-[#FAF9F6] px-3.5'
           }`}
         >
           {isFullSwipeDelete ? (
@@ -829,32 +829,22 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             transition: isThisItemTouching ? 'none' : 'transform 0.32s cubic-bezier(0.16, 1, 0.3, 1)',
             willChange: isThisItemTouching ? 'transform' : 'auto',
           }}
-          className={`relative z-10 flex items-center justify-between py-2.5 px-3.5 rounded-2xl border gap-2.5 sm:gap-3 min-h-[46px] ${
+          className={`relative z-10 w-full flex items-center justify-between py-2.5 sm:py-3 px-3.5 sm:px-4 gap-2.5 sm:gap-3 min-h-[46px] transition-colors ${
             isEditing
-              ? 'cursor-default ring-2 ring-[#4A7856]/40 bg-[#FAF9F6]'
-              : 'cursor-pointer active:scale-[0.995]'
-          } ${
-            item.completed
-              ? 'bg-[#FAF9F6] border-[#ECEBE8] text-[#7A7E7B]'
-              : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/40 text-[#2D3E40] shadow-2xs'
+              ? 'cursor-default bg-[#FAF9F6]'
+              : item.completed
+              ? 'cursor-pointer bg-white hover:bg-[#FAF9F6] text-[#7A7E7B]'
+              : 'cursor-pointer bg-white hover:bg-[#FAF9F6] active:bg-[#F5F4F0] text-[#2D3E40]'
           }`}
         >
           {/* LEFT SIDE: Checkbox -> Name & Quelle */}
           <div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
-            {/* Checkbox */}
+            {/* Square Checkbox Indicator */}
             <div
-              onClick={(e) => {
-                if (isAnySwiped || isSwiped || justClosedSwipeMenuRef.current) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setSwipedItemId(null);
-                  return;
-                }
-              }}
               className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors shrink-0 ${
                 item.completed
                   ? 'bg-[#4A7856] border-[#4A7856] text-white'
-                  : 'border-[#D1D5D2] bg-[#FAF9F6]'
+                  : 'border-[#D1D5D2] bg-white group-hover:border-[#4A7856]'
               }`}
             >
               {item.completed && <Check className="w-3 h-3 stroke-[3]" />}
@@ -863,14 +853,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             {/* Name & Quelle */}
             <div className="flex-1 min-w-0 flex flex-col justify-center">
               <span
-                className={`text-[15px] sm:text-sm font-medium block break-words whitespace-normal leading-tight ${
+                className={`text-[15px] sm:text-sm font-medium block break-words leading-tight ${
                   item.completed ? 'line-through text-stone-400' : 'text-stone-800'
                 }`}
               >
                 {item.name}
               </span>
               {item.recipeSource && (
-                <span className="text-xs text-stone-500 truncate">
+                <span className="text-xs text-stone-500 break-words leading-normal mt-0.5">
                   aus {item.recipeSource}
                 </span>
               )}
@@ -965,17 +955,17 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 </button>
               </div>
             ) : item.amount ? (
-              /* Mengenangabe ganz rechts */
+              /* Mengenangabe ganz rechts: plain, crisp text without surrounding bordered pill tags */
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   startEditingItem(item);
                 }}
-                className={`text-xs font-semibold px-2.5 py-1 rounded-full border select-none inline-flex items-center transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap shadow-2xs ${
+                className={`text-xs sm:text-sm font-semibold select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline ${
                   item.completed
-                    ? 'bg-[#ECEBE8] text-[#7A7E7B] border-[#ECEBE8]'
-                    : 'bg-[#FAF9F6] text-[#4A7856] border-[#ECEBE8] hover:bg-[#E8EFEA]'
+                    ? 'text-stone-400 line-through'
+                    : 'text-[#4A7856] hover:text-[#3D6447]'
                 }`}
                 title="Menge anpassen (- / +)"
               >
@@ -1003,7 +993,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   return (
     <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-300">
       {/* Header & Controls */}
-      <div className="bg-white rounded-2xl p-4 sm:p-6 lg:p-8 border border-[#ECEBE8] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
+      <div className="bg-white rounded-2xl p-4 sm:p-5 lg:p-6 border border-[#ECEBE8] shadow-xs space-y-4">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             {/* Einheitliches Status-Badge: Zeigt aktive Artikel ohne Redundanz */}
@@ -1041,24 +1031,25 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           <h1 className="text-2xl font-bold tracking-tight text-stone-900">
             Einkaufsliste
           </h1>
-          <p className="text-sm font-medium text-stone-500">
-            Sortiert nach Supermarkt-Regalen oder als Gesamtansicht mit Drag & Drop Sortierung.
+          <p className="text-xs sm:text-sm font-medium text-stone-500">
+            Alles für deine Woche – geordnet nach Supermarkt-Regal.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0 w-full md:w-auto">
-          {/* 1. View-Switch: Sanfter Standard-Hintergrund (#FAF9F6) mit klarem grünen Indikator */}
-          <div className="relative flex items-center p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs font-semibold select-none shadow-2xs">
+        {/* Unified Action Row: single horizontal row with consistent sizing and alignment */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#ECEBE8]">
+          {/* Left side: View switcher ([ Regale ] / [ Liste ]) styled as cohesive toggle */}
+          <div className="relative flex items-center p-0.5 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs font-semibold select-none shadow-2xs h-9">
             <div
-              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#4A7856] rounded-lg shadow-xs transition-all duration-200 ease-out pointer-events-none ${
-                viewMode === 'categorized' ? 'left-1' : 'left-[calc(50%+2px)]'
+              className={`absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] bg-[#4A7856] rounded-lg shadow-xs transition-all duration-200 ease-out pointer-events-none ${
+                viewMode === 'categorized' ? 'left-0.5' : 'left-[calc(50%+1px)]'
               }`}
             />
 
             <button
               type="button"
               onClick={() => setViewMode('categorized')}
-              className={`relative z-10 w-24 sm:w-26 flex items-center justify-center gap-1.5 py-2 sm:py-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation min-h-[38px] sm:min-h-0 select-none ${
+              className={`relative z-10 px-3 sm:px-3.5 h-full flex items-center justify-center gap-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation select-none ${
                 viewMode === 'categorized'
                   ? 'text-white font-bold'
                   : 'text-[#7A7E7B] hover:text-[#2D3E40] font-medium'
@@ -1072,7 +1063,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             <button
               type="button"
               onClick={() => setViewMode('flat')}
-              className={`relative z-10 w-24 sm:w-26 flex items-center justify-center gap-1.5 py-2 sm:py-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation min-h-[38px] sm:min-h-0 select-none ${
+              className={`relative z-10 px-3 sm:px-3.5 h-full flex items-center justify-center gap-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation select-none ${
                 viewMode === 'flat'
                   ? 'text-white font-bold'
                   : 'text-[#7A7E7B] hover:text-[#2D3E40] font-medium'
@@ -1084,124 +1075,113 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             </button>
           </div>
 
-          {/* Formatted Text Copy Button */}
-          <button
-            id="copy-entire-shopping-list-btn"
-            onClick={handleCopyFormattedList}
-            disabled={items.length === 0}
-            className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2D3E40] hover:bg-[#1F2C2D] disabled:opacity-40 text-white font-medium text-xs shadow-xs transition-all min-h-[40px] sm:min-h-0 active:scale-95 touch-manipulation cursor-pointer"
-            title="Kopiert die Liste formatiert für WhatsApp & Notizen"
-          >
-            {copied ? <Check className="w-4 h-4 text-[#4A7856]" /> : <Copy className="w-4 h-4 text-white" />}
-            <span>{copied ? 'Kopiert!' : 'Kopieren'}</span>
-          </button>
-
-          {/* Delete All / Drop-to-Delete Button (Stabile Größe & Zeile) */}
-          <button
-            id="delete-entire-shopping-list-btn"
-            type="button"
-            onClick={() => {
-              if (items.length > 0) {
-                setConfirmDeleteState({ type: 'all' });
-              }
-            }}
-            onDragOver={(e) => {
-              if (draggedShelf || draggedItemId) {
-                e.preventDefault();
-                e.stopPropagation();
-                e.dataTransfer.dropEffect = 'move';
-                if (!isDragOverDelete) setIsDragOverDelete(true);
-              }
-            }}
-            onDragLeave={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsDragOverDelete(false);
-            }}
-            onDrop={handleDropOnDelete}
-            disabled={items.length === 0 && !draggedShelf && !draggedItemId}
-            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-xs border transition-all cursor-pointer min-h-[40px] sm:min-h-0 min-w-[86px] select-none touch-manipulation ${
-              isDragOverDelete
-                ? 'bg-red-600 text-white border-red-600 shadow-md ring-2 ring-red-400'
-                : items.length > 0
-                ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200 active:scale-95'
-                : 'bg-[#FAF9F6] text-[#A0A5A2] border-[#ECEBE8] opacity-50 cursor-not-allowed'
-            }`}
-            title={
-              draggedShelf
-                ? 'Regal hier ablegen zum Löschen'
-                : draggedItemId
-                ? 'Artikel hier ablegen zum Löschen'
-                : 'Gesamte Einkaufsliste löschen'
-            }
-          >
-            <Trash2 className={`w-3.5 h-3.5 shrink-0 ${isDragOverDelete ? 'animate-bounce' : ''}`} />
-            <span>Löschen</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Smart Quick-Add Input mit Duplikat-Zusammenführung */}
-      <form
-        onSubmit={handleAddItem}
-        className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-2"
-      >
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-2.5">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              placeholder="Schnell hinzufügen (z. B. 400g Tofu)..."
-              value={quickAddInput}
-              onChange={(e) => setQuickAddInput(e.target.value)}
-              className="w-full bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-2 text-[16px] sm:text-sm text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden focus:bg-white transition-all min-h-[44px] sm:min-h-0"
-            />
-          </div>
-
-          <div className="flex gap-2 shrink-0">
-            <select
-              id="shopping-item-category-select"
-              value={categoryChoice}
-              onChange={(e) => setCategoryChoice(e.target.value as 'auto' | IngredientCategory)}
-              className="bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-2.5 sm:px-3 py-2.5 sm:py-2 text-[15px] sm:text-xs text-[#2D3E40] font-semibold cursor-pointer focus:border-[#4A7856] focus:outline-hidden min-h-[44px] sm:min-h-0"
-              title="Regal / Kategorie wählen"
+          {/* Right side: Direct action buttons ([ Kopieren ] and [ Löschen ]) */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              id="copy-entire-shopping-list-btn"
+              type="button"
+              onClick={handleCopyFormattedList}
+              disabled={items.length === 0}
+              className="h-9 px-3.5 flex items-center justify-center gap-1.5 rounded-xl bg-[#2D3E40] hover:bg-[#1F2C2D] disabled:opacity-40 text-white font-medium text-xs shadow-xs transition-all active:scale-95 touch-manipulation cursor-pointer"
+              title="Kopiert die Liste formatiert für WhatsApp & Notizen"
             >
-              <option value="auto">✨ Auto-Regal</option>
-              <option value="gemuese">🥦 Gemüse</option>
-              <option value="kuehlregal">🥛 Kühlregal</option>
-              <option value="huelsenfruechte">🫘 Hülsenfrüchte</option>
-              <option value="trockenwaren">🌾 Vorrat</option>
-              <option value="gewuerze">🧂 Gewürze</option>
-              <option value="sonstiges">📦 Sonstiges</option>
-            </select>
+              {copied ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <Copy className="w-3.5 h-3.5 text-white" />}
+              <span>{copied ? 'Kopiert!' : 'Kopieren'}</span>
+            </button>
 
             <button
-              type="submit"
-              disabled={!quickAddInput.trim()}
-              className="px-4 sm:px-5 py-2.5 bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 shadow-xs shrink-0 transition-colors min-h-[44px] sm:min-h-0 active:scale-95 touch-manipulation cursor-pointer"
+              id="delete-entire-shopping-list-btn"
+              type="button"
+              onClick={() => {
+                if (items.length > 0) {
+                  setConfirmDeleteState({ type: 'all' });
+                }
+              }}
+              onDragOver={(e) => {
+                if (draggedShelf || draggedItemId) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.dataTransfer.dropEffect = 'move';
+                  if (!isDragOverDelete) setIsDragOverDelete(true);
+                }
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragOverDelete(false);
+              }}
+              onDrop={handleDropOnDelete}
+              disabled={items.length === 0 && !draggedShelf && !draggedItemId}
+              className={`h-9 px-3.5 flex items-center justify-center gap-1.5 rounded-xl font-semibold text-xs border transition-all cursor-pointer select-none touch-manipulation ${
+                isDragOverDelete
+                  ? 'bg-red-600 text-white border-red-600 shadow-md ring-2 ring-red-400'
+                  : items.length > 0
+                  ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200 active:scale-95'
+                  : 'bg-[#FAF9F6] text-[#A0A5A2] border-[#ECEBE8] opacity-50 cursor-not-allowed'
+              }`}
+              title={
+                draggedShelf
+                  ? 'Regal hier ablegen zum Löschen'
+                  : draggedItemId
+                  ? 'Artikel hier ablegen zum Löschen'
+                  : 'Gesamte Einkaufsliste löschen'
+              }
             >
-              <Plus className="w-4 h-4" />
-              <span>Hinzufügen</span>
+              <Trash2 className={`w-3.5 h-3.5 shrink-0 ${isDragOverDelete ? 'animate-bounce' : ''}`} />
+              <span>Löschen</span>
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Live-Erkennungs-Vorschau */}
-        {quickAddInput.trim() && parsedPreview.amount && (
-          <div className="flex items-center gap-2 text-xs text-[#4A7856] bg-[#F1F5F2] px-3 py-1.5 rounded-xl border border-[#ECEBE8] animate-in fade-in duration-150">
-            <Sparkles className="w-3.5 h-3.5 shrink-0 text-[#4A7856]" />
-            <span className="font-medium">
-              Erkannt:{' '}
-              <strong className="font-semibold text-[#2D3E40]">
-                {parsedPreview.amount} {parsedPreview.unit}
-              </strong>{' '}
-              {parsedPreview.name || 'Artikel'}
-            </span>
-            <span className="text-[#7A7E7B]">•</span>
-            <span className="text-[#7A7E7B]">
-              Regal: {CATEGORY_META[previewCategory]?.label || 'Sonstiges'}
-            </span>
+      {/* 2. Compact 1-Row Quick Add Module */}
+      <form
+        onSubmit={handleAddItem}
+        className="bg-white p-1.5 sm:p-2 rounded-2xl border border-[#ECEBE8] shadow-xs flex items-center gap-1.5 sm:gap-2"
+      >
+        {/* Left/Flexible: Text input field */}
+        <div className="relative flex-1 min-w-0">
+          <input
+            type="text"
+            placeholder="Schnell hinzufügen (z. B. 400g Tofu)..."
+            value={quickAddInput}
+            onChange={(e) => setQuickAddInput(e.target.value)}
+            className="w-full bg-[#FAF9F6] hover:bg-[#F5F4F0] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] rounded-xl px-3 sm:px-3.5 py-2 text-[15px] sm:text-sm text-[#2D3E40] placeholder:text-[#9BA09C] focus:outline-hidden transition-all h-10"
+          />
+        </div>
+
+        {/* Middle: Compact dropdown selector (Auto-Regal ▾) */}
+        <div className="relative shrink-0">
+          <select
+            id="shopping-item-category-select"
+            value={categoryChoice}
+            onChange={(e) => setCategoryChoice(e.target.value as 'auto' | IngredientCategory)}
+            className="bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] rounded-xl pl-2.5 pr-6 py-2 text-xs font-semibold text-[#2D3E40] cursor-pointer focus:border-[#4A7856] focus:outline-hidden h-10 appearance-none transition-colors"
+            title="Regal / Kategorie wählen"
+          >
+            <option value="auto">✨ Auto-Regal</option>
+            <option value="gemuese">🥦 Gemüse</option>
+            <option value="kuehlregal">🥛 Kühlregal</option>
+            <option value="huelsenfruechte">🫘 Hülsenfrüchte</option>
+            <option value="trockenwaren">🌾 Vorrat</option>
+            <option value="gewuerze">🧂 Gewürze</option>
+            <option value="sonstiges">📦 Sonstiges</option>
+          </select>
+          <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[#7A7E7B]">
+            <ChevronDown className="w-3 h-3" />
           </div>
-        )}
+        </div>
+
+        {/* Right: Square or compact icon button (+) */}
+        <button
+          type="submit"
+          disabled={!quickAddInput.trim()}
+          className="w-10 h-10 bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white rounded-xl flex items-center justify-center shadow-xs shrink-0 transition-all active:scale-95 touch-manipulation cursor-pointer"
+          title="Zutat hinzufügen"
+          aria-label="Zutat hinzufügen"
+        >
+          <Plus className="w-5 h-5 stroke-[2.5]" />
+        </button>
       </form>
 
       {/* Main Content Area */}
@@ -1239,23 +1219,23 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       ) : viewMode === 'flat' ? (
         /* Gesamtansicht (Liste mit Drag & Drop Sortierung) */
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl p-5 sm:p-6 border border-[#ECEBE8] shadow-xs space-y-3">
-            <div className="flex items-center justify-between border-b border-[#ECEBE8] pb-3">
+          <div className="bg-white rounded-2xl border border-[#ECEBE8] shadow-xs overflow-hidden">
+            <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-[#ECEBE8] bg-[#FAF9F6]">
               <div className="flex items-center gap-2 font-semibold text-[#2D3E40] text-sm">
                 <List className="w-4 h-4 text-[#4A7856]" />
                 <span>Offene Artikel</span>
               </div>
-              <span className="text-[12px] font-medium text-[#7A7E7B] bg-[#F4F3F0] px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums">
+              <span className="text-[12px] font-medium text-[#7A7E7B] bg-[#F4F3F0] px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#ECEBE8]">
                 {activeItems.length} offen
               </span>
             </div>
 
             {activeItems.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
+              <div className="divide-y divide-[#F0EFEB]">
                 {activeItems.map(renderItemRow)}
               </div>
             ) : (
-              <p className="text-xs text-[#7A7E7B] py-3 text-center italic">
+              <p className="text-xs text-[#7A7E7B] py-6 text-center italic">
                 Alle Artikel sind abgehakt! 🎉
               </p>
             )}
@@ -1343,7 +1323,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                     }`}
                   >
                     <div className="overflow-hidden">
-                      <div className="p-3 sm:p-4 space-y-1.5">
+                      <div className="divide-y divide-[#F0EFEB]">
                         {activeInCat.map(renderItemRow)}
                       </div>
                     </div>
@@ -1410,7 +1390,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
           <div
             className={`grid transition-all duration-250 ease-in-out ${
-              showCompletedSection ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
+              showCompletedSection ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
             }`}
             style={{
               gridTemplateRows: showCompletedSection ? '1fr' : '0fr',
@@ -1418,10 +1398,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             }}
           >
             <div className="overflow-hidden">
-              <div className="p-4 sm:p-5 border-t border-[#ECEBE8] bg-white">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
-                  {completedItems.map(renderItemRow)}
-                </div>
+              <div className="border-t border-[#ECEBE8] divide-y divide-[#F0EFEB] bg-white">
+                {completedItems.map(renderItemRow)}
               </div>
             </div>
           </div>

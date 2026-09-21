@@ -9,9 +9,6 @@ import {
   RotateCcw, 
   ChefHat, 
   List, 
-  Plus, 
-  Minus, 
-  Trash2, 
   ChevronDown,
   Lightbulb,
   Check,
@@ -35,52 +32,169 @@ interface CookingModeModalProps {
   onUpdateTimer?: (timer: CookingTimerState | null) => void;
 }
 
+// Descriptor, adjective, and unit stop-words that should never trigger an ingredient match on their own
+const INGREDIENT_STOP_WORDS = new Set([
+  'vegan', 'vegane', 'veganer', 'veganes', 'veganen',
+  'vegetarisch', 'vegetarische', 'vegetarischer',
+  'bio', 'frisch', 'frische', 'frischer', 'frischem', 'frischen',
+  'groß', 'große', 'großer', 'großes', 'großen',
+  'klein', 'kleine', 'kleiner', 'kleines', 'kleinen',
+  'getrocknet', 'getrocknete', 'getrockneter', 'getrocknetes', 'getrockneten',
+  'gemahlen', 'gemahlene', 'gemahlener', 'gemahlenes',
+  'fein', 'feine', 'feiner', 'feines', 'feinen',
+  'gehackt', 'gehackte', 'gehackter', 'gehacktes', 'gehackten', 'feingehackt', 'feingehackten', 'grobgehackt', 'grobgehackten',
+  'gerieben', 'geriebene', 'geriebener', 'geriebenes',
+  'kaltgepresst', 'nativ', 'extra', 'raffiniert',
+  'pflanzlich', 'pflanzliche', 'pflanzlicher', 'pflanzliches', 'pflanzlichen',
+  'scheiben', 'streifen', 'würfel', 'ringe', 'stk', 'stück', 'dose', 'dosen',
+  'glas', 'gläser', 'bund', 'packung', 'prise', 'prisen', 'el', 'tl', 'gramm', 'kg', 'ml', 'l',
+  'basis', 'ersatz', 'art', 'typ', 'nach', 'geschmack', 'bedarf', 'etwas', 'oder', 'und', 'mit', 'zum', 'zur', 'für',
+  'z.b', 'zb', 'z.b.', 'beispiel', 'grob', 'grober', 'grobes', 'feines', 'feinem'
+]);
+
 /**
- * Intelligent helper to extract only ingredients and precise quantities needed for a specific step.
+ * Intelligent helper to extract ONLY ingredients explicitly used in the active step.
  */
 function getStepSpecificIngredients(stepText: string, ingredients: RecipeIngredient[]): RecipeIngredient[] {
   if (!stepText || !ingredients || ingredients.length === 0) return [];
-  const textLower = stepText.toLowerCase();
+  const text = stepText.toLowerCase();
 
   return ingredients.filter((ing) => {
     if (!ing.name) return false;
 
-    // Clean name from parentheticals and extra descriptors
-    const cleanName = ing.name
+    // Clean name from parentheticals and amounts
+    const rawClean = ing.name
       .replace(/\(.*?\)/g, '')
       .replace(/[\d/½¼¾,.]+/g, '')
       .trim()
       .toLowerCase();
 
-    if (!cleanName) return false;
+    if (!rawClean) return false;
 
-    // Direct check: whole cleaned name
-    if (textLower.includes(cleanName)) return true;
+    // Split compound items like "Trüffelöl & Senf" or "Butter oder Rapsöl"
+    const subParts = rawClean
+      .split(/\s+(?:&|\/|oder|plus)\s+/)
+      .flatMap((p) => p.split(/\s*&\s*/));
 
-    // Check individual significant words
-    const words = cleanName.split(/\s+/).filter((w) => w.length >= 3);
-    for (const word of words) {
-      // Common German stem match (e.g. "zwiebel" in "zwiebeln", "karotte" in "karotten")
-      const stem = word.replace(/(n|en|e|s|es)$/, '');
-      if (stem.length >= 3 && textLower.includes(stem)) {
-        return true;
-      }
-      if (textLower.includes(word)) {
-        return true;
+    for (const part of subParts) {
+      const words = part
+        .split(/[\s,.-]+/)
+        .filter((w) => w.length >= 2 && !INGREDIENT_STOP_WORDS.has(w));
+
+      for (const word of words) {
+        // Strict boundary: "Hack" (meat substitute) must NOT match "feingehackt", "gehackt", etc.
+        if (word === 'hack' || word === 'hackfleisch' || word === 'hackbällchen') {
+          if (
+            /(?<!(?:feinge|grobge|ge|zer))hack(?:fleisch|bällchen|masse)?(?!t|en)\b/i.test(text) ||
+            /\b(?:patty|patties)\b/i.test(text)
+          ) {
+            return true;
+          }
+          continue;
+        }
+
+        // Mayo / Mayonnaise
+        if (word === 'mayo' || word === 'mayonnaise') {
+          if (/(?:mayo|mayonnaise)/i.test(text)) return true;
+          continue;
+        }
+
+        // Mustard
+        if (word === 'senf') {
+          if (/\bsenf\b/i.test(text)) return true;
+          continue;
+        }
+
+        // Pickles / Pickled cucumbers
+        if (word.includes('gurke')) {
+          if (/(?:gurke|gurken|gewürzgurke|essiggurke)/i.test(text)) return true;
+          continue;
+        }
+
+        // Buns / Burger buns
+        if (word === 'bun' || word === 'buns' || word === 'burger') {
+          if (/(?:bun|buns|burger-?brötchen|brötchen)/i.test(text)) return true;
+          continue;
+        }
+
+        // Cheese / Cheddar
+        if (word === 'käse' || word === 'cheddar' || word === 'schmelzkäse') {
+          if (/(?:käse|cheddar|schmelzkäse|parmesan|mozzarella|gouda|feta)/i.test(text)) return true;
+          continue;
+        }
+
+        // Onions
+        if (word.startsWith('zwiebel')) {
+          if (/(?:zwiebel|schalotte|schmorzwiebel)/i.test(text)) return true;
+          continue;
+        }
+
+        // Specific oils vs generic cooking oil
+        if (word === 'trüffelöl') {
+          if (text.includes('trüffel')) return true;
+          continue;
+        }
+        if (word === 'sesamöl') {
+          if (text.includes('sesam')) return true;
+          continue;
+        }
+        if (word === 'öl' || word === 'rapsöl' || word === 'olivenöl' || word === 'bratöl' || word === 'speiseöl') {
+          if (/(?<!(?:ess|tee|essl|teel))öl(?:e|en)?\b|olivenöl|rapsöl|bratöl|pflanzenöl/i.test(text)) return true;
+          continue;
+        }
+
+        // Butter
+        if (word === 'butter') {
+          if (/\bbutter\b/i.test(text)) return true;
+          continue;
+        }
+
+        // Salt / Pepper
+        if (word === 'salz') {
+          if (/\bsalz(?:en)?\b/i.test(text)) return true;
+          continue;
+        }
+        if (word === 'pfeffer') {
+          if (/\bpfeffer(?:n)?\b/i.test(text)) return true;
+          continue;
+        }
+
+        // Garlic
+        if (word.startsWith('knoblauch')) {
+          if (/(?:knoblauch|zehe)/i.test(text)) return true;
+          continue;
+        }
+
+        // Broth
+        if (word.startsWith('brühe')) {
+          if (/(?:brühe|gemüsebrühe|fond|ablöschen)/i.test(text)) return true;
+          continue;
+        }
+
+        // Pasta / Noodles
+        if (word === 'pasta' || word === 'nudeln' || word === 'spaghetti') {
+          if (/(?:nudel|pasta|spaghetti|penne|tagliatelle)/i.test(text)) return true;
+          continue;
+        }
+
+        // Lemons / Limes
+        if (word.startsWith('zitrone')) {
+          if (/(?:zitrone|zitronensaft)/i.test(text)) return true;
+          continue;
+        }
+        if (word.startsWith('limette')) {
+          if (/(?:limette|limettensaft)/i.test(text)) return true;
+          continue;
+        }
+
+        // Generic German stem matching for non-stop words (with word boundary)
+        const stem = word.replace(/(n|en|e|s|es)$/, '');
+        if (stem.length >= 3) {
+          const regex = new RegExp('\\b' + stem, 'i');
+          if (regex.test(text)) return true;
+        }
       }
     }
-
-    // Common synonyms / variants in cooking instructions
-    const lowerName = ing.name.toLowerCase();
-    if (lowerName.includes('öl') && textLower.includes('öl')) return true;
-    if (lowerName.includes('salz') && (textLower.includes('salz') || textLower.includes('abschmecken') || textLower.includes('würzen') || textLower.includes('salzen'))) return true;
-    if (lowerName.includes('pfeffer') && (textLower.includes('pfeffer') || textLower.includes('abschmecken') || textLower.includes('würzen'))) return true;
-    if (lowerName.includes('knoblauch') && textLower.includes('knoblauch')) return true;
-    if (lowerName.includes('brühe') && (textLower.includes('brühe') || textLower.includes('ablöschen'))) return true;
-    if (lowerName.includes('kokosmilch') && textLower.includes('kokosmilch')) return true;
-    if (lowerName.includes('pasta') && (textLower.includes('nudel') || textLower.includes('pasta') || textLower.includes('spaghetti'))) return true;
-    if (lowerName.includes('zitrone') && (textLower.includes('zitrone') || textLower.includes('zitronensaft'))) return true;
-    if (lowerName.includes('limette') && (textLower.includes('limette') || textLower.includes('limettensaft'))) return true;
 
     return false;
   });
@@ -183,7 +297,6 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
   const [showIngredientsModal, setShowIngredientsModal] = useState<boolean>(false);
   const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
   const [activeStepImageIndex, setActiveStepImageIndex] = useState<number>(0);
-  const [stepCheckedIngredients, setStepCheckedIngredients] = useState<Record<string, boolean>>({});
   const [fullCheckedIngredients, setFullCheckedIngredients] = useState<Record<string, boolean>>({});
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [dismissedTimer, setDismissedTimer] = useState<Record<number, boolean>>({});
@@ -434,13 +547,6 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
     onClose();
   };
 
-  const toggleStepIngredient = (name: string) => {
-    setStepCheckedIngredients((prev) => ({
-      ...prev,
-      [name]: !prev[name],
-    }));
-  };
-
   const toggleFullIngredient = (name: string) => {
     setFullCheckedIngredients((prev) => ({
       ...prev,
@@ -480,13 +586,27 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
             </div>
 
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs sm:text-sm font-bold text-[#8DB898] uppercase tracking-wider">
                   Schritt {currentStepIndex + 1} von {totalStepsCount}
                 </span>
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/10 text-white/80 font-medium">
                   {servings} Port.
                 </span>
+
+                {/* Streamlined Slim Background Timer Status Chip */}
+                {isTimerRunningForOtherStep && cookingTimer && (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStepIndex(cookingTimer.stepNumber - 1)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-semibold transition-all cursor-pointer touch-manipulation active:scale-95 animate-pulse"
+                    title={`Zu Schritt ${cookingTimer.stepNumber} wechseln`}
+                  >
+                    <Clock className="w-3 h-3 text-amber-400" />
+                    <span>Schritt {cookingTimer.stepNumber}: <strong className="font-mono">{formatTime(cookingTimer.secondsLeft)}</strong></span>
+                  </button>
+                )}
+
                 <span 
                   className="w-2 h-2 rounded-full bg-[#4A7856] animate-pulse shrink-0 hidden xs:inline-block" 
                   title="WakeLock aktiv: Display bleibt an" 
@@ -539,314 +659,174 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
       </header>
 
       {/* ========================================================================= */}
-      {/* MAIN GLANCEABLE CONTENT AREA                                             */}
+      {/* MAIN GLANCEABLE CONTENT AREA - FLAT, SPACIOUS & DISTRACTION-FREE           */}
       {/* ========================================================================= */}
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-8 py-4 sm:py-6 overflow-y-auto space-y-4 sm:space-y-6">
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-10 overflow-y-auto flex flex-col justify-center space-y-6 sm:space-y-8">
         
-        {/* Background Timer Notification for ANOTHER Step (if running concurrently) */}
-        {isTimerRunningForOtherStep && cookingTimer && (
-          <div className="p-3 bg-amber-500/15 border border-amber-500/30 rounded-2xl flex items-center justify-between gap-3 text-xs sm:text-sm text-amber-100 animate-in fade-in">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 animate-pulse shrink-0" />
-              <span className="truncate">
-                Timer läuft für Schritt {cookingTimer.stepNumber}: <strong className="font-mono font-bold text-white">{formatTime(cookingTimer.secondsLeft)}</strong>
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setCurrentStepIndex(cookingTimer.stepNumber - 1)}
-              className="px-3 py-1.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-semibold text-xs transition-colors shrink-0 cursor-pointer touch-manipulation active:scale-95"
-            >
-              Zu Schritt {cookingTimer.stepNumber} springen
-            </button>
-          </div>
-        )}
-
         {/* ========================================================================= */}
-        {/* 2. STEP MEDIA (CONDITIONAL)                                              */}
-        {/* ========================================================================= */}
-        {stepImages.length > 0 && (
-          <div className="w-full rounded-2xl overflow-hidden border border-white/10 shadow-lg relative bg-black/40 group max-h-52 sm:max-h-72 transition-all">
-            <img
-              src={stepImages[activeStepImageIndex] || stepImages[0]}
-              alt={currentStep.title || `Schritt ${currentStepIndex + 1}`}
-              className="w-full h-44 sm:h-64 object-cover object-center cursor-zoom-in"
-              onClick={() => setLightboxImage(stepImages[activeStepImageIndex] || stepImages[0])}
-            />
-
-            {/* Click to Zoom Overlay Badge */}
-            <button
-              type="button"
-              onClick={() => setLightboxImage(stepImages[activeStepImageIndex] || stepImages[0])}
-              className="absolute top-3 right-3 p-2 rounded-xl bg-black/50 hover:bg-black/70 backdrop-blur-md text-white/90 hover:text-white transition-all cursor-pointer"
-              title="Großansicht öffnen"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </button>
-
-            {/* Multiple Images Carousel Navigation */}
-            {stepImages.length > 1 && (
-              <div className="absolute inset-x-0 bottom-3 flex items-center justify-between px-3">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveStepImageIndex((prev) => (prev > 0 ? prev - 1 : stepImages.length - 1));
-                  }}
-                  className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center cursor-pointer transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-
-                {/* Dot Indicators */}
-                <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full">
-                  {stepImages.map((_, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveStepImageIndex(idx);
-                      }}
-                      className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
-                        idx === activeStepImageIndex ? 'bg-[#4A7856] w-4' : 'bg-white/50 hover:bg-white/80'
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveStepImageIndex((prev) => (prev < stepImages.length - 1 ? prev + 1 : 0));
-                  }}
-                  className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center cursor-pointer transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* 2. CONTEXTUAL STEP INGREDIENTS CARD (HIGH PRIORITY)                       */}
+        {/* 2. CLEAN STEP INGREDIENTS ROW (SMALL, GLANCEABLE BADGES)                  */}
         {/* ========================================================================= */}
         {stepIngredients.length > 0 && (
-          <section 
-            id="cooking-step-ingredients-card"
-            className="p-3.5 sm:p-4 bg-[#243335] border border-white/10 rounded-2xl shadow-md space-y-2.5"
+          <div 
+            id="cooking-step-ingredients"
+            className="flex flex-wrap items-center gap-2"
             aria-label="Zutaten für diesen Schritt"
           >
-            <div className="flex items-center justify-between text-xs text-white/70">
-              <span className="font-semibold uppercase tracking-wider text-[#8DB898] flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#8DB898]" />
-                Zutaten für diesen Schritt ({stepIngredients.length})
-              </span>
-              <span className="text-[11px] text-white/50 hidden xs:inline">
-                Tippe zum Abhaken
-              </span>
-            </div>
-
-            {/* Horizontal Scrollable / Responsive Chip Bar */}
-            <div className="flex flex-wrap gap-2">
-              {stepIngredients.map((ing) => {
-                const isChecked = Boolean(stepCheckedIngredients[ing.name]);
-                const amountFormatted = formatIngredientAmount(ing, recipe.servings, servings);
-
-                return (
-                  <button
-                    key={ing.name}
-                    type="button"
-                    onClick={() => toggleStepIngredient(ing.name)}
-                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer touch-manipulation active:scale-95 border ${
-                      isChecked
-                        ? 'bg-white/5 border-white/10 text-white/40 line-through'
-                        : 'bg-[#2D3E40] border-white/15 text-white hover:border-[#4A7856] hover:bg-[#344749]'
-                    }`}
-                    title={isChecked ? `${ing.name} als offen markieren` : `${ing.name} als hinzugefügt abhaken`}
-                  >
-                    <div className={`w-4 h-4 rounded-md flex items-center justify-center border transition-colors ${
-                      isChecked ? 'bg-[#4A7856] border-[#4A7856] text-white' : 'border-white/30 bg-white/5'
-                    }`}>
-                      {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
-                    </div>
-
-                    <span className={isChecked ? 'text-white/40' : 'text-[#8DB898] font-mono font-bold'}>
-                      {amountFormatted}
-                    </span>
-
-                    <span className="truncate">
-                      {ing.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+            {stepIngredients.map((ing) => {
+              const amountFormatted = formatIngredientAmount(ing, recipe.servings, servings);
+              return (
+                <span
+                  key={ing.name}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs sm:text-sm font-medium text-white/95"
+                >
+                  <span className="font-bold font-mono text-[#8DB898]">
+                    {amountFormatted}
+                  </span>
+                  <span>{ing.name}</span>
+                </span>
+              );
+            })}
+          </div>
         )}
 
         {/* ========================================================================= */}
-        {/* 3. CORE INSTRUCTION & TIP AREA (GLANCEABLE TYPOGRAPHY)                     */}
+        {/* 3. PRIMARY INSTRUCTION HEADER & TEXT (CLEAR VISUAL HERO)                 */}
         {/* ========================================================================= */}
         <section className="space-y-3 sm:space-y-4">
-          {/* Step Title (if defined) */}
           {currentStep.title && (
-            <h2 className="text-base sm:text-xl font-bold text-[#8DB898]">
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-[#8DB898]">
               {currentStep.title}
             </h2>
           )}
 
-          {/* Primary Step Instruction in Large, High-Contrast Typography */}
-          <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold leading-relaxed tracking-normal text-white drop-shadow-xs">
+          {/* Primary Step Instruction in Large, High-Contrast Typography free of Enclosing Box Borders */}
+          <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-relaxed sm:leading-relaxed text-white tracking-normal select-text">
             {currentStep.text}
           </div>
 
-          {/* Integrated Pro-Tip Callout (Conditional) */}
+          {/* Integrated Culinary Pro-Tip (Understated callout, no heavy card) */}
           {stepTip && (
-            <aside 
-              id="cooking-step-pro-tip"
-              className="p-4 sm:p-5 rounded-2xl bg-[#1E2D27] border border-[#4A7856]/40 text-[#D1E7D7] shadow-md flex items-start gap-3.5 animate-in fade-in"
-            >
-              <div className="p-2 rounded-xl bg-[#4A7856]/30 text-[#8DB898] shrink-0 mt-0.5">
-                <Lightbulb className="w-5 h-5 text-amber-300" />
+            <div className="pt-2 flex items-start gap-2.5 text-xs sm:text-sm text-emerald-200/90 font-medium">
+              <Lightbulb className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+              <p className="leading-relaxed">
+                <strong className="text-amber-200 font-semibold">Tipp: </strong>
+                {stepTip}
+              </p>
+            </div>
+          )}
+
+          {/* Step Photo (Conditional, clean & unboxed) */}
+          {stepImages.length > 0 && (
+            <div className="pt-2">
+              <div className="w-full rounded-2xl overflow-hidden border border-white/10 relative bg-black/40 max-h-52 sm:max-h-72">
+                <img
+                  src={stepImages[activeStepImageIndex] || stepImages[0]}
+                  alt={currentStep.title || `Schritt ${currentStepIndex + 1}`}
+                  className="w-full h-44 sm:h-64 object-cover object-center cursor-zoom-in"
+                  onClick={() => setLightboxImage(stepImages[activeStepImageIndex] || stepImages[0])}
+                />
+                <button
+                  type="button"
+                  onClick={() => setLightboxImage(stepImages[activeStepImageIndex] || stepImages[0])}
+                  className="absolute top-3 right-3 p-2 rounded-xl bg-black/50 hover:bg-black/70 backdrop-blur-md text-white/90 hover:text-white transition-all cursor-pointer"
+                  title="Großansicht öffnen"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
               </div>
-              <div className="space-y-1 min-w-0">
-                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-200">
-                  Profi-Tipp vom Küchenchef
-                </h3>
-                <p className="text-sm sm:text-base leading-relaxed text-white/95">
-                  {stepTip}
-                </p>
-              </div>
-            </aside>
+            </div>
           )}
         </section>
 
         {/* ========================================================================= */}
-        {/* 4. KITCHEN TIMER INTEGRATION                                             */}
+        {/* 4. COMPACT INLINE TIMER (NO HEAVY CONTAINER CARD)                         */}
         {/* ========================================================================= */}
         {showTimerSection ? (
-          <section 
-            id="cooking-step-timer-module"
-            className="p-4 sm:p-6 bg-[#243335] border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl space-y-4"
+          <div 
+            id="cooking-step-timer-inline"
+            className="pt-4 sm:pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-4"
             aria-label="Küchen-Timer für diesen Schritt"
           >
-            {/* Header info */}
-            <div className="flex items-center justify-between text-xs text-white/70">
-              <span className="font-semibold uppercase tracking-wider text-[#8DB898] flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[#8DB898]" />
-                Küchen-Timer • Schritt {currentStepIndex + 1}
-              </span>
+            {/* Left: Large Digital Countdown */}
+            <div className="flex items-center gap-3.5">
+              <Clock className={`w-7 h-7 sm:w-8 sm:h-8 shrink-0 ${
+                timerSecondsLeft === 0
+                  ? 'text-amber-400 animate-bounce'
+                  : isTimerRunning
+                  ? 'text-emerald-400 animate-pulse'
+                  : 'text-white/40'
+              }`} />
+              <div>
+                <div className="font-mono text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-widest leading-none">
+                  {timerSecondsLeft === 0 ? 'FERTIG!' : formatTime(timerSecondsLeft)}
+                </div>
+                <div className="text-[11px] text-white/50 mt-1 font-medium">
+                  {timerSecondsLeft === 0
+                    ? 'Garzeit erreicht 🎉'
+                    : isTimerRunning
+                    ? 'Timer läuft...'
+                    : 'Pausiert'}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Inline Controls */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 type="button"
-                onClick={handleDeleteTimer}
-                className="text-white/40 hover:text-rose-300 transition-colors p-1"
-                title="Timer für diesen Schritt ausblenden"
+                onClick={() => handleAdjustTimer(-60)}
+                className="h-10 px-2.5 sm:px-3 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 hover:text-white text-xs font-semibold transition-colors cursor-pointer touch-manipulation active:scale-95"
+                title="1 Minute abziehen"
               >
-                <Trash2 className="w-4 h-4" />
+                -1m
+              </button>
+
+              {/* Prominent Play/Pause Toggle */}
+              <button
+                id="cooking-mode-timer-toggle-btn"
+                type="button"
+                onClick={isTimerRunning ? handlePauseTimer : handleStartTimer}
+                className={`h-11 px-5 sm:px-6 rounded-xl font-bold flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 text-sm shadow-sm ${
+                  isTimerRunning
+                    ? 'bg-amber-600 hover:bg-amber-500 text-white'
+                    : 'bg-[#4A7856] hover:bg-[#3D6447] text-white'
+                }`}
+                title={isTimerRunning ? 'Timer pausieren' : 'Timer starten'}
+              >
+                {isTimerRunning ? (
+                  <>
+                    <Pause className="w-4 h-4" />
+                    <span>Pause</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 fill-current" />
+                    <span>Start</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleAdjustTimer(60)}
+                className="h-10 px-2.5 sm:px-3 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 hover:text-white text-xs font-semibold transition-colors cursor-pointer touch-manipulation active:scale-95"
+                title="1 Minute hinzufügen"
+              >
+                +1m
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResetTimer}
+                className="h-10 w-10 rounded-xl bg-white/10 hover:bg-white/15 text-white/60 hover:text-white flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 ml-1"
+                title="Timer zurücksetzen"
+              >
+                <RotateCcw className="w-4 h-4" />
               </button>
             </div>
-
-            {/* Big Digital Readout & Status */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-bold text-white shadow-md transition-all shrink-0 ${
-                  timerSecondsLeft === 0
-                    ? 'bg-amber-500 animate-bounce'
-                    : isTimerRunning
-                    ? 'bg-[#4A7856] animate-pulse'
-                    : 'bg-white/10 text-white/70'
-                }`}>
-                  <Clock className="w-7 h-7 sm:w-8 sm:h-8" />
-                </div>
-
-                <div>
-                  <div className="font-mono text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-widest leading-none">
-                    {timerSecondsLeft === 0 ? 'FERTIG!' : formatTime(timerSecondsLeft)}
-                  </div>
-                  <div className="text-xs text-white/60 mt-1">
-                    {timerSecondsLeft === 0
-                      ? 'Garzeit erreicht 🎉'
-                      : isTimerRunning
-                      ? 'Timer läuft...'
-                      : 'Pausiert'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Primary Controls Row */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Adjust -1 Min */}
-                <button
-                  type="button"
-                  onClick={() => handleAdjustTimer(-60)}
-                  className="h-12 w-12 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95"
-                  title="1 Minute abziehen"
-                >
-                  <Minus className="w-5 h-5" />
-                </button>
-
-                {/* Primary Play/Pause Toggle */}
-                <button
-                  id="cooking-mode-timer-toggle-btn"
-                  type="button"
-                  onClick={isTimerRunning ? handlePauseTimer : handleStartTimer}
-                  className={`h-12 px-6 rounded-xl font-bold flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 shadow-md text-base ${
-                    isTimerRunning
-                      ? 'bg-[#D35400] hover:bg-[#B94600] text-white'
-                      : 'bg-[#4A7856] hover:bg-[#3D6447] text-white'
-                  }`}
-                  title={isTimerRunning ? 'Timer pausieren' : 'Timer starten'}
-                >
-                  {isTimerRunning ? (
-                    <>
-                      <Pause className="w-5 h-5" />
-                      <span>Pause</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-5 h-5 fill-current" />
-                      <span>Starten</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Adjust +1 Min */}
-                <button
-                  type="button"
-                  onClick={() => handleAdjustTimer(60)}
-                  className="h-12 w-12 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95"
-                  title="1 Minute hinzufügen"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
-
-                {/* Reset Button */}
-                <button
-                  type="button"
-                  onClick={handleResetTimer}
-                  className="h-12 w-12 rounded-xl bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95"
-                  title="Timer zurücksetzen"
-                >
-                  <RotateCcw className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Circular / Linear Progress Bar */}
-            <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
-              <div 
-                className={`h-full transition-all duration-300 ${
-                  timerSecondsLeft === 0 ? 'bg-amber-400' : 'bg-[#4A7856]'
-                }`}
-                style={{ width: `${timerProgress}%` }}
-              />
-            </div>
-          </section>
+          </div>
         ) : (
-          /* Subtle trigger to manually add/start a timer if none configured */
+          /* Subtle text trigger to add a timer if desired */
           <div className="pt-2">
             <button
               type="button"
@@ -854,9 +834,9 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                 setDismissedTimer((prev) => ({ ...prev, [currentStepIndex]: false }));
                 handleStartTimer();
               }}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 hover:text-white text-xs font-semibold transition-colors cursor-pointer touch-manipulation active:scale-95"
+              className="inline-flex items-center gap-1.5 text-xs text-white/40 hover:text-[#8DB898] transition-colors cursor-pointer"
             >
-              <Clock className="w-4 h-4 text-[#8DB898]" />
+              <Clock className="w-3.5 h-3.5" />
               <span>Timer für diesen Schritt starten (5 Min.)</span>
             </button>
           </div>
