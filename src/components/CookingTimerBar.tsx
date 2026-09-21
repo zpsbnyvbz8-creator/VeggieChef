@@ -62,6 +62,9 @@ export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
   const secs = timer ? timer.secondsLeft % 60 : 0;
   const timeFormatted = timer ? `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}` : null;
   const isFinished = timer ? timer.secondsLeft === 0 : false;
+  const progressPercent = timer && timer.totalSeconds > 0
+    ? Math.max(0, Math.min(100, Math.round(((timer.totalSeconds - timer.secondsLeft) / timer.totalSeconds) * 100)))
+    : 0;
 
   return (
     <aside
@@ -69,6 +72,18 @@ export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
       className="fixed bottom-0 inset-x-0 z-40 bg-[#2D3E40] text-white border-t border-[#3D5254] px-3 sm:px-6 py-2.5 shadow-2xl animate-in slide-in-from-bottom duration-200"
       aria-label="Aktiver Kochmodus und Timer"
     >
+      {/* Top Countdown Progress Indicator */}
+      {timer && timer.totalSeconds > 0 && (
+        <div className="absolute top-0 inset-x-0 h-1 bg-white/10 overflow-hidden">
+          <div
+            className={`h-full transition-all duration-300 ${
+              isFinished ? 'bg-amber-400' : timer.isRunning ? 'bg-[#4A7856]' : 'bg-[#4A7856]/60'
+            }`}
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
         {/* Left info & time / step */}
         <div 

@@ -559,12 +559,12 @@ export const RecipeDetailPage: React.FC = () => {
         }`}
       >
         <div className="max-w-4xl mx-auto flex items-center justify-between pointer-events-auto">
-          {/* Top Left: Back button (Comfortable 44px touch target) */}
+          {/* Top Left: Back button (48x48px comfortable touch target) */}
           <button
             id="recipe-back-floating-btn"
             type="button"
             onClick={handleGoBack}
-            className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
+            className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
               isScrolled
                 ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] border border-[#ECEBE8] shadow-2xs'
                 : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md'
@@ -592,7 +592,7 @@ export const RecipeDetailPage: React.FC = () => {
               id="recipe-upload-photo-btn"
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
+              className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                 isScrolled
                   ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] border border-[#ECEBE8] shadow-2xs'
                   : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md'
@@ -608,7 +608,7 @@ export const RecipeDetailPage: React.FC = () => {
               id="recipe-fav-floating-btn"
               type="button"
               onClick={() => toggleFavorite(recipe.id)}
-              className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
+              className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                 isScrolled
                   ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] border border-[#ECEBE8] shadow-2xs'
                   : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md'
@@ -628,7 +628,7 @@ export const RecipeDetailPage: React.FC = () => {
                 id="recipe-overflow-menu-btn"
                 type="button"
                 onClick={() => setIsOverflowMenuOpen(!isOverflowMenuOpen)}
-                className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                   isScrolled
                     ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] border border-[#ECEBE8] shadow-2xs'
                     : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md'
@@ -645,7 +645,7 @@ export const RecipeDetailPage: React.FC = () => {
                     className="fixed inset-0 z-40"
                     onClick={() => setIsOverflowMenuOpen(false)}
                   />
-                  <div className="absolute right-0 top-13 z-50 w-60 bg-white rounded-2xl shadow-xl border border-[#ECEBE8] py-2 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute right-0 top-14 z-50 w-60 bg-white rounded-2xl shadow-xl border border-[#ECEBE8] py-2 animate-in fade-in zoom-in-95 duration-150">
                     {/* Moved 'Zutaten kopieren' to overflow menu as requested */}
                     <button
                       type="button"
@@ -1328,11 +1328,11 @@ export const RecipeDetailPage: React.FC = () => {
 
                               {stepObj.timerMinutes && (
                                 <span
-                                  className={`inline-flex items-center gap-1 text-xs font-semibold text-[#4A7856] bg-[#F1F5F2] px-2.5 py-0.5 rounded-full transition-opacity ${
+                                  className={`inline-flex items-center gap-1.5 text-xs font-semibold text-[#2D5437] bg-[#DFE9E1] border border-[#CCDCD0] px-2.5 py-0.5 rounded-full transition-opacity shadow-2xs ${
                                     isStepDone ? 'opacity-40' : ''
                                   }`}
                                 >
-                                  <Clock className="w-3.5 h-3.5" />
+                                  <Clock className="w-3.5 h-3.5 text-[#3D6946]" />
                                   {stepObj.timerMinutes} Min.
                                 </span>
                               )}
