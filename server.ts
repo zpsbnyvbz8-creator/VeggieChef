@@ -86,10 +86,10 @@ app.use(
 // Middleware for parsing JSON with Vercel serverless compatible limit (4.5mb)
 app.use(express.json({ limit: "4.5mb" }));
 
-// Rate Limiting on AI endpoints to prevent quota abuse (10 requests per 15 minutes per IP)
+// Rate Limiting on AI endpoints to prevent quota abuse (120 requests per 15 minutes per IP)
 const aiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 120,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -291,6 +291,7 @@ const substituteRequestSchema = z.object({
   missingIngredients: z.array(z.string().min(1).max(100)).min(1).max(20),
   availableIngredients: z.array(z.string().max(100)).max(50).optional().default([]),
   currentIngredients: z.array(z.any()).max(50).optional().default([]),
+  userWish: z.string().max(300).optional().default(""),
 });
 
 const fridgeCookIdeaRequestSchema = z.object({
@@ -397,6 +398,7 @@ const substituteResponseSchema = {
         properties: {
           original: { type: Type.STRING },
           replacement: { type: Type.STRING },
+          ratio: { type: Type.STRING },
           reason: { type: Type.STRING },
           usageTip: { type: Type.STRING },
         },
@@ -406,7 +408,7 @@ const substituteResponseSchema = {
     advice: { type: Type.STRING },
     adaptedStepsSummary: { type: Type.STRING },
   },
-  required: ["substitutions", "advice", "adaptedStepsSummary"],
+  required: ["substitutions", "advice"],
 };
 
 const structuredRecipeIdeaSchema = {
@@ -987,28 +989,34 @@ function buildFallbackSubstitutions(params: {
   recipeTitle: string;
   missingIngredients: string[];
   availableIngredients?: string[];
+  userWish?: string;
 }) {
   const { recipeTitle, missingIngredients = [] } = params;
   const subs = missingIngredients.map((missing) => {
     const missLower = missing.toLowerCase();
     let replacement = "Pflanzliche Alternative (Tofu, Kichererbsen oder Cashew-Creme)";
+    let ratio = "1:1";
     let reason = "Bietet hervorragende Textur, Sättigung und bindet das Aroma optimal.";
     let usageTip = "Im Verhältnis 1:1 austauschen und nach Belieben nachwürzen.";
 
     if (missLower.includes("käse") || missLower.includes("feta") || missLower.includes("parmesan")) {
       replacement = "Hefeflocken mit gemahlenen Cashews oder pflanzlicher Hirtenkäse";
+      ratio = "1:1 als Topping";
       reason = "Liefert das würzige, nussige Umami-Aroma ganz ohne tierische Fette.";
       usageTip = "Direkt über das Gericht streuen oder kurz vor dem Servieren unterrühren.";
     } else if (missLower.includes("sahne") || missLower.includes("creme") || missLower.includes("milch")) {
       replacement = "Hafer-Cuisine, Soja-Sahne oder Kokosmilch";
+      ratio = "1:1";
       reason = "Garantiert die gewohnte Cremigkeit und flockt beim Kochen nicht aus.";
       usageTip = "1:1 wie herkömmliche Sahne beim Ablöschen verwenden.";
     } else if (missLower.includes("ei")) {
       replacement = "1 EL geschrotete Leinsamen + 3 EL Wasser (oder 1 EL Kichererbsenmehl)";
+      ratio = "Ersetzt 1 Ei";
       reason = "Sorgt für perfekte Bindung und liefert wertvolle Omega-3-Fettsäuren.";
       usageTip = "5 Minuten quellen lassen, bevor es unter die Masse gerührt wird.";
     } else if (missLower.includes("fleisch") || missLower.includes("hack")) {
       replacement = "Braune Linsen, Krümeltofu oder Sojaschnetzel";
+      ratio = "1:1";
       reason = "Bietet kernigen Biss und reichlich pflanzliches Protein.";
       usageTip = "Kräftig mit Paprikapulver, Sojasauce und Kreuzkümmel anbraten.";
     }
@@ -1016,6 +1024,7 @@ function buildFallbackSubstitutions(params: {
     return {
       original: missing,
       replacement,
+      ratio,
       reason,
       usageTip,
     };
@@ -1366,6 +1375,7 @@ app.post("/api/ai/substitute", async (req: Request, res: Response) => {
     missingIngredients,
     availableIngredients,
     currentIngredients,
+    userWish,
   } = parseResult.data;
 
   try {
@@ -1378,18 +1388,30 @@ app.post("/api/ai/substitute", async (req: Request, res: Response) => {
           recipeTitle,
           missingIngredients,
           availableIngredients,
+          userWish,
         }),
       });
     }
 
     const prompt = `Du bist ein erfahrener vegetarischer & veganer Sternekoch und Ernährungswissenschaftler.
 Der Benutzer kocht das vegetarische/vegane Gericht "${recipeTitle}".
-Folgende Zutaten fehlen: ${JSON.stringify(missingIngredients)}
-Vorhandene Zutaten im Haushalt: ${JSON.stringify(availableIngredients)}
+Folgende Zutat(en) sollen ersetzt werden: ${JSON.stringify(missingIngredients)}
+${userWish ? `Besonderer Wunsch / vorhandene Vorräte des Nutzers: "${userWish}"` : ""}
+${availableIngredients.length > 0 ? `Vorhandene Vorräte im Haushalt: ${JSON.stringify(availableIngredients)}` : ""}
 Aktuelle Rezept-Zutaten: ${JSON.stringify(currentIngredients.slice(0, 30))}
 
-Bitte erstelle smarte, rein vegetarische/vegane Alternativen für die fehlenden Zutaten. Berücksichtige Geschmack, Textur und Nährwerte (besonders Protein).
-Gib deine Antwort als strukturiertes JSON zurück.`;
+Aufgabe:
+Erstelle exzellente, rein vegetarische bzw. vegane kulinarische Tausch-Alternativen.
+${missingIngredients.length === 1 ? `WICHTIG: Da genau eine Zutat (${missingIngredients[0]}) getauscht werden soll, erstelle bitte 3 bis 4 unterschiedliche, hochwertige Tausch-Möglichkeiten für diese eine Zutat (z.B. Nussbasis, Hülsenfruchtbasis, Pilzbasis oder klassische pflanzliche Alternative).` : 'Erstelle für jede Zutat mindestens eine passende Alternative.'}
+
+Für jede Alternative:
+- original: Name der ursprünglichen Zutat (${missingIngredients.join(", ")})
+- replacement: Konkreter Name der Ersatz-Zutat
+- ratio: Mengenangabe bzw. Umrechnungsverhältnis (z.B. "1:1", "80g statt 100g", "2 EL Kichererbsenmehl + 2 EL Wasser")
+- reason: Fachliche Begründung (warum es bzgl. Textur, Bindung, Umami oder Nährwerten ideal passt)
+- usageTip: Konkreter Zubereitungstipp für dieses Rezept
+
+Gib deine Antwort als valides JSON zurück.`;
 
     const response = await callGeminiWithRetry(ai, {
       model: "gemini-3.8-flash",
@@ -1399,7 +1421,7 @@ Gib deine Antwort als strukturiertes JSON zurück.`;
         responseSchema: substituteResponseSchema,
         temperature: 0.7,
       },
-      timeoutMs: 9000,
+      timeoutMs: 16000,
     });
 
     const parsed = safeExtractJson(response.text, null);
@@ -1423,6 +1445,7 @@ Gib deine Antwort als strukturiertes JSON zurück.`;
         recipeTitle,
         missingIngredients,
         availableIngredients,
+        userWish,
       }),
     });
   }
