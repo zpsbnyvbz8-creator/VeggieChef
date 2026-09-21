@@ -117,6 +117,11 @@ export const RecipeDetailPage: React.FC = () => {
   const [showCookedDialog, setShowCookedDialog] = useState(false);
   const [cookedNotes, setCookedNotes] = useState('');
 
+  // Section & Dropdown refs for click-outside dismissal
+  const overflowMenuRef = useRef<HTMLDivElement | null>(null);
+  const stepsSectionRef = useRef<HTMLElement | null>(null);
+  const ingredientsSectionRef = useRef<HTMLElement | null>(null);
+
   // Contextual ingredient substitute modal
   const [substitutingIngredient, setSubstitutingIngredient] = useState<RecipeIngredient | null>(null);
 
@@ -230,27 +235,93 @@ export const RecipeDetailPage: React.FC = () => {
     setTimeout(() => setAddedShopping(false), 2500);
   };
 
-  // Recipe Cover Photo Upload Handler
-  const handleUploadPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Global click-outside dismissal for overflow menu, step photos edit mode & ingredient replace mode
+  useEffect(() => {
+    const handleGlobalClick = (event: MouseEvent) => {
+      const target = event.target as Node;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      if (!dataUrl) return;
+      // Close overflow menu if clicked outside
+      if (isOverflowMenuOpen && overflowMenuRef.current && !overflowMenuRef.current.contains(target)) {
+        setIsOverflowMenuOpen(false);
+      }
 
-      const updatedUserImages = [...(recipe.userImages || []), dataUrl];
-      const updated: Recipe = {
-        ...recipe,
-        userImages: updatedUserImages,
-      };
+      // Close ingredient customize mode if clicked outside ingredients section
+      if (
+        isCustomizingIngredients &&
+        ingredientsSectionRef.current &&
+        !ingredientsSectionRef.current.contains(target) &&
+        !substitutingIngredient
+      ) {
+        setIsCustomizingIngredients(false);
+      }
 
-      updateRecipe(updated);
-      setCurrentImageIndex(allImages.length);
-      showToast('Eigenes Kochfoto hinzugefügt! 📸');
+      // Close step photos manage mode if clicked outside steps section
+      if (
+        isManagingStepPhotos &&
+        stepsSectionRef.current &&
+        !stepsSectionRef.current.contains(target)
+      ) {
+        setIsManagingStepPhotos(false);
+      }
     };
-    reader.readAsDataURL(file);
+
+    document.addEventListener('pointerdown', handleGlobalClick);
+    return () => {
+      document.removeEventListener('pointerdown', handleGlobalClick);
+    };
+  }, [isOverflowMenuOpen, isCustomizingIngredients, isManagingStepPhotos, substitutingIngredient]);
+
+  // Disable background body scroll whenever any modal/popup is open
+  const isAnyModalOpen = Boolean(
+    isFullscreenImageOpen ||
+    substitutingIngredient ||
+    isEditModalOpen ||
+    isDeleteConfirmOpen ||
+    showCookedDialog ||
+    isEcoModalOpen
+  );
+
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [isAnyModalOpen]);
+
+  // Recipe Cover Photo Upload Handler (supports multiple files)
+  const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileList = Array.from(files) as File[];
+    const readPromises = fileList.map((file) => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const dataUrl = event.target?.result as string;
+          if (dataUrl) resolve(dataUrl);
+          else resolve('');
+        };
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+      });
+    });
+
+    const newUrls = (await Promise.all(readPromises)).filter(Boolean);
+    if (newUrls.length === 0) return;
+
+    const updatedUserImages = [...(recipe.userImages || []), ...newUrls];
+    const updated: Recipe = {
+      ...recipe,
+      userImages: updatedUserImages,
+    };
+
+    updateRecipe(updated);
+    setCurrentImageIndex(allImages.length);
+    showToast(newUrls.length > 1 ? `${newUrls.length} Fotos hinzugefügt! 📸` : 'Eigenes Kochfoto hinzugefügt! 📸');
     e.target.value = '';
   };
 
@@ -325,40 +396,51 @@ export const RecipeDetailPage: React.FC = () => {
     stepFileInputRef.current?.click();
   };
 
-  const handleStepPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || targetStepForPhoto === null) return;
+  const handleStepPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || targetStepForPhoto === null) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      if (!dataUrl) return;
-
-      const updatedSteps = recipe.steps.map((step, idx) => {
-        const stepNum = typeof step === 'string' ? idx + 1 : step.stepNumber;
-        if (stepNum === targetStepForPhoto) {
-          const baseStep: RecipeStep = typeof step === 'string'
-            ? { stepNumber: stepNum, title: `Schritt ${stepNum}`, text: step }
-            : { ...step };
-          const existingImages = baseStep.stepImages || [];
-          return {
-            ...baseStep,
-            stepImages: [...existingImages, dataUrl]
-          };
-        }
-        return step;
+    const stepNumTarget = targetStepForPhoto;
+    const fileList = Array.from(files) as File[];
+    const readPromises = fileList.map((file) => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const dataUrl = event.target?.result as string;
+          if (dataUrl) resolve(dataUrl);
+          else resolve('');
+        };
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
       });
+    });
 
-      const updated: Recipe = {
-        ...recipe,
-        steps: updatedSteps,
-      };
-      updateRecipe(updated);
-      setShowStepImages(true);
-      showToast(`Foto zu Schritt ${targetStepForPhoto} hinzugefügt! 📸`);
-      setTargetStepForPhoto(null);
+    const newUrls = (await Promise.all(readPromises)).filter(Boolean);
+    if (newUrls.length === 0) return;
+
+    const updatedSteps = recipe.steps.map((step, idx) => {
+      const stepNum = typeof step === 'string' ? idx + 1 : step.stepNumber;
+      if (stepNum === stepNumTarget) {
+        const baseStep: RecipeStep = typeof step === 'string'
+          ? { stepNumber: stepNum, title: `Schritt ${stepNum}`, text: step }
+          : { ...step };
+        const existingImages = baseStep.stepImages || [];
+        return {
+          ...baseStep,
+          stepImages: [...existingImages, ...newUrls]
+        };
+      }
+      return step;
+    });
+
+    const updated: Recipe = {
+      ...recipe,
+      steps: updatedSteps,
     };
-    reader.readAsDataURL(file);
+    updateRecipe(updated);
+    setShowStepImages(true);
+    showToast(newUrls.length > 1 ? `${newUrls.length} Fotos zu Schritt ${stepNumTarget} hinzugefügt! 📸` : `Foto zu Schritt ${stepNumTarget} hinzugefügt! 📸`);
+    setTargetStepForPhoto(null);
     e.target.value = '';
   };
 
@@ -452,6 +534,7 @@ export const RecipeDetailPage: React.FC = () => {
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        multiple
         onChange={handleUploadPhoto}
         className="hidden"
       />
@@ -461,6 +544,7 @@ export const RecipeDetailPage: React.FC = () => {
         ref={stepFileInputRef}
         type="file"
         accept="image/*"
+        multiple
         onChange={handleStepPhotoUpload}
         className="hidden"
       />
@@ -539,7 +623,7 @@ export const RecipeDetailPage: React.FC = () => {
             </button>
 
             {/* Overflow Menu Button */}
-            <div className="relative">
+            <div ref={overflowMenuRef} className="relative">
               <button
                 id="recipe-overflow-menu-btn"
                 type="button"
@@ -678,21 +762,6 @@ export const RecipeDetailPage: React.FC = () => {
                   />
                 ))}
               </div>
-            )}
-
-            {/* Set as cover button if on a user image */}
-            {currentCoverImage !== (recipe.activeCoverImage || recipe.image) && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSetAsCover(currentCoverImage);
-                }}
-                className="absolute bottom-4 left-4 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#4A7856]" />
-                <span>Als Titelbild wählen</span>
-              </button>
             )}
           </div>
         ) : (
@@ -895,7 +964,7 @@ export const RecipeDetailPage: React.FC = () => {
         </section>
 
         {/* 6. INGREDIENTS LIST (Zutaten mit explizitem Anpassungs-Modus) */}
-        <section className="space-y-3">
+        <section ref={ingredientsSectionRef} className="space-y-3">
           <div className="flex items-center justify-between gap-2">
             <div>
               <h2 className="text-xl font-bold text-[#2D3E40] flex items-center gap-2">
@@ -956,7 +1025,7 @@ export const RecipeDetailPage: React.FC = () => {
                     }`}
                   >
                     {/* Left: Custom Checkbox + Natural Wrapping Ingredient Name + "(angepasst)" hint */}
-                    <div className="flex items-start gap-3 flex-1 min-w-0 pr-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
                       <div
                         onClick={(e) => {
                           if (isCustomizingIngredients) {
@@ -964,7 +1033,7 @@ export const RecipeDetailPage: React.FC = () => {
                             toggleCheckIngredient(ing.name);
                           }
                         }}
-                        className={`w-5 h-5 rounded-md flex items-center justify-center border mt-0.5 transition-all shrink-0 ${
+                        className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all shrink-0 ${
                           isCustomizingIngredients ? 'cursor-pointer' : ''
                         } ${
                           isChecked
@@ -978,7 +1047,7 @@ export const RecipeDetailPage: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span
-                            className={`text-sm sm:text-base font-medium break-words leading-snug transition-all ${
+                            className={`text-sm sm:text-base font-medium break-words leading-normal transition-all ${
                               isChecked ? 'line-through text-[#9BA19D] opacity-60' : 'text-[#2D3E40]'
                             }`}
                           >
@@ -1013,7 +1082,9 @@ export const RecipeDetailPage: React.FC = () => {
                             e.stopPropagation();
                             setSubstitutingIngredient(ing);
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] hover:border-[#4A7856]/40 text-xs font-semibold text-[#4A7856] transition-all cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] hover:border-[#4A7856]/40 text-xs font-semibold text-[#4A7856] transition-all cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
+                            isChecked ? 'opacity-40 hover:opacity-80' : ''
+                          }`}
                           title={`${ing.name} ersetzen`}
                         >
                           <ArrowLeftRight className="w-3 h-3" />
@@ -1128,7 +1199,7 @@ export const RecipeDetailPage: React.FC = () => {
         </section>
 
         {/* 8. PREPARATION STEPS & TIMELINE WITH DYNAMIC STEP-BY-STEP MEDIA */}
-        <section className="space-y-4">
+        <section ref={stepsSectionRef} className="space-y-4">
           {(() => {
             const hasStepPhotos = recipe.steps.some((s) => {
               if (typeof s === 'string') return false;
@@ -1147,76 +1218,68 @@ export const RecipeDetailPage: React.FC = () => {
 
                   {/* Header Actions for Step Photos */}
                   <div className="flex items-center gap-2 shrink-0">
-                    {hasStepPhotos ? (
-                      /* State 2 (Photos exist): Show Clean Toggle [ Fotos ausblenden / einblenden ] */
+                    {isManagingStepPhotos ? (
+                      /* In management mode: ONLY show [ Fertig ] button */
                       <button
-                        id="toggle-step-images-btn"
+                        id="finish-step-photos-btn"
                         type="button"
-                        onClick={() => setShowStepImages(!showStepImages)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-xs font-semibold text-[#2D3E40] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
-                        title={showStepImages ? 'Schritt-Fotos ausblenden' : 'Schritt-Fotos einblenden'}
+                        onClick={() => setIsManagingStepPhotos(false)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#4A7856] text-white border border-[#4A7856] hover:bg-[#3D6447] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                        title="Bearbeitung beenden"
                       >
-                        {showStepImages ? (
-                          <>
-                            <EyeOff className="w-3.5 h-3.5 text-[#7A7E7B]" />
-                            <span>Fotos ausblenden</span>
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="w-3.5 h-3.5 text-[#4A7856]" />
-                            <span>Fotos einblenden</span>
-                          </>
-                        )}
+                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>Fertig</span>
                       </button>
+                    ) : hasStepPhotos ? (
+                      /* Not in management mode & photos exist: show [ Fotos aus-/einblenden ] and [ Verwalten (Stift) ] */
+                      <>
+                        <button
+                          id="toggle-step-images-btn"
+                          type="button"
+                          onClick={() => setShowStepImages(!showStepImages)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-xs font-semibold text-[#2D3E40] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                          title={showStepImages ? 'Schritt-Fotos ausblenden' : 'Schritt-Fotos einblenden'}
+                        >
+                          {showStepImages ? (
+                            <>
+                              <EyeOff className="w-3.5 h-3.5 text-[#7A7E7B]" />
+                              <span>Fotos ausblenden</span>
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-3.5 h-3.5 text-[#4A7856]" />
+                              <span>Fotos einblenden</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsManagingStepPhotos(true);
+                            setShowStepImages(true);
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#7A7E7B] transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                          title="Fotos verwalten"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Verwalten</span>
+                        </button>
+                      </>
                     ) : (
-                      /* State 1 (No photos exist): Show [ + Schritt-Fotos hinzufügen ] Toggle to reveal upload targets */
+                      /* Not in management mode & no photos exist: show [ + Fotos hinzufügen ] */
                       <button
                         id="manage-step-photos-btn"
                         type="button"
                         onClick={() => {
-                          setIsManagingStepPhotos(!isManagingStepPhotos);
-                          if (!isManagingStepPhotos) {
-                            setShowStepImages(true);
-                          }
+                          setIsManagingStepPhotos(true);
+                          setShowStepImages(true);
                         }}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
-                          isManagingStepPhotos
-                            ? 'bg-[#4A7856] text-white border border-[#4A7856] hover:bg-[#3D6447]'
-                            : 'bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#2D3E40]'
-                        }`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#2D3E40] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
                         title="Schritt-Fotos hinzufügen"
                       >
-                        {isManagingStepPhotos ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                            <span>Fertig</span>
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="w-3.5 h-3.5 text-[#4A7856]" />
-                            <span>Fotos hinzufügen</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-
-                    {/* Secondary edit toggle when photos exist to allow adding more */}
-                    {hasStepPhotos && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsManagingStepPhotos(!isManagingStepPhotos);
-                          if (!isManagingStepPhotos) setShowStepImages(true);
-                        }}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
-                          isManagingStepPhotos
-                            ? 'bg-[#4A7856] text-white'
-                            : 'bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#7A7E7B]'
-                        }`}
-                        title="Fotos verwalten"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">{isManagingStepPhotos ? 'Fertig' : 'Verwalten'}</span>
+                        <Plus className="w-3.5 h-3.5 text-[#4A7856]" />
+                        <span>Fotos hinzufügen</span>
                       </button>
                     )}
                   </div>
@@ -1264,7 +1327,11 @@ export const RecipeDetailPage: React.FC = () => {
                               </span>
 
                               {stepObj.timerMinutes && (
-                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#4A7856] bg-[#F1F5F2] px-2.5 py-0.5 rounded-full">
+                                <span
+                                  className={`inline-flex items-center gap-1 text-xs font-semibold text-[#4A7856] bg-[#F1F5F2] px-2.5 py-0.5 rounded-full transition-opacity ${
+                                    isStepDone ? 'opacity-40' : ''
+                                  }`}
+                                >
                                   <Clock className="w-3.5 h-3.5" />
                                   {stepObj.timerMinutes} Min.
                                 </span>
@@ -1282,14 +1349,16 @@ export const RecipeDetailPage: React.FC = () => {
 
                           {/* Step Images Layout: Swipeable carousel matching the main recipe gallery */}
                           {showStepImages && stepImages.length > 0 && (
-                            <StepImageSwiper
-                              stepNumber={stepObj.stepNumber}
-                              images={stepImages}
-                              stepTitle={stepObj.title || `Schritt ${stepObj.stepNumber}`}
-                              isManagingPhotos={isManagingStepPhotos}
-                              onRemovePhoto={handleRemoveStepPhoto}
-                              onOpenLightbox={openLightbox}
-                            />
+                            <div className={`transition-opacity duration-200 ${isStepDone ? 'opacity-40 grayscale-[15%]' : ''}`}>
+                              <StepImageSwiper
+                                stepNumber={stepObj.stepNumber}
+                                images={stepImages}
+                                stepTitle={stepObj.title || `Schritt ${stepObj.stepNumber}`}
+                                isManagingPhotos={isManagingStepPhotos}
+                                onRemovePhoto={handleRemoveStepPhoto}
+                                onOpenLightbox={openLightbox}
+                              />
+                            </div>
                           )}
 
                           {/* Explicit Step Photo Upload Trigger Target in photo management mode */}

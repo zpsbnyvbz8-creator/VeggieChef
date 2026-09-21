@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 
 interface StepImageSwiperProps {
   stepNumber: number;
@@ -53,16 +53,6 @@ export const StepImageSwiper: React.FC<StepImageSwiperProps> = ({
     setTouchEndX(null);
   };
 
-  const handlePrev = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
-  const handleNext = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentIndex((prev) => (prev + 1) % images.length);
-  };
-
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     onRemovePhoto(stepNumber, safeIndex);
@@ -91,35 +81,6 @@ export const StepImageSwiper: React.FC<StepImageSwiperProps> = ({
         {/* Soft edge gradient for high readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/25 pointer-events-none" />
 
-        {/* Step number badge / counter (e.g. 2 / 3) */}
-        {images.length > 1 && (
-          <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-black/45 backdrop-blur-md text-white text-[11px] font-bold tracking-wider pointer-events-none">
-            {safeIndex + 1} / {images.length}
-          </div>
-        )}
-
-        {/* Desktop Left / Right Navigation Chevrons */}
-        {images.length > 1 && (
-          <>
-            <button
-              type="button"
-              onClick={handlePrev}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md transition-all cursor-pointer z-10 opacity-90 hover:scale-105 active:scale-95"
-              aria-label="Vorheriges Schritt-Foto"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={handleNext}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md transition-all cursor-pointer z-10 opacity-90 hover:scale-105 active:scale-95"
-              aria-label="Nächstes Schritt-Foto"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </>
-        )}
-
         {/* Delete Photo Button in Manage Mode */}
         {isManagingPhotos && (
           <button
@@ -133,7 +94,7 @@ export const StepImageSwiper: React.FC<StepImageSwiperProps> = ({
           </button>
         )}
 
-        {/* Pagination Dots at Bottom Center - Exactly matching hero style */}
+        {/* Pagination Dots at Bottom Center - Clean & Minimal */}
         {images.length > 1 && (
           <div
             className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10 px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-md pointer-events-auto"
