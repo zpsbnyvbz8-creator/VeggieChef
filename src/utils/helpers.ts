@@ -716,10 +716,12 @@ export function mergeOrAddShoppingItem(
     combinedUnit = existing.unit || newItem.unit || '';
   }
 
-  const combinedRecipeSource = [existing.recipeSource, newItem.recipeSource]
+  // Deduplicate and combine recipe sources
+  const rawSources = [existing.recipeSource, newItem.recipeSource]
     .filter(Boolean)
-    .filter((v, i, a) => a.indexOf(v) === i)
-    .join(', ');
+    .flatMap((s) => (s as string).split(/,\s*/).map((t) => t.trim()))
+    .filter(Boolean);
+  const combinedRecipeSource = Array.from(new Set(rawSources)).join(', ');
 
   const updatedItem: ShoppingItem = {
     ...existing,
@@ -732,6 +734,33 @@ export function mergeOrAddShoppingItem(
   const nextList = [...existingItems];
   nextList[existingIdx] = updatedItem;
   return nextList;
+}
+
+/**
+ * Deduplicates and formats recipe source titles cleanly for display.
+ * Displays max 2 titles, e.g.:
+ * - 1 title: "aus Gnocchi Pfanne"
+ * - 2 titles: "aus Gnocchi Pfanne, Tikka Masala"
+ * - 3+ titles: "aus Gnocchi Pfanne, Tikka Masala + [X] weitere"
+ */
+export function formatRecipeSource(source?: string): string | null {
+  if (!source || !source.trim()) return null;
+  const titles = Array.from(
+    new Set(
+      source
+        .split(/,\s*/)
+        .map((t) => t.trim())
+        .filter(Boolean)
+    )
+  );
+  if (titles.length === 0) return null;
+  if (titles.length === 1) {
+    return `aus ${titles[0]}`;
+  }
+  if (titles.length === 2) {
+    return `aus ${titles[0]}, ${titles[1]}`;
+  }
+  return `aus ${titles[0]}, ${titles[1]} + ${titles.length - 2} weitere`;
 }
 
 export function mergeOrAddShoppingItems(
