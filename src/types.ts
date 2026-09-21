@@ -73,6 +73,9 @@ export interface Recipe {
   veganVersionTips?: string;
   isCustomAi?: boolean;
   createdAt?: number | string;
+  userImages?: string[];
+  activeCoverImage?: string;
+  userNotes?: string;
 }
 
 export interface WeekPlan {

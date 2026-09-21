@@ -58,6 +58,9 @@ export interface RecipeContextType {
   logCooked: (recipe: Recipe, servings: number, notes?: string) => void;
   saveCustomRecipe: (newRecipe: Recipe) => void;
   addRecipe: (newRecipe: Recipe) => void;
+  updateRecipe: (updatedRecipe: Recipe) => void;
+  deleteRecipe: (recipeId: string) => void;
+  duplicateRecipe: (recipe: Recipe) => Recipe;
   cookingModeRecipe: { recipe: Recipe; servings: number } | null;
   setCookingModeRecipe: React.Dispatch<React.SetStateAction<{ recipe: Recipe; servings: number } | null>>;
   isCookingMinimized: boolean;
@@ -298,6 +301,35 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     showToast(`Gericht "${stamped.title}" erfolgreich hinzugefügt!`);
   };
 
+  const updateRecipe = (updatedRecipe: Recipe) => {
+    setRecipes((prev) => prev.map((r) => (r.id === updatedRecipe.id ? updatedRecipe : r)));
+    syncSingleRecipe(updatedRecipe);
+    showToast(`Gericht "${updatedRecipe.title}" aktualisiert!`);
+  };
+
+  const deleteRecipe = (recipeId: string) => {
+    setRecipes((prev) => prev.filter((r) => r.id !== recipeId));
+    setFavorites((prev) => prev.filter((id) => id !== recipeId));
+    setDislikedIds((prev) => prev.filter((id) => id !== recipeId));
+    showToast('Gericht wurde gelöscht.');
+  };
+
+  const duplicateRecipe = (sourceRecipe: Recipe): Recipe => {
+    const newId = `rec-copy-${Date.now()}`;
+    const newTitle = `${sourceRecipe.title} (Kopie)`;
+    const copy: Recipe = {
+      ...sourceRecipe,
+      id: newId,
+      title: newTitle,
+      createdAt: Date.now(),
+      isCustomAi: true,
+    };
+    setRecipes((prev) => [copy, ...prev]);
+    syncSingleRecipe(copy);
+    showToast(`Duplikat "${copy.title}" erstellt!`);
+    return copy;
+  };
+
   // Filtered & Sorted Recipes (deprioritizes disliked recipes to bottom)
   const filteredRecipes = useMemo(() => {
     const filtered = filterAndSortRecipes(recipes, filters, onlyVegan, cookedLogs);
@@ -344,6 +376,9 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         logCooked,
         saveCustomRecipe,
         addRecipe,
+        updateRecipe,
+        deleteRecipe,
+        duplicateRecipe,
         cookingModeRecipe,
         setCookingModeRecipe,
         isCookingMinimized,

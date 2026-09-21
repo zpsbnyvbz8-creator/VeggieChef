@@ -1,5 +1,5 @@
 import React, { useEffect, Suspense, lazy } from 'react';
-import { Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { 
   ToastProvider, 
   SyncProvider, 
@@ -212,7 +212,10 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
 
 function MainApp() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
+
+  const isRecipeDetailPage = location.pathname.startsWith('/recipes/');
 
   const {
     cookingModeRecipe,
@@ -239,11 +242,11 @@ function MainApp() {
       {/* Scroll to Top on every route transition */}
       <ScrollToTop />
 
-      {/* Top Main Navigation Header - synchronized with React Router location */}
-      <Header />
+      {/* Top Main Navigation Header - only on non-detail pages */}
+      {!isRecipeDetailPage && <Header />}
 
       {/* Main Content Area rendered via React Router Routes with Suspense code-splitting */}
-      <main className={`flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-8 ${showBottomTimerBar ? 'pb-20 sm:pb-24' : ''}`}>
+      <main className={`flex-1 w-full ${isRecipeDetailPage ? '' : 'max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-8'} ${showBottomTimerBar ? 'pb-20 sm:pb-24' : ''}`}>
         <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
             <Route path="/" element={<RecipesExplorerView isFavorites={false} />} />
@@ -289,18 +292,20 @@ function MainApp() {
         </Suspense>
       )}
 
-      {/* Footer */}
-      <footer className="mt-16 bg-white border-t border-[#ECEBE8] py-8 px-4 text-center text-xs text-[#7A7E7B]">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 font-semibold text-[#2D3E40]">
-            <span className="p-1 rounded-md bg-[#4A7856] text-white text-xs">🌱</span>
-            <span>VeggieChef • 100% Vegetarische & Vegane Koch-App</span>
+      {/* Footer - only on non-detail pages */}
+      {!isRecipeDetailPage && (
+        <footer className="mt-16 bg-white border-t border-[#ECEBE8] py-8 px-4 text-center text-xs text-[#7A7E7B]">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2 font-semibold text-[#2D3E40]">
+              <span className="p-1 rounded-md bg-[#4A7856] text-white text-xs">🌱</span>
+              <span>VeggieChef • 100% Vegetarische & Vegane Koch-App</span>
+            </div>
+            <div>
+              Mit Liebe zum Kochen, Gesundheit & Umwelt-Impact entwickelt.
+            </div>
           </div>
-          <div>
-            Mit Liebe zum Kochen, Gesundheit & Umwelt-Impact entwickelt.
-          </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 }
