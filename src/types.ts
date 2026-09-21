@@ -35,6 +35,7 @@ export interface RecipeStep {
   title?: string;
   text: string;
   timerMinutes?: number;
+  stepImages?: string[];
 }
 
 export interface RecipeNutrients {
@@ -47,6 +48,8 @@ export interface RecipeNutrients {
   b12?: number; // µg
   calcium?: number; // mg
   zinc?: number; // mg
+  vitaminC?: number; // mg
+  magnesium?: number; // mg
 }
 
 export interface Recipe {

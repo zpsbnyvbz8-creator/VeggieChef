@@ -1,11 +1,87 @@
 import { Recipe, RecipeIngredient, CookedLog, ShoppingItem, DayPlan, FilterState, IngredientCategory } from '../types';
 
-// Format ingredient text with scaled portion amount
+// Helper function to format numbers into clean kitchen fractions or ranges
+export function formatFractionOrSmartQuantity(value: number, unit: string): string {
+  if (value <= 0) return '0';
+
+  const normalizedUnit = (unit || '').toLowerCase().trim();
+  const isPieceUnit = [
+    'stk', 'stück', 'stk.', 'zehe', 'zehen', 'knoblauchzehe', 'knoblauchzehen',
+    'dose', 'dosen', 'bund', 'packung', 'packungen', 'pck', 'pck.', 'scheibe', 'scheiben',
+    'tl', 'teelöffel', 'el', 'esslöffel', 'prise', 'prisen', 'zweig', 'zweige', 'blatt', 'blätter'
+  ].includes(normalizedUnit) || normalizedUnit === '';
+
+  // For piece units
+  if (isPieceUnit) {
+    // If very close to an integer (e.g. 1.02 or 0.98)
+    if (Math.abs(value - Math.round(value)) < 0.08) {
+      return Math.round(value).toString();
+    }
+
+    const intPart = Math.floor(value);
+    const frac = value - intPart;
+
+    // Small fraction below 1
+    if (intPart === 0) {
+      if (frac < 0.18) return '1 Prise';
+      if (frac < 0.3) return '¼';
+      if (frac < 0.42) return '⅓';
+      if (frac < 0.65) return '½';
+      if (frac < 0.85) return '¾';
+      return '1';
+    }
+
+    // Numbers with fraction:
+    if (frac < 0.12) {
+      return `${intPart}`;
+    } else if (frac < 0.28) {
+      return `${intPart} ¼`;
+    } else if (frac < 0.4) {
+      return `${intPart} ⅓`;
+    } else if (frac < 0.65) {
+      return `${intPart} ½`;
+    } else if (frac < 0.85) {
+      return `${intPart} ¾`;
+    } else {
+      return `${intPart + 1}`;
+    }
+  }
+
+  // For weight & volume (g, ml, kg, l):
+  if (normalizedUnit === 'g' || normalizedUnit === 'ml') {
+    if (value >= 100) {
+      // Round to nearest 5 or 10
+      return (Math.round(value / 5) * 5).toString();
+    } else if (value >= 10) {
+      return Math.round(value).toString();
+    } else {
+      return (Math.round(value * 10) / 10).toString();
+    }
+  }
+
+  if (normalizedUnit === 'kg' || normalizedUnit === 'l' || normalizedUnit === 'liter') {
+    if (value < 1) {
+      // e.g. 0.5 l -> ½ l or 0.5 l
+      const frac = value;
+      if (Math.abs(frac - 0.5) < 0.05) return '½';
+      if (Math.abs(frac - 0.25) < 0.05) return '¼';
+      if (Math.abs(frac - 0.75) < 0.05) return '¾';
+      return (Math.round(value * 10) / 10).toString();
+    }
+    return (Math.round(value * 10) / 10).toString();
+  }
+
+  // Default fallback for numbers
+  if (Number.isInteger(value)) return value.toString();
+  const rounded = Math.round(value * 10) / 10;
+  return rounded.toString();
+}
+
+// Format ingredient text with scaled portion amount and smart kitchen fractions
 export function formatIngredientAmount(ingredient: RecipeIngredient, originalServings: number, currentServings: number): string {
   if (typeof ingredient.amount === 'number') {
     const scaled = (ingredient.amount / originalServings) * currentServings;
-    // Format nicely: e.g. 1.5 instead of 1.5000000000000002
-    const formatted = Number.isInteger(scaled) ? scaled.toString() : (Math.round(scaled * 10) / 10).toString();
+    const formatted = formatFractionOrSmartQuantity(scaled, ingredient.unit);
     return `${formatted} ${ingredient.unit}`.trim();
   }
   return `${ingredient.amount} ${ingredient.unit}`.trim();
