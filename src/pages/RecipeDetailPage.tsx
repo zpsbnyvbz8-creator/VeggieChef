@@ -145,7 +145,7 @@ export const RecipeDetailPage: React.FC = () => {
           🥗
         </div>
         <h2 className="text-2xl font-bold text-[#2D3E40]">Rezept nicht gefunden</h2>
-        <p className="text-sm text-[#7A7E7B] max-w-sm">
+        <p className="text-sm text-[#686E6A] max-w-sm">
           Dieses Gericht existiert leider nicht mehr oder der Link ist ungültig.
         </p>
         <button
@@ -801,7 +801,7 @@ export const RecipeDetailPage: React.FC = () => {
 
           {/* Subtitle */}
           {recipe.subtitle && (
-            <p className="text-base text-[#7A7E7B] leading-relaxed max-w-3xl">
+            <p id="recipe-detail-subtitle" className="text-base text-[#686E6A] leading-relaxed max-w-3xl">
               {recipe.subtitle}
             </p>
           )}
@@ -815,7 +815,7 @@ export const RecipeDetailPage: React.FC = () => {
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[14px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
+              <div className="text-[14px] font-semibold text-[#686E6A] uppercase tracking-wider">
                 Gesamtzeit
               </div>
               <div className="font-bold text-[#2D3E40] text-base tabular-nums">
@@ -830,7 +830,7 @@ export const RecipeDetailPage: React.FC = () => {
               <Flame className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[14px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
+              <div className="text-[14px] font-semibold text-[#686E6A] uppercase tracking-wider">
                 Kalorien
               </div>
               <div className="font-bold text-[#2D3E40] text-base tabular-nums">
@@ -845,7 +845,7 @@ export const RecipeDetailPage: React.FC = () => {
               <Dumbbell className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[14px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
+              <div className="text-[14px] font-semibold text-[#686E6A] uppercase tracking-wider">
                 Protein
               </div>
               <div className="font-bold text-[#4A7856] text-base tabular-nums">
@@ -860,7 +860,7 @@ export const RecipeDetailPage: React.FC = () => {
               <ChefHat className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[14px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
+              <div className="text-[14px] font-semibold text-[#686E6A] uppercase tracking-wider">
                 Schwierigkeit
               </div>
               <div className="font-bold text-[#2D3E40] text-base truncate">
@@ -969,11 +969,11 @@ export const RecipeDetailPage: React.FC = () => {
             <div>
               <h2 className="text-xl font-bold text-[#2D3E40] flex items-center gap-2">
                 <span>Zutaten</span>
-                <span className="text-xs font-normal text-[#7A7E7B]">
+                <span className="text-xs font-normal text-[#686E6A]">
                   ({activeIngredients.length} Positionen für {servings} {servings === 1 ? 'Portion' : 'Portionen'})
                 </span>
               </h2>
-              <span className="text-xs text-[#7A7E7B] hidden sm:inline">
+              <span className="text-xs text-[#686E6A] hidden sm:inline">
                 {isCustomizingIngredients ? 'Tippe auf Ersetzen für Alternativen' : 'Tippe zum Abhaken'}
               </span>
             </div>
@@ -1103,7 +1103,7 @@ export const RecipeDetailPage: React.FC = () => {
         {/* 7. NUTRITION MACROS & EXPANDABLE MICRONUTRIENTS ACCORDION */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-[16px] font-bold text-[#7A7E7B] uppercase tracking-wider">
+            <h3 className="text-[16px] font-bold text-[#686E6A] uppercase tracking-wider">
               Nährwerte pro Portion ({recipe.nutrients.calories} kcal)
             </h3>
           </div>
@@ -1111,25 +1111,25 @@ export const RecipeDetailPage: React.FC = () => {
           {/* Primary Macro Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3.5 bg-white rounded-xl border border-[#ECEBE8] text-center shadow-2xs">
-              <div className="text-[16px] font-semibold text-[#7A7E7B]">Protein</div>
+              <div className="text-[16px] font-semibold text-[#686E6A]">Protein</div>
               <div className="text-lg font-bold text-[#4A7856] mt-0.5 tabular-nums">
                 {recipe.nutrients.protein}g
               </div>
             </div>
             <div className="p-3.5 bg-white rounded-xl border border-[#ECEBE8] text-center shadow-2xs">
-              <div className="text-[16px] font-semibold text-[#7A7E7B]">Kohlenhydrate</div>
+              <div className="text-[16px] font-semibold text-[#686E6A]">Kohlenhydrate</div>
               <div className="text-lg font-bold text-[#2D3E40] mt-0.5 tabular-nums">
                 {recipe.nutrients.carbs}g
               </div>
             </div>
             <div className="p-3.5 bg-white rounded-xl border border-[#ECEBE8] text-center shadow-2xs">
-              <div className="text-[16px] font-semibold text-[#7A7E7B]">Fett</div>
+              <div className="text-[16px] font-semibold text-[#686E6A]">Fett</div>
               <div className="text-lg font-bold text-[#2D3E40] mt-0.5 tabular-nums">
                 {recipe.nutrients.fat}g
               </div>
             </div>
             <div className="p-3.5 bg-white rounded-xl border border-[#ECEBE8] text-center shadow-2xs">
-              <div className="text-[16px] font-semibold text-[#7A7E7B]">Ballaststoffe</div>
+              <div className="text-[16px] font-semibold text-[#686E6A]">Ballaststoffe</div>
               <div className="text-lg font-bold text-[#2D3E40] mt-0.5 tabular-nums">
                 {recipe.nutrients.fiber}g
               </div>
@@ -1148,9 +1148,9 @@ export const RecipeDetailPage: React.FC = () => {
                 <span className="text-[14px]">Mikronährstoffe, Vitamine & Mineralien</span>
               </span>
               {isMicronutrientsOpen ? (
-                <ChevronUp className="w-4 h-4 text-[#7A7E7B]" />
+                <ChevronUp className="w-4 h-4 text-[#686E6A]" />
               ) : (
-                <ChevronDown className="w-4 h-4 text-[#7A7E7B]" />
+                <ChevronDown className="w-4 h-4 text-[#686E6A]" />
               )}
             </button>
 
@@ -1158,37 +1158,37 @@ export const RecipeDetailPage: React.FC = () => {
               <div className="px-4 pb-4 pt-1 border-t border-[#ECEBE8] bg-[#FAF9F6]/50 animate-in fade-in duration-150">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
                   <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[11px] text-[#7A7E7B]">Eisen</div>
+                    <div className="text-[11px] text-[#686E6A]">Eisen</div>
                     <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
                       {recipe.nutrients.iron ?? (Math.round((recipe.nutrients.calories / 100) * 0.9 * 10) / 10)} mg
                     </div>
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[11px] text-[#7A7E7B]">Vitamin B12</div>
+                    <div className="text-[11px] text-[#686E6A]">Vitamin B12</div>
                     <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
                       {recipe.nutrients.b12 ?? (recipe.isVegan ? '0 µg (pflanzl.)' : '0.5 µg')}
                     </div>
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[11px] text-[#7A7E7B]">Calcium</div>
+                    <div className="text-[11px] text-[#686E6A]">Calcium</div>
                     <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
                       {recipe.nutrients.calcium ?? Math.round((recipe.nutrients.calories / 100) * 38)} mg
                     </div>
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[11px] text-[#7A7E7B]">Zink</div>
+                    <div className="text-[11px] text-[#686E6A]">Zink</div>
                     <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
                       {recipe.nutrients.zinc ?? (Math.round((recipe.nutrients.calories / 100) * 0.7 * 10) / 10)} mg
                     </div>
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[11px] text-[#7A7E7B]">Vitamin C</div>
+                    <div className="text-[11px] text-[#686E6A]">Vitamin C</div>
                     <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
                       {recipe.nutrients.vitaminC ?? 26} mg
                     </div>
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[11px] text-[#7A7E7B]">Magnesium</div>
+                    <div className="text-[11px] text-[#686E6A]">Magnesium</div>
                     <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
                       {recipe.nutrients.magnesium ?? 68} mg
                     </div>
@@ -1214,7 +1214,7 @@ export const RecipeDetailPage: React.FC = () => {
                     <h3 className="text-xl font-bold text-[#2D3E40]">
                       Zubereitung Schritt für Schritt
                     </h3>
-                    <span className="text-xs text-[#7A7E7B]">Tippe zum Abhaken</span>
+                    <span className="text-xs text-[#686E6A]">Tippe zum Abhaken</span>
                   </div>
 
                   {/* Header Actions for Step Photos */}
@@ -1243,7 +1243,7 @@ export const RecipeDetailPage: React.FC = () => {
                         >
                           {showStepImages ? (
                             <>
-                              <EyeOff className="w-3.5 h-3.5 text-[#7A7E7B]" />
+                              <EyeOff className="w-3.5 h-3.5 text-[#686E6A]" />
                               <span className="text-[16px]">Fotos ausblenden</span>
                             </>
                           ) : (
@@ -1260,7 +1260,7 @@ export const RecipeDetailPage: React.FC = () => {
                             setIsManagingStepPhotos(true);
                             setShowStepImages(true);
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[16px] font-semibold bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#7A7E7B] transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[16px] font-semibold bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#686E6A] transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0"
                           title="Fotos verwalten"
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -1412,7 +1412,7 @@ export const RecipeDetailPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsNotesExpanded(!isNotesExpanded)}
-              className="text-[16px] text-[#7A7E7B] hover:text-[#2D3E40] font-semibold cursor-pointer"
+              className="text-[16px] text-[#686E6A] hover:text-[#2D3E40] font-semibold cursor-pointer"
             >
               {isNotesExpanded ? 'Schließen' : personalNoteText.trim() ? 'Bearbeiten' : '+ Notiz hinzufügen'}
             </button>
@@ -1444,7 +1444,7 @@ export const RecipeDetailPage: React.FC = () => {
                   id="cancel-personal-notes-btn"
                   type="button"
                   onClick={() => setIsNotesExpanded(false)}
-                  className="h-11 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-semibold text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-[#FAF9F6] border border-transparent hover:border-[#ECEBE8] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                  className="h-11 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-semibold text-[#686E6A] hover:text-[#2D3E40] hover:bg-[#FAF9F6] border border-transparent hover:border-[#ECEBE8] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
                 >
                   Abbrechen
                 </button>
@@ -1470,7 +1470,7 @@ export const RecipeDetailPage: React.FC = () => {
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
           {/* Quick portions stepper in sticky bar */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-[#7A7E7B] hidden sm:inline">Portionen:</span>
+            <span className="text-xs font-semibold text-[#686E6A] hidden sm:inline">Portionen:</span>
             <div className="inline-flex items-center bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl p-1">
               <button
                 id="sticky-servings-decrease-btn"
@@ -1571,7 +1571,7 @@ export const RecipeDetailPage: React.FC = () => {
             </div>
             <div className="text-center space-y-1">
               <h3 className="text-lg font-bold text-[#2D3E40]">Rezept löschen?</h3>
-              <p className="text-xs text-[#7A7E7B]">
+              <p className="text-xs text-[#686E6A]">
                 Möchtest du "{recipe.title}" wirklich unwiderruflich aus deiner Rezeptsammlung entfernen?
               </p>
             </div>
@@ -1579,7 +1579,7 @@ export const RecipeDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsDeleteConfirmOpen(false)}
-                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-[#7A7E7B] bg-[#FAF9F6] hover:bg-[#F1F5F2] cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-[#686E6A] bg-[#FAF9F6] hover:bg-[#F1F5F2] cursor-pointer"
               >
                 Abbrechen
               </button>
@@ -1608,7 +1608,7 @@ export const RecipeDetailPage: React.FC = () => {
             <div className="text-center space-y-1">
               <span className="text-3xl">🎉</span>
               <h3 className="text-xl font-bold text-[#2D3E40]">Guten Appetit!</h3>
-              <p className="text-xs text-[#7A7E7B]">
+              <p className="text-xs text-[#686E6A]">
                 Möchtest du "{recipe.title}" in deiner Kochstatistik erfassen?
               </p>
             </div>
@@ -1635,7 +1635,7 @@ export const RecipeDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowCookedDialog(false)}
-                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-[#7A7E7B] bg-[#FAF9F6] hover:bg-[#F1F5F2] cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-[#686E6A] bg-[#FAF9F6] hover:bg-[#F1F5F2] cursor-pointer"
               >
                 Abbrechen
               </button>
