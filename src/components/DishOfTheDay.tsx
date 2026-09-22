@@ -128,7 +128,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
             </div>
 
             <div className="min-w-0">
-              <h2 className="text-sm sm:text-base md:text-[17px] font-bold text-[#2D3E40] tracking-tight group-hover:text-[#4A7856] transition-colors truncate">
+              <h2 className="text-[17px] font-bold text-[#2D3E40] tracking-tight group-hover:text-[#4A7856] transition-colors truncate">
                 {activeRecipe.title}
               </h2>
               <p className="text-[#7A7E7B] text-xs truncate mt-0.5">
@@ -186,10 +186,10 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
                 id="dish-of-the-day-copy-btn"
                 onClick={handleCopyIngredients}
                 className="hidden md:flex h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
-                title="Zutatenliste schnell kopieren"
+                title="Kopieren"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <Copy className="w-3.5 h-3.5 text-[#7A7E7B]" />}
-                <span>{copied ? 'Kopiert' : 'Zutaten'}</span>
+                <span>{copied ? 'Kopiert' : 'Kopieren'}</span>
               </button>
 
               {onQuickAddShopping && (
@@ -197,10 +197,10 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
                   id="dish-of-the-day-shopping-btn"
                   onClick={handleShopping}
                   className="h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
-                  title="Auf die Einkaufsliste setzen"
+                  title="Auf die Liste setzen"
                 >
                   {addedShopping ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <ShoppingCart className="w-3.5 h-3.5 text-[#7A7E7B]" />}
-                  <span className="hidden sm:inline">{addedShopping ? 'Auf Liste' : 'Einkauf'}</span>
+                  <span className="hidden sm:inline">{addedShopping ? 'Auf Liste' : 'Liste'}</span>
                 </button>
               )}
             </div>

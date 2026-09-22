@@ -208,7 +208,7 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
             className={`flex items-center justify-center gap-1.5 min-h-[44px] py-2 px-2 rounded-xl text-xs font-semibold text-stone-800 bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors active:scale-95 touch-manipulation cursor-pointer ${
               !onAddToMealPlan ? 'col-span-2' : ''
             }`}
-            title="Zutaten schnell kopieren"
+            title="Kopieren"
           >
             {copied ? <Check className="w-4 h-4 text-[#4A7856]" /> : <Copy className="w-4 h-4 text-stone-500" />}
             <span className="truncate">{copied ? 'Kopiert' : 'Kopieren'}</span>
@@ -219,7 +219,7 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
             id={`card-shop-btn-${recipe.id}`}
             onClick={handleShopping}
             className="flex items-center justify-center gap-1.5 min-h-[44px] py-2 px-2 rounded-xl text-xs font-semibold text-[#4A7856] bg-[#F1F5F2] border border-[#ECEBE8] hover:bg-[#4A7856] hover:text-white transition-colors active:scale-95 touch-manipulation cursor-pointer"
-            title="Zur Einkaufsliste"
+            title="Zur Liste"
           >
             {addedShopping ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
             <span className="truncate">{addedShopping ? 'Hinzugefügt' : '+ Liste'}</span>

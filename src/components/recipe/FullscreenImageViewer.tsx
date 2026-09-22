@@ -105,7 +105,7 @@ export const FullscreenImageViewer: React.FC<FullscreenImageViewerProps> = ({
         >
           {/* Title & Index */}
           <div className="min-w-0 pr-2">
-            <h4 className="text-xs sm:text-sm font-semibold truncate text-white/90">
+            <h4 className="text-sm font-semibold truncate text-white/90">
               {recipeTitle}
             </h4>
             {hasMultiple && (

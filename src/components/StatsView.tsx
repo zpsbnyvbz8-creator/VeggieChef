@@ -207,9 +207,9 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
       {/* Undo Banner */}
       {showUndoBanner && undoBackup && (
         <div className="p-3.5 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8] flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-top duration-200">
-          <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
+          <div className="flex items-center gap-2 text-sm font-medium">
             <RotateCcw className="w-4 h-4 text-[#4A7856] shrink-0" />
-            <span className="text-xs sm:text-sm">Statistiken zurückgesetzt ({undoBackup.length} Einträge).</span>
+            <span className="text-sm">Statistiken zurückgesetzt ({undoBackup.length} Einträge).</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -260,13 +260,13 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
               </div>
               <div>
                 <span className="text-xs font-bold text-amber-600 uppercase tracking-wider">Achtung: Bestätigung erforderlich</span>
-                <h3 className="text-base sm:text-lg font-bold text-[#2D3E40] leading-snug">
+                <h3 className="text-lg font-bold text-[#2D3E40] leading-snug">
                   Statistiken wirklich löschen?
                 </h3>
               </div>
             </div>
 
-            <p className="text-xs sm:text-sm text-[#7A7E7B] leading-relaxed">
+            <p className="text-sm text-[#7A7E7B] leading-relaxed">
               Bist du sicher, dass du deinen gesamten Kochverlauf und alle <strong className="text-[#2D3E40]">{logs.length} erfassten Einträge</strong> löschen möchtest? Alle bisher berechneten CO₂- und Wasserersparnisse werden zurückgesetzt.
             </p>
 
@@ -274,7 +274,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
               <button
                 id="cancel-clear-stats-btn"
                 onClick={() => setShowConfirmModal(false)}
-                className="min-h-[44px] px-4 sm:px-5 py-2.5 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#2D3E40] font-semibold text-xs sm:text-sm transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="min-h-[44px] px-4 sm:px-5 py-2.5 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#2D3E40] font-semibold text-sm transition-colors cursor-pointer touch-manipulation active:scale-95"
               >
                 Abbrechen
               </button>
@@ -284,7 +284,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                   setShowConfirmModal(false);
                   handleClearAllLogs();
                 }}
-                className="min-h-[44px] px-4 sm:px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs sm:text-sm shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
+                className="min-h-[44px] px-4 sm:px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Ja, wirklich löschen</span>
@@ -304,7 +304,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
               <Utensils className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-xl sm:text-3xl font-bold text-[#2D3E40]">{totalCooked}</div>
+          <div className="text-3xl font-bold text-[#2D3E40]">{totalCooked}</div>
           <div className="text-xs text-[#7A7E7B] truncate font-medium">{totalPortions} Portionen</div>
         </div>
 
@@ -316,7 +316,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
               <Leaf className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-xl sm:text-3xl font-bold text-[#4A7856]">{totalCO2Saved} kg</div>
+          <div className="text-3xl font-bold text-[#4A7856]">{totalCO2Saved} kg</div>
           <div className="text-xs text-[#7A7E7B] truncate font-medium">vs. Mischkost</div>
         </div>
 
@@ -328,7 +328,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
               <Droplets className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-xl sm:text-3xl font-bold text-[#2D3E40]">{totalWaterSaved.toLocaleString('de-DE')} L</div>
+          <div className="text-3xl font-bold text-[#2D3E40]">{totalWaterSaved.toLocaleString('de-DE')} L</div>
           <div className="text-xs text-[#7A7E7B] truncate font-medium">virtuelles Wasser</div>
         </div>
 
@@ -340,7 +340,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
               <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-xl sm:text-3xl font-bold text-[#2D3E40]">
+          <div className="text-3xl font-bold text-[#2D3E40]">
             {veganCount} <span className="text-xs font-normal text-[#7A7E7B]">/ {totalCooked}</span>
           </div>
           <div className="text-xs text-[#7A7E7B] truncate font-medium">{favoritesCount} Favoriten</div>
@@ -384,7 +384,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-[#2D3E40] text-sm sm:text-base">
+                <h3 className="font-semibold text-[#2D3E40] text-base">
                   Zuletzt gekocht
                 </h3>
                 <span className="px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#7A7E7B] border border-[#ECEBE8] text-xs font-semibold">
@@ -407,7 +407,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                   value={historySearchQuery}
                   onChange={(e) => setHistorySearchQuery(e.target.value)}
                   placeholder="Gericht filtern..."
-                  className="w-full pl-10 pr-10 py-2.5 text-base sm:text-sm bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[#2D3E40] placeholder:text-[#7A7E7B] focus:outline-none focus:border-[#4A7856] focus:bg-white transition-all min-h-[44px] sm:min-h-0"
+                  className="w-full pl-10 pr-10 py-2.5 text-sm bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[#2D3E40] placeholder:text-[#7A7E7B] focus:outline-none focus:border-[#4A7856] focus:bg-white transition-all min-h-[44px] sm:min-h-0"
                 />
                 {historySearchQuery && (
                   <button
@@ -422,7 +422,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => setHistoryFilter('all')}
-                  className={`px-4 py-2.5 sm:py-2 rounded-xl text-xs sm:text-xs font-semibold border transition-all cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
+                  className={`px-4 py-2.5 sm:py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
                     historyFilter === 'all'
                       ? 'bg-[#2D3E40] text-white border-[#2D3E40] shadow-2xs'
                       : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
@@ -432,7 +432,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                 </button>
                 <button
                   onClick={() => setHistoryFilter('vegan')}
-                  className={`px-4 py-2.5 sm:py-2 rounded-xl text-xs sm:text-xs font-semibold border transition-all cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
+                  className={`px-4 py-2.5 sm:py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
                     historyFilter === 'vegan'
                       ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs'
                       : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
@@ -629,7 +629,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                     <div className="space-y-1.5 min-w-0 flex-1">
                       {/* Top Row: Title + Badge */}
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-semibold text-[#2D3E40] text-xs sm:text-sm truncate">
+                        <span className="font-semibold text-[#2D3E40] text-sm truncate">
                           {log.recipeTitle}
                         </span>
                         {log.isVegan ? (
@@ -738,7 +738,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
               <div className="p-1.5 rounded-lg bg-[#FDF6F0] text-[#D35400]">
                 <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <h3 className="text-sm sm:text-base font-semibold text-[#2D3E40] flex items-center gap-2">
+              <h3 className="text-base font-semibold text-[#2D3E40] flex items-center gap-2">
                 <span>Erfolge & Trophäen</span>
                 <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8]">
                   {unlockedCount}/{achievements.length} freigeschaltet
@@ -758,7 +758,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
         </div>
 
         {/* Tier Filter Tabs - Auf Einkaufslisten-Niveau vergrößert */}
-        <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none text-xs sm:text-sm">
+        <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none text-sm">
           <button
             onClick={() => setAchievementTierFilter('all')}
             className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
@@ -862,13 +862,13 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                       : 'bg-[#FAF9F6] border-[#ECEBE8] opacity-75 hover:opacity-100'
                   }`}
                 >
-                  <div className="text-2xl sm:text-3xl shrink-0 p-1 bg-white rounded-lg border border-[#ECEBE8] shadow-2xs">
+                  <div className="text-3xl shrink-0 p-1 bg-white rounded-lg border border-[#ECEBE8] shadow-2xs">
                     {ach.icon}
                   </div>
 
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-center justify-between gap-1.5">
-                      <h4 className="font-semibold text-xs sm:text-sm text-[#2D3E40] break-words whitespace-normal leading-snug">
+                      <h4 className="font-semibold text-sm text-[#2D3E40] break-words whitespace-normal leading-snug">
                         {ach.title}
                       </h4>
                       <span className={`text-xs px-2 py-0.5 rounded-md border shrink-0 font-medium ${tierBadge.bg}`}>
@@ -920,7 +920,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
       {logs.length > 0 && (
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div className="space-y-0.5">
-            <h4 className="text-xs sm:text-sm font-semibold text-[#2D3E40]">Kochdaten & Verlauf verwalten</h4>
+            <h4 className="text-sm font-semibold text-[#2D3E40]">Kochdaten & Verlauf verwalten</h4>
             <p className="text-xs text-[#7A7E7B]">
               Möchtest du deinen bisherigen Kochverlauf und alle erfassten Ersparnisse zurücksetzen?
             </p>
@@ -928,7 +928,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
           <button
             id="clear-all-stats-btn"
             onClick={() => setShowConfirmModal(true)}
-            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs sm:text-sm border border-red-200 transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-2 shadow-2xs w-full sm:w-auto shrink-0"
+            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-sm border border-red-200 transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-2 shadow-2xs w-full sm:w-auto shrink-0"
             title="Statistik und Kochverlauf leeren (erfordert Bestätigung)"
           >
             <Trash2 className="w-4 h-4 text-red-600" />

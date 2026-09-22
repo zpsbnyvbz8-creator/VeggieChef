@@ -1028,7 +1028,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   }}
                   autoFocus
                   placeholder="1 Stk"
-                  className="w-16 sm:w-18 px-1 py-0.5 text-center text-sm sm:text-base font-semibold text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg focus:border-[#4A7856] focus:outline-hidden"
+                  className="w-16 sm:w-18 px-1 py-0.5 text-center text-base font-semibold text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg focus:border-[#4A7856] focus:outline-hidden"
                 />
 
                 <button
@@ -1066,7 +1066,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   e.stopPropagation();
                   startEditingItem(item);
                 }}
-                className={`text-sm sm:text-base font-semibold tabular-nums select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline ${
+                className={`text-base font-semibold tabular-nums select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline ${
                   item.completed
                     ? 'text-[#9BA19D] line-through opacity-60'
                     : 'text-[#4A7856] hover:text-[#3D6447]'
@@ -1133,9 +1133,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             )}
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-stone-900">
-            Einkaufsliste
+            Liste
           </h1>
-          <p className="text-xs sm:text-sm font-medium text-stone-500">
+          <p className="text-sm font-medium text-stone-500">
             Alles für deine Woche – geordnet nach Supermarkt-Regal.
           </p>
         </div>
@@ -1262,7 +1262,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             placeholder="Schnell hinzufügen (z. B. 400g Tofu)..."
             value={quickAddInput}
             onChange={(e) => setQuickAddInput(e.target.value)}
-            className="w-full bg-[#FAF9F6] hover:bg-[#F5F4F0] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] rounded-xl px-3 sm:px-3.5 py-2 text-[15px] sm:text-sm text-[#2D3E40] placeholder:text-[#9BA09C] focus:outline-hidden transition-all h-12 sm:h-10"
+            className="w-full bg-[#FAF9F6] hover:bg-[#F5F4F0] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] rounded-xl px-3 sm:px-3.5 py-2 text-base text-[#2D3E40] placeholder:text-[#9BA09C] focus:outline-hidden transition-all h-12 sm:h-10"
           />
         </div>
 
@@ -1306,7 +1306,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           <div className="w-14 h-14 rounded-full bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center mx-auto text-2xl border border-[#ECEBE8]">
             🛒
           </div>
-          <h3 className="text-lg font-semibold text-[#2D3E40]">Deine Einkaufsliste ist leer</h3>
+          <h3 className="text-lg font-semibold text-[#2D3E40]">Deine Liste ist leer</h3>
           <p className="text-xs text-[#7A7E7B] max-w-sm mx-auto">
             Füge Zutaten direkt aus Rezepten oder dem Wochenplan hinzu, oder tippe oben z.B. „400g Tofu“ ein.
           </p>
@@ -1410,7 +1410,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                         className="flex items-center gap-2 text-left cursor-pointer select-none flex-1 min-w-0"
                       >
                         <span className="text-xl shrink-0 pointer-events-none">{meta.icon}</span>
-                        <span className="font-semibold text-[#2D3E40] text-sm sm:text-base truncate pointer-events-none">
+                        <span className="font-semibold text-[#2D3E40] text-base truncate pointer-events-none">
                           {meta.label}
                         </span>
                       </button>
@@ -1474,7 +1474,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               }
             }}
           >
-            <div className="flex items-center gap-2 font-semibold text-[#2D3E40] text-sm sm:text-base">
+            <div className="flex items-center gap-2 font-semibold text-[#2D3E40] text-base">
               <CheckCheck className="w-4 h-4 text-[#4A7856]" />
               <span>Erledigt ({completedCount})</span>
             </div>
@@ -1525,7 +1525,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       {/* Undo Notification Banner (Nach unten gerückt: hinter 'Erledigt', sowohl Mobile als auch PC) */}
       {showUndoBanner && undoBackup && (
         <div className="p-3 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8] flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-bottom duration-200 mt-2">
-          <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
+          <div className="flex items-center gap-2 text-sm font-medium">
             <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4A7856] shrink-0" />
             <span className="text-xs">
               {lastDeletedInfo?.type === 'completed'
@@ -1540,7 +1540,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleUndo}
-              className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[11px] sm:text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
+              className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
             >
               Rückgängig
             </button>
@@ -1572,17 +1572,17 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">
                   Sicherheitsabfrage
                 </span>
-                <h3 className="text-base sm:text-lg font-bold text-[#2D3E40] leading-snug">
+                <h3 className="text-lg font-bold text-[#2D3E40] leading-snug">
                   {confirmDeleteState.type === 'all'
-                    ? 'Einkaufsliste wirklich löschen?'
+                    ? 'Liste wirklich löschen?'
                     : 'Erledigte Zutaten entfernen?'}
                 </h3>
               </div>
             </div>
 
-            <p className="text-xs sm:text-sm text-[#7A7E7B] leading-relaxed">
+            <p className="text-sm text-[#7A7E7B] leading-relaxed">
               {confirmDeleteState.type === 'all'
-                ? `Bist du sicher, dass du alle ${items.length} Zutaten von deiner Einkaufsliste löschen möchtest?`
+                ? `Bist du sicher, dass du alle ${items.length} Zutaten von deiner Liste löschen möchtest?`
                 : `Bist du sicher, dass du alle ${completedCount} erledigten Zutaten löschen möchtest?`}
             </p>
 

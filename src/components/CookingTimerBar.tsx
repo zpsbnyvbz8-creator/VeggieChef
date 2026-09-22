@@ -104,19 +104,19 @@ export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               {timeFormatted ? (
-                <span className="text-base sm:text-lg font-mono font-bold tracking-wider text-white">
+                <span className="text-lg font-mono font-bold tracking-wider text-white">
                   {isFinished ? 'Fertig!' : timeFormatted}
                 </span>
               ) : (
-                <span className="text-xs sm:text-sm font-semibold text-[#8DB898]">
+                <span className="text-sm font-semibold text-[#8DB898]">
                   Kochmodus aktiv
                 </span>
               )}
-              <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-md bg-white/10 text-[#8DB898] truncate">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white/10 text-[#8DB898] truncate">
                 Schritt {stepNumber}{totalSteps ? ` / ${totalSteps}` : ''}
               </span>
             </div>
-            <p className="text-[11px] sm:text-xs text-white/70 truncate max-w-[130px] xs:max-w-[200px] sm:max-w-xs md:max-w-md group-hover:text-white transition-colors">
+            <p className="text-xs text-white/70 truncate max-w-[130px] xs:max-w-[200px] sm:max-w-xs md:max-w-md group-hover:text-white transition-colors">
               {recipeTitle}
             </p>
           </div>

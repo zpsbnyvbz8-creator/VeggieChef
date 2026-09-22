@@ -587,7 +587,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
 
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs sm:text-sm font-bold text-[#8DB898] uppercase tracking-wider">
+                <span className="text-sm font-bold text-[#8DB898] uppercase tracking-wider">
                   Schritt {currentStepIndex + 1} von {totalStepsCount}
                 </span>
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/10 text-white/80 font-medium">
@@ -612,7 +612,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                   title="WakeLock aktiv: Display bleibt an" 
                 />
               </div>
-              <h1 className="text-sm sm:text-base font-bold text-white truncate max-w-[170px] xs:max-w-xs sm:max-w-md lg:max-w-lg leading-tight">
+              <h1 className="text-base font-bold text-white truncate max-w-[170px] xs:max-w-xs sm:max-w-md lg:max-w-lg leading-tight">
                 {recipe.title}
               </h1>
             </div>
@@ -677,7 +677,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
               return (
                 <span
                   key={ing.name}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs sm:text-sm font-medium text-white/95"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-sm font-medium text-white/95"
                 >
                   <span className="font-bold font-mono text-[#8DB898]">
                     {amountFormatted}
@@ -694,19 +694,19 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
         {/* ========================================================================= */}
         <section className="space-y-3 sm:space-y-4">
           {currentStep.title && (
-            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-[#8DB898]">
+            <h2 className="text-base font-bold uppercase tracking-wider text-[#8DB898]">
               {currentStep.title}
             </h2>
           )}
 
           {/* Primary Step Instruction in Large, High-Contrast Typography free of Enclosing Box Borders */}
-          <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-relaxed sm:leading-relaxed text-white tracking-normal select-text">
+          <div className="text-4xl font-bold leading-relaxed text-white tracking-normal select-text">
             {currentStep.text}
           </div>
 
           {/* Integrated Culinary Pro-Tip (Understated callout, no heavy card) */}
           {stepTip && (
-            <div className="pt-2 flex items-start gap-2.5 text-xs sm:text-sm text-emerald-200/90 font-medium">
+            <div className="pt-2 flex items-start gap-2.5 text-sm text-emerald-200/90 font-medium">
               <Lightbulb className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
               <p className="leading-relaxed">
                 <strong className="text-amber-200 font-semibold">Tipp: </strong>
@@ -757,7 +757,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                   : 'text-white/40'
               }`} />
               <div>
-                <div className="font-mono text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-widest leading-none">
+                <div className="font-mono text-5xl font-black text-white tracking-widest leading-none">
                   {timerSecondsLeft === 0 ? 'FERTIG!' : formatTime(timerSecondsLeft)}
                 </div>
                 <div className="text-[11px] text-white/50 mt-1 font-medium">
@@ -853,7 +853,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
           type="button"
           disabled={currentStepIndex === 0}
           onClick={handlePrev}
-          className="h-12 sm:h-14 px-5 sm:px-7 rounded-2xl bg-white/10 hover:bg-white/15 disabled:opacity-25 disabled:pointer-events-none text-white font-bold text-sm sm:text-base flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95"
+          className="h-12 sm:h-14 px-5 sm:px-7 rounded-2xl bg-white/10 hover:bg-white/15 disabled:opacity-25 disabled:pointer-events-none text-white font-bold text-base flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95"
         >
           <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           <span>Zurück</span>
@@ -861,7 +861,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
 
         {/* Center: Subtle Step Indicator (e.g., 1 / 6) */}
         <div className="flex flex-col items-center justify-center">
-          <span className="text-xs sm:text-sm font-bold text-white/80">
+          <span className="text-sm font-bold text-white/80">
             {currentStepIndex + 1} / {totalStepsCount}
           </span>
           {/* Subtle Visual Step Dots */}
@@ -886,7 +886,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
           id="cooking-mode-next-btn"
           type="button"
           onClick={handleNext}
-          className={`h-12 sm:h-14 px-6 sm:px-9 rounded-2xl font-bold text-base sm:text-lg flex items-center gap-2 shadow-lg transition-all cursor-pointer touch-manipulation active:scale-95 ${
+          className={`h-12 sm:h-14 px-6 sm:px-9 rounded-2xl font-bold text-lg flex items-center gap-2 shadow-lg transition-all cursor-pointer touch-manipulation active:scale-95 ${
             isLastStep
               ? 'bg-[#4A7856] hover:bg-[#3D6447] text-white shadow-[#4A7856]/30 animate-pulse'
               : 'bg-[#4A7856] hover:bg-[#3D6447] text-white'
@@ -915,7 +915,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                   <List className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base sm:text-lg font-bold text-white">
+                  <h3 className="text-lg font-bold text-white">
                     Alle Zutaten
                   </h3>
                   <p className="text-xs text-[#8DB898] font-semibold">

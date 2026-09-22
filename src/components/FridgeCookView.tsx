@@ -522,7 +522,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                     id="fridge-filter-calories"
                     value={calorieFilter}
                     onChange={(e) => setCalorieFilter(e.target.value)}
-                    className="w-full appearance-none h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-xs sm:text-[13px] font-semibold rounded-xl pl-8 pr-6 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
+                    className="w-full appearance-none h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[13px] font-semibold rounded-xl pl-8 pr-6 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
                   >
                     <option value="all">Alle Kalorien</option>
                     <option value="high">High Cal (750+)</option>
@@ -539,7 +539,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                     id="fridge-filter-protein"
                     value={proteinFilter}
                     onChange={(e) => setProteinFilter(e.target.value)}
-                    className="w-full appearance-none h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-xs sm:text-[13px] font-semibold rounded-xl pl-8 pr-6 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
+                    className="w-full appearance-none h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[13px] font-semibold rounded-xl pl-8 pr-6 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
                   >
                     <option value="all">Alle Protein</option>
                     <option value="high">High Prot (30g+)</option>
@@ -727,10 +727,10 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                   </span>
                 )}
               </div>
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#2D3E40] tracking-tight">
+              <h3 className="text-3xl font-semibold text-[#2D3E40] tracking-tight">
                 {generatedRecipe.title}
               </h3>
-              <p className="text-xs sm:text-sm text-[#7A7E7B] mt-0.5">
+              <p className="text-sm text-[#7A7E7B] mt-0.5">
                 {generatedRecipe.subtitle}
               </p>
             </div>
@@ -844,7 +844,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                           {step.title}
                         </h5>
                       )}
-                      <p className="text-xs sm:text-sm text-[#2D3E40] leading-relaxed">
+                      <p className="text-sm text-[#2D3E40] leading-relaxed">
                         {step.text}
                       </p>
                       {step.timerMinutes && (
@@ -874,7 +874,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
         <div className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-base sm:text-lg font-semibold text-[#2D3E40]">
+              <h3 className="text-lg font-semibold text-[#2D3E40]">
                 Oder entdecke passende Rezepte aus unserer Sammlung:
               </h3>
               {(proteinFilter === 'high' || proteinFilter === 'very-high') && (
@@ -920,7 +920,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                       {recipe.category}
                     </span>
                   </div>
-                  <h4 className="font-semibold text-xs sm:text-sm text-[#2D3E40] truncate group-hover:text-[#4A7856]">
+                  <h4 className="font-semibold text-sm text-[#2D3E40] truncate group-hover:text-[#4A7856]">
                     {recipe.title}
                   </h4>
                   <div className="flex items-center gap-3 text-[11px] text-[#7A7E7B]">

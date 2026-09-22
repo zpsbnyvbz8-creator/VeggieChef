@@ -56,7 +56,7 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <h3 id="fridge-idea-title" className="text-base sm:text-lg font-bold text-stone-900">
+                <h3 id="fridge-idea-title" className="text-lg font-bold text-stone-900">
                   {errorMessage ? 'Rezept konnte nicht erstellt werden' : 'Vorgeschlagene Rezeptidee'}
                 </h3>
                 {!errorMessage && attemptNumber > 1 && (
@@ -92,7 +92,7 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
                 <h4 className="text-base font-bold text-stone-900">
                   Generierung fehlgeschlagen
                 </h4>
-                <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+                <p className="text-sm text-stone-600 leading-relaxed">
                   {errorMessage}
                 </p>
                 <p className="text-xs text-stone-500 pt-1">
@@ -148,7 +148,7 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
                   )}
                 </div>
 
-                <h4 className="text-xl sm:text-2xl font-bold text-stone-900 leading-snug">
+                <h4 className="text-2xl font-bold text-stone-900 leading-snug">
                   {idea.title}
                 </h4>
 

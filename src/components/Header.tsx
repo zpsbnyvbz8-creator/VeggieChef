@@ -88,7 +88,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-base sm:text-xl font-bold tracking-tight text-[#2D3E40]">VeggieChef</span>
+                <span className="text-xl font-bold tracking-tight text-[#2D3E40]">VeggieChef</span>
                 <span className="hidden lg:inline-flex text-xs uppercase font-semibold tracking-wider px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8]">
                   Veggie & Vegan
                 </span>
@@ -106,7 +106,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
               placeholder="Suchen..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-8 sm:pl-9 pr-7 text-xs sm:text-sm bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-full text-[#2D3E40] placeholder-[#7A7E7B] focus:outline-hidden focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] shadow-2xs transition-all truncate"
+              className="w-full h-10 pl-8 sm:pl-9 pr-7 text-sm bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-full text-[#2D3E40] placeholder-[#7A7E7B] focus:outline-hidden focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] shadow-2xs transition-all truncate"
             />
             {searchQuery && (
               <button
@@ -182,7 +182,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
               className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
                 activeTab === 'shopping' ? 'bg-[#F1F5F2] text-[#4A7856] border-[#4A7856]/30' : 'bg-white sm:bg-transparent border-[#ECEBE8] sm:border-transparent'
               }`}
-              title="Einkaufsliste"
+              title="Liste"
             >
               <ShoppingCart className="w-5 h-5" />
               {shoppingCount > 0 && (
@@ -200,7 +200,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             id="nav-tab-recipes"
             type="button"
             onClick={() => handleNavigate('/')}
-            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
+            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'recipes'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
                 : 'text-[#7A7E7B] hover:bg-gray-50 hover:text-[#2D3E40]'
@@ -214,7 +214,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             id="nav-tab-fridge"
             type="button"
             onClick={() => handleNavigate('/fridge')}
-            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
+            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'fridge'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
                 : 'text-[#7A7E7B] hover:bg-gray-50 hover:text-[#2D3E40]'
@@ -228,7 +228,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             id="nav-tab-planner"
             type="button"
             onClick={() => handleNavigate('/planner')}
-            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
+            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'planner'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
                 : 'text-[#7A7E7B] hover:bg-gray-50 hover:text-[#2D3E40]'
@@ -242,7 +242,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             id="nav-tab-stats"
             type="button"
             onClick={() => handleNavigate('/stats')}
-            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3 py-2 sm:px-3 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
+            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3 py-2 sm:px-3 sm:py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'stats'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
                 : 'text-[#7A7E7B] hover:bg-gray-50 hover:text-[#2D3E40]'

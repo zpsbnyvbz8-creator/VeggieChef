@@ -59,7 +59,7 @@ export const RecipeImage: React.FC<RecipeImageProps> = ({
         <div className="flex items-center gap-1 mt-1.5 sm:mt-2">
           <span
             className={`font-bold tracking-tight text-[#7A7E7B] ${
-              isSm ? 'text-[11px]' : isHero ? 'text-sm sm:text-base' : 'text-xs'
+              isSm ? 'text-[11px]' : isHero ? 'text-base' : 'text-xs'
             }`}
           >
             VeggieChef

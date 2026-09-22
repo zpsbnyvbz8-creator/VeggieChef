@@ -128,7 +128,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
               {isFamilyActive ? <Cloud className="w-5 h-5" /> : <Users className="w-5 h-5" />}
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-bold text-[#2D3E40]">
+              <h2 className="text-xl font-bold text-[#2D3E40]">
                 {isFamilyActive ? 'Familien-Synchronisation' : 'Synchronisation & Geräte'}
               </h2>
               <p className="text-xs text-[#7A7E7B]">
@@ -315,7 +315,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
                   type="submit"
                   id="submit-join-family-btn"
                   disabled={isSubmitting || !groupIdInput.trim()}
-                  className="flex-1 min-h-[46px] flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs sm:text-sm font-semibold shadow-xs transition-all disabled:opacity-50 cursor-pointer touch-manipulation active:scale-95"
+                  className="flex-1 min-h-[46px] flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-sm font-semibold shadow-xs transition-all disabled:opacity-50 cursor-pointer touch-manipulation active:scale-95"
                 >
                   <span>{isSubmitting ? 'Verbinde...' : 'Mit Familie verbinden'}</span>
                   <ArrowRight className="w-4 h-4" />
