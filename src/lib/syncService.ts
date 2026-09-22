@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db, ensureFirebaseAuth } from './firebase';
 import { ShoppingItem, DayPlan, Recipe } from '../types';
+import { safeStorage } from '../utils/helpers';
 
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 
@@ -36,7 +37,7 @@ export const DEFAULT_SYNC_CONFIG: SyncConfig = {
 
 export function loadSyncConfig(): SyncConfig {
   try {
-    const raw = localStorage.getItem('veggiechef_sync_config');
+    const raw = safeStorage.getItem('veggiechef_sync_config');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed.mode === 'string') {
@@ -51,7 +52,7 @@ export function loadSyncConfig(): SyncConfig {
 
 export function saveSyncConfig(config: SyncConfig): void {
   try {
-    localStorage.setItem('veggiechef_sync_config', JSON.stringify(config));
+    safeStorage.setItem('veggiechef_sync_config', JSON.stringify(config));
   } catch (e) {
     console.warn('[Sync] Error saving sync config:', e);
   }

@@ -22,6 +22,7 @@ import { useRecipes } from '../context/RecipeContext';
 import { useToast } from '../context/ToastContext';
 import { FridgeIdeaModal } from './FridgeIdeaModal';
 import { RecipeImage } from './RecipeImage';
+import { safeStorage } from '../utils/helpers';
 
 interface FridgeCookViewProps {
   allRecipes?: Recipe[];
@@ -41,25 +42,25 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   const onSaveCustomRecipe = props.onSaveCustomRecipe ?? recipesCtx.saveCustomRecipe;
   const onlyVeganGlobal = props.onlyVeganGlobal ?? recipesCtx.onlyVegan;
   const onCopyFeedback = props.onCopyFeedback ?? toastCtx.showToast;
-  // Load and persist ingredients properly so deleted items stay deleted across reloads
+  // Load and persist ingredients properly using safeStorage (prevents iframe SecurityError)
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>(() => {
     try {
-      const stored = localStorage.getItem('veggiechef_pantry_ingredients');
+      const stored = safeStorage.getItem('veggiechef_pantry_ingredients');
       if (stored !== null) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) return parsed;
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // Fallback
     }
     return [];
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('veggiechef_pantry_ingredients', JSON.stringify(selectedIngredients));
-    } catch (e) {
-      console.error(e);
+      safeStorage.setItem('veggiechef_pantry_ingredients', JSON.stringify(selectedIngredients));
+    } catch {
+      // Fallback
     }
   }, [selectedIngredients]);
 

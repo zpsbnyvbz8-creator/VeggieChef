@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Recipe } from '../types';
 import { RecipeImage } from './RecipeImage';
-import { generateRecipeIngredientsText } from '../utils/helpers';
+import { generateRecipeIngredientsText, safeCopyToClipboard } from '../utils/helpers';
 import { useRecipes } from '../context/RecipeContext';
 import { useShopping } from '../context/ShoppingContext';
 import { usePlanner } from '../context/PlannerContext';
@@ -53,10 +53,10 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
   const [addedShopping, setAddedShopping] = useState(false);
   const [addedMealPlan, setAddedMealPlan] = useState(false);
 
-  const handleCopy = (e: React.MouseEvent) => {
+  const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const text = generateRecipeIngredientsText(recipe, recipe.servings);
-    navigator.clipboard.writeText(text);
+    await safeCopyToClipboard(text);
     setCopied(true);
     onCopyFeedback(`Zutaten für "${recipe.title}" kopiert!`);
     setTimeout(() => setCopied(false), 2000);

@@ -1,5 +1,15 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, User } from 'firebase/auth';
+import {
+  getAuth,
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  inMemoryPersistence,
+  signInAnonymously,
+  onAuthStateChanged,
+  User,
+  Auth,
+} from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer, Firestore } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -25,7 +35,7 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operation: OperationType, path: string | null): never {
-  const user = auth.currentUser;
+  const user = auth?.currentUser;
   const info: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     operation,
@@ -67,8 +77,70 @@ const activeConfig = {
 // Initialize Firebase App
 const app = getApps().length > 0 ? getApp() : initializeApp(activeConfig);
 
-// Initialize Auth
-export const auth = getAuth(app);
+// Helper to safely determine allowed Auth persistence without throwing SecurityError in iframes
+function getSafeAuthPersistence() {
+  const persistences = [];
+
+  // Check if IndexedDB is accessible without throwing SecurityError (often restricted in sandboxed/WebKit iframes)
+  let canUseIndexedDB = false;
+  try {
+    if (typeof window !== 'undefined' && 'indexedDB' in window && window.indexedDB) {
+      // Merely touching or opening in Safari sandboxed iframe throws SecurityError: The operation is insecure
+      const testReq = window.indexedDB.open('__veggie_idb_test__');
+      testReq.onerror = () => {};
+      testReq.onsuccess = () => {
+        try {
+          testReq.result.close();
+          window.indexedDB.deleteDatabase('__veggie_idb_test__');
+        } catch {}
+      };
+      canUseIndexedDB = true;
+    }
+  } catch {
+    canUseIndexedDB = false;
+  }
+
+  if (canUseIndexedDB) {
+    persistences.push(indexedDBLocalPersistence);
+  }
+
+  // Check if localStorage is accessible without SecurityError
+  let canUseLocalStorage = false;
+  try {
+    if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage) {
+      window.localStorage.setItem('__veggie_auth_test__', '1');
+      window.localStorage.removeItem('__veggie_auth_test__');
+      canUseLocalStorage = true;
+    }
+  } catch {
+    canUseLocalStorage = false;
+  }
+
+  if (canUseLocalStorage) {
+    persistences.push(browserLocalPersistence);
+  }
+
+  // inMemoryPersistence is always safe and never throws SecurityError
+  persistences.push(inMemoryPersistence);
+
+  return persistences;
+}
+
+// Safely initialize Auth with fallback persistence to prevent "The operation is insecure"
+let authInstance: Auth;
+try {
+  authInstance = initializeAuth(app, {
+    persistence: getSafeAuthPersistence(),
+  });
+} catch {
+  try {
+    authInstance = getAuth(app);
+  } catch {
+    authInstance = {} as Auth;
+  }
+}
+
+export const auth: Auth = authInstance;
 
 // Initialize Firestore with configured databaseId
 export const db: Firestore = getFirestore(
@@ -100,18 +172,29 @@ export function ensureFirebaseAuth(): Promise<User | null> {
     };
 
     try {
+      if (!auth || typeof auth.onAuthStateChanged !== 'function') {
+        finish(null);
+        return;
+      }
+
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
-          unsubscribe();
+          try {
+            unsubscribe();
+          } catch {}
           finish(user);
         } else {
           try {
             const cred = await signInAnonymously(auth);
-            unsubscribe();
+            try {
+              unsubscribe();
+            } catch {}
             finish(cred.user);
           } catch (e) {
-            console.warn('[VeggieChef Auth] Anonymous auth error:', e);
-            unsubscribe();
+            console.warn('[VeggieChef Auth] Anonymous auth fallback:', e);
+            try {
+              unsubscribe();
+            } catch {}
             finish(null);
           }
         }
@@ -120,11 +203,11 @@ export function ensureFirebaseAuth(): Promise<User | null> {
       // Safeguard timeout in case of connectivity delay
       setTimeout(() => {
         if (!resolved) {
-          finish(auth.currentUser);
+          finish(auth.currentUser || null);
         }
       }, 4000);
     } catch (e) {
-      console.warn('[VeggieChef Auth] Auth setup error:', e);
+      console.warn('[VeggieChef Auth] Auth setup caught safely:', e);
       finish(null);
     }
   });
@@ -148,9 +231,4 @@ export async function testConnection(): Promise<boolean> {
     }
     return true;
   }
-}
-
-// Run test connection asynchronously on load
-if (typeof window !== 'undefined') {
-  ensureFirebaseAuth().catch((err) => console.warn('Auth init err:', err));
 }

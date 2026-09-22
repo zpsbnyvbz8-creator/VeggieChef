@@ -34,7 +34,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { Recipe, RecipeIngredient, RecipeStep } from '../types';
-import { formatIngredientAmount, generateRecipeIngredientsText, calculateMealSavings } from '../utils/helpers';
+import { formatIngredientAmount, generateRecipeIngredientsText, calculateMealSavings, safeCopyToClipboard } from '../utils/helpers';
 import { useRecipes } from '../context/RecipeContext';
 import { useShopping } from '../context/ShoppingContext';
 import { usePlanner } from '../context/PlannerContext';
@@ -221,9 +221,9 @@ export const RecipeDetailPage: React.FC = () => {
     setCompletedSteps((prev) => ({ ...prev, [stepNum]: !prev[stepNum] }));
   };
 
-  const handleCopyIngredients = () => {
+  const handleCopyIngredients = async () => {
     const text = generateRecipeIngredientsText(recipe, servings);
-    navigator.clipboard.writeText(text);
+    await safeCopyToClipboard(text);
     setIsOverflowMenuOpen(false);
     showToast(`Zutaten für ${servings} Portionen kopiert! 📋`);
   };

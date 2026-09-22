@@ -28,7 +28,8 @@ import {
   areIngredientsEquivalent,
   loadFromLocalStorage,
   saveToLocalStorage,
-  formatRecipeSource
+  formatRecipeSource,
+  safeCopyToClipboard
 } from '../utils/helpers';
 import { SyncConfig } from '../lib/syncService';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
@@ -114,12 +115,19 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const [touchCurrentOffset, setTouchCurrentOffset] = useState<number>(0);
   const touchStartRef = useRef<{ startX: number; startY: number; baseOffset: number; itemWidth?: number } | null>(null);
   const justClosedSwipeMenuRef = useRef<boolean>(false);
+  const didSwipeRef = useRef<boolean>(false);
+  const lastSwipedTimeRef = useRef<number>(0);
+  const lastTouchOffsetRef = useRef<number>(0);
 
   // Auto-close swiped menu when tapping anywhere on the screen
   useEffect(() => {
     if (!swipedItemId) return;
 
     const handleGlobalTap = (e: MouseEvent | TouchEvent) => {
+      // Wenn das Menü erst vor kurzem (< 400ms) aufgeswipt wurde, nicht durch auslaufende Events schließen
+      if (Date.now() - lastSwipedTimeRef.current < 400) {
+        return;
+      }
       const target = e.target as HTMLElement | null;
       // Falls auf einen Aktionsbutton im Menü geklickt wird, Aktion ausführen lassen
       if (target?.closest('[data-swipe-action="true"]')) {
@@ -386,9 +394,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
     setConfirmDeleteState(null);
   };
 
-  const handleCopyFormattedList = () => {
+  const handleCopyFormattedList = async () => {
     const text = generateShoppingListText(items);
-    navigator.clipboard.writeText(text);
+    await safeCopyToClipboard(text);
     setCopied(true);
     onCopyFeedback('Einkaufsliste in die Zwischenablage kopiert!');
     setTimeout(() => setCopied(false), 2000);
@@ -639,8 +647,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
     // Mülleimer wird dynamisch immer länger, bis er bei ~70% vollflächig wird
     const expandingTrashWidth = isSwipingPastMenu
-      ? Math.min(itemWidth - 24, 48 + extraPull * 1.25)
-      : 48;
+      ? Math.min(itemWidth - 24, 44 + extraPull * 1.25)
+      : 44;
 
     const recipeSourceText = formatRecipeSource(item.recipeSource);
     const hasSecondaryText = Boolean(recipeSourceText);
@@ -681,12 +689,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           <div className="absolute bottom-0 left-2 right-2 h-1 bg-[#4A7856] rounded-full z-30 pointer-events-none shadow-xs" />
         )}
 
-        {/* Background Action Tray: Für Mobile-Swipe (auf Desktop sm:hidden, da dort Hover verwendet wird) */}
+        {/* Background Action Tray: Für Mobile-Swipe (nicht durch sm:hidden verstecken) */}
         <div
-          className={`absolute inset-0 z-0 overflow-hidden flex items-center justify-end transition-[background-color,border-color] duration-150 ease-out sm:hidden ${
+          className={`absolute inset-0 z-0 overflow-hidden flex items-center justify-end transition-[background-color,border-color] duration-150 ease-out ${
             isFullSwipeDelete
               ? 'bg-[#C93B2B]'
-              : 'bg-[#FAF9F6] px-3'
+              : 'bg-[#FAF9F6] pr-2.5 pl-3'
           }`}
         >
           {isFullSwipeDelete ? (
@@ -696,8 +704,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               <span>Löschen</span>
             </div>
           ) : (
-            /* Standard-Tray mit 48x48px Stift und dynamisch länger werdendem 48px Mülleimer */
-            <div className="flex items-center justify-end gap-2 h-full py-1 overflow-hidden">
+            /* Standard-Tray mit 44x44px Stift und dynamisch länger werdendem 44px Mülleimer */
+            <div className="flex items-center justify-end gap-2 h-full">
               {/* Stift: Verblasst, wenn man über das Menü hinaus swipt */}
               <button
                 data-swipe-action="true"
@@ -713,14 +721,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   pointerEvents: pencilOpacity < 0.2 ? 'none' : 'auto',
                   transition: isThisItemTouching ? 'none' : 'opacity 0.2s, transform 0.2s',
                 }}
-                className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl bg-white text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0"
                 title="Menge anpassen"
                 aria-label="Menge anpassen"
               >
-                <Pencil className="w-5 h-5" />
+                <Pencil className="w-4.5 h-4.5" />
               </button>
 
-              {/* Mülleimer: Mindestens 48px, wird dynamisch länger, je weiter man nach links zieht */}
+              {/* Mülleimer: Mindestens 44px, wird dynamisch länger, je weiter man nach links zieht */}
               <button
                 data-swipe-action="true"
                 type="button"
@@ -729,18 +737,18 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   handleDeleteBySwipe(item);
                 }}
                 style={{
-                  width: isSwipingPastMenu ? `${expandingTrashWidth}px` : '48px',
+                  width: isSwipingPastMenu ? `${expandingTrashWidth}px` : '44px',
                   transition: isThisItemTouching ? 'none' : 'width 0.28s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s',
                 }}
-                className={`h-12 min-h-[48px] rounded-xl flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0 transition-colors ${
+                className={`h-11 min-h-[44px] rounded-xl flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0 transition-colors ${
                   isSwipingPastMenu
                     ? 'bg-rose-100 text-rose-700 border border-rose-300 px-3'
-                    : 'w-12 min-w-[48px] bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
+                    : 'w-11 min-w-[44px] bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
                 }`}
                 title="Artikel löschen"
                 aria-label="Artikel löschen"
               >
-                <Trash2 className="w-5 h-5 shrink-0 stroke-[2.2]" />
+                <Trash2 className="w-4.5 h-4.5 shrink-0 stroke-[2.2]" />
                 {isSwipingPastMenu && expandingTrashWidth > 72 && (
                   <span className="text-xs font-semibold whitespace-nowrap animate-in fade-in duration-100">
                     Löschen
@@ -768,6 +776,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               baseOffset: swipedItemId === item.id ? -MENU_SWIPE_OFFSET : 0,
               itemWidth: width,
             };
+            lastTouchOffsetRef.current = swipedItemId === item.id ? -MENU_SWIPE_OFFSET : 0;
+            didSwipeRef.current = false;
             setActiveTouchItemId(item.id);
           }}
           onTouchMove={(e) => {
@@ -777,8 +787,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             const diffY = touch.clientY - touchStartRef.current.startY;
 
             // Vertikales Scrollen durchlassen falls mehr vertikal als horizontal
-            if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffX) < 12) {
+            if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffX) < 10) {
               return;
+            }
+
+            if (Math.abs(diffX) > 8) {
+              didSwipeRef.current = true;
             }
 
             const width = touchStartRef.current.itemWidth || 360;
@@ -791,21 +805,24 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             } else {
               clamped = Math.max(-width, rawOffset);
             }
+            lastTouchOffsetRef.current = clamped;
             setTouchCurrentOffset(clamped);
           }}
           onTouchEnd={() => {
             if (!touchStartRef.current) return;
             const width = touchStartRef.current.itemWidth || 360;
             const deleteThreshold = width * 0.7; // Exakt ~70% der Breite
+            const offset = lastTouchOffsetRef.current;
             touchStartRef.current = null;
 
             if (isThisItemTouching) {
-              if (touchCurrentOffset <= -deleteThreshold) {
+              if (offset <= -deleteThreshold) {
                 // Erst wenn bis ca. 70% der Breite gezogen wurde: direkt löschen
                 handleDeleteBySwipe(item);
-              } else if (touchCurrentOffset < -40) {
-                // Sonst öffnet sich das Menü (-124px) mit angenehmer Lücke zum Stift
+              } else if (offset < -40) {
+                // Menü öffnet sich (-124px) mit angenehmer Lücke zum Stift
                 setSwipedItemId(item.id);
+                lastSwipedTimeRef.current = Date.now();
                 setActiveTouchItemId(null);
                 setTouchCurrentOffset(0);
               } else {
@@ -816,9 +833,79 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               }
             }
           }}
+          onTouchCancel={() => {
+            touchStartRef.current = null;
+            setActiveTouchItemId(null);
+            setTouchCurrentOffset(0);
+            didSwipeRef.current = false;
+          }}
+          onPointerDown={(e) => {
+            if (e.pointerType !== 'mouse' || isEditing) return;
+            if ((e.target as HTMLElement).closest('button, input')) return;
+            if (swipedItemId && swipedItemId !== item.id) {
+              setSwipedItemId(null);
+            }
+            const targetEl = e.currentTarget as HTMLElement;
+            const width = targetEl.offsetWidth || 360;
+            touchStartRef.current = {
+              startX: e.clientX,
+              startY: e.clientY,
+              baseOffset: swipedItemId === item.id ? -MENU_SWIPE_OFFSET : 0,
+              itemWidth: width,
+            };
+            lastTouchOffsetRef.current = swipedItemId === item.id ? -MENU_SWIPE_OFFSET : 0;
+            didSwipeRef.current = false;
+            setActiveTouchItemId(item.id);
+          }}
+          onPointerMove={(e) => {
+            if (e.pointerType !== 'mouse' || !touchStartRef.current || isEditing) return;
+            const diffX = e.clientX - touchStartRef.current.startX;
+            if (Math.abs(diffX) > 6) {
+              didSwipeRef.current = true;
+            }
+            const width = touchStartRef.current.itemWidth || 360;
+            const rawOffset = touchStartRef.current.baseOffset + diffX;
+            const clamped = rawOffset > 0 ? Math.min(15, rawOffset * 0.2) : Math.max(-width, rawOffset);
+            lastTouchOffsetRef.current = clamped;
+            setTouchCurrentOffset(clamped);
+          }}
+          onPointerUp={(e) => {
+            if (e.pointerType !== 'mouse' || !touchStartRef.current) return;
+            const width = touchStartRef.current.itemWidth || 360;
+            const deleteThreshold = width * 0.7;
+            const offset = lastTouchOffsetRef.current;
+            touchStartRef.current = null;
+
+            if (offset <= -deleteThreshold) {
+              handleDeleteBySwipe(item);
+            } else if (offset < -40) {
+              setSwipedItemId(item.id);
+              lastSwipedTimeRef.current = Date.now();
+              setActiveTouchItemId(null);
+              setTouchCurrentOffset(0);
+            } else {
+              setSwipedItemId(null);
+              setActiveTouchItemId(null);
+              setTouchCurrentOffset(0);
+            }
+          }}
+          onPointerCancel={(e) => {
+            if (e.pointerType !== 'mouse') return;
+            touchStartRef.current = null;
+            setActiveTouchItemId(null);
+            setTouchCurrentOffset(0);
+            didSwipeRef.current = false;
+          }}
           onClick={(e) => {
-            // Wenn ein Menü offen ist oder gerade geschlossen wurde: Klick abfangen und Item NICHT abhaken
-            if (isAnySwiped || isSwiped || justClosedSwipeMenuRef.current) {
+            // Wenn gerade erst geswipt wurde, den anschließenden Klick ignorieren (Menü bleibt offen!)
+            if (Date.now() - lastSwipedTimeRef.current < 450 || didSwipeRef.current) {
+              didSwipeRef.current = false;
+              e.preventDefault();
+              e.stopPropagation();
+              return;
+            }
+            // Wenn ein Menü bereits offen war und die Zeile angetippt wird: Menü schließen
+            if (swipedItemId !== null) {
               e.preventDefault();
               e.stopPropagation();
               setSwipedItemId(null);
@@ -833,7 +920,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             transition: isThisItemTouching ? 'none' : 'transform 0.32s cubic-bezier(0.16, 1, 0.3, 1)',
             willChange: isThisItemTouching ? 'transform' : 'auto',
           }}
-          className={`relative z-10 w-full flex justify-between py-2.5 sm:py-3 px-3.5 sm:px-4 gap-2.5 sm:gap-3 min-h-[52px] sm:min-h-[46px] transition-colors ${
+          className={`relative z-10 w-full flex justify-between py-2.5 sm:py-3 px-3.5 sm:px-4 gap-2.5 sm:gap-3 min-h-[52px] sm:min-h-[46px] touch-pan-y transition-colors ${
             hasSecondaryText ? 'items-start' : 'items-center'
           } ${
             isEditing
@@ -941,7 +1028,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   }}
                   autoFocus
                   placeholder="1 Stk"
-                  className="w-16 sm:w-18 px-1 py-0.5 text-center text-[15px] font-medium text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg focus:border-[#4A7856] focus:outline-hidden"
+                  className="w-16 sm:w-18 px-1 py-0.5 text-center text-sm sm:text-base font-semibold text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg focus:border-[#4A7856] focus:outline-hidden"
                 />
 
                 <button
@@ -972,16 +1059,16 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 </button>
               </div>
             ) : item.amount ? (
-              /* Mengenangabe ganz rechts: 15px font-medium, baseline/vertically aligned with primary title */
+              /* Mengenangabe ganz rechts: Exakt wie in der Rezept-Detailansicht (font-semibold tabular-nums text-[#4A7856]) */
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   startEditingItem(item);
                 }}
-                className={`text-[15px] font-medium select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline ${
+                className={`text-sm sm:text-base font-semibold tabular-nums select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline ${
                   item.completed
-                    ? 'text-stone-400 line-through'
+                    ? 'text-[#9BA19D] line-through opacity-60'
                     : 'text-[#4A7856] hover:text-[#3D6447]'
                 }`}
                 title="Menge anpassen (- / +)"

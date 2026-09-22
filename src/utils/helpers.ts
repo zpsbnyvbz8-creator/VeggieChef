@@ -774,6 +774,98 @@ export function mergeOrAddShoppingItems(
   return result;
 }
 
+// Safe Storage abstraction preventing SecurityError ("The operation is insecure") in iframes/private browsing
+class SafeStorage {
+  private memory = new Map<string, string>();
+
+  getItem(key: string): string | null {
+    try {
+      if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage) {
+        return window.localStorage.getItem(key);
+      }
+    } catch {
+      // Storage access blocked or insecure in sandboxed iframe / third-party context
+    }
+    return this.memory.get(key) ?? null;
+  }
+
+  setItem(key: string, value: string): void {
+    try {
+      if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage) {
+        window.localStorage.setItem(key, value);
+        return;
+      }
+    } catch {
+      // Insecure operation or quota exceeded
+    }
+    this.memory.set(key, value);
+  }
+
+  removeItem(key: string): void {
+    try {
+      if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage) {
+        window.localStorage.removeItem(key);
+        return;
+      }
+    } catch {
+      // Storage access blocked
+    }
+    this.memory.delete(key);
+  }
+}
+
+export const safeStorage = new SafeStorage();
+
+// Safe Clipboard Copy abstraction preventing DOMException "The operation is insecure" in iframes
+export async function safeCopyToClipboard(text: string): Promise<boolean> {
+  // Method 1: Modern navigator.clipboard API with safety guards
+  try {
+    if (
+      typeof window !== 'undefined' &&
+      typeof navigator !== 'undefined' &&
+      'clipboard' in navigator &&
+      navigator.clipboard &&
+      typeof navigator.clipboard.writeText === 'function'
+    ) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (err) {
+    console.warn('[VeggieChef] navigator.clipboard.writeText not permitted, using fallback:', err);
+  }
+
+  // Method 2: Document execCommand('copy') fallback (safe in sandboxed iframes)
+  try {
+    if (typeof document !== 'undefined') {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.top = '0';
+      textarea.style.left = '0';
+      textarea.style.width = '2em';
+      textarea.style.height = '2em';
+      textarea.style.padding = '0';
+      textarea.style.border = 'none';
+      textarea.style.outline = 'none';
+      textarea.style.boxShadow = 'none';
+      textarea.style.background = 'transparent';
+      textarea.style.opacity = '0';
+      textarea.setAttribute('readonly', '');
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      textarea.setSelectionRange(0, text.length);
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      if (successful) return true;
+    }
+  } catch (fallbackErr) {
+    console.warn('[VeggieChef] Fallback copy also failed:', fallbackErr);
+  }
+
+  return false;
+}
+
 // LocalStorage helpers
 const STORAGE_KEYS = {
   FAVORITES: 'veggie_favorites_v1',
@@ -786,7 +878,7 @@ const STORAGE_KEYS = {
 
 export function loadStoredFavorites(): string[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.FAVORITES);
+    const raw = safeStorage.getItem(STORAGE_KEYS.FAVORITES);
     return raw ? JSON.parse(raw) : ['rec-1', 'rec-3'];
   } catch {
     return ['rec-1', 'rec-3'];
@@ -795,13 +887,13 @@ export function loadStoredFavorites(): string[] {
 
 export function saveStoredFavorites(favs: string[]) {
   try {
-    localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(favs));
+    safeStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(favs));
   } catch {}
 }
 
 export function loadStoredCookedLogs(): CookedLog[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.COOKED_LOGS);
+    const raw = safeStorage.getItem(STORAGE_KEYS.COOKED_LOGS);
     if (raw) return JSON.parse(raw);
   } catch {}
 
@@ -850,13 +942,13 @@ export function loadStoredCookedLogs(): CookedLog[] {
 
 export function saveStoredCookedLogs(logs: CookedLog[]) {
   try {
-    localStorage.setItem(STORAGE_KEYS.COOKED_LOGS, JSON.stringify(logs));
+    safeStorage.setItem(STORAGE_KEYS.COOKED_LOGS, JSON.stringify(logs));
   } catch {}
 }
 
 export function loadStoredShoppingList(): ShoppingItem[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.SHOPPING_LIST);
+    const raw = safeStorage.getItem(STORAGE_KEYS.SHOPPING_LIST);
     if (raw) return JSON.parse(raw);
   } catch {}
 
@@ -871,13 +963,13 @@ export function loadStoredShoppingList(): ShoppingItem[] {
 
 export function saveStoredShoppingList(items: ShoppingItem[]) {
   try {
-    localStorage.setItem(STORAGE_KEYS.SHOPPING_LIST, JSON.stringify(items));
+    safeStorage.setItem(STORAGE_KEYS.SHOPPING_LIST, JSON.stringify(items));
   } catch {}
 }
 
 export function loadStoredCustomRecipes(): Recipe[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.CUSTOM_RECIPES);
+    const raw = safeStorage.getItem(STORAGE_KEYS.CUSTOM_RECIPES);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -886,7 +978,7 @@ export function loadStoredCustomRecipes(): Recipe[] {
 
 export function saveStoredCustomRecipes(recipes: Recipe[]) {
   try {
-    localStorage.setItem(STORAGE_KEYS.CUSTOM_RECIPES, JSON.stringify(recipes));
+    safeStorage.setItem(STORAGE_KEYS.CUSTOM_RECIPES, JSON.stringify(recipes));
   } catch {}
 }
 
@@ -974,19 +1066,19 @@ export function createEmptyWeekDays(startDate?: Date): DayPlan[] {
 
 export function loadFromLocalStorage<T>(key: string, defaultValue: T): T {
   try {
-    const item = localStorage.getItem(key);
+    const item = safeStorage.getItem(key);
     return item ? JSON.parse(item) : defaultValue;
   } catch (e) {
-    console.warn(`Error loading ${key} from localStorage`, e);
+    console.warn(`Error loading ${key} from storage`, e);
     return defaultValue;
   }
 }
 
 export function saveToLocalStorage<T>(key: string, value: T): void {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    safeStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
-    console.warn(`Error saving ${key} to localStorage`, e);
+    console.warn(`Error saving ${key} to storage`, e);
   }
 }
 

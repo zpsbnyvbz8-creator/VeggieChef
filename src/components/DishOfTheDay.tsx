@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Clock, Flame, Dumbbell, Copy, ArrowRight, Check, Heart, ShoppingCart, ThumbsDown, CalendarPlus } from 'lucide-react';
 import { Recipe } from '../types';
-import { generateRecipeIngredientsText } from '../utils/helpers';
+import { generateRecipeIngredientsText, safeCopyToClipboard } from '../utils/helpers';
 import { useRecipes } from '../context/RecipeContext';
 import { useShopping } from '../context/ShoppingContext';
 import { usePlanner } from '../context/PlannerContext';
@@ -46,10 +46,10 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
 
   if (!activeRecipe) return null;
 
-  const handleCopyIngredients = (e: React.MouseEvent) => {
+  const handleCopyIngredients = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const text = generateRecipeIngredientsText(activeRecipe, activeRecipe.servings);
-    navigator.clipboard.writeText(text);
+    await safeCopyToClipboard(text);
     setCopied(true);
     onCopyFeedback('Zutatenliste für Tagesrezept in Zwischenablage kopiert!');
     setTimeout(() => setCopied(false), 2000);

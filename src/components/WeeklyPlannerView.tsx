@@ -40,6 +40,7 @@ import { useShopping } from '../context/ShoppingContext';
 import { useSync } from '../context/SyncContext';
 import { useToast } from '../context/ToastContext';
 import { HybridPortionStepper } from './HybridPortionStepper';
+import { safeStorage } from '../utils/helpers';
 
 interface WeeklyPlannerViewProps {
   mealPlan?: DayPlan[];
@@ -91,10 +92,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const [pickerFilter, setPickerFilter] = useState<'all' | 'favorites' | 'vegan' | 'quick' | 'protein'>('all');
   const [pickerSortFavoritesFirst, setPickerSortFavoritesFirst] = useState(true);
 
-  // Toggle showing lunch slot - persisted in localStorage
+  // Toggle showing lunch slot - persisted in safeStorage
   const [showLunchSlot, setShowLunchSlot] = useState<boolean>(() => {
     try {
-      const saved = localStorage.getItem('veggiechef_show_lunch_slot');
+      const saved = safeStorage.getItem('veggiechef_show_lunch_slot');
       return saved !== null ? JSON.parse(saved) : true;
     } catch {
       return true;
@@ -105,7 +106,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     setShowLunchSlot((prev) => {
       const next = !prev;
       try {
-        localStorage.setItem('veggiechef_show_lunch_slot', JSON.stringify(next));
+        safeStorage.setItem('veggiechef_show_lunch_slot', JSON.stringify(next));
       } catch {}
       return next;
     });

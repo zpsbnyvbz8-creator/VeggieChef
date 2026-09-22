@@ -14,6 +14,7 @@ import {
   Share2
 } from 'lucide-react';
 import { SyncConfig, sanitizeGroupId, generateSecureFamilyCode } from '../lib/syncService';
+import { safeCopyToClipboard } from '../utils/helpers';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 import { useSync } from '../context/SyncContext';
 import { useShopping } from '../context/ShoppingContext';
@@ -84,17 +85,17 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
     }
   };
 
-  const handleCopyCode = () => {
+  const handleCopyCode = async () => {
     if (!syncConfig.groupId) return;
-    navigator.clipboard.writeText(syncConfig.groupId);
+    await safeCopyToClipboard(syncConfig.groupId);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const handleCopyInviteText = () => {
+  const handleCopyInviteText = async () => {
     const code = syncConfig.groupId || sanitizeGroupId(groupIdInput);
     const text = `Hey! 👋 Hier ist unser Familien-Code für VeggieChef: ${code}\n\nEinfach in der VeggieChef-App oben auf „Familien-Sync“ tippen, den Code eingeben und schon haben wir unsere Einkaufsliste & den Wochenplan in Echtzeit geteilt!`;
-    navigator.clipboard.writeText(text);
+    await safeCopyToClipboard(text);
     setCopiedInvite(true);
     setTimeout(() => setCopiedInvite(false), 2500);
   };
