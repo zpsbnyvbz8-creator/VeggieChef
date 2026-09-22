@@ -133,12 +133,12 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
             <h3 id="edit-recipe-title" className="text-xl font-bold text-[#2D3E40]">
               Rezept bearbeiten
             </h3>
-            <p className="text-xs text-[#7A7E7B]">Passe Zutaten, Zubereitung oder Metadaten an</p>
+            <p className="text-xs text-[#686E6A]">Passe Zutaten, Zubereitung oder Metadaten an</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-10 h-10 rounded-full hover:bg-[#FAF9F6] text-[#7A7E7B] hover:text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-10 h-10 rounded-full hover:bg-[#FAF9F6] text-[#686E6A] hover:text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Schließen"
           >
             <X className="w-5 h-5" />
@@ -175,7 +175,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-[#7A7E7B] mb-1">Kategorie</label>
+                <label className="block text-[11px] font-bold text-[#686E6A] mb-1">Kategorie</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as RecipeCategory)}
@@ -190,7 +190,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#7A7E7B] mb-1">Schwierigkeit</label>
+                <label className="block text-[11px] font-bold text-[#686E6A] mb-1">Schwierigkeit</label>
                 <select
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value as any)}
@@ -203,7 +203,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#7A7E7B] mb-1">Portionen</label>
+                <label className="block text-[11px] font-bold text-[#686E6A] mb-1">Portionen</label>
                 <input
                   type="number"
                   min="1"
@@ -215,7 +215,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#7A7E7B] mb-1">Kochzeit (Min.)</label>
+                <label className="block text-[11px] font-bold text-[#686E6A] mb-1">Kochzeit (Min.)</label>
                 <input
                   type="number"
                   min="5"
@@ -310,7 +310,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
             <div className="space-y-2">
               {steps.map((step, idx) => (
                 <div key={idx} className="flex items-start gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#FAF9F6] border border-[#ECEBE8] flex items-center justify-center text-xs font-bold text-[#7A7E7B] shrink-0 mt-1.5">
+                  <span className="w-6 h-6 rounded-full bg-[#FAF9F6] border border-[#ECEBE8] flex items-center justify-center text-xs font-bold text-[#686E6A] shrink-0 mt-1.5">
                     {idx + 1}
                   </span>
                   <textarea
@@ -353,7 +353,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-[#ECEBE8] text-xs font-semibold text-[#7A7E7B] hover:bg-[#FAF9F6] cursor-pointer"
+            className="px-4 py-2.5 rounded-xl border border-[#ECEBE8] text-xs font-semibold text-[#686E6A] hover:bg-[#FAF9F6] cursor-pointer"
           >
             Abbrechen
           </button>

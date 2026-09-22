@@ -131,7 +131,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
               <h2 className="text-xl font-bold text-[#2D3E40]">
                 {isFamilyActive ? 'Familien-Synchronisation' : 'Synchronisation & Geräte'}
               </h2>
-              <p className="text-xs text-[#7A7E7B]">
+              <p className="text-xs text-[#686E6A]">
                 {isFamilyActive 
                   ? `Verbunden mit „${syncConfig.groupName || syncConfig.groupId}“`
                   : 'Getrennt für Freunde oder gemeinsam mit der Familie'}
@@ -141,7 +141,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
           <button
             id="close-sync-modal-btn"
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-white text-[#7A7E7B] hover:text-[#2D3E40] transition-colors"
+            className="p-2 rounded-full hover:bg-white text-[#686E6A] hover:text-[#2D3E40] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -171,7 +171,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
                   </>
                 )}
               </div>
-              <p className="text-[#7A7E7B] leading-relaxed">
+              <p className="text-[#686E6A] leading-relaxed">
                 {isFamilyActive 
                   ? 'Alle iPhones mit diesem Code teilen sich die Einkaufsliste, den Wochenplan und eigene Rezepte live in Echtzeit.'
                   : 'Deine Daten bleiben ausschließlich auf diesem iPhone. Freunde und Gäste können die App so völlig unabhängig von dir nutzen.'}
@@ -183,7 +183,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
             /* ACTIVE FAMILY VIEW */
             <div className="space-y-4">
               <div className="bg-[#FAF9F6] p-4 rounded-xl border border-[#ECEBE8] space-y-3">
-                <div className="text-xs font-semibold text-[#7A7E7B] uppercase tracking-wider">
+                <div className="text-xs font-semibold text-[#686E6A] uppercase tracking-wider">
                   Familien-Code zum Einladen
                 </div>
                 <div className="flex items-center gap-2">
@@ -195,7 +195,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
                     onClick={handleCopyCode}
                     className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] text-xs font-semibold shadow-2xs transition-all"
                   >
-                    {copiedCode ? <Check className="w-4 h-4 text-[#4A7856]" /> : <Copy className="w-4 h-4 text-[#7A7E7B]" />}
+                    {copiedCode ? <Check className="w-4 h-4 text-[#4A7856]" /> : <Copy className="w-4 h-4 text-[#686E6A]" />}
                     <span>{copiedCode ? 'Kopiert' : 'Code'}</span>
                   </button>
                   <button
@@ -208,7 +208,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
                     <span>{copiedInvite ? 'Kopiert!' : 'Teilen'}</span>
                   </button>
                 </div>
-                <p className="text-[11px] text-[#7A7E7B]">
+                <p className="text-[11px] text-[#686E6A]">
                   Teile diesen Code mit deiner Familie per WhatsApp oder Nachricht. Jeder, der diesen Code eingibt, sieht dieselbe Einkaufsliste & Wochenplan.
                 </p>
               </div>
@@ -261,7 +261,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
                     className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-white border border-[#ECEBE8] text-sm text-[#2D3E40] font-mono focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] outline-hidden shadow-2xs"
                     required
                   />
-                  <p className="text-[11px] text-[#7A7E7B] mt-1">
+                  <p className="text-[11px] text-[#686E6A] mt-1">
                     Zufälliger, nicht erratbarer Sicherheitscode. Gib diesen Code auf deinen anderen iPhones oder iPads ein.
                   </p>
                 </div>
@@ -305,7 +305,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
                   />
                   <div className="text-xs">
                     <span className="font-semibold text-[#2D3E40]">Aktuelle Einkäufe & Wochenplan übernehmen</span>
-                    <p className="text-[11px] text-[#7A7E7B]">Lädt deine vorhandenen Rezepte und Einkaufsliste direkt für die Familie hoch.</p>
+                    <p className="text-[11px] text-[#686E6A]">Lädt deine vorhandenen Rezepte und Einkaufsliste direkt für die Familie hoch.</p>
                   </div>
                 </label>
               </div>
@@ -330,7 +330,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
               <ShieldCheck className="w-4 h-4 text-[#4A7856]" />
               <span>Wie Freunde & Familie die App nutzen</span>
             </h3>
-            <ul className="text-xs text-[#7A7E7B] space-y-1.5 pl-1">
+            <ul className="text-xs text-[#686E6A] space-y-1.5 pl-1">
               <li className="flex items-start gap-2">
                 <span className="font-bold text-[#4A7856]">•</span>
                 <span><strong>Freunde:</strong> Lassen den Modus einfach auf <em>„Lokal“</em>. Sie können die App frei nutzen, ohne eure Familiendaten zu sehen oder zu verändern.</span>

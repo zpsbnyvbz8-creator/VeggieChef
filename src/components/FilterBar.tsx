@@ -104,7 +104,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               className={`h-10 min-h-[40px] px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center border ${
                 isSelected
                   ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs font-semibold'
-                  : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#2D3E40]'
+                  : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#686E6A] hover:bg-[#F1F5F2] hover:text-[#2D3E40]'
               }`}
             >
               {label}
@@ -145,7 +145,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
                 </option>
               ))}
             </select>
-            <ChefHat className="w-4 h-4 text-[#7A7E7B] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChefHat className="w-4 h-4 text-[#686E6A] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* Filter nach Kalorien */}
@@ -187,7 +187,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
             <button
               id="reset-filters-btn"
               onClick={resetFilters}
-              className="min-h-[40px] flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-[#F1F5F2] transition-colors cursor-pointer touch-manipulation active:scale-95"
+              className="min-h-[40px] flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-[#686E6A] hover:text-[#2D3E40] hover:bg-[#F1F5F2] transition-colors cursor-pointer touch-manipulation active:scale-95"
               title="Filter zurücksetzen"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -198,7 +198,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
 
         {/* Sort Controls & Count */}
         <div className="flex items-center gap-2.5">
-          <span className="text-xs text-[#7A7E7B] hidden md:inline">
+          <span className="text-xs text-[#686E6A] hidden md:inline">
             <strong>{filteredCount}</strong> von {totalCount} Rezepten
           </span>
 
@@ -215,7 +215,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
                 </option>
               ))}
             </select>
-            <ArrowUpDown className="w-4 h-4 text-[#7A7E7B] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ArrowUpDown className="w-4 h-4 text-[#686E6A] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
       </div>

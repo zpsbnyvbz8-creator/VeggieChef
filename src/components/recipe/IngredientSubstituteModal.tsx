@@ -206,7 +206,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
                   </span>
                 )}
               </div>
-              <p className="text-xs text-[#7A7E7B]">
+              <p className="text-xs text-[#686E6A]">
                 Alternative für: <strong className="text-[#2D3E40]">{ingredient.name}</strong>
               </p>
             </div>
@@ -214,7 +214,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
           <button
             type="button"
             onClick={onClose}
-            className="w-10 h-10 rounded-full hover:bg-[#FAF9F6] text-[#7A7E7B] hover:text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-10 h-10 rounded-full hover:bg-[#FAF9F6] text-[#686E6A] hover:text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Schließen"
           >
             <X className="w-5 h-5" />
@@ -259,7 +259,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
               <p className="text-sm font-bold text-[#2D3E40]">
                 KI-Küchenchef ermittelt Alternativen...
               </p>
-              <p className="text-xs text-[#7A7E7B] mt-0.5">
+              <p className="text-xs text-[#686E6A] mt-0.5">
                 Passend abgestimmt auf Textur, Geschmack und Nährwerte in &bdquo;{recipeTitle}&ldquo;
               </p>
             </div>
@@ -286,7 +286,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
         {/* List of recommended substitutes */}
         {!isLoading && aiSubstitutes.length > 0 && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between text-xs text-[#7A7E7B]">
+            <div className="flex items-center justify-between text-xs text-[#686E6A]">
               <span className="font-semibold text-[#2D3E40]">
                 {isAiPowered ? 'Empfohlene KI-Tauschoptionen:' : 'Kulinarische Alternativen:'}
               </span>
@@ -317,7 +317,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-[#7A7E7B] leading-relaxed">
+                      <div className="text-xs text-[#686E6A] leading-relaxed">
                         {opt.reason}
                       </div>
                       <div className="text-[11px] text-[#4A7856] font-semibold flex items-center gap-1">

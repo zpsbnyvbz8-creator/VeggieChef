@@ -64,12 +64,12 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
             </div>
             <div>
               <h3 className="text-base font-bold text-[#2D3E40]">In Wochenplan einplanen</h3>
-              <p className="text-xs text-[#7A7E7B]">Wähle Tag und Mahlzeit</p>
+              <p className="text-xs text-[#686E6A]">Wähle Tag und Mahlzeit</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl hover:bg-[#FAF9F6] text-[#7A7E7B] hover:text-[#2D3E40] transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl hover:bg-[#FAF9F6] text-[#686E6A] hover:text-[#2D3E40] transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -93,7 +93,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
                 {recipe.isVegan ? '🌱 100% Vegan' : '🧀 Vegetarisch'}
               </span>
               <h4 className="text-sm font-semibold text-[#2D3E40] truncate">{recipe.title}</h4>
-              <div className="flex items-center gap-2.5 text-[11px] text-[#7A7E7B] mt-0.5">
+              <div className="flex items-center gap-2.5 text-[11px] text-[#686E6A] mt-0.5">
                 <span className="flex items-center gap-0.5">
                   <Clock className="w-3 h-3" />
                   {recipe.totalTimeMinutes} Min.
@@ -169,7 +169,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
                 );
               })}
             </div>
-            <div className="text-[11px] text-[#7A7E7B] flex items-center justify-between pt-0.5">
+            <div className="text-[11px] text-[#686E6A] flex items-center justify-between pt-0.5">
               <span>Ausgewählt: <strong className="text-[#2D3E40]">{targetDays.find((d) => d.dayId === selectedDayId)?.dayName}</strong></span>
             </div>
           </div>
@@ -184,7 +184,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
                 className={`min-h-[50px] p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer touch-manipulation active:scale-95 ${
                   selectedMealType === 'lunch'
                     ? 'bg-[#F1F5F2] border-[#4A7856] text-[#2D3E40] ring-1 ring-[#4A7856]'
-                    : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/40 text-[#7A7E7B]'
+                    : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/40 text-[#686E6A]'
                 }`}
               >
                 <div className={`p-1.5 rounded-lg shrink-0 ${
@@ -194,7 +194,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
                 </div>
                 <div className="min-w-0">
                   <span className="text-xs font-bold block text-[#2D3E40]">Mittagessen</span>
-                  <span className="text-[10px] text-[#7A7E7B] truncate block">
+                  <span className="text-[10px] text-[#686E6A] truncate block">
                     {currentDay?.lunch ? `Belegt: ${currentDay.lunch.recipeTitle}` : 'Noch frei'}
                   </span>
                 </div>
@@ -206,17 +206,17 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
                 className={`min-h-[50px] p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer touch-manipulation active:scale-95 ${
                   selectedMealType === 'dinner'
                     ? 'bg-[#F1F5F2] border-[#4A7856] text-[#2D3E40] ring-1 ring-[#4A7856]'
-                    : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/40 text-[#7A7E7B]'
+                    : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/40 text-[#686E6A]'
                 }`}
               >
                 <div className={`p-1.5 rounded-lg shrink-0 ${
-                  selectedMealType === 'dinner' ? 'bg-[#4A7856] text-white' : 'bg-[#FAF9F6] text-[#7A7E7B]'
+                  selectedMealType === 'dinner' ? 'bg-[#4A7856] text-white' : 'bg-[#FAF9F6] text-[#686E6A]'
                 }`}>
                   <Moon className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
                   <span className="text-xs font-bold block text-[#2D3E40]">Abendessen</span>
-                  <span className="text-[10px] text-[#7A7E7B] truncate block">
+                  <span className="text-[10px] text-[#686E6A] truncate block">
                     {currentDay?.dinner ? `Belegt: ${currentDay.dinner.recipeTitle}` : 'Noch frei'}
                   </span>
                 </div>
@@ -236,7 +236,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-[#ECEBE8] text-[#7A7E7B] hover:text-[#2D3E40] text-xs font-semibold hover:bg-[#FAF9F6] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+              className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-[#ECEBE8] text-[#686E6A] hover:text-[#2D3E40] text-xs font-semibold hover:bg-[#FAF9F6] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
             >
               Abbrechen
             </button>

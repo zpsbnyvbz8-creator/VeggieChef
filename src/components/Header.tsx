@@ -93,26 +93,26 @@ export const Header: React.FC<HeaderProps> = (props) => {
                   Veggie & Vegan
                 </span>
               </div>
-              <p className="text-xs text-[#7A7E7B] hidden md:block">Smarte vegetarische Küche & Essensplanung</p>
+              <p className="text-xs text-[#686E6A] hidden md:block">Smarte vegetarische Küche & Essensplanung</p>
             </div>
           </div>
 
           {/* Quick Search bar */}
           <div className="flex items-center relative flex-1 min-w-0 max-w-[150px] xs:max-w-[200px] sm:max-w-xs md:max-w-sm mx-1 sm:mx-4 md:mx-6">
-            <Search className="w-4 h-4 text-[#7A7E7B] absolute left-2.5 sm:left-3 pointer-events-none" />
+            <Search className="w-4 h-4 text-[#686E6A] absolute left-2.5 sm:left-3 pointer-events-none" />
             <input
               id="header-search-input"
               type="text"
               placeholder="Suchen..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-8 sm:pl-9 pr-7 text-sm bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-full text-[#2D3E40] placeholder-[#7A7E7B] focus:outline-hidden focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] shadow-2xs transition-all truncate"
+              className="w-full h-10 pl-8 sm:pl-9 pr-7 text-sm bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-full text-[#2D3E40] placeholder-[#686E6A] focus:outline-hidden focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] shadow-2xs transition-all truncate"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 text-xs text-[#7A7E7B] hover:text-[#2D3E40] p-1 cursor-pointer"
+                className="absolute right-2.5 text-xs text-[#686E6A] hover:text-[#2D3E40] p-1 cursor-pointer"
                 title="Suche zurücksetzen"
               >
                 ✕
@@ -131,7 +131,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
                 className={`flex items-center gap-1 sm:gap-1.5 min-h-[44px] px-3 rounded-xl text-xs font-semibold transition-all border cursor-pointer touch-manipulation active:scale-95 ${
                   syncConfig?.mode === 'family' && syncConfig?.groupId
                     ? 'bg-[#F1F5F2] text-[#4A7856] border-[#4A7856]/40 shadow-2xs hover:bg-[#e4ede6]'
-                    : 'bg-white text-[#7A7E7B] border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-[#2D3E40]'
+                    : 'bg-white text-[#686E6A] border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-[#2D3E40]'
                 }`}
                 title={
                   syncConfig?.mode === 'family' && syncConfig?.groupId
@@ -149,7 +149,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
                   </>
                 ) : (
                   <>
-                    <Cloud className="w-5 h-5 text-[#7A7E7B]" />
+                    <Cloud className="w-5 h-5 text-[#686E6A]" />
                     <span className="hidden sm:inline font-normal">Sync</span>
                   </>
                 )}
@@ -161,7 +161,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
               id="nav-tab-favorites"
               type="button"
               onClick={() => handleNavigate('/favorites')}
-              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#D35400] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
+              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-[#686E6A] hover:bg-[#F1F5F2] hover:text-[#D35400] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
                 activeTab === 'favorites' ? 'bg-[#FDF6F0] text-[#D35400] border-[#F5EADF]' : 'bg-white sm:bg-transparent border-[#ECEBE8] sm:border-transparent'
               }`}
               title="Gespeicherte Favoriten"
@@ -179,7 +179,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
               id="nav-tab-shopping-badge"
               type="button"
               onClick={() => handleNavigate('/shopping')}
-              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-[#7A7E7B] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
+              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-[#686E6A] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
                 activeTab === 'shopping' ? 'bg-[#F1F5F2] text-[#4A7856] border-[#4A7856]/30' : 'bg-white sm:bg-transparent border-[#ECEBE8] sm:border-transparent'
               }`}
               title="Liste"
@@ -203,7 +203,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'recipes'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
-                : 'text-[#7A7E7B] hover:bg-gray-50 hover:text-[#2D3E40]'
+                : 'text-[#686E6A] hover:bg-gray-50 hover:text-[#2D3E40]'
             }`}
           >
             <Utensils className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
@@ -217,7 +217,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'fridge'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
-                : 'text-[#7A7E7B] hover:bg-gray-50 hover:text-[#2D3E40]'
+                : 'text-[#686E6A] hover:bg-gray-50 hover:text-[#2D3E40]'
             }`}
           >
             <Sparkles className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
@@ -231,7 +231,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'planner'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
-                : 'text-[#7A7E7B] hover:bg-gray-50 hover:text-[#2D3E40]'
+                : 'text-[#686E6A] hover:bg-gray-50 hover:text-[#2D3E40]'
             }`}
           >
             <Calendar className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
@@ -245,7 +245,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3 py-2 sm:px-3 sm:py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'stats'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
-                : 'text-[#7A7E7B] hover:bg-gray-50 hover:text-[#2D3E40]'
+                : 'text-[#686E6A] hover:bg-gray-50 hover:text-[#2D3E40]'
             }`}
           >
             <BarChart3 className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />

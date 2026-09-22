@@ -42,13 +42,13 @@ export const EcoImpactModal: React.FC<EcoImpactModalProps> = ({
               <h3 id="eco-modal-title" className="text-lg font-bold text-[#2D3E40]">
                 Umwelt-Impact & Eco-Score
               </h3>
-              <p className="text-xs text-[#7A7E7B]">Vergleich zu konventionellen Rezepten</p>
+              <p className="text-xs text-[#686E6A]">Vergleich zu konventionellen Rezepten</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-10 h-10 rounded-full hover:bg-[#FAF9F6] text-[#7A7E7B] hover:text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-10 h-10 rounded-full hover:bg-[#FAF9F6] text-[#686E6A] hover:text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Schließen"
           >
             <X className="w-5 h-5" />
@@ -78,7 +78,7 @@ export const EcoImpactModal: React.FC<EcoImpactModalProps> = ({
               <Leaf className="w-5 h-5" />
             </div>
             <div className="flex-1">
-              <div className="text-xs font-semibold text-[#7A7E7B]">CO₂-Ersparnis</div>
+              <div className="text-xs font-semibold text-[#686E6A]">CO₂-Ersparnis</div>
               <div className="text-sm font-bold text-[#2D3E40]">{savedCO2Kg} kg CO₂ eingespart</div>
             </div>
           </div>
@@ -88,7 +88,7 @@ export const EcoImpactModal: React.FC<EcoImpactModalProps> = ({
               <Droplets className="w-5 h-5" />
             </div>
             <div className="flex-1">
-              <div className="text-xs font-semibold text-[#7A7E7B]">Wasser-Schonung</div>
+              <div className="text-xs font-semibold text-[#686E6A]">Wasser-Schonung</div>
               <div className="text-sm font-bold text-[#2D3E40]">ca. {savedWaterLiters.toLocaleString('de-DE')} Liter Wasser</div>
             </div>
           </div>
@@ -98,7 +98,7 @@ export const EcoImpactModal: React.FC<EcoImpactModalProps> = ({
               <Car className="w-5 h-5" />
             </div>
             <div className="flex-1">
-              <div className="text-xs font-semibold text-[#7A7E7B]">Fahrt-Äquivalent</div>
+              <div className="text-xs font-semibold text-[#686E6A]">Fahrt-Äquivalent</div>
               <div className="text-sm font-bold text-[#2D3E40]">entspricht ca. {carKmEquivalent} km PKW-Fahrt</div>
             </div>
           </div>

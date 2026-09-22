@@ -153,7 +153,7 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
       {/* Content Body */}
       <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between gap-3">
         <div>
-          <div className="flex items-center justify-between text-xs text-stone-500 mb-2">
+          <div className="flex items-center justify-between text-xs text-stone-600 mb-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
               {recipe.category}
             </span>
@@ -163,7 +163,7 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
             {recipe.title}
           </h3>
 
-          <p className="text-sm font-medium text-stone-500 line-clamp-2 mt-1 leading-relaxed">
+          <p className="text-sm font-medium text-stone-600 line-clamp-2 mt-1 leading-relaxed">
             {recipe.subtitle}
           </p>
         </div>
@@ -210,7 +210,7 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
             }`}
             title="Kopieren"
           >
-            {copied ? <Check className="w-4 h-4 text-[#4A7856]" /> : <Copy className="w-4 h-4 text-stone-500" />}
+            {copied ? <Check className="w-4 h-4 text-[#4A7856]" /> : <Copy className="w-4 h-4 text-stone-600" />}
             <span className="truncate">{copied ? 'Kopiert' : 'Kopieren'}</span>
           </button>
 

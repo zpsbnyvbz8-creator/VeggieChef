@@ -237,7 +237,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
         <h1 className="text-2xl font-bold tracking-tight text-stone-900">
           Übersicht & Verlauf
         </h1>
-        <p className="text-sm font-medium text-stone-500">
+        <p className="text-sm font-medium text-stone-600">
           {totalCooked === 0
             ? 'Noch keine Gerichte gekocht. Markiere Rezepte als gekocht, um deine Erfolge zu tracken.'
             : `${totalCooked} Mahlzeiten zubereitet • ${totalPortions} Portionen • ${totalCO2Saved} kg CO₂ eingespart`}
@@ -266,7 +266,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
               </div>
             </div>
 
-            <p className="text-sm text-[#7A7E7B] leading-relaxed">
+            <p className="text-sm text-[#686E6A] leading-relaxed">
               Bist du sicher, dass du deinen gesamten Kochverlauf und alle <strong className="text-[#2D3E40]">{logs.length} erfassten Einträge</strong> löschen möchtest? Alle bisher berechneten CO₂- und Wasserersparnisse werden zurückgesetzt.
             </p>
 
@@ -298,52 +298,52 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Total Meals */}
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-1 sm:space-y-1.5">
-          <div className="flex items-center justify-between text-[#7A7E7B] text-xs font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-[#686E6A] text-xs font-semibold uppercase tracking-wider">
             <span>Gekocht</span>
             <div className="p-1.5 sm:p-2 rounded-lg bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8]">
               <Utensils className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
           <div className="text-3xl font-bold text-[#2D3E40]">{totalCooked}</div>
-          <div className="text-xs text-[#7A7E7B] truncate font-medium">{totalPortions} Portionen</div>
+          <div className="text-xs text-[#686E6A] truncate font-medium">{totalPortions} Portionen</div>
         </div>
 
         {/* CO2 Saved */}
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-1 sm:space-y-1.5">
-          <div className="flex items-center justify-between text-[#7A7E7B] text-xs font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-[#686E6A] text-xs font-semibold uppercase tracking-wider">
             <span>CO₂ gespart</span>
             <div className="p-1.5 sm:p-2 rounded-lg bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8]">
               <Leaf className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
           <div className="text-3xl font-bold text-[#4A7856]">{totalCO2Saved} kg</div>
-          <div className="text-xs text-[#7A7E7B] truncate font-medium">vs. Mischkost</div>
+          <div className="text-xs text-[#686E6A] truncate font-medium">vs. Mischkost</div>
         </div>
 
         {/* Water Saved */}
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-1 sm:space-y-1.5">
-          <div className="flex items-center justify-between text-[#7A7E7B] text-xs font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-[#686E6A] text-xs font-semibold uppercase tracking-wider">
             <span>Wasser</span>
             <div className="p-1.5 sm:p-2 rounded-lg bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8]">
               <Droplets className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
           <div className="text-3xl font-bold text-[#2D3E40]">{totalWaterSaved.toLocaleString('de-DE')} L</div>
-          <div className="text-xs text-[#7A7E7B] truncate font-medium">virtuelles Wasser</div>
+          <div className="text-xs text-[#686E6A] truncate font-medium">virtuelles Wasser</div>
         </div>
 
         {/* Vegan Share */}
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-1 sm:space-y-1.5">
-          <div className="flex items-center justify-between text-[#7A7E7B] text-xs font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-[#686E6A] text-xs font-semibold uppercase tracking-wider">
             <span>Vegan</span>
             <div className="p-1.5 sm:p-2 rounded-lg bg-[#FDF6F0] text-[#D35400] border border-[#F5EADF]">
               <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
           <div className="text-3xl font-bold text-[#2D3E40]">
-            {veganCount} <span className="text-xs font-normal text-[#7A7E7B]">/ {totalCooked}</span>
+            {veganCount} <span className="text-xs font-normal text-[#686E6A]">/ {totalCooked}</span>
           </div>
-          <div className="text-xs text-[#7A7E7B] truncate font-medium">{favoritesCount} Favoriten</div>
+          <div className="text-xs text-[#686E6A] truncate font-medium">{favoritesCount} Favoriten</div>
         </div>
       </div>
 
@@ -355,7 +355,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation active:scale-95 ${
             activeMobileTab === 'history'
               ? 'bg-white text-[#2D3E40] shadow-xs border border-[#ECEBE8]'
-              : 'text-[#7A7E7B] hover:text-[#2D3E40]'
+              : 'text-[#686E6A] hover:text-[#2D3E40]'
           }`}
         >
           <Clock className="w-3.5 h-3.5" />
@@ -367,7 +367,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation active:scale-95 ${
             activeMobileTab === 'achievements'
               ? 'bg-white text-[#2D3E40] shadow-xs border border-[#ECEBE8]'
-              : 'text-[#7A7E7B] hover:text-[#2D3E40]'
+              : 'text-[#686E6A] hover:text-[#2D3E40]'
           }`}
         >
           <Trophy className="w-3.5 h-3.5 text-[#D35400]" />
@@ -387,11 +387,11 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                 <h3 className="font-semibold text-[#2D3E40] text-base">
                   Zuletzt gekocht
                 </h3>
-                <span className="px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#7A7E7B] border border-[#ECEBE8] text-xs font-semibold">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#686E6A] border border-[#ECEBE8] text-xs font-semibold">
                   {logs.length}
                 </span>
               </div>
-              <p className="text-xs text-[#7A7E7B] hidden sm:block">
+              <p className="text-xs text-[#686E6A] hidden sm:block">
                 Scrollbare Liste aller deiner zubereiteten Mahlzeiten
               </p>
             </div>
@@ -401,18 +401,18 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
           {logs.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto">
               <div className="relative flex-1 sm:w-52">
-                <Search className="w-4 h-4 text-[#7A7E7B] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-4 h-4 text-[#686E6A] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={historySearchQuery}
                   onChange={(e) => setHistorySearchQuery(e.target.value)}
                   placeholder="Gericht filtern..."
-                  className="w-full pl-10 pr-10 py-2.5 text-sm bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[#2D3E40] placeholder:text-[#7A7E7B] focus:outline-none focus:border-[#4A7856] focus:bg-white transition-all min-h-[44px] sm:min-h-0"
+                  className="w-full pl-10 pr-10 py-2.5 text-sm bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[#2D3E40] placeholder:text-[#686E6A] focus:outline-none focus:border-[#4A7856] focus:bg-white transition-all min-h-[44px] sm:min-h-0"
                 />
                 {historySearchQuery && (
                   <button
                     onClick={() => setHistorySearchQuery('')}
-                    className="w-9 h-9 absolute right-1.5 top-1/2 -translate-y-1/2 text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-[#ECEBE8] rounded-lg flex items-center justify-center cursor-pointer touch-manipulation active:scale-90"
+                    className="w-9 h-9 absolute right-1.5 top-1/2 -translate-y-1/2 text-[#686E6A] hover:text-[#2D3E40] hover:bg-[#ECEBE8] rounded-lg flex items-center justify-center cursor-pointer touch-manipulation active:scale-90"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -425,7 +425,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                   className={`px-4 py-2.5 sm:py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
                     historyFilter === 'all'
                       ? 'bg-[#2D3E40] text-white border-[#2D3E40] shadow-2xs'
-                      : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
+                      : 'bg-[#FAF9F6] text-[#686E6A] border-[#ECEBE8] hover:bg-white'
                   }`}
                 >
                   Alle
@@ -435,7 +435,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                   className={`px-4 py-2.5 sm:py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
                     historyFilter === 'vegan'
                       ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs'
-                      : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
+                      : 'bg-[#FAF9F6] text-[#686E6A] border-[#ECEBE8] hover:bg-white'
                   }`}
                 >
                   🌱 Vegan
@@ -446,12 +446,12 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
         </div>
 
         {logs.length === 0 ? (
-          <div className="text-center py-8 text-xs text-[#7A7E7B] space-y-1.5">
+          <div className="text-center py-8 text-xs text-[#686E6A] space-y-1.5">
             <p className="text-sm font-semibold text-[#2D3E40]">Noch keine Einträge vorhanden</p>
             <p>Öffne ein beliebiges Rezept und klicke auf "Ich habe das gekocht!", um es hier aufzulisten.</p>
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="text-center py-6 text-xs text-[#7A7E7B] space-y-3">
+          <div className="text-center py-6 text-xs text-[#686E6A] space-y-3">
             <p className="font-semibold text-[#2D3E40]">Keine Treffer für diese Filterung</p>
             <button
               onClick={() => {
@@ -637,7 +637,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                             🌱 Vegan
                           </span>
                         ) : (
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[#FAF9F6] text-[#7A7E7B] border border-[#ECEBE8] shrink-0">
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[#FAF9F6] text-[#686E6A] border border-[#ECEBE8] shrink-0">
                             🧀 Veggie
                           </span>
                         )}
@@ -645,13 +645,13 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
 
                       {/* Notes (if any) */}
                       {log.notes && (
-                        <p className="text-[11px] text-[#7A7E7B] italic truncate">
+                        <p className="text-[11px] text-[#686E6A] italic truncate">
                           "{log.notes}"
                         </p>
                       )}
 
                       {/* Clean Scannable Metrics Badges (Apple-Style Clean Pills) */}
-                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-[#7A7E7B]">
+                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-[#686E6A]">
                         <span className="bg-[#FAF9F6] px-2 py-0.5 rounded-md border border-[#ECEBE8]">
                           📅 {formattedDate}
                         </span>
@@ -704,7 +704,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                           <button
                             type="button"
                             onClick={() => setConfirmDeleteLogId(null)}
-                            className="px-2 py-1.5 rounded-lg bg-white hover:bg-[#ECEBE8] text-[#7A7E7B] hover:text-[#2D3E40] border border-[#ECEBE8] text-xs font-semibold transition-colors cursor-pointer active:scale-95 touch-manipulation"
+                            className="px-2 py-1.5 rounded-lg bg-white hover:bg-[#ECEBE8] text-[#686E6A] hover:text-[#2D3E40] border border-[#ECEBE8] text-xs font-semibold transition-colors cursor-pointer active:scale-95 touch-manipulation"
                           >
                             Abbrechen
                           </button>
@@ -745,7 +745,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                 </span>
               </h3>
             </div>
-            <p className="text-xs text-[#7A7E7B] mt-0.5">
+            <p className="text-xs text-[#686E6A] mt-0.5">
               Von schnellen Einstiegs-Erfolgen bis hin zu extremen Langzeit-Trophäen (über 1.000 Mahlzeiten & Tonnen CO₂)
             </p>
           </div>
@@ -764,7 +764,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
             className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
               achievementTierFilter === 'all'
                 ? 'bg-[#2D3E40] text-white border-[#2D3E40] shadow-2xs'
-                : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
+                : 'bg-[#FAF9F6] text-[#686E6A] border-[#ECEBE8] hover:bg-white'
             }`}
           >
             Alle ({achievements.length})
@@ -774,7 +774,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
             className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
               achievementTierFilter === 'unlocked'
                 ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs'
-                : 'bg-[#FAF9F6] text-[#7A7E7B] border-[#ECEBE8] hover:bg-white'
+                : 'bg-[#FAF9F6] text-[#686E6A] border-[#ECEBE8] hover:bg-white'
             }`}
           >
             ✓ Erreicht ({unlockedCount})
@@ -876,7 +876,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                       </span>
                     </div>
 
-                    <p className="text-xs text-[#7A7E7B] leading-tight break-words whitespace-normal">
+                    <p className="text-xs text-[#686E6A] leading-tight break-words whitespace-normal">
                       {ach.desc}
                     </p>
 
@@ -891,13 +891,13 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                                 : 'bg-[#4A7856]'
                               : ach.tier === 'insane'
                               ? 'bg-rose-400'
-                              : 'bg-[#7A7E7B]'
+                              : 'bg-[#686E6A]'
                           }`}
                           style={{ width: `${progressPercent}%` }}
                         />
                       </div>
 
-                      <div className="flex items-center justify-between text-xs text-[#7A7E7B]">
+                      <div className="flex items-center justify-between text-xs text-[#686E6A]">
                         <span className="font-medium">
                           {ach.unlocked
                             ? 'Erreicht ✓'
@@ -921,7 +921,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div className="space-y-0.5">
             <h4 className="text-sm font-semibold text-[#2D3E40]">Kochdaten & Verlauf verwalten</h4>
-            <p className="text-xs text-[#7A7E7B]">
+            <p className="text-xs text-[#686E6A]">
               Möchtest du deinen bisherigen Kochverlauf und alle erfassten Ersparnisse zurücksetzen?
             </p>
           </div>

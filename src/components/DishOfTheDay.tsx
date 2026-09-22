@@ -107,13 +107,13 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
         {/* Right Content - fixed height layout with strict single-line text */}
         <div className="flex-1 h-full p-2.5 sm:p-3.5 flex flex-col justify-between overflow-hidden min-w-0">
           <div className="space-y-1 min-w-0">
-            <div className="flex items-center justify-between gap-2 text-xs text-[#7A7E7B]">
+            <div className="flex items-center justify-between gap-2 text-xs text-[#686E6A]">
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] shrink-0">
                 {activeRecipe.category}
               </span>
               <div className="flex items-center gap-2 sm:gap-3 text-xs shrink-0">
                 <span className="flex items-center gap-1 font-medium">
-                  <Clock className="w-3 h-3 text-[#7A7E7B]" />
+                  <Clock className="w-3 h-3 text-[#686E6A]" />
                   {activeRecipe.totalTimeMinutes}m
                 </span>
                 <span className="hidden xs:flex items-center gap-1 font-medium">
@@ -131,7 +131,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
               <h2 className="text-[17px] font-bold text-[#2D3E40] tracking-tight group-hover:text-[#4A7856] transition-colors truncate">
                 {activeRecipe.title}
               </h2>
-              <p className="text-[#7A7E7B] text-xs truncate mt-0.5">
+              <p className="text-[#686E6A] text-xs truncate mt-0.5">
                 {activeRecipe.subtitle || `${activeRecipe.category} • ${activeRecipe.difficulty}`}
               </p>
             </div>
@@ -147,7 +147,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
                   onToggleFavorite(activeRecipe.id);
                 }}
                 className={`w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-xl border border-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
-                  isFavorite ? 'bg-[#FDF6F0] text-[#D35400]' : 'bg-white hover:bg-[#F1F5F2] text-[#7A7E7B]'
+                  isFavorite ? 'bg-[#FDF6F0] text-[#D35400]' : 'bg-white hover:bg-[#F1F5F2] text-[#686E6A]'
                 }`}
                 title={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
               >
@@ -162,7 +162,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
                     onToggleDislike(activeRecipe.id);
                   }}
                   className={`w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-xl border border-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
-                    isDisliked ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white hover:bg-[#F1F5F2] text-[#7A7E7B]'
+                    isDisliked ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white hover:bg-[#F1F5F2] text-[#686E6A]'
                   }`}
                   title={isDisliked ? 'Nicht mehr ablehnen' : 'Gericht weniger oft anzeigen'}
                 >
@@ -188,7 +188,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
                 className="hidden md:flex h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
                 title="Kopieren"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <Copy className="w-3.5 h-3.5 text-[#7A7E7B]" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <Copy className="w-3.5 h-3.5 text-[#686E6A]" />}
                 <span>{copied ? 'Kopiert' : 'Kopieren'}</span>
               </button>
 
@@ -199,7 +199,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
                   className="h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
                   title="Auf die Liste setzen"
                 >
-                  {addedShopping ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <ShoppingCart className="w-3.5 h-3.5 text-[#7A7E7B]" />}
+                  {addedShopping ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <ShoppingCart className="w-3.5 h-3.5 text-[#686E6A]" />}
                   <span className="hidden sm:inline">{addedShopping ? 'Auf Liste' : 'Liste'}</span>
                 </button>
               )}
