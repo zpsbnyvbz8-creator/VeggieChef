@@ -815,7 +815,7 @@ export const RecipeDetailPage: React.FC = () => {
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[11px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
+              <div className="text-[12px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
                 Gesamtzeit
               </div>
               <div className="font-bold text-[#2D3E40] text-sm sm:text-base tabular-nums">
@@ -830,7 +830,7 @@ export const RecipeDetailPage: React.FC = () => {
               <Flame className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[11px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
+              <div className="text-[12px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
                 Kalorien
               </div>
               <div className="font-bold text-[#2D3E40] text-sm sm:text-base tabular-nums">
@@ -845,7 +845,7 @@ export const RecipeDetailPage: React.FC = () => {
               <Dumbbell className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[11px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
+              <div className="text-[12px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
                 Protein
               </div>
               <div className="font-bold text-[#4A7856] text-sm sm:text-base tabular-nums">
@@ -860,7 +860,7 @@ export const RecipeDetailPage: React.FC = () => {
               <ChefHat className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[11px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
+              <div className="text-[12px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
                 Schwierigkeit
               </div>
               <div className="font-bold text-[#2D3E40] text-sm sm:text-base truncate">
@@ -876,7 +876,7 @@ export const RecipeDetailPage: React.FC = () => {
             {/* Servings Stepper */}
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-[#4A7856]" />
-              <span className="text-sm font-semibold text-[#2D3E40]">Portionen anpassen:</span>
+              <span className="text-[16px] font-semibold text-[#2D3E40]">Portionen anpassen:</span>
             </div>
 
             <div className="flex items-center gap-2.5">
@@ -906,7 +906,7 @@ export const RecipeDetailPage: React.FC = () => {
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                <span className="px-3 sm:px-4 text-sm font-bold text-[#2D3E40] tabular-nums min-w-[85px] text-center select-none">
+                <span className="px-3 sm:px-4 text-[16px] font-bold text-[#2D3E40] tabular-nums min-w-[85px] text-center select-none">
                   {servings} {servings === 1 ? 'Portion' : 'Portionen'}
                 </span>
                 <button
@@ -929,10 +929,10 @@ export const RecipeDetailPage: React.FC = () => {
               id="servings-add-to-plan-btn"
               type="button"
               onClick={() => setRecipeToAddToPlan(recipe)}
-              className="h-11 px-2 sm:px-3 rounded-xl text-xs font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              className="h-11 px-2 sm:px-3 rounded-xl text-[14px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
             >
               <CalendarPlus className="w-4 h-4 text-[#4A7856] shrink-0" />
-              <span className="truncate">+ Planer</span>
+              <span className="text-[14px] truncate">+ Planer</span>
             </button>
 
             {/* 2. [ + Einkaufsliste ] */}
@@ -940,14 +940,14 @@ export const RecipeDetailPage: React.FC = () => {
               id="servings-add-to-shopping-btn"
               type="button"
               onClick={handleAddShopping}
-              className="h-11 px-2 sm:px-3 rounded-xl text-xs font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              className="h-11 px-2 sm:px-3 rounded-xl text-[14px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
             >
               {addedShopping ? (
                 <Check className="w-4 h-4 text-[#4A7856] shrink-0" />
               ) : (
                 <ShoppingCart className="w-4 h-4 text-[#4A7856] shrink-0" />
               )}
-              <span className="truncate">{addedShopping ? 'Auf Liste' : '+ Einkaufsliste'}</span>
+              <span className="text-[14px] truncate">{addedShopping ? 'Auf Liste' : '+ Einkaufsliste'}</span>
             </button>
 
             {/* 3. [ Zutaten kopieren ] */}
@@ -955,10 +955,10 @@ export const RecipeDetailPage: React.FC = () => {
               id="servings-copy-ingredients-btn"
               type="button"
               onClick={handleCopyIngredients}
-              className="h-11 px-2 sm:px-3 rounded-xl text-xs font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              className="h-11 px-2 sm:px-3 rounded-xl text-[14px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
             >
               <Copy className="w-4 h-4 text-[#4A7856] shrink-0" />
-              <span className="truncate">Zutaten kopieren</span>
+              <span className="text-[14px] truncate">Zutaten kopieren</span>
             </button>
           </div>
         </section>
@@ -1388,10 +1388,10 @@ export const RecipeDetailPage: React.FC = () => {
             <div className="p-4 bg-[#FDF6F0] border-l-4 border-[#D35400] rounded-r-2xl flex items-start gap-3 mt-4">
               <ChefHat className="w-5 h-5 text-[#D35400] shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-xs font-bold text-[#D35400] uppercase tracking-wider">
+                <h4 className="text-[16px] leading-[24px] font-bold text-[#D35400] uppercase tracking-wider">
                   Profi-Tipp vom Veggie-Chef
                 </h4>
-                <p className="text-xs sm:text-sm text-[#2D3E40] mt-1 leading-relaxed">
+                <p className="text-[16px] leading-[26px] text-[#2D3E40] mt-1">
                   {recipe.chefTip}
                 </p>
               </div>
