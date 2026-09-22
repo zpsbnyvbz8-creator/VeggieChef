@@ -1078,17 +1078,18 @@ export const RecipeDetailPage: React.FC = () => {
                       {isCustomizingIngredients && (
                         <button
                           type="button"
+                          id={`replace-ingredient-${ing.name.toLowerCase().replace(/\s+/g, '-')}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             setSubstitutingIngredient(ing);
                           }}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] hover:border-[#4A7856]/40 text-xs font-semibold text-[#4A7856] transition-all cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
+                          className={`inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] hover:border-[#4A7856]/40 text-[14px] font-semibold text-[#4A7856] transition-all cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
                             isChecked ? 'opacity-40 hover:opacity-80' : ''
                           }`}
                           title={`${ing.name} ersetzen`}
                         >
-                          <ArrowLeftRight className="w-3 h-3" />
-                          <span>Ersetzen</span>
+                          <ArrowLeftRight className="w-4 h-4" />
+                          <span className="text-[14px]">Ersetzen</span>
                         </button>
                       )}
                     </div>
@@ -1438,18 +1439,20 @@ export const RecipeDetailPage: React.FC = () => {
                 className="w-full text-base p-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl focus:border-[#4A7856] focus:outline-hidden text-[#2D3E40]"
               />
 
-              <div className="flex items-center justify-end gap-2">
+              <div className="flex items-center justify-end gap-2.5 pt-1">
                 <button
+                  id="cancel-personal-notes-btn"
                   type="button"
                   onClick={() => setIsNotesExpanded(false)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-semibold text-[#7A7E7B] hover:bg-[#FAF9F6] cursor-pointer"
+                  className="h-11 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-semibold text-[#7A7E7B] hover:text-[#2D3E40] hover:bg-[#FAF9F6] border border-transparent hover:border-[#ECEBE8] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
                 >
                   Abbrechen
                 </button>
                 <button
+                  id="save-personal-notes-btn"
                   type="button"
                   onClick={handleSaveNotes}
-                  className="px-4 py-2 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+                  className="h-11 min-h-[44px] px-5 py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-sm font-bold transition-all shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
                 >
                   {isNotesSaved ? '✓ Gespeichert' : 'Notiz speichern'}
                 </button>
@@ -1470,24 +1473,26 @@ export const RecipeDetailPage: React.FC = () => {
             <span className="text-xs font-semibold text-[#7A7E7B] hidden sm:inline">Portionen:</span>
             <div className="inline-flex items-center bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl p-1">
               <button
+                id="sticky-servings-decrease-btn"
                 type="button"
                 onClick={() => setServings(Math.max(1, servings - 1))}
                 disabled={servings <= 1}
-                className="w-9 h-9 min-w-[36px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] disabled:opacity-30 text-[#2D3E40] transition-colors cursor-pointer touch-manipulation"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] disabled:opacity-30 text-[#2D3E40] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 title="Portion verringern"
               >
-                <Minus className="w-3.5 h-3.5" />
+                <Minus className="w-4 h-4" />
               </button>
-              <span className="px-2.5 text-sm font-bold text-[#2D3E40] tabular-nums min-w-[65px] text-center select-none">
+              <span className="px-2.5 text-[16px] font-bold text-[#2D3E40] tabular-nums min-w-[65px] text-center select-none">
                 {servings} Port.
               </span>
               <button
+                id="sticky-servings-increase-btn"
                 type="button"
                 onClick={() => setServings(Math.min(24, servings + 1))}
-                className="w-9 h-9 min-w-[36px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] text-[#2D3E40] transition-colors cursor-pointer touch-manipulation"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] text-[#2D3E40] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 title="Portion erhöhen"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-4 h-4" />
               </button>
             </div>
           </div>

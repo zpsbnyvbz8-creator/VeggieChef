@@ -237,7 +237,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
             <button
               type="submit"
               disabled={isLoading || !userWish.trim()}
-              className="h-10 px-3.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5"
+              className="h-10 min-h-[40px] px-3.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white text-sm font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5"
             >
               {isLoading ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -336,7 +336,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
                         onApplySubstitute(ingredient.name, opt.name);
                         onClose();
                       }}
-                      className="px-3.5 py-2 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#4A7856] hover:text-white hover:border-[#4A7856] text-xs font-bold text-[#2D3E40] shadow-2xs transition-all shrink-0 cursor-pointer active:scale-95"
+                      className="px-4 py-2 min-h-[40px] rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#4A7856] hover:text-white hover:border-[#4A7856] text-sm font-bold text-[#2D3E40] shadow-2xs transition-all shrink-0 cursor-pointer active:scale-95"
                     >
                       Übernehmen
                     </button>
@@ -380,7 +380,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
                   onClose();
                 }
               }}
-              className="h-10 px-4 rounded-xl bg-[#2D3E40] hover:bg-[#1F2C2D] disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer shrink-0"
+              className="h-10 min-h-[40px] px-4 rounded-xl bg-[#2D3E40] hover:bg-[#1F2C2D] disabled:opacity-40 text-white text-sm font-bold transition-all cursor-pointer shrink-0"
             >
               Setzen
             </button>
