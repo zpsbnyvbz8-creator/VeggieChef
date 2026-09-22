@@ -646,14 +646,14 @@ export const RecipeDetailPage: React.FC = () => {
                     onClick={() => setIsOverflowMenuOpen(false)}
                   />
                   <div className="absolute right-0 top-14 z-50 w-60 bg-white rounded-2xl shadow-xl border border-[#ECEBE8] py-2 animate-in fade-in zoom-in-95 duration-150">
-                    {/* Moved 'Zutaten kopieren' to overflow menu as requested */}
+                    {/* Moved 'Kopieren' to overflow menu as requested */}
                     <button
                       type="button"
                       onClick={handleCopyIngredients}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
                     >
                       <Copy className="w-4 h-4 text-[#4A7856]" />
-                      <span>Zutaten kopieren</span>
+                      <span>Kopieren</span>
                     </button>
 
                     <button
@@ -815,7 +815,7 @@ export const RecipeDetailPage: React.FC = () => {
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[12px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
+              <div className="text-[14px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
                 Gesamtzeit
               </div>
               <div className="font-bold text-[#2D3E40] text-sm sm:text-base tabular-nums">
@@ -830,7 +830,7 @@ export const RecipeDetailPage: React.FC = () => {
               <Flame className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[12px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
+              <div className="text-[14px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
                 Kalorien
               </div>
               <div className="font-bold text-[#2D3E40] text-sm sm:text-base tabular-nums">
@@ -845,7 +845,7 @@ export const RecipeDetailPage: React.FC = () => {
               <Dumbbell className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[12px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
+              <div className="text-[14px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
                 Protein
               </div>
               <div className="font-bold text-[#4A7856] text-sm sm:text-base tabular-nums">
@@ -860,7 +860,7 @@ export const RecipeDetailPage: React.FC = () => {
               <ChefHat className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[12px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
+              <div className="text-[14px] font-semibold text-[#7A7E7B] uppercase tracking-wider">
                 Schwierigkeit
               </div>
               <div className="font-bold text-[#2D3E40] text-sm sm:text-base truncate">
@@ -929,36 +929,36 @@ export const RecipeDetailPage: React.FC = () => {
               id="servings-add-to-plan-btn"
               type="button"
               onClick={() => setRecipeToAddToPlan(recipe)}
-              className="h-11 px-2 sm:px-3 rounded-xl text-[14px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
             >
               <CalendarPlus className="w-4 h-4 text-[#4A7856] shrink-0" />
-              <span className="text-[14px] truncate">+ Planer</span>
+              <span className="text-[16px] truncate">+ Planer</span>
             </button>
 
-            {/* 2. [ + Einkaufsliste ] */}
+            {/* 2. [ + Liste ] */}
             <button
               id="servings-add-to-shopping-btn"
               type="button"
               onClick={handleAddShopping}
-              className="h-11 px-2 sm:px-3 rounded-xl text-[14px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
             >
               {addedShopping ? (
                 <Check className="w-4 h-4 text-[#4A7856] shrink-0" />
               ) : (
                 <ShoppingCart className="w-4 h-4 text-[#4A7856] shrink-0" />
               )}
-              <span className="text-[14px] truncate">{addedShopping ? 'Auf Liste' : '+ Einkaufsliste'}</span>
+              <span className="text-[16px] truncate">{addedShopping ? 'Auf Liste' : '+ Liste'}</span>
             </button>
 
-            {/* 3. [ Zutaten kopieren ] */}
+            {/* 3. [ Kopieren ] */}
             <button
               id="servings-copy-ingredients-btn"
               type="button"
               onClick={handleCopyIngredients}
-              className="h-11 px-2 sm:px-3 rounded-xl text-[14px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
             >
               <Copy className="w-4 h-4 text-[#4A7856] shrink-0" />
-              <span className="text-[14px] truncate">Zutaten kopieren</span>
+              <span className="text-[16px] truncate">Kopieren</span>
             </button>
           </div>
         </section>
