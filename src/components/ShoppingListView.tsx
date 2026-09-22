@@ -643,6 +643,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       : 48;
 
     const recipeSourceText = formatRecipeSource(item.recipeSource);
+    const hasSecondaryText = Boolean(recipeSourceText);
 
     return (
       <div
@@ -832,7 +833,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             transition: isThisItemTouching ? 'none' : 'transform 0.32s cubic-bezier(0.16, 1, 0.3, 1)',
             willChange: isThisItemTouching ? 'transform' : 'auto',
           }}
-          className={`relative z-10 w-full flex items-start justify-between py-2.5 sm:py-3 px-3.5 sm:px-4 gap-2.5 sm:gap-3 min-h-[52px] sm:min-h-[46px] transition-colors ${
+          className={`relative z-10 w-full flex justify-between py-2.5 sm:py-3 px-3.5 sm:px-4 gap-2.5 sm:gap-3 min-h-[52px] sm:min-h-[46px] transition-colors ${
+            hasSecondaryText ? 'items-start' : 'items-center'
+          } ${
             isEditing
               ? 'cursor-default bg-[#FAF9F6]'
               : item.completed
@@ -840,11 +843,15 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               : 'cursor-pointer bg-white hover:bg-[#FAF9F6] active:bg-[#F5F4F0] text-[#2D3E40]'
           }`}
         >
-          {/* LEFT SIDE: Checkbox -> Name & Quelle (oben verankert) */}
-          <div className="flex items-start gap-2.5 sm:gap-3 flex-1 min-w-0">
-            {/* Square Checkbox Indicator: mt-0.5 verankert ihn exakt neben der ersten Zeile */}
+          {/* LEFT SIDE: Checkbox -> Name & Quelle */}
+          <div className={`flex flex-1 min-w-0 gap-2.5 sm:gap-3 ${
+            hasSecondaryText ? 'items-start' : 'items-center'
+          }`}>
+            {/* Square Checkbox Indicator: mt-0.5 verankert ihn bei Sekundärtext exakt neben der ersten Zeile */}
             <div
-              className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors shrink-0 mt-0.5 ${
+              className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors shrink-0 ${
+                hasSecondaryText ? 'mt-0.5' : ''
+              } ${
                 item.completed
                   ? 'bg-[#4A7856] border-[#4A7856] text-white'
                   : 'border-[#D1D5D2] bg-white group-hover:border-[#4A7856]'
@@ -854,9 +861,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             </div>
 
             {/* Name & Quelle */}
-            <div className="flex-1 min-w-0 flex flex-col justify-start">
+            <div className={`flex-1 min-w-0 flex flex-col ${
+              hasSecondaryText ? 'justify-start' : 'justify-center'
+            }`}>
               <span
-                className={`text-[15px] sm:text-sm font-medium block break-words leading-tight ${
+                className={`text-base font-medium block break-words leading-tight ${
                   item.completed ? 'line-through text-stone-400' : 'text-stone-800'
                 }`}
               >
@@ -864,7 +873,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               </span>
               {recipeSourceText && (
                 <span 
-                  className="text-xs text-stone-500 break-words leading-normal mt-0.5 line-clamp-2"
+                  className="text-[13px] font-normal text-stone-500 break-words leading-normal mt-0.5 line-clamp-2"
                   title={item.recipeSource}
                 >
                   {recipeSourceText}
@@ -874,7 +883,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           </div>
 
           {/* RIGHT SIDE: [Desktop Actions: Pencil & Trash (LINKS)] -> [Menge (GANZ RECHTS) / Stepper] -> [Drag Handle] */}
-          <div className="flex items-center gap-2 shrink-0 ml-auto self-start mt-0.5" onClick={(e) => e.stopPropagation()}>
+          <div className={`flex items-center gap-2 shrink-0 ml-auto ${
+            hasSecondaryText ? 'self-start mt-0.5' : 'self-center'
+          }`} onClick={(e) => e.stopPropagation()}>
             {/* Desktop hover actions: LINKS von der Mengenangabe */}
             {!isEditing && (
               <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -930,7 +941,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   }}
                   autoFocus
                   placeholder="1 Stk"
-                  className="w-16 sm:w-18 px-1 py-0.5 text-center text-[14px] font-semibold text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg focus:border-[#4A7856] focus:outline-hidden"
+                  className="w-16 sm:w-18 px-1 py-0.5 text-center text-[15px] font-medium text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg focus:border-[#4A7856] focus:outline-hidden"
                 />
 
                 <button
@@ -961,14 +972,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 </button>
               </div>
             ) : item.amount ? (
-              /* Mengenangabe ganz rechts: plain, crisp 14px text */
+              /* Mengenangabe ganz rechts: 15px font-medium, baseline/vertically aligned with primary title */
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   startEditingItem(item);
                 }}
-                className={`text-[14px] font-semibold select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline ${
+                className={`text-[15px] font-medium select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline ${
                   item.completed
                     ? 'text-stone-400 line-through'
                     : 'text-[#4A7856] hover:text-[#3D6447]'
