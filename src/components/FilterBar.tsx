@@ -104,7 +104,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               className={`h-10 min-h-[40px] px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center border ${
                 isSelected
                   ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-2xs font-semibold'
-                  : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#686E6A] hover:bg-[#F1F5F2] hover:text-[#2D3E40]'
+                  : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#686E6A] hover:bg-[#F1F5F2] hover:text-[#57534d]'
               }`}
             >
               {label}
@@ -137,7 +137,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               id="filter-difficulty"
               value={filters.difficulty}
               onChange={(e) => setFilters((prev) => ({ ...prev, difficulty: e.target.value }))}
-              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
+              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#57534d] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
             >
               {DIFFICULTY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -154,7 +154,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               id="filter-max-calories"
               value={filters.maxCalories}
               onChange={(e) => setFilters((prev) => ({ ...prev, maxCalories: Number(e.target.value) }))}
-              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
+              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#57534d] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
             >
               {CALORIE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -171,7 +171,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               id="filter-min-protein"
               value={filters.minProtein}
               onChange={(e) => setFilters((prev) => ({ ...prev, minProtein: Number(e.target.value) }))}
-              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
+              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#57534d] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
             >
               {PROTEIN_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -187,7 +187,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
             <button
               id="reset-filters-btn"
               onClick={resetFilters}
-              className="min-h-[40px] flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-[#686E6A] hover:text-[#2D3E40] hover:bg-[#F1F5F2] transition-colors cursor-pointer touch-manipulation active:scale-95"
+              className="min-h-[40px] flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-[#57534d] hover:text-[#57534d] hover:bg-[#F1F5F2] transition-colors cursor-pointer touch-manipulation active:scale-95"
               title="Filter zurücksetzen"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -207,7 +207,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               id="filter-sort-by"
               value={filters.sortBy}
               onChange={(e) => setFilters((prev) => ({ ...prev, sortBy: e.target.value as FilterState['sortBy'] }))}
-              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
+              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#57534d] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
             >
               {SORT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>

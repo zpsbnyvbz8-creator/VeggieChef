@@ -214,7 +214,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
           <button
             type="button"
             onClick={onClose}
-            className="w-10 h-10 rounded-full hover:bg-[#FAF9F6] text-[#686E6A] hover:text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-10 h-10 rounded-full hover:bg-[#FAF9F6] text-[#57534d] hover:text-[#57534d] flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Schließen"
           >
             <X className="w-5 h-5" />
@@ -336,7 +336,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
                         onApplySubstitute(ingredient.name, opt.name);
                         onClose();
                       }}
-                      className="px-4 py-2 min-h-[40px] rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#4A7856] hover:text-white hover:border-[#4A7856] text-sm font-bold text-[#2D3E40] shadow-2xs transition-all shrink-0 cursor-pointer active:scale-95"
+                      className="px-4 py-2 min-h-[40px] rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#4A7856] hover:text-white hover:border-[#4A7856] text-sm font-bold text-[#57534d] shadow-2xs transition-all shrink-0 cursor-pointer active:scale-95"
                     >
                       Übernehmen
                     </button>
@@ -351,7 +351,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
         {!isLoading && aiAdvice && (
           <div className="p-3.5 rounded-2xl bg-[#F0F7F2] border border-[#D5E8DA] flex items-start gap-2.5">
             <ChefHat className="w-4 h-4 text-[#4A7856] shrink-0 mt-0.5" />
-            <div className="text-xs text-[#2D3E40] leading-relaxed">
+            <div className="text-xs text-[#57534d] leading-relaxed">
               <strong className="text-[#4A7856] block mb-0.5">Tipp vom Chefkoch:</strong>
               {aiAdvice}
             </div>

@@ -48,7 +48,7 @@ export const EcoImpactModal: React.FC<EcoImpactModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-10 h-10 rounded-full hover:bg-[#FAF9F6] text-[#686E6A] hover:text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-10 h-10 rounded-full hover:bg-[#FAF9F6] text-[#57534d] hover:text-[#57534d] flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Schließen"
           >
             <X className="w-5 h-5" />
@@ -65,7 +65,7 @@ export const EcoImpactModal: React.FC<EcoImpactModalProps> = ({
             <div className="text-sm font-bold text-[#4A7856]">
               {isVegan ? '100% Pflanzlich (Hervorragend)' : 'Vegetarisch (Klimaschonend)'}
             </div>
-            <p className="text-xs text-[#2D3E40] mt-0.5">
+            <p className="text-xs text-[#57534d] mt-0.5">
               Bis zu <strong>85% weniger Treibhausgasemissionen</strong> als bei Gerichten mit Rind- oder Schweinefleisch.
             </p>
           </div>

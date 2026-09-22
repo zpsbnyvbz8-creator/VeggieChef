@@ -56,16 +56,16 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <h3 id="fridge-idea-title" className="text-lg font-bold text-stone-900">
+                <h3 id="fridge-idea-title" className="text-lg font-bold text-[#2D3E40]">
                   {errorMessage ? 'Rezept konnte nicht erstellt werden' : 'Vorgeschlagene Rezeptidee'}
                 </h3>
                 {!errorMessage && attemptNumber > 1 && (
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-stone-200 text-stone-700">
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-stone-200 text-[#57534d]">
                     Vorschlag #{attemptNumber}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-stone-600">
+              <p className="text-xs text-[#686e6a]">
                 {errorMessage ? 'Hinweis zur Rezeptgenerierung' : 'Gefällt dir diese Idee für deine Vorräte?'}
               </p>
             </div>
@@ -74,7 +74,7 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
             type="button"
             onClick={onCancel}
             disabled={isCreatingFinalRecipe}
-            className="p-1.5 rounded-xl hover:bg-stone-200 text-stone-600 hover:text-stone-800 transition-colors cursor-pointer disabled:opacity-50"
+            className="p-1.5 rounded-xl hover:bg-stone-200 text-[#57534d] hover:text-[#57534d] transition-colors cursor-pointer disabled:opacity-50"
             aria-label="Schließen"
           >
             <X className="w-5 h-5" />
@@ -89,13 +89,13 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div className="space-y-1.5 max-w-sm">
-                <h4 className="text-base font-bold text-stone-900">
+                <h4 className="text-base font-bold text-[#2D3E40]">
                   Generierung fehlgeschlagen
                 </h4>
-                <p className="text-sm text-stone-600 leading-relaxed">
+                <p className="text-sm text-[#686e6a] leading-relaxed">
                   {errorMessage}
                 </p>
-                <p className="text-xs text-stone-600 pt-1">
+                <p className="text-xs text-[#686e6a] pt-1">
                   Es wurde kein unpassendes Fantasierezept erzeugt. Bitte versuche es mit einem Klick auf „Erneut versuchen“ noch einmal.
                 </p>
               </div>
@@ -104,10 +104,10 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
               <div className="w-10 h-10 border-3 border-[#ECEBE8] border-t-[#4A7856] rounded-full animate-spin" />
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-stone-800">
+                <p className="text-sm font-semibold text-[#2D3E40]">
                   Kombiniere Vorräte zu einer Rezeptidee...
                 </p>
-                <p className="text-xs text-stone-600">
+                <p className="text-xs text-[#686e6a]">
                   Leichtgewichtige Vorab-Generierung zur Ressourcenschonung
                 </p>
               </div>
@@ -116,10 +116,10 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
               <div className="w-10 h-10 border-3 border-[#ECEBE8] border-t-[#4A7856] rounded-full animate-spin" />
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-stone-800">
+                <p className="text-sm font-semibold text-[#2D3E40]">
                   Erstelle vollständiges Rezept mit Schritten & Mengenangaben...
                 </p>
-                <p className="text-xs text-stone-600">
+                <p className="text-xs text-[#686e6a]">
                   Du wirst gleich automatisch zur Rezeptansicht weitergeleitet!
                 </p>
               </div>
@@ -137,22 +137,22 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
                     {isVegan ? '🌱 100% Vegan' : '🧀 Vegetarisch'}
                   </span>
                   {idea.dishType && (
-                    <span className="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white border border-[#ECEBE8] text-stone-700">
+                    <span className="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white border border-[#ECEBE8] text-[#57534d]">
                       {idea.dishType}
                     </span>
                   )}
                   {idea.category && (
-                    <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-stone-100 text-stone-600">
+                    <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-stone-100 text-[#686e6a]">
                       {idea.category}
                     </span>
                   )}
                 </div>
 
-                <h4 className="text-2xl font-bold text-stone-900 leading-snug">
+                <h4 className="text-2xl font-bold text-[#2D3E40] leading-snug">
                   {idea.title}
                 </h4>
 
-                <p className="text-sm text-stone-700 leading-relaxed">
+                <p className="text-sm text-[#2D3E40] leading-relaxed">
                   {idea.pitch}
                 </p>
               </div>
@@ -160,31 +160,31 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
               {/* Quick Estimated Stats */}
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="p-2.5 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8]">
-                  <div className="flex items-center justify-center gap-1 text-xs text-stone-600 font-medium mb-0.5">
+                  <div className="flex items-center justify-center gap-1 text-xs text-[#686e6a] font-medium mb-0.5">
                     <Clock className="w-3.5 h-3.5 text-[#4A7856]" />
                     <span>Dauer</span>
                   </div>
-                  <span className="text-sm font-bold text-stone-900">
+                  <span className="text-sm font-bold text-[#2D3E40]">
                     ca. {idea.estimatedTimeMinutes} Min.
                   </span>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8]">
-                  <div className="flex items-center justify-center gap-1 text-xs text-stone-600 font-medium mb-0.5">
+                  <div className="flex items-center justify-center gap-1 text-xs text-[#686e6a] font-medium mb-0.5">
                     <Flame className="w-3.5 h-3.5 text-[#E67E22]" />
                     <span>Kalorien</span>
                   </div>
-                  <span className="text-sm font-bold text-stone-900">
+                  <span className="text-sm font-bold text-[#2D3E40]">
                     ~{idea.estimatedCalories} kcal
                   </span>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8]">
-                  <div className="flex items-center justify-center gap-1 text-xs text-stone-600 font-medium mb-0.5">
+                  <div className="flex items-center justify-center gap-1 text-xs text-[#686e6a] font-medium mb-0.5">
                     <Dumbbell className="w-3.5 h-3.5 text-[#4A7856]" />
                     <span>Protein</span>
                   </div>
-                  <span className="text-sm font-bold text-stone-900">
+                  <span className="text-sm font-bold text-[#2D3E40]">
                     ~{idea.estimatedProtein}g
                   </span>
                 </div>
@@ -193,7 +193,7 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
               {/* Incorporated Ingredients */}
               {idea.keyIngredientsUsed && idea.keyIngredientsUsed.length > 0 && (
                 <div className="space-y-1.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-stone-600">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[#686e6a]">
                     Verwendete Vorratszutaten
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -212,19 +212,19 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
 
               {/* Basic Pantry Items if mentioned */}
               {idea.basicPantryItemsNeeded && idea.basicPantryItemsNeeded.length > 0 && (
-                <div className="text-xs text-stone-600 flex items-center gap-1.5">
-                  <span className="font-semibold text-stone-600">Küchen-Basics:</span>
+                <div className="text-xs text-[#686e6a] flex items-center gap-1.5">
+                  <span className="font-semibold text-[#686e6a]">Küchen-Basics:</span>
                   <span>{idea.basicPantryItemsNeeded.join(', ')}</span>
                 </div>
               )}
 
               {/* Usage & AI Savings Hint */}
-              <div className="p-3 rounded-xl bg-[#F8F9FA] border border-[#ECEBE8] text-xs text-stone-600 leading-relaxed">
-                💡 <strong className="text-stone-800">Smarte Vorab-Idee:</strong> Gefällt dir diese Art von Gericht? Erst wenn du auf <span className="font-medium text-[#4A7856]">„Gericht endgültig erstellen“</span> klickst, wird das komplette Rezept mit allen Mengenangaben und Schritten generiert.
+              <div className="p-3 rounded-xl bg-[#F8F9FA] border border-[#ECEBE8] text-xs text-[#686e6a] leading-relaxed">
+                💡 <strong className="text-[#2D3E40]">Smarte Vorab-Idee:</strong> Gefällt dir diese Art von Gericht? Erst wenn du auf <span className="font-medium text-[#4A7856]">„Gericht endgültig erstellen“</span> klickst, wird das komplette Rezept mit allen Mengenangaben und Schritten generiert.
               </div>
             </>
           ) : (
-            <div className="py-8 text-center text-stone-600 text-sm">
+            <div className="py-8 text-center text-[#686e6a] text-sm">
               Keine Idee verfügbar. Bitte klicke auf „Neu probieren“.
             </div>
           )}
@@ -247,7 +247,7 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
                 type="button"
                 id="fridge-error-cancel-btn"
                 onClick={onCancel}
-                className="flex-1 h-12 min-h-[48px] rounded-xl bg-white hover:bg-stone-100 border border-[#ECEBE8] text-stone-700 font-semibold text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer touch-manipulation"
+                className="flex-1 h-12 min-h-[48px] rounded-xl bg-white hover:bg-stone-100 border border-[#ECEBE8] text-[#57534d] font-semibold text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer touch-manipulation"
               >
                 <X className="w-4 h-4" />
                 <span>Abbrechen</span>
@@ -274,7 +274,7 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
                   type="button"
                   disabled={isLoadingIdea || isCreatingFinalRecipe}
                   onClick={onRetryIdea}
-                  className="flex-1 h-11 min-h-[44px] rounded-xl bg-white hover:bg-stone-50 disabled:opacity-50 border border-[#ECEBE8] text-stone-700 font-semibold text-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                  className="flex-1 h-11 min-h-[44px] rounded-xl bg-white hover:bg-stone-50 disabled:opacity-50 border border-[#ECEBE8] text-[#57534d] font-semibold text-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                 >
                   <RotateCcw className="w-4 h-4 text-[#4A7856]" />
                   <span>Neu probieren</span>
@@ -285,7 +285,7 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
                   type="button"
                   disabled={isCreatingFinalRecipe}
                   onClick={onCancel}
-                  className="flex-1 h-11 min-h-[44px] rounded-xl bg-transparent hover:bg-stone-200/60 disabled:opacity-50 text-stone-600 font-medium text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="flex-1 h-11 min-h-[44px] rounded-xl bg-transparent hover:bg-stone-200/60 disabled:opacity-50 text-[#57534d] font-medium text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                   <span>Abbrechen</span>

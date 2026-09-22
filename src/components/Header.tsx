@@ -106,13 +106,13 @@ export const Header: React.FC<HeaderProps> = (props) => {
               placeholder="Suchen..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-8 sm:pl-9 pr-7 text-sm bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-full text-[#2D3E40] placeholder-[#686E6A] focus:outline-hidden focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] shadow-2xs transition-all truncate"
+              className="w-full h-10 pl-8 sm:pl-9 pr-7 text-sm bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-full text-[#57534d] placeholder-[#686E6A] focus:outline-hidden focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] shadow-2xs transition-all truncate"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 text-xs text-[#686E6A] hover:text-[#2D3E40] p-1 cursor-pointer"
+                className="absolute right-2.5 text-xs text-[#57534d] hover:text-[#4A7856] p-1 cursor-pointer"
                 title="Suche zurücksetzen"
               >
                 ✕
@@ -131,7 +131,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
                 className={`flex items-center gap-1 sm:gap-1.5 min-h-[44px] px-3 rounded-xl text-xs font-semibold transition-all border cursor-pointer touch-manipulation active:scale-95 ${
                   syncConfig?.mode === 'family' && syncConfig?.groupId
                     ? 'bg-[#F1F5F2] text-[#4A7856] border-[#4A7856]/40 shadow-2xs hover:bg-[#e4ede6]'
-                    : 'bg-white text-[#686E6A] border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-[#2D3E40]'
+                    : 'bg-white text-[#2D3E40] border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-[#2D3E40]'
                 }`}
                 title={
                   syncConfig?.mode === 'family' && syncConfig?.groupId
@@ -203,7 +203,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'recipes'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
-                : 'text-[#686E6A] hover:bg-gray-50 hover:text-[#2D3E40]'
+                : 'text-[#686E6A] hover:bg-gray-50 hover:text-[#57534d]'
             }`}
           >
             <Utensils className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
@@ -217,7 +217,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'fridge'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
-                : 'text-[#686E6A] hover:bg-gray-50 hover:text-[#2D3E40]'
+                : 'text-[#686E6A] hover:bg-gray-50 hover:text-[#57534d]'
             }`}
           >
             <Sparkles className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
@@ -231,7 +231,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'planner'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
-                : 'text-[#686E6A] hover:bg-gray-50 hover:text-[#2D3E40]'
+                : 'text-[#686E6A] hover:bg-gray-50 hover:text-[#57534d]'
             }`}
           >
             <Calendar className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
@@ -245,7 +245,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3 py-2 sm:px-3 sm:py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'stats'
                 ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold shadow-2xs'
-                : 'text-[#686E6A] hover:bg-gray-50 hover:text-[#2D3E40]'
+                : 'text-[#686E6A] hover:bg-gray-50 hover:text-[#57534d]'
             }`}
           >
             <BarChart3 className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />

@@ -69,7 +69,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl hover:bg-[#FAF9F6] text-[#686E6A] hover:text-[#2D3E40] transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl hover:bg-[#FAF9F6] text-[#57534d] hover:text-[#57534d] transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -146,7 +146,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
                     className={`flex flex-col items-center justify-center min-h-[48px] py-2 px-1 rounded-xl text-center border transition-all cursor-pointer touch-manipulation active:scale-95 ${
                       isSelected
                         ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
-                        : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40]'
+                        : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#57534d]'
                     }`}
                   >
                     <span className="text-xs font-bold leading-none">
@@ -183,7 +183,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
                 onClick={() => setSelectedMealType('lunch')}
                 className={`min-h-[50px] p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer touch-manipulation active:scale-95 ${
                   selectedMealType === 'lunch'
-                    ? 'bg-[#F1F5F2] border-[#4A7856] text-[#2D3E40] ring-1 ring-[#4A7856]'
+                    ? 'bg-[#F1F5F2] border-[#4A7856] text-[#57534d] ring-1 ring-[#4A7856]'
                     : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/40 text-[#686E6A]'
                 }`}
               >
@@ -205,7 +205,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
                 onClick={() => setSelectedMealType('dinner')}
                 className={`min-h-[50px] p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer touch-manipulation active:scale-95 ${
                   selectedMealType === 'dinner'
-                    ? 'bg-[#F1F5F2] border-[#4A7856] text-[#2D3E40] ring-1 ring-[#4A7856]'
+                    ? 'bg-[#F1F5F2] border-[#4A7856] text-[#57534d] ring-1 ring-[#4A7856]'
                     : 'bg-white border-[#ECEBE8] hover:border-[#4A7856]/40 text-[#686E6A]'
                 }`}
               >
@@ -236,7 +236,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-[#ECEBE8] text-[#686E6A] hover:text-[#2D3E40] text-xs font-semibold hover:bg-[#FAF9F6] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+              className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-[#ECEBE8] text-[#57534d] hover:text-[#57534d] text-xs font-semibold hover:bg-[#FAF9F6] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
             >
               Abbrechen
             </button>

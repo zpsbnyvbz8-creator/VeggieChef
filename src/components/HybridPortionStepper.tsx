@@ -115,7 +115,7 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
             className={`h-12 min-h-[48px] rounded-xl font-bold text-base transition-all flex items-center justify-center touch-manipulation cursor-pointer active:scale-95 border ${
               isActive
                 ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
-                : 'bg-white text-stone-700 border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-stone-900 hover:border-stone-300 shadow-2xs'
+                : 'bg-white text-[#57534d] border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-[#4A7856] hover:border-stone-300 shadow-2xs'
             }`}
             title={`${num} ${num === 1 ? 'Portion' : 'Portionen'}`}
             aria-pressed={isActive}
@@ -132,7 +132,7 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
         className={`h-12 min-h-[48px] rounded-xl flex items-center justify-between border transition-all cursor-pointer overflow-hidden ${
           isStepperActive
             ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
-            : 'bg-white text-stone-700 border-[#ECEBE8] hover:border-stone-300 shadow-2xs'
+            : 'bg-white text-[#57534d] border-[#ECEBE8] hover:border-stone-300 shadow-2xs'
         }`}
         title={
           isStepperActive
@@ -149,7 +149,7 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
           className={`w-8 sm:w-9 h-12 min-h-[48px] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 p-0 ${
             isStepperActive
               ? 'text-white hover:bg-black/10 active:bg-black/20'
-              : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100 active:bg-stone-200'
+              : 'text-[#57534d] hover:text-[#4A7856] hover:bg-stone-100 active:bg-stone-200'
           }`}
           aria-label="Portionen verringern"
         >
@@ -166,7 +166,7 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
         {/* Gespeicherter/Aktueller Stepper-Wert X */}
         <span
           className={`flex-1 min-w-0 text-center text-base font-bold tabular-nums select-none px-1 truncate ${
-            isStepperActive ? 'text-white' : 'text-stone-800'
+            isStepperActive ? 'text-white' : 'text-[#57534d]'
           }`}
           aria-live="polite"
         >
@@ -188,7 +188,7 @@ export const HybridPortionStepper: React.FC<HybridPortionStepperProps> = ({
           className={`w-8 sm:w-9 h-12 min-h-[48px] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90 shrink-0 p-0 ${
             isStepperActive
               ? 'text-white hover:bg-black/10 active:bg-black/20'
-              : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100 active:bg-stone-200'
+              : 'text-[#57534d] hover:text-[#4A7856] hover:bg-stone-100 active:bg-stone-200'
           }`}
           aria-label="Portionen erhöhen"
         >

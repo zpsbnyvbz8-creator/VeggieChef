@@ -66,7 +66,7 @@ export const RecipeImage: React.FC<RecipeImageProps> = ({
           </span>
         </div>
         {!isSm && (
-          <span className="text-[10px] text-[#9BA19D] font-medium mt-0.5">
+          <span className="text-[10px] text-[#686e6a] font-medium mt-0.5">
             {recipe.isCustomAi ? 'KI-Rezept' : 'Pflanzliche Küche'}
           </span>
         )}

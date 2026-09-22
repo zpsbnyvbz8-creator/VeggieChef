@@ -78,10 +78,10 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
       {/* View Header with Search Input */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-stone-900">
+          <h1 className="text-2xl font-bold tracking-tight text-[#2D3E40]">
             {isFavorites ? 'Deine Lieblingsrezepte ❤️' : 'Auswahl an Gerichten'}
           </h1>
-          <p className="text-sm font-medium text-stone-600 mt-1">
+          <p className="text-sm font-medium text-[#686e6a] mt-1">
             {isFavorites
               ? `${favorites.length} gespeicherte Favoriten`
               : '100% vegetarisch & vegan – nährstoffreich & gelingsicher'}
@@ -109,14 +109,14 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
               placeholder="Rezept oder Zutat suchen..."
               value={filters.searchQuery}
               onChange={(e) => setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))}
-              className="w-full h-12 min-h-[48px] bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-xl pl-11 pr-10 py-2.5 text-base font-medium text-stone-800 placeholder:text-stone-400 focus:outline-hidden focus:border-[#4A7856] shadow-2xs transition-all"
+              className="w-full h-12 min-h-[48px] bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-xl pl-11 pr-10 py-2.5 text-base font-medium text-[#2D3E40] placeholder:text-[#686e6a] focus:outline-hidden focus:border-[#4A7856] shadow-2xs transition-all"
             />
-            <Search className="w-5 h-5 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-5 h-5 text-[#686e6a] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             {filters.searchQuery && (
               <button
                 type="button"
                 onClick={() => setFilters((prev) => ({ ...prev, searchQuery: '' }))}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#57534d] hover:text-[#4A7856] w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer"
               >
                 ✕
               </button>
@@ -179,7 +179,7 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
                       id="load-more-recipes-btn"
                       type="button"
                       onClick={() => setVisibleRecipeCount((prev) => Math.min(prev + 8, displayedFilteredRecipes.length))}
-                      className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] text-sm font-semibold shadow-2xs transition-all cursor-pointer active:scale-95"
+                      className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#57534d] text-sm font-semibold shadow-2xs transition-all cursor-pointer active:scale-95"
                     >
                       Mehr anzeigen ({remainingCount} weitere {remainingCount === 1 ? 'Rezept' : 'Rezepte'})
                     </button>

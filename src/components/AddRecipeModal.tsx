@@ -503,7 +503,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-full hover:bg-black/5 flex items-center justify-center text-[#686E6A] hover:text-[#2D3E40] transition-colors"
+            className="w-9 h-9 rounded-full hover:bg-black/5 flex items-center justify-center text-[#57534d] hover:text-[#57534d] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -595,7 +595,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
               {/* Portion Adjuster in Preview */}
               <div className="p-3.5 bg-[#FAF9F6] border border-[#ECEBE8] rounded-2xl space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#2D3E40] uppercase tracking-wide">
+                  <span className="text-xs font-bold text-[#57534d] uppercase tracking-wide">
                     Portionen anpassen
                   </span>
                   <span className="text-xs text-[#686E6A]">
@@ -650,7 +650,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                           <span className="w-5 h-5 rounded-full bg-[#4A7856] text-white text-[11px] font-bold flex items-center justify-center">
                             {step.stepNumber || idx + 1}
                           </span>
-                          <span className="text-sm font-bold text-[#2D3E40]">
+                          <span className="text-sm font-bold text-[#57534d]">
                             {step.title || `Schritt ${idx + 1}`}
                           </span>
                         </div>
@@ -661,7 +661,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-[#2D3E40]/90 leading-relaxed pl-7">
+                      <p className="text-sm text-[#57534d]/90 leading-relaxed pl-7">
                         {step.text}
                       </p>
                     </div>
@@ -671,7 +671,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
               {/* Chef Tip if available */}
               {previewRecipe.chefTip && (
-                <div className="p-3.5 bg-[#F1F5F2] rounded-2xl border border-[#4A7856]/20 text-sm text-[#2D3E40]">
+                <div className="p-3.5 bg-[#F1F5F2] rounded-2xl border border-[#4A7856]/20 text-sm text-[#57534d]">
                   <strong className="text-[#4A7856] block mb-1">👨‍🍳 Tipp des Küchenchefs:</strong>
                   {previewRecipe.chefTip}
                 </div>
@@ -682,7 +682,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                 <button
                   type="button"
                   onClick={() => setPreviewRecipe(null)}
-                  className="px-4 py-2.5 rounded-xl border border-[#ECEBE8] hover:bg-[#FAF9F6] text-sm font-semibold text-[#2D3E40] transition-colors"
+                  className="px-4 py-2.5 rounded-xl border border-[#ECEBE8] hover:bg-[#FAF9F6] text-sm font-semibold text-[#57534d] transition-colors"
                 >
                   ← Zurück & Anpassen
                 </button>
@@ -706,7 +706,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   className={`py-2.5 px-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
                     activeTab === 'ai'
                       ? 'bg-white text-[#4A7856] shadow-xs border border-[#ECEBE8]'
-                      : 'text-[#686E6A] hover:text-[#2D3E40]'
+                      : 'text-[#57534d] hover:text-[#4A7856]'
                   }`}
                 >
                   <Sparkles className="w-4 h-4 text-[#4A7856]" />
@@ -718,7 +718,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   className={`py-2.5 px-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
                     activeTab === 'scan'
                       ? 'bg-white text-[#4A7856] shadow-xs border border-[#ECEBE8]'
-                      : 'text-[#686E6A] hover:text-[#2D3E40]'
+                      : 'text-[#57534d] hover:text-[#4A7856]'
                   }`}
                 >
                   <Camera className="w-4 h-4 text-[#4A7856]" />
@@ -730,7 +730,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   className={`py-2.5 px-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
                     activeTab === 'manual'
                       ? 'bg-white text-[#4A7856] shadow-xs border border-[#ECEBE8]'
-                      : 'text-[#686E6A] hover:text-[#2D3E40]'
+                      : 'text-[#57534d] hover:text-[#4A7856]'
                   }`}
                 >
                   <PenTool className="w-4 h-4 text-[#4A7856]" />
@@ -751,7 +751,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       value={aiTitle}
                       onChange={(e) => setAiTitle(e.target.value)}
                       placeholder="z.B. Vegane Linsen-Bolognese, Cremiges Pilz-Risotto, Tofu Tikka..."
-                      className="w-full px-4 py-3 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] focus:bg-white focus:outline-none focus:border-[#4A7856] text-sm text-[#2D3E40] transition-colors"
+                      className="w-full px-4 py-3 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] focus:bg-white focus:outline-none focus:border-[#4A7856] text-sm text-[#57534d] transition-colors"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -770,7 +770,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                           key={dish}
                           type="button"
                           onClick={() => setAiTitle(dish)}
-                          className="px-2.5 py-1 text-xs rounded-lg bg-[#FAF9F6] hover:bg-[#F1F5F2] hover:text-[#4A7856] border border-[#ECEBE8] text-[#2D3E40] transition-colors"
+                          className="px-2.5 py-1 text-xs rounded-lg bg-[#FAF9F6] hover:bg-[#F1F5F2] hover:text-[#4A7856] border border-[#ECEBE8] text-[#57534d] transition-colors"
                         >
                           {dish}
                         </button>
@@ -780,7 +780,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
                   {/* Diet Selection */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-[#686E6A] uppercase tracking-wider">
+                    <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
                       Ernährungsform
                     </label>
                     <div className="grid grid-cols-2 gap-3">
@@ -813,7 +813,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   {/* Optional Options: Category & Time */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[#686E6A] uppercase tracking-wider">
+                      <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
                         Kategorie (Optional)
                       </label>
                       <select
@@ -831,7 +831,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[#686E6A] uppercase tracking-wider">
+                      <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
                         Zubereitungszeit
                       </label>
                       <select
@@ -849,7 +849,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
                   {/* Optional extra ingredients */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-[#686E6A] uppercase tracking-wider">
+                    <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
                       Bestimmte Zutaten einbauen? (Optional)
                     </label>
                     <input
@@ -928,7 +928,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
                   {/* Scan Diet selection */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-[#686E6A] uppercase tracking-wider">
+                    <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
                       Ernährungsform
                     </label>
                     <div className="grid grid-cols-2 gap-3">
@@ -960,7 +960,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
                   {/* Optional notes */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-[#686E6A] uppercase tracking-wider">
+                    <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
                       Zusätzliche Notizen (Optional)
                     </label>
                     <input
@@ -999,7 +999,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   {/* Title & Subtitle */}
                   <div className="space-y-3">
                     <div>
-                      <label className="text-xs font-bold text-[#686E6A] uppercase tracking-wider block mb-1">
+                      <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider block mb-1">
                         Gerichtsname *
                       </label>
                       <input
@@ -1008,11 +1008,11 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                         value={manualTitle}
                         onChange={(e) => setManualTitle(e.target.value)}
                         placeholder="z.B. Cremige Avocadopasta mit Kirschtomaten"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] focus:bg-white text-sm text-[#2D3E40] focus:outline-none focus:border-[#4A7856]"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] focus:bg-white text-sm text-[#57534d] focus:outline-none focus:border-[#4A7856]"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-[#686E6A] uppercase tracking-wider block mb-1">
+                      <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider block mb-1">
                         Kurzbeschreibung (Optional)
                       </label>
                       <input
@@ -1028,7 +1028,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   {/* Category, Diet, Times, Portions */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
-                      <label className="text-[11px] font-bold text-[#686E6A] uppercase tracking-wider block mb-1">
+                      <label className="text-[11px] font-bold text-[#2D3E40] uppercase tracking-wider block mb-1">
                         Kategorie
                       </label>
                       <select
@@ -1045,7 +1045,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                     </div>
 
                     <div>
-                      <label className="text-[11px] font-bold text-[#686E6A] uppercase tracking-wider block mb-1">
+                      <label className="text-[11px] font-bold text-[#2D3E40] uppercase tracking-wider block mb-1">
                         Ernährung
                       </label>
                       <select
@@ -1059,7 +1059,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                     </div>
 
                     <div>
-                      <label className="text-[11px] font-bold text-[#686E6A] uppercase tracking-wider block mb-1">
+                      <label className="text-[11px] font-bold text-[#2D3E40] uppercase tracking-wider block mb-1">
                         Vorbereitung (Min.)
                       </label>
                       <input
@@ -1072,7 +1072,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                     </div>
 
                     <div>
-                      <label className="text-[11px] font-bold text-[#686E6A] uppercase tracking-wider block mb-1">
+                      <label className="text-[11px] font-bold text-[#2D3E40] uppercase tracking-wider block mb-1">
                         Kochzeit (Min.)
                       </label>
                       <input
@@ -1087,7 +1087,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
                   {/* Portionen */}
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-[#686E6A] uppercase tracking-wider block">
+                    <label className="text-[11px] font-bold text-[#2D3E40] uppercase tracking-wider block">
                       Portionen
                     </label>
                     <HybridPortionStepper
@@ -1099,7 +1099,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
                   {/* Nutrients per Portion */}
                   <div className="p-3 bg-[#FAF9F6] rounded-2xl border border-[#ECEBE8] space-y-2">
-                    <label className="text-[11px] font-bold text-[#686E6A] uppercase tracking-wider block">
+                    <label className="text-[11px] font-bold text-[#2D3E40] uppercase tracking-wider block">
                       Nährwerte pro Portion
                     </label>
                     <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
@@ -1154,7 +1154,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   {/* Ingredients Section */}
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-[#686E6A] uppercase tracking-wider">
+                      <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
                         Zutaten
                       </label>
                       <button
@@ -1229,7 +1229,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   {/* HelloFresh Preparation Steps Section */}
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-[#686E6A] uppercase tracking-wider">
+                      <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
                         Zubereitungsschritte (HelloFresh-Stil)
                       </label>
                       <button
@@ -1290,7 +1290,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                                     );
                                   }}
                                   placeholder="Timer (Min.)"
-                                  className="w-24 px-2 py-1 bg-white border border-[#ECEBE8] rounded-lg text-[11px] text-[#2D3E40] text-center"
+                                  className="w-24 px-2 py-1 bg-white border border-[#ECEBE8] rounded-lg text-[11px] text-[#57534d] text-center"
                                 />
                               </div>
 
@@ -1318,7 +1318,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                               );
                             }}
                             placeholder="Erkläre die Zubereitung für diesen Schritt genau..."
-                            className="w-full px-3 py-2 bg-white border border-[#ECEBE8] rounded-xl text-xs text-[#2D3E40] focus:outline-none focus:border-[#4A7856]"
+                            className="w-full px-3 py-2 bg-white border border-[#ECEBE8] rounded-xl text-xs text-[#57534d] focus:outline-none focus:border-[#4A7856]"
                           />
                         </div>
                       ))}
@@ -1327,7 +1327,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
                   {/* Chef Tip */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-[#686E6A] uppercase tracking-wider block">
+                    <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider block">
                       Tipp des Kochs (Optional)
                     </label>
                     <input

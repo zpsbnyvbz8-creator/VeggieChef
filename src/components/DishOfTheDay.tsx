@@ -174,7 +174,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
                 <button
                   id="dish-of-the-day-plan-btn"
                   onClick={handleMealPlan}
-                  className="h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                  className="h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#57534d] transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
                   title="In Wochenplaner eintragen"
                 >
                   <CalendarPlus className="w-3.5 h-3.5 text-[#4A7856]" />
@@ -185,7 +185,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
               <button
                 id="dish-of-the-day-copy-btn"
                 onClick={handleCopyIngredients}
-                className="hidden md:flex h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                className="hidden md:flex h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#57534d] transition-colors items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
                 title="Kopieren"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <Copy className="w-3.5 h-3.5 text-[#686E6A]" />}
@@ -196,7 +196,7 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
                 <button
                   id="dish-of-the-day-shopping-btn"
                   onClick={handleShopping}
-                  className="h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                  className="h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#57534d] transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer touch-manipulation active:scale-95 shrink-0"
                   title="Auf die Liste setzen"
                 >
                   {addedShopping ? <Check className="w-3.5 h-3.5 text-[#4A7856]" /> : <ShoppingCart className="w-3.5 h-3.5 text-[#686E6A]" />}

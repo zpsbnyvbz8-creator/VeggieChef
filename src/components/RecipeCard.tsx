@@ -118,7 +118,7 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
                 className={`w-11 h-11 rounded-full backdrop-blur-md shadow-xs flex items-center justify-center transition-all hover:scale-105 active:scale-95 touch-manipulation cursor-pointer ${
                   isDisliked
                     ? 'bg-rose-500 text-white'
-                    : 'bg-white/95 text-stone-600 hover:text-rose-600 hover:bg-white'
+                    : 'bg-white/95 text-[#686e6a] hover:text-rose-600 hover:bg-white'
                 }`}
                 title={isDisliked ? 'Dislike entfernen' : 'Seltener anzeigen (Dislike)'}
               >
@@ -133,7 +133,7 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
                 e.stopPropagation();
                 onToggleFavorite(recipe.id);
               }}
-              className="w-11 h-11 rounded-full bg-white/95 backdrop-blur-md text-stone-600 hover:text-[#D35400] hover:bg-white shadow-xs flex items-center justify-center transition-all hover:scale-105 active:scale-95 touch-manipulation cursor-pointer"
+              className="w-11 h-11 rounded-full bg-white/95 backdrop-blur-md text-[#686e6a] hover:text-[#D35400] hover:bg-white shadow-xs flex items-center justify-center transition-all hover:scale-105 active:scale-95 touch-manipulation cursor-pointer"
               title="Favorit umschalten"
             >
               <Heart className={`w-5 h-5 ${isFavorite ? 'fill-[#D35400] text-[#D35400]' : ''}`} />
@@ -153,24 +153,24 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
       {/* Content Body */}
       <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between gap-3">
         <div>
-          <div className="flex items-center justify-between text-xs text-stone-600 mb-2">
+          <div className="flex items-center justify-between text-xs text-[#686e6a] mb-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
               {recipe.category}
             </span>
           </div>
 
-          <h3 className="font-semibold text-stone-800 text-base leading-snug line-clamp-2 group-hover:text-[#4A7856] transition-colors">
+          <h3 className="font-semibold text-[#2D3E40] text-base leading-snug line-clamp-2 group-hover:text-[#4A7856] transition-colors">
             {recipe.title}
           </h3>
 
-          <p className="text-sm font-medium text-stone-600 line-clamp-2 mt-1 leading-relaxed">
+          <p className="text-sm font-medium text-[#686e6a] line-clamp-2 mt-1 leading-relaxed">
             {recipe.subtitle}
           </p>
         </div>
 
         {/* Nutritional Highlights Grid */}
         <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#ECEBE8] text-xs">
-          <div className="flex items-center gap-1.5 text-stone-800 bg-[#FAF9F6] border border-[#ECEBE8] px-2.5 py-1.5 rounded-lg font-medium">
+          <div className="flex items-center gap-1.5 text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] px-2.5 py-1.5 rounded-lg font-medium">
             <Flame className="w-4 h-4 text-[#E67E22] shrink-0" />
             <span className="truncate"><strong>{recipe.nutrients.calories}</strong> kcal</span>
           </div>
@@ -193,7 +193,7 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
                 onCopyFeedback(`"${recipe.title}" in Wochenplaner eingetragen!`);
                 setTimeout(() => setAddedMealPlan(false), 2000);
               }}
-              className="flex items-center justify-center gap-1.5 min-h-[44px] py-2 px-2 rounded-xl text-xs font-semibold text-stone-800 bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors active:scale-95 touch-manipulation cursor-pointer"
+              className="flex items-center justify-center gap-1.5 min-h-[44px] py-2 px-2 rounded-xl text-xs font-semibold text-[#57534d] bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors active:scale-95 touch-manipulation cursor-pointer"
               title="In Wochenplaner eintragen"
             >
               {addedMealPlan ? <Check className="w-4 h-4 text-[#4A7856]" /> : <CalendarPlus className="w-4 h-4 text-[#4A7856]" />}
@@ -205,12 +205,12 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
           <button
             id={`card-copy-btn-${recipe.id}`}
             onClick={handleCopy}
-            className={`flex items-center justify-center gap-1.5 min-h-[44px] py-2 px-2 rounded-xl text-xs font-semibold text-stone-800 bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors active:scale-95 touch-manipulation cursor-pointer ${
+            className={`flex items-center justify-center gap-1.5 min-h-[44px] py-2 px-2 rounded-xl text-xs font-semibold text-[#57534d] bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors active:scale-95 touch-manipulation cursor-pointer ${
               !onAddToMealPlan ? 'col-span-2' : ''
             }`}
             title="Kopieren"
           >
-            {copied ? <Check className="w-4 h-4 text-[#4A7856]" /> : <Copy className="w-4 h-4 text-stone-600" />}
+            {copied ? <Check className="w-4 h-4 text-[#4A7856]" /> : <Copy className="w-4 h-4 text-[#686e6a]" />}
             <span className="truncate">{copied ? 'Kopiert' : 'Kopieren'}</span>
           </button>
 

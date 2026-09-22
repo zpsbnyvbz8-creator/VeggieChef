@@ -563,7 +563,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
   return (
     <div 
       id="cooking-mode-overlay"
-      className="fixed inset-0 z-60 bg-[#2D3E40] text-white flex flex-col justify-between animate-in fade-in duration-200 overscroll-contain select-none"
+      className="fixed inset-0 z-60 bg-[#57534d] text-white flex flex-col justify-between animate-in fade-in duration-200 overscroll-contain select-none"
     >
       {/* ========================================================================= */}
       {/* 1. TOP NAVIGATION & PROGRESS HEADER                                      */}

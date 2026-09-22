@@ -141,7 +141,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
           <button
             id="close-sync-modal-btn"
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-white text-[#686E6A] hover:text-[#2D3E40] transition-colors"
+            className="p-2 rounded-full hover:bg-white text-[#57534d] hover:text-[#57534d] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -152,8 +152,8 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
           {/* Status Banner */}
           <div className={`p-4 rounded-xl border flex items-start gap-3 ${
             isFamilyActive 
-              ? 'bg-[#F1F5F2] border-[#4A7856]/30 text-[#2D3E40]' 
-              : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#2D3E40]'
+              ? 'bg-[#F1F5F2] border-[#4A7856]/30 text-[#57534d]' 
+              : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#57534d]'
           }`}>
             <div className={`mt-0.5 w-3 h-3 rounded-full shrink-0 ${isFamilyActive ? 'bg-[#4A7856] animate-pulse' : 'bg-gray-400'}`} />
             <div className="text-xs space-y-1">
@@ -193,7 +193,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
                   <button
                     id="copy-group-id-btn"
                     onClick={handleCopyCode}
-                    className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] text-xs font-semibold shadow-2xs transition-all"
+                    className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#57534d] text-xs font-semibold shadow-2xs transition-all"
                   >
                     {copiedCode ? <Check className="w-4 h-4 text-[#4A7856]" /> : <Copy className="w-4 h-4 text-[#686E6A]" />}
                     <span>{copiedCode ? 'Kopiert' : 'Code'}</span>
@@ -219,7 +219,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
                   id="force-sync-push-btn"
                   onClick={handleSyncDataNow}
                   disabled={isSubmitting}
-                  className="flex-1 min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] text-xs font-semibold shadow-2xs transition-all disabled:opacity-50 cursor-pointer touch-manipulation active:scale-95"
+                  className="flex-1 min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#57534d] text-xs font-semibold shadow-2xs transition-all disabled:opacity-50 cursor-pointer touch-manipulation active:scale-95"
                 >
                   <RefreshCw className={`w-4 h-4 text-[#4A7856] ${isSubmitting ? 'animate-spin' : ''}`} />
                   <span>{pushSuccess ? '✓ Erfolgreich hochgeladen!' : 'Lokale Daten jetzt hochladen'}</span>
@@ -326,7 +326,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
 
           {/* Quick Guide */}
           <div className="border-t border-[#ECEBE8] pt-4 space-y-2">
-            <h3 className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider flex items-center gap-1.5">
+            <h3 className="text-xs font-bold text-[#57534d] uppercase tracking-wider flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-[#4A7856]" />
               <span>Wie Freunde & Familie die App nutzen</span>
             </h3>

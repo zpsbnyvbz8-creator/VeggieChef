@@ -731,7 +731,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap ${
                     syncConfig?.mode === 'family' && syncConfig?.groupId
                       ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                      : 'bg-[#FAF9F6] text-[#686E6A] border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                      : 'bg-[#FAF9F6] text-[#57534d] border-[#ECEBE8] hover:bg-[#F1F5F2]'
                   }`}
                   title="Synchronisationseinstellungen öffnen"
                 >
@@ -743,7 +743,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                     </>
                   ) : (
                     <>
-                      <Cloud className="w-3 h-3 text-[#686E6A]" />
+                      <Cloud className="w-3 h-3 text-[#57534d]" />
                       <span>Lokal</span>
                     </>
                   )}
@@ -752,10 +752,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             </div>
 
             {/* Title */}
-            <h1 className="text-2xl font-bold tracking-tight text-stone-900">
+            <h1 className="text-2xl font-bold tracking-tight text-[#2D3E40]">
               Dein Wochenplan
             </h1>
-            <p className="text-sm font-medium text-stone-600">
+            <p className="text-sm font-medium text-[#686e6a]">
               Mahlzeiten planen, Nährwerte prüfen & Zutaten einkaufen.
             </p>
           </div>
@@ -770,13 +770,13 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 onClick={() => setShowContextMenu((prev) => !prev)}
                 className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs border ${
                   showContextMenu
-                    ? 'bg-[#E5EBE6] text-[#2D3E40] border-[#CCD5CF] ring-2 ring-[#4A7856]/25'
-                    : 'bg-[#F1F5F2] hover:bg-[#E5EBE6] text-[#2D3E40] hover:text-stone-900 border-[#ECEBE8] hover:border-[#CCD5CF]'
+                    ? 'bg-[#E5EBE6] text-[#57534d] border-[#CCD5CF] ring-2 ring-[#4A7856]/25'
+                    : 'bg-[#F1F5F2] hover:bg-[#E5EBE6] text-[#57534d] hover:text-[#57534d] border-[#ECEBE8] hover:border-[#CCD5CF]'
                 }`}
                 title="Weitere Optionen (Woche hinzufügen, Alle Wochen anzeigen, Plan leeren)"
                 aria-label="Weitere Optionen"
               >
-                <MoreHorizontal className="w-5 h-5 text-[#2D3E40]" />
+                <MoreHorizontal className="w-5 h-5 text-[#57534d]" />
               </button>
 
               {showContextMenu && (
@@ -789,9 +789,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setNewWeekTitleInput('');
                       setShowCreateWeekModal(true);
                     }}
-                    className="w-full min-h-[38px] px-3 py-2 rounded-xl text-left text-sm font-medium text-stone-800 hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                    className="w-full min-h-[38px] px-3 py-2 rounded-xl text-left text-sm font-medium text-[#57534d] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
                   >
-                    <Plus className="w-4 h-4 text-stone-600 shrink-0" />
+                    <Plus className="w-4 h-4 text-[#686e6a] shrink-0" />
                     <span>Woche hinzufügen</span>
                   </button>
 
@@ -802,9 +802,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setShowContextMenu(false);
                       setShowAllWeeksModal(true);
                     }}
-                    className="w-full min-h-[38px] px-3 py-2 rounded-xl text-left text-sm font-medium text-stone-800 hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                    className="w-full min-h-[38px] px-3 py-2 rounded-xl text-left text-sm font-medium text-[#57534d] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
                   >
-                    <Layers className="w-4 h-4 text-stone-600 shrink-0" />
+                    <Layers className="w-4 h-4 text-[#686e6a] shrink-0" />
                     <span>Alle Wochen anzeigen</span>
                   </button>
 
@@ -858,7 +858,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               onClick={handleToggleLunchSlot}
               role="switch"
               aria-checked={showLunchSlot}
-              className="flex items-center gap-2.5 text-sm font-semibold text-stone-800 cursor-pointer select-none group touch-manipulation active:scale-98 min-h-[38px]"
+              className="flex items-center gap-2.5 text-sm font-semibold text-[#57534d] cursor-pointer select-none group touch-manipulation active:scale-98 min-h-[38px]"
               title={showLunchSlot ? 'Mittagsgerichte ausblenden' : 'Mittagsgerichte anzeigen'}
             >
               <div
@@ -872,7 +872,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   }`}
                 />
               </div>
-              <span className="font-semibold text-stone-800 group-hover:text-stone-950 transition-colors">
+              <span className="font-semibold text-[#57534d] group-hover:text-[#4A7856] transition-colors">
                 Mittags-Slot anzeigen
               </span>
             </button>
@@ -885,13 +885,13 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 onClick={() => setShowContextMenu((prev) => !prev)}
                 className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs border ${
                   showContextMenu
-                    ? 'bg-[#E5EBE6] text-[#2D3E40] border-[#CCD5CF] ring-2 ring-[#4A7856]/25'
-                    : 'bg-[#F1F5F2] hover:bg-[#E5EBE6] text-[#2D3E40] hover:text-stone-900 border-[#ECEBE8] hover:border-[#CCD5CF]'
+                    ? 'bg-[#E5EBE6] text-[#57534d] border-[#CCD5CF] ring-2 ring-[#4A7856]/25'
+                    : 'bg-[#F1F5F2] hover:bg-[#E5EBE6] text-[#57534d] hover:text-[#57534d] border-[#ECEBE8] hover:border-[#CCD5CF]'
                 }`}
                 title="Weitere Optionen (Woche hinzufügen, Alle Wochen anzeigen, Plan leeren)"
                 aria-label="Weitere Optionen"
               >
-                <MoreHorizontal className="w-4 h-4 text-[#2D3E40]" />
+                <MoreHorizontal className="w-4 h-4 text-[#57534d]" />
               </button>
 
               {showContextMenu && (
@@ -904,9 +904,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setNewWeekTitleInput('');
                       setShowCreateWeekModal(true);
                     }}
-                    className="w-full min-h-[38px] px-3 py-2 rounded-lg text-left text-sm font-medium text-stone-800 hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                    className="w-full min-h-[38px] px-3 py-2 rounded-lg text-left text-sm font-medium text-[#57534d] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
                   >
-                    <Plus className="w-4 h-4 text-stone-600 shrink-0" />
+                    <Plus className="w-4 h-4 text-[#686e6a] shrink-0" />
                     <span>Woche hinzufügen</span>
                   </button>
 
@@ -917,9 +917,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setShowContextMenu(false);
                       setShowAllWeeksModal(true);
                     }}
-                    className="w-full min-h-[38px] px-3 py-2 rounded-lg text-left text-sm font-medium text-stone-800 hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                    className="w-full min-h-[38px] px-3 py-2 rounded-lg text-left text-sm font-medium text-[#57534d] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
                   >
-                    <Layers className="w-4 h-4 text-stone-600 shrink-0" />
+                    <Layers className="w-4 h-4 text-[#686e6a] shrink-0" />
                     <span>Alle Wochen anzeigen</span>
                   </button>
 
@@ -943,7 +943,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
           {/* Rechts/Unten: Portionen-Auswahl direkt anschließend an die Beschriftung */}
           <div className="flex items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
-            <span className="text-sm font-semibold text-stone-700 select-none shrink-0">
+            <span className="text-sm font-semibold text-[#57534d] select-none shrink-0">
               Portionen:
             </span>
             <div className="flex-1 sm:flex-initial sm:w-72 max-w-[290px]">
@@ -959,7 +959,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
       {/* Undo Banner when cleared */}
       {showUndoBanner && undoBackup && (
-        <div className="bg-[#2D3E40] text-white p-3 rounded-xl shadow-md flex items-center justify-between gap-3 animate-in slide-in-from-top-2 duration-200">
+        <div className="bg-[#57534d] text-white p-3 rounded-xl shadow-md flex items-center justify-between gap-3 animate-in slide-in-from-top-2 duration-200">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Trash2 className="w-4 h-4 text-white/70" />
             <span>Der Wochenplan wurde geleert.</span>
@@ -991,17 +991,17 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             id="prev-week-btn"
             onClick={handlePrevWeek}
             disabled={activeWeekIndex <= 0}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-[#ECEBE8] bg-white text-[#2D3E40] hover:bg-[#F1F5F2] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs flex items-center justify-center touch-manipulation active:scale-95 shrink-0"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-[#ECEBE8] bg-white text-[#57534d] hover:bg-[#F1F5F2] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs flex items-center justify-center touch-manipulation active:scale-95 shrink-0"
             title="Vorherige Woche aufrufen"
           >
-            <ChevronLeft className="w-4 h-4 text-stone-700" />
+            <ChevronLeft className="w-4 h-4 text-[#57534d]" />
           </button>
 
           {/* Central Week Indicator */}
           <div className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-white border border-[#ECEBE8] rounded-xl shadow-2xs min-h-[38px] sm:min-h-[40px]">
             <div className="flex items-center gap-1.5 min-w-0">
               <Calendar className="w-4 h-4 text-[#4A7856] shrink-0" />
-              <span className="text-sm font-semibold text-stone-800 truncate">
+              <span className="text-sm font-semibold text-[#57534d] truncate">
                 {activeWeek?.title || 'Aktuelle Woche'}
               </span>
               {activeWeek?.startDate && (
@@ -1020,10 +1020,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             id="next-week-btn"
             onClick={handleNextWeek}
             disabled={activeWeekIndex >= weeks.length - 1}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-[#ECEBE8] bg-white text-[#2D3E40] hover:bg-[#F1F5F2] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs flex items-center justify-center touch-manipulation active:scale-95 shrink-0"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-[#ECEBE8] bg-white text-[#57534d] hover:bg-[#F1F5F2] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs flex items-center justify-center touch-manipulation active:scale-95 shrink-0"
             title="Nächste Woche aufrufen"
           >
-            <ChevronRight className="w-4 h-4 text-stone-700" />
+            <ChevronRight className="w-4 h-4 text-[#57534d]" />
           </button>
         </div>
       )}
@@ -1051,12 +1051,12 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   {day.dayName}
                 </span>
                 {(totalCalories > 0 || totalProtein > 0) && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#F1F5F2] text-xs font-semibold border border-[#ECEBE8] shrink-0 text-stone-700" title={`Tagesgesamtwerte: ${totalCalories} kcal, ${totalProtein}g Protein`}>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#F1F5F2] text-xs font-semibold border border-[#ECEBE8] shrink-0 text-[#57534d]" title={`Tagesgesamtwerte: ${totalCalories} kcal, ${totalProtein}g Protein`}>
                     {totalCalories > 0 && (
-                      <span className="text-stone-700">🔥 {totalCalories}</span>
+                      <span className="text-[#57534d]">🔥 {totalCalories}</span>
                     )}
                     {totalCalories > 0 && totalProtein > 0 && (
-                      <span className="text-stone-400 font-normal">·</span>
+                      <span className="text-[#686e6a] font-normal">·</span>
                     )}
                     {totalProtein > 0 && (
                       <span className="text-[#4A7856]">💪 {totalProtein}g</span>
@@ -1068,7 +1068,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               {/* Lunch Slot - nur anzeigen wenn showLunchSlot aktiviert ist */}
               {showLunchSlot && (
                 <div className="space-y-1 flex-1 flex flex-col justify-between">
-                  <div className="text-xs font-semibold text-stone-600 uppercase tracking-wider flex items-center justify-between">
+                  <div className="text-xs font-semibold text-[#686e6a] uppercase tracking-wider flex items-center justify-between">
                     <span>Mittag</span>
                   </div>
 
@@ -1119,7 +1119,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1 mb-1 flex-wrap">
                             <div
-                              className="w-6 h-6 rounded-md flex items-center justify-center text-[#9BA19D] hover:text-[#4A7856] hover:bg-stone-100 cursor-grab active:cursor-grabbing touch-none shrink-0"
+                              className="w-6 h-6 rounded-md flex items-center justify-center text-[#686e6a] hover:text-[#4A7856] hover:bg-stone-100 cursor-grab active:cursor-grabbing touch-none shrink-0"
                               title="Ziehen zum Verschieben/Tauschen oder auf »Plan leeren« ziehen zum Löschen"
                               onTouchStart={(e) => {
                                 e.stopPropagation();
@@ -1134,7 +1134,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                                 <span>Vegan</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-white text-[#2D3E40] text-xs font-semibold border border-[#ECEBE8]">
+                              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-white text-[#57534d] text-xs font-semibold border border-[#ECEBE8]">
                                 <span>🧀</span>
                                 <span>Veggie</span>
                               </span>
@@ -1150,7 +1150,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                               const r = allRecipes.find((rec) => rec.id === day.lunch?.recipeId);
                               if (r) onSelectRecipe(r);
                             }}
-                            className="text-sm font-semibold text-stone-900 leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] transition-colors"
+                            className="text-sm font-semibold text-[#2D3E40] leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] transition-colors"
                             title={day.lunch.recipeTitle}
                           >
                             {day.lunch.recipeTitle}
@@ -1162,7 +1162,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                             removeSlot(day.dayId, 'lunch');
                             onCopyFeedback(`"${day.lunch?.recipeTitle || 'Mahlzeit'}" entfernt.`);
                           }}
-                          className="text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
+                          className="text-[#686e6a] hover:text-rose-600 hover:bg-rose-50 rounded-xl w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
                           title="Mahlzeit entfernen"
                         >
                           <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -1170,12 +1170,12 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       </div>
 
                       {/* Dezent gehaltene Info-Leiste mit Zeit, Kalorien & Protein */}
-                      <div className="flex items-center justify-between text-xs text-stone-600 pt-1.5 border-t border-[#ECEBE8] font-medium gap-1 flex-wrap">
+                      <div className="flex items-center justify-between text-xs text-[#686e6a] pt-1.5 border-t border-[#ECEBE8] font-medium gap-1 flex-wrap">
                         <span className="flex items-center gap-0.5 shrink-0" title={`Zubereitungszeit: ${day.lunch.prepTime} Minuten`}>
                           <span>⏱️</span>
                           <span>{day.lunch.prepTime}m</span>
                         </span>
-                        <span className="flex items-center gap-0.5 text-stone-600 shrink-0" title={`Kalorien: ${day.lunch.calories} kcal`}>
+                        <span className="flex items-center gap-0.5 text-[#686e6a] shrink-0" title={`Kalorien: ${day.lunch.calories} kcal`}>
                           <span>🔥</span>
                           <span>{day.lunch.calories} kcal</span>
                         </span>
@@ -1217,7 +1217,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                             ? 'border-[#4A7856] bg-[#E8F1EC] text-[#4A7856] ring-2 ring-[#4A7856]/40 font-semibold'
                             : draggingItem
                             ? 'border-[#4A7856]/60 bg-[#FAF9F6] text-[#4A7856]'
-                            : 'border-[#D5DDD7] hover:border-[#4A7856] text-stone-700 hover:text-[#4A7856] bg-[#FAF9F6]/60 hover:bg-[#F1F5F2]'
+                            : 'border-[#D5DDD7] hover:border-[#4A7856] text-[#57534d] hover:text-[#4A7856] bg-[#FAF9F6]/60 hover:bg-[#F1F5F2]'
                         }`}
                       >
                         <Plus className="w-4 h-4" />
@@ -1230,7 +1230,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
               {/* Dinner Slot - wenn Mittag ausgeblendet ist, geräumiger */}
               <div className={`space-y-1 ${showLunchSlot ? 'flex-1' : 'flex-initial sm:flex-1'} flex flex-col justify-between`}>
-                <div className="text-xs font-semibold text-stone-600 uppercase tracking-wider flex items-center justify-between">
+                <div className="text-xs font-semibold text-[#686e6a] uppercase tracking-wider flex items-center justify-between">
                   <span>Abendessen</span>
                   {!showLunchSlot && day.lunch && (
                     <span className="text-xs text-[#686E6A] normal-case font-medium">
@@ -1286,7 +1286,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1 mb-1 flex-wrap">
                           <div
-                            className="w-6 h-6 rounded-md flex items-center justify-center text-[#9BA19D] hover:text-[#4A7856] hover:bg-stone-100 cursor-grab active:cursor-grabbing touch-none shrink-0"
+                            className="w-6 h-6 rounded-md flex items-center justify-center text-[#686e6a] hover:text-[#4A7856] hover:bg-stone-100 cursor-grab active:cursor-grabbing touch-none shrink-0"
                             title="Ziehen zum Verschieben/Tauschen oder auf »Plan leeren« ziehen zum Löschen"
                             onTouchStart={(e) => {
                               e.stopPropagation();
@@ -1301,7 +1301,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                               <span>Vegan</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-white text-[#2D3E40] text-xs font-semibold border border-[#ECEBE8]">
+                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-white text-[#57534d] text-xs font-semibold border border-[#ECEBE8]">
                               <span>🧀</span>
                               <span>Veggie</span>
                             </span>
@@ -1317,7 +1317,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                             const r = allRecipes.find((rec) => rec.id === day.dinner?.recipeId);
                             if (r) onSelectRecipe(r);
                           }}
-                          className="text-sm font-semibold text-stone-900 leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] transition-colors"
+                          className="text-sm font-semibold text-[#2D3E40] leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] transition-colors"
                           title={day.dinner.recipeTitle}
                         >
                           {day.dinner.recipeTitle}
@@ -1329,7 +1329,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                           removeSlot(day.dayId, 'dinner');
                           onCopyFeedback(`"${day.dinner?.recipeTitle || 'Mahlzeit'}" entfernt.`);
                         }}
-                        className="text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
+                        className="text-[#686e6a] hover:text-rose-600 hover:bg-rose-50 rounded-xl w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
                         title="Mahlzeit entfernen"
                       >
                         <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -1337,12 +1337,12 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                     </div>
 
                     {/* Dezent gehaltene Info-Leiste mit Zeit, Kalorien & Protein */}
-                    <div className="flex items-center justify-between text-xs text-stone-600 pt-1.5 border-t border-[#ECEBE8] font-medium gap-1 flex-wrap">
+                    <div className="flex items-center justify-between text-xs text-[#686e6a] pt-1.5 border-t border-[#ECEBE8] font-medium gap-1 flex-wrap">
                       <span className="flex items-center gap-0.5 shrink-0" title={`Zubereitungszeit: ${day.dinner.prepTime} Minuten`}>
                         <span>⏱️</span>
                         <span>{day.dinner.prepTime}m</span>
                       </span>
-                      <span className="flex items-center gap-0.5 text-stone-600 shrink-0" title={`Kalorien: ${day.dinner.calories} kcal`}>
+                      <span className="flex items-center gap-0.5 text-[#686e6a] shrink-0" title={`Kalorien: ${day.dinner.calories} kcal`}>
                         <span>🔥</span>
                         <span>{day.dinner.calories} kcal</span>
                       </span>
@@ -1386,7 +1386,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                           ? 'border-[#4A7856] bg-[#E8F1EC] text-[#4A7856] ring-2 ring-[#4A7856]/40 font-semibold'
                           : draggingItem
                           ? 'border-[#4A7856]/60 bg-[#FAF9F6] text-[#4A7856]'
-                          : 'border-[#D5DDD7] hover:border-[#4A7856] text-stone-700 hover:text-[#4A7856] bg-[#FAF9F6]/60 hover:bg-[#F1F5F2]'
+                          : 'border-[#D5DDD7] hover:border-[#4A7856] text-[#57534d] hover:text-[#4A7856] bg-[#FAF9F6]/60 hover:bg-[#F1F5F2]'
                       }`}
                     >
                       <Plus className="w-4 h-4" />
@@ -1441,13 +1441,13 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 <h3 className="text-xl font-bold text-[#2D3E40] truncate">
                   Gericht auswählen
                 </h3>
-                <span className="hidden md:inline text-sm font-medium text-stone-600">
+                <span className="hidden md:inline text-sm font-medium text-[#686e6a]">
                   ({filteredPickerRecipes.length} Rezepte)
                 </span>
               </div>
               <button
                 onClick={() => setShowRecipePickerModal(false)}
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl text-[#686E6A] hover:text-[#2D3E40] bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] flex items-center justify-center cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl text-[#57534d] hover:text-[#4A7856] bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] flex items-center justify-center cursor-pointer touch-manipulation active:scale-95 shrink-0"
                 aria-label="Schließen"
               >
                 <X className="w-5 h-5" />
@@ -1457,18 +1457,18 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             {/* Search, Filter & Sort Bar: Aufgeräumt, vollwertige Buttons */}
             <div className="py-2.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 border-b border-[#ECEBE8]">
               <div className="relative flex-1">
-                <Search className="w-5 h-5 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-5 h-5 text-[#686e6a] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={pickerSearchQuery}
                   onChange={(e) => setPickerSearchQuery(e.target.value)}
                   placeholder="Gericht oder Zutat suchen..."
-                  className="w-full h-11 min-h-[44px] pl-11 pr-10 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-stone-800 placeholder:text-stone-400 text-base font-medium focus:bg-white focus:outline-hidden focus:border-[#4A7856] transition-all"
+                  className="w-full h-11 min-h-[44px] pl-11 pr-10 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[#2D3E40] placeholder:text-[#686e6a] text-base font-medium focus:bg-white focus:outline-hidden focus:border-[#4A7856] transition-all"
                 />
                 {pickerSearchQuery && (
                   <button
                     onClick={() => setPickerSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 w-8 h-8 flex items-center justify-center rounded-xl"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#57534d] hover:text-[#4A7856] w-8 h-8 flex items-center justify-center rounded-xl"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -1483,7 +1483,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   className={`h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap text-sm font-semibold ${
                     pickerFilter === 'all'
                       ? 'bg-[#2D3E40] text-white shadow-2xs'
-                      : 'bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                      : 'bg-[#FAF9F6] text-[#57534d] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
                   }`}
                 >
                   Alle ({allRecipes.length})
@@ -1495,7 +1495,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   className={`h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap flex items-center gap-1.5 text-sm font-semibold ${
                     pickerFilter === 'favorites'
                       ? 'bg-rose-600 text-white shadow-2xs'
-                      : 'bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                      : 'bg-[#FAF9F6] text-[#57534d] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
                   }`}
                 >
                   <Heart className={`w-4 h-4 ${pickerFilter === 'favorites' ? 'fill-white' : 'fill-rose-500 text-rose-500'}`} />
@@ -1508,7 +1508,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   className={`h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap flex items-center gap-1 text-sm font-semibold ${
                     pickerFilter === 'vegan'
                       ? 'bg-[#4A7856] text-white shadow-2xs'
-                      : 'bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                      : 'bg-[#FAF9F6] text-[#57534d] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
                   }`}
                 >
                   <span>🌱</span>
@@ -1521,7 +1521,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   className={`h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap flex items-center gap-1 text-sm font-semibold ${
                     pickerFilter === 'quick'
                       ? 'bg-[#4A7856] text-white shadow-2xs'
-                      : 'bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                      : 'bg-[#FAF9F6] text-[#57534d] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
                   }`}
                 >
                   <span>⚡</span>
@@ -1534,7 +1534,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   className={`h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap flex items-center gap-1 text-sm font-semibold ${
                     pickerFilter === 'protein'
                       ? 'bg-[#4A7856] text-white shadow-2xs'
-                      : 'bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                      : 'bg-[#FAF9F6] text-[#57534d] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
                   }`}
                 >
                   <span>💪</span>
@@ -1603,7 +1603,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                                 <span>Vegan</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-[#2D3E40] bg-white/95 backdrop-blur-xs border border-[#ECEBE8] shadow-xs">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-[#57534d] bg-white/95 backdrop-blur-xs border border-[#ECEBE8] shadow-xs">
                                 <span>🧀</span>
                                 <span>Veggie</span>
                               </span>
@@ -1621,7 +1621,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                               className={`absolute top-2.5 right-2.5 w-10 h-10 rounded-xl border flex items-center justify-center cursor-pointer transition-all active:scale-90 shadow-xs ${
                                 isFav
                                   ? 'bg-rose-500 border-rose-600 text-white'
-                                  : 'bg-white/95 hover:bg-white border-[#ECEBE8] text-stone-600 hover:text-rose-500'
+                                  : 'bg-white/95 hover:bg-white border-[#ECEBE8] text-[#686e6a] hover:text-rose-500'
                               }`}
                               title={isFav ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
                             >
@@ -1633,10 +1633,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                         {/* Rezept-Details & Nährwerte */}
                         <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between gap-3">
                           <div>
-                            <h4 className="text-[17px] font-bold text-stone-900 group-hover:text-[#4A7856] leading-snug line-clamp-1 transition-colors">
+                            <h4 className="text-[17px] font-bold text-[#2D3E40] group-hover:text-[#4A7856] leading-snug line-clamp-1 transition-colors">
                               {recipe.title}
                             </h4>
-                            <div className="flex items-center justify-between text-[13px] font-medium text-stone-600 mt-2 pt-2 border-t border-[#ECEBE8]">
+                            <div className="flex items-center justify-between text-[13px] font-medium text-[#686e6a] mt-2 pt-2 border-t border-[#ECEBE8]">
                               <span>⏱️ {recipe.totalTimeMinutes} Min.</span>
                               <span>🔥 {recipe.nutrients.calories} kcal</span>
                               <span className="text-[#4A7856] font-bold">💪 {recipe.nutrients.protein}g Protein</span>
@@ -1689,7 +1689,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               </div>
               <button
                 onClick={() => setShowAIGeneratorModal(false)}
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8] text-[#686E6A] hover:text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8] text-[#57534d] hover:text-[#4A7856] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0"
                 aria-label="Schließen"
               >
                 <X className="w-5 h-5" />
@@ -1897,7 +1897,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               <button
                 type="button"
                 onClick={() => setShowAIGeneratorModal(false)}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] font-semibold text-sm cursor-pointer touch-manipulation active:scale-95 h-11 min-h-[44px]"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#57534d] font-semibold text-sm cursor-pointer touch-manipulation active:scale-95 h-11 min-h-[44px]"
               >
                 Abbrechen
               </button>
@@ -1959,7 +1959,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 id="cancel-clear-plan-btn"
                 type="button"
                 onClick={() => setShowConfirmClearAll(false)}
-                className="min-h-[44px] h-11 px-4 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#2D3E40] font-semibold text-sm transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                className="min-h-[44px] h-11 px-4 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#57534d] font-semibold text-sm transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 Abbrechen
               </button>
@@ -2006,7 +2006,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   setShowAllWeeksModal(false);
                   setConfirmDeleteWeekId(null);
                 }}
-                className="w-11 h-11 rounded-xl hover:bg-[#FAF9F6] text-[#686E6A] hover:text-[#2D3E40] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                className="w-11 h-11 rounded-xl hover:bg-[#FAF9F6] text-[#57534d] hover:text-[#4A7856] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2078,7 +2078,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                             e.stopPropagation();
                             setConfirmDeleteWeekId(null);
                           }}
-                          className="min-h-[40px] px-2.5 rounded-lg bg-white border border-rose-200 text-[#686E6A] hover:text-[#2D3E40] text-xs font-medium cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                          className="min-h-[40px] px-2.5 rounded-lg bg-white border border-rose-200 text-[#57534d] hover:text-[#4A7856] text-xs font-medium cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
                         >
                           Nein
                         </button>
@@ -2093,7 +2093,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                               if (onSelectWeek) onSelectWeek(w.id);
                               setShowAllWeeksModal(false);
                             }}
-                            className="min-h-[40px] px-3.5 rounded-xl bg-white border border-[#ECEBE8] text-sm font-semibold text-[#2D3E40] hover:bg-[#F1F5F2] cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                            className="min-h-[40px] px-3.5 rounded-xl bg-white border border-[#ECEBE8] text-sm font-semibold text-[#57534d] hover:bg-[#F1F5F2] cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
                           >
                             Öffnen
                           </button>
@@ -2164,7 +2164,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               </div>
               <button
                 onClick={() => setShowCreateWeekModal(false)}
-                className="w-11 h-11 rounded-xl hover:bg-[#FAF9F6] text-[#686E6A] hover:text-[#2D3E40] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                className="w-11 h-11 rounded-xl hover:bg-[#FAF9F6] text-[#57534d] hover:text-[#4A7856] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2188,7 +2188,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               <button
                 type="button"
                 onClick={() => setShowCreateWeekModal(false)}
-                className="flex-1 min-h-[44px] h-11 py-2.5 rounded-xl border border-[#ECEBE8] text-sm font-semibold text-[#686E6A] hover:text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                className="flex-1 min-h-[44px] h-11 py-2.5 rounded-xl border border-[#ECEBE8] text-sm font-semibold text-[#57534d] hover:text-[#4A7856] hover:bg-[#FAF9F6] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 Abbrechen
               </button>

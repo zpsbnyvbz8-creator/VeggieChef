@@ -69,7 +69,7 @@ export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
   return (
     <aside
       id="persistent-cooking-timer-bar"
-      className="fixed bottom-0 inset-x-0 z-40 bg-[#2D3E40] text-white border-t border-[#3D5254] px-3 sm:px-6 py-2.5 shadow-2xl animate-in slide-in-from-bottom duration-200"
+      className="fixed bottom-0 inset-x-0 z-40 bg-[#57534d] text-white border-t border-[#3D5254] px-3 sm:px-6 py-2.5 shadow-2xl animate-in slide-in-from-bottom duration-200"
       aria-label="Aktiver Kochmodus und Timer"
     >
       {/* Top Countdown Progress Indicator */}

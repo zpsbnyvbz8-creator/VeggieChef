@@ -953,14 +953,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             }`}>
               <span
                 className={`text-base font-medium block break-words leading-tight ${
-                  item.completed ? 'line-through text-stone-400' : 'text-stone-800'
+                  item.completed ? 'line-through text-[#686e6a]' : 'text-[#2D3E40]'
                 }`}
               >
                 {item.name}
               </span>
               {recipeSourceText && (
                 <span 
-                  className="text-[13px] font-normal text-stone-600 break-words leading-normal mt-0.5 line-clamp-2"
+                  className="text-[13px] font-normal text-[#686e6a] break-words leading-normal mt-0.5 line-clamp-2"
                   title={item.recipeSource}
                 >
                   {recipeSourceText}
@@ -1008,7 +1008,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <button
                   type="button"
                   onClick={() => stepEditedAmount(-1)}
-                  className="w-7 h-7 rounded-lg bg-[#F1F5F2] hover:bg-[#E8EFEA] text-[#2D3E40] flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
+                  className="w-7 h-7 rounded-lg bg-[#F1F5F2] hover:bg-[#E8EFEA] text-[#57534d] flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
                   title="Menge verringern"
                 >
                   <Minus className="w-3 h-3" />
@@ -1034,7 +1034,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <button
                   type="button"
                   onClick={() => stepEditedAmount(1)}
-                  className="w-7 h-7 rounded-lg bg-[#F1F5F2] hover:bg-[#E8EFEA] text-[#2D3E40] flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
+                  className="w-7 h-7 rounded-lg bg-[#F1F5F2] hover:bg-[#E8EFEA] text-[#57534d] flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
                   title="Menge erhöhen"
                 >
                   <Plus className="w-3 h-3" />
@@ -1052,7 +1052,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <button
                   type="button"
                   onClick={cancelEditing}
-                  className="w-7 h-7 rounded-lg text-[#686E6A] hover:text-[#2D3E40] hover:bg-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90"
+                  className="w-7 h-7 rounded-lg text-[#57534d] hover:text-[#57534d] hover:bg-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90"
                   title="Abbrechen"
                 >
                   <X className="w-3 h-3" />
@@ -1068,7 +1068,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 }}
                 className={`text-base font-semibold tabular-nums select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline ${
                   item.completed
-                    ? 'text-[#9BA19D] line-through opacity-60'
+                    ? 'text-[#686e6a] line-through opacity-60'
                     : 'text-[#4A7856] hover:text-[#3D6447]'
                 }`}
                 title="Menge anpassen (- / +)"
@@ -1081,8 +1081,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             <div
               className={`p-1 transition-colors hidden sm:flex items-center justify-center ${
                 isAnySwiped
-                  ? 'text-[#E0E2E0] opacity-30 cursor-not-allowed pointer-events-none'
-                  : 'text-[#B5B9B6] hover:text-[#2D3E40] cursor-grab active:cursor-grabbing'
+                  ? 'text-[#686e6a] opacity-30 cursor-not-allowed pointer-events-none'
+                  : 'text-[#686e6a] hover:text-[#57534d] cursor-grab active:cursor-grabbing'
               }`}
               title={isAnySwiped ? 'Verschieben gesperrt' : 'Gedrückt halten zum Verschieben'}
             >
@@ -1113,7 +1113,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap ${
                   syncConfig?.mode === 'family' && syncConfig?.groupId
                     ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                    : 'bg-[#FAF9F6] text-[#686E6A] border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                    : 'bg-[#FAF9F6] text-[#57534d] border-[#ECEBE8] hover:bg-[#F1F5F2]'
                 }`}
                 title="Synchronisationseinstellungen öffnen"
               >
@@ -1125,17 +1125,17 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   </>
                 ) : (
                   <>
-                    <Cloud className="w-3 h-3 text-[#686E6A]" />
+                    <Cloud className="w-3 h-3 text-[#57534d]" />
                     <span>Lokal • Teilen</span>
                   </>
                 )}
               </button>
             )}
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-stone-900">
+          <h1 className="text-2xl font-bold tracking-tight text-[#2D3E40]">
             Liste
           </h1>
-          <p className="text-sm font-medium text-stone-600">
+          <p className="text-sm font-medium text-[#686e6a]">
             Alles für deine Woche – geordnet nach Supermarkt-Regal.
           </p>
         </div>
@@ -1143,7 +1143,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         {/* Unified Action Row: single horizontal row with consistent sizing and alignment */}
         <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#ECEBE8]">
           {/* Left side: View switcher ([ Regale ] / [ Liste ]) styled as cohesive segmented control pill */}
-          <div className="relative flex items-center p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs font-semibold select-none shadow-2xs h-[44px]">
+          <div className="relative flex items-center p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] select-none shadow-2xs h-[44px]">
             <div
               className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#4A7856] rounded-lg shadow-xs transition-all duration-200 ease-out pointer-events-none ${
                 viewMode === 'categorized' ? 'left-1' : 'left-[calc(50%+2px)]'
@@ -1153,28 +1153,28 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             <button
               type="button"
               onClick={() => setViewMode('categorized')}
-              className={`relative z-10 px-3.5 sm:px-3 h-full flex items-center justify-center gap-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation select-none ${
+              className={`relative z-10 px-3.5 sm:px-4 h-full flex items-center justify-center gap-2 rounded-lg text-[16px] transition-colors cursor-pointer touch-manipulation select-none ${
                 viewMode === 'categorized'
                   ? 'text-white font-bold'
-                  : 'text-[#686E6A] hover:text-[#2D3E40] font-medium'
+                  : 'text-[#57534d] hover:text-[#4A7856] font-semibold'
               }`}
               title="Nach Supermarkt-Regalen gruppiert"
             >
-              <LayoutGrid className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+              <LayoutGrid className="w-4 h-4" />
               <span>Regale</span>
             </button>
 
             <button
               type="button"
               onClick={() => setViewMode('flat')}
-              className={`relative z-10 px-3.5 sm:px-3 h-full flex items-center justify-center gap-1.5 rounded-lg transition-colors cursor-pointer touch-manipulation select-none ${
+              className={`relative z-10 px-3.5 sm:px-4 h-full flex items-center justify-center gap-2 rounded-lg text-[16px] transition-colors cursor-pointer touch-manipulation select-none ${
                 viewMode === 'flat'
                   ? 'text-white font-bold'
-                  : 'text-[#686E6A] hover:text-[#2D3E40] font-medium'
+                  : 'text-[#57534d] hover:text-[#4A7856] font-semibold'
               }`}
               title="Alle Artikel in einer sortierbaren Liste"
             >
-              <List className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+              <List className="w-4 h-4" />
               <span>Liste</span>
             </button>
           </div>
@@ -1186,13 +1186,13 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               type="button"
               onClick={handleCopyFormattedList}
               disabled={items.length === 0}
-              className="h-[44px] px-3.5 sm:px-3 flex items-center justify-center gap-1.5 rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#2D3E40] hover:text-[#1F2C2D] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#FAF9F6] font-medium text-xs shadow-2xs transition-all active:scale-95 touch-manipulation cursor-pointer group"
+              className="h-[44px] px-3.5 sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#57534d] hover:text-[#4A7856] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#FAF9F6] font-semibold text-[16px] shadow-2xs transition-all active:scale-95 touch-manipulation cursor-pointer group"
               title="Kopiert die Liste formatiert für WhatsApp & Notizen"
             >
               {copied ? (
-                <Check className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[#4A7856]" />
+                <Check className="w-4 h-4 text-[#4A7856]" />
               ) : (
-                <Copy className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[#686E6A] group-hover:text-[#2D3E40] transition-colors" />
+                <Copy className="w-4 h-4 text-[#686e6a] group-hover:text-[#57534d] transition-colors" />
               )}
               <span>{copied ? 'Kopiert!' : 'Kopieren'}</span>
             </button>
@@ -1220,12 +1220,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               }}
               onDrop={handleDropOnDelete}
               disabled={items.length === 0 && !draggedShelf && !draggedItemId}
-              className={`h-[44px] px-3.5 sm:px-3 flex items-center justify-center gap-1.5 rounded-xl font-medium text-xs border transition-all select-none touch-manipulation group shadow-2xs ${
+              className={`h-[44px] px-3.5 sm:px-4 flex items-center justify-center gap-2 rounded-xl font-semibold text-[16px] border transition-all select-none touch-manipulation group shadow-2xs ${
                 isDragOverDelete
                   ? 'bg-rose-600 text-white border-rose-600 shadow-md ring-2 ring-rose-400'
                   : items.length > 0
-                  ? 'bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#2D3E40] hover:text-rose-700 border-[#ECEBE8] hover:border-rose-200 active:scale-95 cursor-pointer'
-                  : 'bg-[#FAF9F6] text-[#A0A5A2] border-[#ECEBE8] opacity-40 cursor-not-allowed'
+                  ? 'bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#57534d] hover:text-rose-700 border-[#ECEBE8] hover:border-rose-200 active:scale-95 cursor-pointer'
+                  : 'bg-[#FAF9F6] text-[#686e6a] border-[#ECEBE8] opacity-40 cursor-not-allowed'
               }`}
               title={
                 draggedShelf
@@ -1236,12 +1236,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               }
             >
               <Trash2
-                className={`w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0 transition-colors ${
+                className={`w-4 h-4 shrink-0 transition-colors ${
                   isDragOverDelete
                     ? 'text-white animate-bounce'
                     : items.length > 0
                     ? 'text-rose-500/80 group-hover:text-rose-600'
-                    : 'text-[#A0A5A2]'
+                    : 'text-[#686e6a]'
                 }`}
               />
               <span>Löschen</span>
@@ -1262,7 +1262,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             placeholder="Schnell hinzufügen (z. B. 400g Tofu)..."
             value={quickAddInput}
             onChange={(e) => setQuickAddInput(e.target.value)}
-            className="w-full bg-[#FAF9F6] hover:bg-[#F5F4F0] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] rounded-xl px-3 sm:px-3.5 py-2 text-base text-[#2D3E40] placeholder:text-[#9BA09C] focus:outline-hidden transition-all h-12 sm:h-10"
+            className="w-full bg-[#FAF9F6] hover:bg-[#F5F4F0] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] rounded-xl px-3 sm:px-3.5 py-2 text-base text-[#2D3E40] placeholder:text-[#686e6a] focus:outline-hidden transition-all h-12 sm:h-10"
           />
         </div>
 
@@ -1396,7 +1396,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                     {/* Category Title & Drag Handle */}
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <div
-                        className="p-1 text-[#B5B9B6] shrink-0 pointer-events-none"
+                        className="p-1 text-[#686e6a] shrink-0 pointer-events-none"
                       >
                         <GripVertical className="w-4 h-4" />
                       </div>
@@ -1418,11 +1418,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
                     {/* Clean & minimal count pill + chevron */}
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                      <span className="text-xs font-semibold text-stone-600 bg-[#F4F3F0] px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#ECEBE8]">
+                      <span className="text-xs font-semibold text-[#686e6a] bg-[#F4F3F0] px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#ECEBE8]">
                         {activeInCat.length} offen
                       </span>
 
-                      <div className="p-1 text-[#9BA09C] group-hover:text-[#2D3E40] transition-colors">
+                      <div className="p-1 text-[#686e6a] group-hover:text-[#57534d] transition-colors">
                         <ChevronDown
                           className={`w-4 h-4 transition-transform duration-200 ${
                             isCollapsed ? '-rotate-90' : 'rotate-0'
@@ -1492,7 +1492,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               <button
                 type="button"
                 onClick={() => setShowCompletedSection(!showCompletedSection)}
-                className="p-1 text-[#686E6A] hover:text-[#2D3E40] cursor-pointer"
+                className="p-1 text-[#57534d] hover:text-[#4A7856] cursor-pointer"
                 title={showCompletedSection ? 'Zuklappen' : 'Aufklappen'}
               >
                 <ChevronDown
@@ -1591,7 +1591,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 id="cancel-delete-shopping-btn"
                 type="button"
                 onClick={() => setConfirmDeleteState(null)}
-                className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#2D3E40] font-semibold text-xs transition-colors cursor-pointer"
+                className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#57534d] font-semibold text-xs transition-colors cursor-pointer"
               >
                 Abbrechen
               </button>

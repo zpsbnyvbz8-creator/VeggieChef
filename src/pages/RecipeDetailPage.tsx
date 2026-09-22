@@ -697,7 +697,7 @@ export const RecipeDetailPage: React.FC = () => {
                       }}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
                     >
-                      <ThumbsDown className="w-4 h-4 text-stone-400" />
+                      <ThumbsDown className="w-4 h-4 text-[#686e6a]" />
                       <span>{isDisliked ? 'Nicht mehr disliken' : 'Seltener anzeigen'}</span>
                     </button>
 
@@ -901,19 +901,19 @@ export const RecipeDetailPage: React.FC = () => {
                   type="button"
                   onClick={() => setServings(Math.max(1, servings - 1))}
                   disabled={servings <= 1}
-                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] disabled:opacity-30 text-[#2D3E40] transition-colors cursor-pointer touch-manipulation"
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation"
                   aria-label="Portion verringern"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                <span className="px-3 sm:px-4 text-[16px] font-bold text-[#2D3E40] tabular-nums min-w-[85px] text-center select-none">
+                <span className="px-3 sm:px-4 text-[16px] font-bold text-[#57534d] tabular-nums min-w-[85px] text-center select-none">
                   {servings} {servings === 1 ? 'Portion' : 'Portionen'}
                 </span>
                 <button
                   id="servings-step-increase-btn"
                   type="button"
                   onClick={() => setServings(Math.min(24, servings + 1))}
-                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] text-[#2D3E40] transition-colors cursor-pointer touch-manipulation"
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation"
                   aria-label="Portion erhöhen"
                 >
                   <Plus className="w-4 h-4" />
@@ -929,7 +929,7 @@ export const RecipeDetailPage: React.FC = () => {
               id="servings-add-to-plan-btn"
               type="button"
               onClick={() => setRecipeToAddToPlan(recipe)}
-              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#57534d] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
             >
               <CalendarPlus className="w-4 h-4 text-[#4A7856] shrink-0" />
               <span className="text-[16px] truncate">+ Planer</span>
@@ -940,7 +940,7 @@ export const RecipeDetailPage: React.FC = () => {
               id="servings-add-to-shopping-btn"
               type="button"
               onClick={handleAddShopping}
-              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#57534d] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
             >
               {addedShopping ? (
                 <Check className="w-4 h-4 text-[#4A7856] shrink-0" />
@@ -955,7 +955,7 @@ export const RecipeDetailPage: React.FC = () => {
               id="servings-copy-ingredients-btn"
               type="button"
               onClick={handleCopyIngredients}
-              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#57534d] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
             >
               <Copy className="w-4 h-4 text-[#4A7856] shrink-0" />
               <span className="text-[16px] truncate">Kopieren</span>
@@ -986,7 +986,7 @@ export const RecipeDetailPage: React.FC = () => {
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[16px] font-semibold transition-all cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
                 isCustomizingIngredients
                   ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs hover:bg-[#3D6447]'
-                  : 'bg-white hover:bg-[#F1F5F2] border-[#ECEBE8] text-[#2D3E40] shadow-2xs'
+                  : 'bg-white hover:bg-[#F1F5F2] border-[#ECEBE8] text-[#57534d] shadow-2xs'
               }`}
               title={isCustomizingIngredients ? 'Zutatenanpassung beenden' : 'Zutaten anpassen'}
             >
@@ -1048,7 +1048,7 @@ export const RecipeDetailPage: React.FC = () => {
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span
                             className={`text-base font-medium break-words leading-normal transition-all ${
-                              isChecked ? 'line-through text-[#9BA19D] opacity-60' : 'text-[#2D3E40]'
+                              isChecked ? 'line-through text-[#686e6a] opacity-60' : 'text-[#2D3E40]'
                             }`}
                           >
                             {ing.name}
@@ -1068,7 +1068,7 @@ export const RecipeDetailPage: React.FC = () => {
                     <div className="flex items-center gap-2.5 shrink-0 pl-2">
                       <span
                         className={`text-base font-semibold text-right tabular-nums whitespace-nowrap ${
-                          isChecked ? 'line-through text-[#9BA19D] opacity-60' : 'text-[#4A7856]'
+                          isChecked ? 'line-through text-[#686e6a] opacity-60' : 'text-[#4A7856]'
                         }`}
                       >
                         {amountStr}
@@ -1103,7 +1103,7 @@ export const RecipeDetailPage: React.FC = () => {
         {/* 7. NUTRITION MACROS & EXPANDABLE MICRONUTRIENTS ACCORDION */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-[16px] font-bold text-[#686E6A] uppercase tracking-wider">
+            <h3 className="text-[16px] font-bold text-[#57534d] uppercase tracking-wider">
               Nährwerte pro Portion ({recipe.nutrients.calories} kcal)
             </h3>
           </div>
@@ -1141,7 +1141,7 @@ export const RecipeDetailPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsMicronutrientsOpen(!isMicronutrientsOpen)}
-              className="w-full px-4 py-3 flex items-center justify-between text-[14px] font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
+              className="w-full px-4 py-3 flex items-center justify-between text-[14px] font-semibold text-[#57534d] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
             >
               <span className="flex items-center gap-2">
                 <Leaf className="w-3.5 h-3.5 text-[#4A7856]" />
@@ -1158,37 +1158,37 @@ export const RecipeDetailPage: React.FC = () => {
               <div className="px-4 pb-4 pt-1 border-t border-[#ECEBE8] bg-[#FAF9F6]/50 animate-in fade-in duration-150">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
                   <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[11px] text-[#686E6A]">Eisen</div>
+                    <div className="text-[12px] text-[#686E6A]">Eisen</div>
                     <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
                       {recipe.nutrients.iron ?? (Math.round((recipe.nutrients.calories / 100) * 0.9 * 10) / 10)} mg
                     </div>
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[11px] text-[#686E6A]">Vitamin B12</div>
+                    <div className="text-[12px] text-[#686E6A]">Vitamin B12</div>
                     <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
                       {recipe.nutrients.b12 ?? (recipe.isVegan ? '0 µg (pflanzl.)' : '0.5 µg')}
                     </div>
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[11px] text-[#686E6A]">Calcium</div>
+                    <div className="text-[12px] text-[#686E6A]">Calcium</div>
                     <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
                       {recipe.nutrients.calcium ?? Math.round((recipe.nutrients.calories / 100) * 38)} mg
                     </div>
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[11px] text-[#686E6A]">Zink</div>
+                    <div className="text-[12px] text-[#686E6A]">Zink</div>
                     <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
                       {recipe.nutrients.zinc ?? (Math.round((recipe.nutrients.calories / 100) * 0.7 * 10) / 10)} mg
                     </div>
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[11px] text-[#686E6A]">Vitamin C</div>
+                    <div className="text-[12px] text-[#686E6A]">Vitamin C</div>
                     <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
                       {recipe.nutrients.vitaminC ?? 26} mg
                     </div>
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[11px] text-[#686E6A]">Magnesium</div>
+                    <div className="text-[12px] text-[#686E6A]">Magnesium</div>
                     <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
                       {recipe.nutrients.magnesium ?? 68} mg
                     </div>
@@ -1238,7 +1238,7 @@ export const RecipeDetailPage: React.FC = () => {
                           id="toggle-step-images-btn"
                           type="button"
                           onClick={() => setShowStepImages(!showStepImages)}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[16px] font-semibold text-[#2D3E40] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[16px] font-semibold text-[#57534d] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
                           title={showStepImages ? 'Schritt-Fotos ausblenden' : 'Schritt-Fotos einblenden'}
                         >
                           {showStepImages ? (
@@ -1260,7 +1260,7 @@ export const RecipeDetailPage: React.FC = () => {
                             setIsManagingStepPhotos(true);
                             setShowStepImages(true);
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[16px] font-semibold bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#686E6A] transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[16px] font-semibold bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0"
                           title="Fotos verwalten"
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -1276,7 +1276,7 @@ export const RecipeDetailPage: React.FC = () => {
                           setIsManagingStepPhotos(true);
                           setShowStepImages(true);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[16px] font-semibold bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#2D3E40] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[16px] font-semibold bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#57534d] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
                         title="Schritt-Fotos hinzufügen"
                       >
                         <Plus className="w-3.5 h-3.5 text-[#4A7856]" />
@@ -1321,7 +1321,7 @@ export const RecipeDetailPage: React.FC = () => {
                             <div className="flex flex-wrap items-center gap-2">
                               <span
                                 className={`text-base font-bold transition-colors ${
-                                  isStepDone ? 'line-through text-[#9BA19D] opacity-60' : 'text-[#2D3E40]'
+                                  isStepDone ? 'line-through text-[#686e6a] opacity-60' : 'text-[#2D3E40]'
                                 }`}
                               >
                                 {stepObj.title || `Schritt ${stepObj.stepNumber}`}
@@ -1341,7 +1341,7 @@ export const RecipeDetailPage: React.FC = () => {
 
                             <p
                               className={`text-base leading-relaxed break-words mt-1 transition-colors ${
-                                isStepDone ? 'line-through text-[#9BA19D] opacity-60' : 'text-[#2D3E40]'
+                                isStepDone ? 'line-through text-[#686e6a] opacity-60' : 'text-[#2D3E40]'
                               }`}
                             >
                               {stepObj.text}
@@ -1386,10 +1386,10 @@ export const RecipeDetailPage: React.FC = () => {
 
           {/* Smart Chef Tip Callout */}
           {recipe.chefTip && (
-            <div className="p-4 bg-[#FDF6F0] border-l-4 border-[#D35400] rounded-r-2xl flex items-start gap-3 mt-4">
-              <ChefHat className="w-5 h-5 text-[#D35400] shrink-0 mt-0.5" />
+            <div className="p-4 bg-[#FDF6F0] border-l-4 border-[#BD4800] rounded-r-2xl flex items-start gap-3 mt-4">
+              <ChefHat className="w-5 h-5 text-[#BD4800] shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-[16px] leading-[24px] font-bold text-[#D35400] uppercase tracking-wider">
+                <h4 id="chef-tip-heading" className="text-[16px] leading-[24px] font-bold text-[#BD4800] uppercase tracking-wider">
                   Profi-Tipp vom Veggie-Chef
                 </h4>
                 <p className="text-[16px] leading-[26px] text-[#2D3E40] mt-1">
@@ -1412,7 +1412,7 @@ export const RecipeDetailPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsNotesExpanded(!isNotesExpanded)}
-              className="text-[16px] text-[#686E6A] hover:text-[#2D3E40] font-semibold cursor-pointer"
+              className="text-[16px] text-[#57534d] hover:text-[#4A7856] font-semibold cursor-pointer"
             >
               {isNotesExpanded ? 'Schließen' : personalNoteText.trim() ? 'Bearbeiten' : '+ Notiz hinzufügen'}
             </button>
@@ -1444,7 +1444,7 @@ export const RecipeDetailPage: React.FC = () => {
                   id="cancel-personal-notes-btn"
                   type="button"
                   onClick={() => setIsNotesExpanded(false)}
-                  className="h-11 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-semibold text-[#686E6A] hover:text-[#2D3E40] hover:bg-[#FAF9F6] border border-transparent hover:border-[#ECEBE8] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                  className="h-11 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-semibold text-[#57534d] hover:text-[#4A7856] hover:bg-[#FAF9F6] border border-transparent hover:border-[#ECEBE8] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
                 >
                   Abbrechen
                 </button>
@@ -1477,19 +1477,19 @@ export const RecipeDetailPage: React.FC = () => {
                 type="button"
                 onClick={() => setServings(Math.max(1, servings - 1))}
                 disabled={servings <= 1}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] disabled:opacity-30 text-[#2D3E40] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 title="Portion verringern"
               >
                 <Minus className="w-4 h-4" />
               </button>
-              <span className="px-2.5 text-[16px] font-bold text-[#2D3E40] tabular-nums min-w-[65px] text-center select-none">
+              <span className="px-2.5 text-[16px] font-bold text-[#57534d] tabular-nums min-w-[65px] text-center select-none">
                 {servings} Port.
               </span>
               <button
                 id="sticky-servings-increase-btn"
                 type="button"
                 onClick={() => setServings(Math.min(24, servings + 1))}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] text-[#2D3E40] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 title="Portion erhöhen"
               >
                 <Plus className="w-4 h-4" />

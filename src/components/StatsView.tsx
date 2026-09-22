@@ -234,10 +234,10 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
           <BarChart3 className="w-3.5 h-3.5" />
           Deine Kochstatistik & Umweltbeitrag
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-stone-900">
+        <h1 className="text-2xl font-bold tracking-tight text-[#2D3E40]">
           Übersicht & Verlauf
         </h1>
-        <p className="text-sm font-medium text-stone-600">
+        <p className="text-sm font-medium text-[#686e6a]">
           {totalCooked === 0
             ? 'Noch keine Gerichte gekocht. Markiere Rezepte als gekocht, um deine Erfolge zu tracken.'
             : `${totalCooked} Mahlzeiten zubereitet • ${totalPortions} Portionen • ${totalCO2Saved} kg CO₂ eingespart`}
@@ -274,7 +274,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
               <button
                 id="cancel-clear-stats-btn"
                 onClick={() => setShowConfirmModal(false)}
-                className="min-h-[44px] px-4 sm:px-5 py-2.5 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#2D3E40] font-semibold text-sm transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="min-h-[44px] px-4 sm:px-5 py-2.5 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#57534d] font-semibold text-sm transition-colors cursor-pointer touch-manipulation active:scale-95"
               >
                 Abbrechen
               </button>
@@ -300,7 +300,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-1 sm:space-y-1.5">
           <div className="flex items-center justify-between text-[#686E6A] text-xs font-semibold uppercase tracking-wider">
             <span>Gekocht</span>
-            <div className="p-1.5 sm:p-2 rounded-lg bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8]">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-[#FAF9F6] text-[#57534d] border border-[#ECEBE8]">
               <Utensils className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
@@ -324,7 +324,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#ECEBE8] shadow-xs space-y-1 sm:space-y-1.5">
           <div className="flex items-center justify-between text-[#686E6A] text-xs font-semibold uppercase tracking-wider">
             <span>Wasser</span>
-            <div className="p-1.5 sm:p-2 rounded-lg bg-[#FAF9F6] text-[#2D3E40] border border-[#ECEBE8]">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-[#FAF9F6] text-[#57534d] border border-[#ECEBE8]">
               <Droplets className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
@@ -355,7 +355,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation active:scale-95 ${
             activeMobileTab === 'history'
               ? 'bg-white text-[#2D3E40] shadow-xs border border-[#ECEBE8]'
-              : 'text-[#686E6A] hover:text-[#2D3E40]'
+              : 'text-[#57534d] hover:text-[#4A7856]'
           }`}
         >
           <Clock className="w-3.5 h-3.5" />
@@ -367,7 +367,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation active:scale-95 ${
             activeMobileTab === 'achievements'
               ? 'bg-white text-[#2D3E40] shadow-xs border border-[#ECEBE8]'
-              : 'text-[#686E6A] hover:text-[#2D3E40]'
+              : 'text-[#57534d] hover:text-[#4A7856]'
           }`}
         >
           <Trophy className="w-3.5 h-3.5 text-[#D35400]" />
@@ -412,7 +412,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                 {historySearchQuery && (
                   <button
                     onClick={() => setHistorySearchQuery('')}
-                    className="w-9 h-9 absolute right-1.5 top-1/2 -translate-y-1/2 text-[#686E6A] hover:text-[#2D3E40] hover:bg-[#ECEBE8] rounded-lg flex items-center justify-center cursor-pointer touch-manipulation active:scale-90"
+                    className="w-9 h-9 absolute right-1.5 top-1/2 -translate-y-1/2 text-[#57534d] hover:text-[#4A7856] hover:bg-[#ECEBE8] rounded-lg flex items-center justify-center cursor-pointer touch-manipulation active:scale-90"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -452,7 +452,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
           </div>
         ) : filteredLogs.length === 0 ? (
           <div className="text-center py-6 text-xs text-[#686E6A] space-y-3">
-            <p className="font-semibold text-[#2D3E40]">Keine Treffer für diese Filterung</p>
+            <p className="font-semibold text-[#57534d]">Keine Treffer für diese Filterung</p>
             <button
               onClick={() => {
                 setHistorySearchQuery('');
@@ -704,7 +704,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                           <button
                             type="button"
                             onClick={() => setConfirmDeleteLogId(null)}
-                            className="px-2 py-1.5 rounded-lg bg-white hover:bg-[#ECEBE8] text-[#686E6A] hover:text-[#2D3E40] border border-[#ECEBE8] text-xs font-semibold transition-colors cursor-pointer active:scale-95 touch-manipulation"
+                            className="px-2 py-1.5 rounded-lg bg-white hover:bg-[#ECEBE8] text-[#57534d] hover:text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold transition-colors cursor-pointer active:scale-95 touch-manipulation"
                           >
                             Abbrechen
                           </button>

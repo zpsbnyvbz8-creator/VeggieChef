@@ -138,7 +138,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-10 h-10 rounded-full hover:bg-[#FAF9F6] text-[#686E6A] hover:text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-10 h-10 rounded-full hover:bg-[#FAF9F6] text-[#57534d] hover:text-[#57534d] flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Schließen"
           >
             <X className="w-5 h-5" />
@@ -175,7 +175,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-[#686E6A] mb-1">Kategorie</label>
+                <label className="block text-[11px] font-bold text-[#2D3E40] mb-1">Kategorie</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as RecipeCategory)}
@@ -190,7 +190,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#686E6A] mb-1">Schwierigkeit</label>
+                <label className="block text-[11px] font-bold text-[#2D3E40] mb-1">Schwierigkeit</label>
                 <select
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value as any)}
@@ -203,7 +203,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#686E6A] mb-1">Portionen</label>
+                <label className="block text-[11px] font-bold text-[#2D3E40] mb-1">Portionen</label>
                 <input
                   type="number"
                   min="1"
@@ -215,7 +215,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#686E6A] mb-1">Kochzeit (Min.)</label>
+                <label className="block text-[11px] font-bold text-[#2D3E40] mb-1">Kochzeit (Min.)</label>
                 <input
                   type="number"
                   min="5"
@@ -227,7 +227,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
             </div>
 
             <div className="flex items-center gap-2 pt-1">
-              <label className="flex items-center gap-2 text-xs font-semibold text-[#2D3E40] cursor-pointer select-none">
+              <label className="flex items-center gap-2 text-xs font-semibold text-[#57534d] cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={isVegan}
@@ -242,7 +242,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
           {/* Ingredients list editor */}
           <div className="space-y-2 pt-3 border-t border-[#ECEBE8]">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
+              <label className="text-xs font-bold text-[#57534d] uppercase tracking-wider">
                 Zutaten ({ingredients.length})
               </label>
               <button
@@ -270,7 +270,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                     value={ing.amount}
                     placeholder="Menge"
                     onChange={(e) => handleUpdateIngredient(idx, 'amount', e.target.value)}
-                    className="w-16 h-9 px-2 bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg text-xs text-[#2D3E40] text-center"
+                    className="w-16 h-9 px-2 bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg text-xs text-[#57534d] text-center"
                   />
                   <input
                     type="text"
@@ -282,7 +282,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                   <button
                     type="button"
                     onClick={() => handleRemoveIngredient(idx)}
-                    className="w-9 h-9 flex items-center justify-center text-stone-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                    className="w-9 h-9 flex items-center justify-center text-[#686e6a] hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -294,7 +294,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
           {/* Steps editor */}
           <div className="space-y-2 pt-3 border-t border-[#ECEBE8]">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
+              <label className="text-xs font-bold text-[#57534d] uppercase tracking-wider">
                 Zubereitungsschritte ({steps.length})
               </label>
               <button
@@ -323,7 +323,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                   <button
                     type="button"
                     onClick={() => handleRemoveStep(idx)}
-                    className="w-8 h-8 flex items-center justify-center text-stone-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer mt-1"
+                    className="w-8 h-8 flex items-center justify-center text-[#686e6a] hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer mt-1"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -353,7 +353,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-[#ECEBE8] text-xs font-semibold text-[#686E6A] hover:bg-[#FAF9F6] cursor-pointer"
+            className="px-4 py-2.5 rounded-xl border border-[#ECEBE8] text-xs font-semibold text-[#57534d] hover:bg-[#FAF9F6] cursor-pointer"
           >
             Abbrechen
           </button>
