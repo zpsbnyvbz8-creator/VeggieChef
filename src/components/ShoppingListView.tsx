@@ -111,6 +111,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
   // Swipe-to-action mobile state (iOS Full Swipe Delete & Reveal)
   const [swipedItemId, setSwipedItemId] = useState<string | null>(null);
+  const swipedItemIdRef = useRef<string | null>(null);
+  swipedItemIdRef.current = swipedItemId;
   const [activeTouchItemId, setActiveTouchItemId] = useState<string | null>(null);
   const [touchCurrentOffset, setTouchCurrentOffset] = useState<number>(0);
   const touchStartRef = useRef<{ startX: number; startY: number; baseOffset: number; itemWidth?: number } | null>(null);
@@ -119,21 +121,21 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const lastSwipedTimeRef = useRef<number>(0);
   const lastTouchOffsetRef = useRef<number>(0);
 
-  // Auto-close swiped menu when tapping anywhere on the screen
+  // Auto-close swiped menu when tapping anywhere outside on the screen
   useEffect(() => {
     if (!swipedItemId) return;
 
     const handleGlobalTap = (e: MouseEvent | TouchEvent) => {
-      // Wenn das Menü erst vor kurzem (< 400ms) aufgeswipt wurde, nicht durch auslaufende Events schließen
-      if (Date.now() - lastSwipedTimeRef.current < 400) {
+      // Wenn das Menü erst vor kurzem (< 500ms) aufgeswipt wurde, nicht durch auslaufende Events schließen
+      if (Date.now() - lastSwipedTimeRef.current < 500) {
         return;
       }
       const target = e.target as HTMLElement | null;
-      // Falls auf einen Aktionsbutton im Menü geklickt wird, Aktion ausführen lassen
-      if (target?.closest('[data-swipe-action="true"]')) {
+      // Falls auf oder innerhalb des aktuell geöffneten Items getippt wird, nicht global schließen
+      if (target?.closest(`[data-swipe-item="${swipedItemId}"]`)) {
         return;
       }
-      // Ansonsten schließt jeder Klick/Tap irgendwo auf den Bildschirm das Menü
+      // Ansonsten schließt jeder Klick/Tap außerhalb das Menü
       setSwipedItemId(null);
       justClosedSwipeMenuRef.current = true;
       setTimeout(() => {
@@ -160,6 +162,21 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const [confirmDeleteState, setConfirmDeleteState] = useState<{
     type: 'all' | 'completed';
   } | null>(null);
+
+  // Custom Category Dropdown in quick add form
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const categoryDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isCategoryDropdownOpen) return;
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target as Node)) {
+        setIsCategoryDropdownOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+  }, [isCategoryDropdownOpen]);
 
   useLockBodyScroll(Boolean(confirmDeleteState));
 
@@ -621,7 +638,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
     // Mobile Touch & Swipe Offset
     const isThisItemTouching = activeTouchItemId === item.id;
-    const MENU_SWIPE_OFFSET = 124; // Großzügiger Abstand zwischen Stift und Item im geöffneten Menü
+    const MENU_SWIPE_OFFSET = 132; // Komfortabler Abstand für 48px Stift & Mülleimer
     const currentOffset = isThisItemTouching
       ? touchCurrentOffset
       : isSwiped
@@ -634,7 +651,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
     const pullDistance = Math.max(0, -currentOffset);
     const isFullSwipeDelete = isThisItemTouching && pullDistance >= deleteThreshold;
 
-    // Wenn weiter links geswipt wird als das geöffnete Menü (pullDistance > 124px)
+    // Wenn weiter links geswipt wird als das geöffnete Menü (pullDistance > 132px)
     const isSwipingPastMenu = isThisItemTouching && pullDistance > MENU_SWIPE_OFFSET && !isFullSwipeDelete;
     const extraPull = isSwipingPastMenu ? pullDistance - MENU_SWIPE_OFFSET : 0;
 
@@ -647,8 +664,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
     // Mülleimer wird dynamisch immer länger, bis er bei ~70% vollflächig wird
     const expandingTrashWidth = isSwipingPastMenu
-      ? Math.min(itemWidth - 24, 44 + extraPull * 1.25)
-      : 44;
+      ? Math.min(itemWidth - 24, 48 + extraPull * 1.25)
+      : 48;
 
     const recipeSourceText = formatRecipeSource(item.recipeSource);
     const hasSecondaryText = Boolean(recipeSourceText);
@@ -704,7 +721,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               <span>Löschen</span>
             </div>
           ) : (
-            /* Standard-Tray mit 44x44px Stift und dynamisch länger werdendem 44px Mülleimer */
+            /* Standard-Tray mit 48x48px Stift und dynamisch länger werdendem 48px Mülleimer */
             <div className="flex items-center justify-end gap-2 h-full">
               {/* Stift: Verblasst, wenn man über das Menü hinaus swipt */}
               <button
@@ -721,14 +738,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   pointerEvents: pencilOpacity < 0.2 ? 'none' : 'auto',
                   transition: isThisItemTouching ? 'none' : 'opacity 0.2s, transform 0.2s',
                 }}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0"
+                className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl bg-white text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0"
                 title="Menge anpassen"
                 aria-label="Menge anpassen"
               >
-                <Pencil className="w-4.5 h-4.5" />
+                <Pencil className="w-5 h-5" />
               </button>
 
-              {/* Mülleimer: Mindestens 44px, wird dynamisch länger, je weiter man nach links zieht */}
+              {/* Mülleimer: Mindestens 48px, wird dynamisch länger, je weiter man nach links zieht */}
               <button
                 data-swipe-action="true"
                 type="button"
@@ -737,19 +754,19 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   handleDeleteBySwipe(item);
                 }}
                 style={{
-                  width: isSwipingPastMenu ? `${expandingTrashWidth}px` : '44px',
+                  width: isSwipingPastMenu ? `${expandingTrashWidth}px` : '48px',
                   transition: isThisItemTouching ? 'none' : 'width 0.28s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s',
                 }}
-                className={`h-11 min-h-[44px] rounded-xl flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0 transition-colors ${
+                className={`h-12 min-h-[48px] rounded-xl flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0 transition-colors ${
                   isSwipingPastMenu
-                    ? 'bg-rose-100 text-rose-700 border border-rose-300 px-3'
-                    : 'w-11 min-w-[44px] bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
+                    ? 'bg-rose-100 text-rose-700 border border-rose-300 px-3.5'
+                    : 'w-12 min-w-[48px] bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
                 }`}
                 title="Artikel löschen"
                 aria-label="Artikel löschen"
               >
-                <Trash2 className="w-4.5 h-4.5 shrink-0 stroke-[2.2]" />
-                {isSwipingPastMenu && expandingTrashWidth > 72 && (
+                <Trash2 className="w-5 h-5 shrink-0 stroke-[2.2]" />
+                {isSwipingPastMenu && expandingTrashWidth > 76 && (
                   <span className="text-xs font-semibold whitespace-nowrap animate-in fade-in duration-100">
                     Löschen
                   </span>
@@ -786,14 +803,16 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             const diffX = touch.clientX - touchStartRef.current.startX;
             const diffY = touch.clientY - touchStartRef.current.startY;
 
-            // Vertikales Scrollen durchlassen falls mehr vertikal als horizontal
-            if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffX) < 10) {
+            // Vertikales Scrollen durchlassen, falls rein vertikal gescrollt wird
+            if (!didSwipeRef.current && Math.abs(diffY) > 12 && Math.abs(diffY) > Math.abs(diffX) * 1.5) {
               return;
             }
 
-            if (Math.abs(diffX) > 8) {
+            if (Math.abs(diffX) > 6) {
               didSwipeRef.current = true;
             }
+
+            if (!didSwipeRef.current) return;
 
             const width = touchStartRef.current.itemWidth || 360;
             const rawOffset = touchStartRef.current.baseOffset + diffX;
@@ -813,20 +832,21 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             const width = touchStartRef.current.itemWidth || 360;
             const deleteThreshold = width * 0.7; // Exakt ~70% der Breite
             const offset = lastTouchOffsetRef.current;
+            const didActuallySwipe = didSwipeRef.current;
             touchStartRef.current = null;
 
             if (isThisItemTouching) {
               if (offset <= -deleteThreshold) {
                 // Erst wenn bis ca. 70% der Breite gezogen wurde: direkt löschen
                 handleDeleteBySwipe(item);
-              } else if (offset < -40) {
-                // Menü öffnet sich (-124px) mit angenehmer Lücke zum Stift
+              } else if (offset < -35 || (didActuallySwipe && offset < -25)) {
+                // Menü öffnet sich geschmeidig (-132px)
                 setSwipedItemId(item.id);
                 lastSwipedTimeRef.current = Date.now();
                 setActiveTouchItemId(null);
                 setTouchCurrentOffset(0);
               } else {
-                // Unter 40px: geschmeidig zurückfedern (0px)
+                // Unter Schwellenwert: geschmeidig zurückfedern (0px)
                 setSwipedItemId(null);
                 setActiveTouchItemId(null);
                 setTouchCurrentOffset(0);
@@ -840,9 +860,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             didSwipeRef.current = false;
           }}
           onPointerDown={(e) => {
-            if (e.pointerType !== 'mouse' || isEditing) return;
+            // Swipe-Geste ist exklusiv für Touch-Geräte; auf PC/Maus deaktiviert
+            if (e.pointerType !== 'touch') return;
+            if (isEditing) return;
             if ((e.target as HTMLElement).closest('button, input')) return;
-            if (swipedItemId && swipedItemId !== item.id) {
+            if (swipedItemIdRef.current && swipedItemIdRef.current !== item.id) {
               setSwipedItemId(null);
             }
             const targetEl = e.currentTarget as HTMLElement;
@@ -850,19 +872,20 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             touchStartRef.current = {
               startX: e.clientX,
               startY: e.clientY,
-              baseOffset: swipedItemId === item.id ? -MENU_SWIPE_OFFSET : 0,
+              baseOffset: swipedItemIdRef.current === item.id ? -MENU_SWIPE_OFFSET : 0,
               itemWidth: width,
             };
-            lastTouchOffsetRef.current = swipedItemId === item.id ? -MENU_SWIPE_OFFSET : 0;
+            lastTouchOffsetRef.current = swipedItemIdRef.current === item.id ? -MENU_SWIPE_OFFSET : 0;
             didSwipeRef.current = false;
             setActiveTouchItemId(item.id);
           }}
           onPointerMove={(e) => {
-            if (e.pointerType !== 'mouse' || !touchStartRef.current || isEditing) return;
+            if (e.pointerType !== 'touch' || !touchStartRef.current || isEditing) return;
             const diffX = e.clientX - touchStartRef.current.startX;
             if (Math.abs(diffX) > 6) {
               didSwipeRef.current = true;
             }
+            if (!didSwipeRef.current) return;
             const width = touchStartRef.current.itemWidth || 360;
             const rawOffset = touchStartRef.current.baseOffset + diffX;
             const clamped = rawOffset > 0 ? Math.min(15, rawOffset * 0.2) : Math.max(-width, rawOffset);
@@ -870,15 +893,16 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             setTouchCurrentOffset(clamped);
           }}
           onPointerUp={(e) => {
-            if (e.pointerType !== 'mouse' || !touchStartRef.current) return;
+            if (e.pointerType !== 'touch' || !touchStartRef.current) return;
             const width = touchStartRef.current.itemWidth || 360;
             const deleteThreshold = width * 0.7;
             const offset = lastTouchOffsetRef.current;
+            const didActuallySwipe = didSwipeRef.current;
             touchStartRef.current = null;
 
             if (offset <= -deleteThreshold) {
               handleDeleteBySwipe(item);
-            } else if (offset < -40) {
+            } else if (offset < -35 || (didActuallySwipe && offset < -25)) {
               setSwipedItemId(item.id);
               lastSwipedTimeRef.current = Date.now();
               setActiveTouchItemId(null);
@@ -890,22 +914,23 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             }
           }}
           onPointerCancel={(e) => {
-            if (e.pointerType !== 'mouse') return;
+            if (e.pointerType !== 'touch') return;
             touchStartRef.current = null;
             setActiveTouchItemId(null);
             setTouchCurrentOffset(0);
             didSwipeRef.current = false;
           }}
           onClick={(e) => {
-            // Wenn gerade erst geswipt wurde, den anschließenden Klick ignorieren (Menü bleibt offen!)
-            if (Date.now() - lastSwipedTimeRef.current < 450 || didSwipeRef.current) {
+            // Wenn gerade erst geswipt wurde (< 500ms), Klick ignorieren (Menü bleibt ungestört offen)
+            if (Date.now() - lastSwipedTimeRef.current < 500 || didSwipeRef.current) {
               didSwipeRef.current = false;
               e.preventDefault();
               e.stopPropagation();
               return;
             }
-            // Wenn ein Menü bereits offen war und die Zeile angetippt wird: Menü schließen
-            if (swipedItemId !== null) {
+            // Wenn ein Swipe-Menü offen ist (dieses oder ein beliebiges anderes):
+            // Klick schließt das Menü, hakt aber NIEMALS die Zutat ab!
+            if (swipedItemIdRef.current !== null || swipedItemId !== null) {
               e.preventDefault();
               e.stopPropagation();
               setSwipedItemId(null);
@@ -920,7 +945,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             transition: isThisItemTouching ? 'none' : 'transform 0.32s cubic-bezier(0.16, 1, 0.3, 1)',
             willChange: isThisItemTouching ? 'transform' : 'auto',
           }}
-          className={`relative z-10 w-full flex justify-between py-2.5 sm:py-3 px-3.5 sm:px-4 gap-2.5 sm:gap-3 min-h-[52px] sm:min-h-[46px] touch-pan-y transition-colors ${
+          className={`relative z-10 w-full flex justify-between py-2.5 sm:py-2 px-3.5 sm:px-4 gap-2.5 sm:gap-3 min-h-[52px] sm:min-h-[52px] touch-pan-y transition-colors ${
             hasSecondaryText ? 'items-start' : 'items-center'
           } ${
             isEditing
@@ -973,16 +998,17 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           <div className={`flex items-center gap-2 shrink-0 ml-auto ${
             hasSecondaryText ? 'self-start mt-0.5' : 'self-center'
           }`} onClick={(e) => e.stopPropagation()}>
-            {/* Desktop hover actions: LINKS von der Mengenangabe */}
+            {/* Desktop hover actions: LINKS von der Mengenangabe (44x44px Buttons) */}
             {!isEditing && (
               <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   type="button"
                   onClick={() => startEditingItem(item)}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#FAF9F6] text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] transition-all cursor-pointer active:scale-95 shadow-2xs"
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[#FAF9F6] text-[#4A7856] hover:bg-[#E8EFEA] hover:text-[#3D6447] border border-[#ECEBE8] transition-all cursor-pointer active:scale-95 shadow-2xs"
                   title="Menge bearbeiten"
+                  aria-label="Menge bearbeiten"
                 >
-                  <Pencil className="w-3.5 h-3.5" />
+                  <Pencil className="w-4 h-4 stroke-[2.2]" />
                 </button>
                 <button
                   type="button"
@@ -990,10 +1016,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                     deleteItem(item.id);
                     onCopyFeedback(`"${item.name}" gelöscht.`);
                   }}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#FAF9F6] text-rose-500 hover:text-rose-600 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer active:scale-95 shadow-2xs"
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[#FAF9F6] text-rose-500 hover:text-rose-600 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer active:scale-95 shadow-2xs"
                   title="Löschen"
+                  aria-label="Löschen"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-4 h-4 stroke-[2.2]" />
                 </button>
               </div>
             )}
@@ -1133,7 +1160,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             )}
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-[#2D3E40]">
-            Liste
+            Einkaufsliste
           </h1>
           <p className="text-sm font-medium text-[#686e6a]">
             Alles für deine Woche – geordnet nach Supermarkt-Regal.
@@ -1266,26 +1293,95 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           />
         </div>
 
-        {/* Middle: Compact dropdown selector (Auto-Regal ▾) */}
-        <div className="relative shrink-0">
-          <select
+        {/* Middle: Truly dynamic compact button & custom dropdown */}
+        <div ref={categoryDropdownRef} className="relative shrink-0">
+          <button
+            type="button"
             id="shopping-item-category-select"
-            value={categoryChoice}
-            onChange={(e) => setCategoryChoice(e.target.value as 'auto' | IngredientCategory)}
-            className="bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] rounded-xl pl-2.5 pr-6 py-2 text-xs font-semibold text-[#2D3E40] cursor-pointer focus:border-[#4A7856] focus:outline-hidden h-12 sm:h-10 min-h-[48px] sm:min-h-0 appearance-none transition-colors"
+            onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+            className="inline-flex items-center gap-1.5 bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] rounded-xl px-2.5 py-2 text-sm font-semibold text-[#2D3E40] cursor-pointer focus:border-[#4A7856] focus:outline-hidden h-12 sm:h-10 min-h-[48px] sm:min-h-0 transition-colors select-none"
             title="Regal / Kategorie wählen"
+            aria-label="Regal / Kategorie wählen"
+            aria-expanded={isCategoryDropdownOpen}
           >
-            <option value="auto">✨ Auto-Regal</option>
-            <option value="gemuese">🥦 Gemüse</option>
-            <option value="kuehlregal">🥛 Kühlregal</option>
-            <option value="huelsenfruechte">🫘 Hülsenfrüchte</option>
-            <option value="trockenwaren">🌾 Vorrat</option>
-            <option value="gewuerze">🧂 Gewürze</option>
-            <option value="sonstiges">📦 Sonstiges</option>
-          </select>
-          <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[#686E6A]">
-            <ChevronDown className="w-3.5 h-3.5" />
-          </div>
+            <span>
+              {categoryChoice === 'auto'
+                ? '✨ Auto'
+                : categoryChoice === 'gemuese'
+                ? '🥦 Gemüse'
+                : categoryChoice === 'kuehlregal'
+                ? '🥛 Kühlregal'
+                : categoryChoice === 'huelsenfruechte'
+                ? '🫘 Hülsenfrüchte'
+                : categoryChoice === 'trockenwaren'
+                ? '🌾 Vorrat'
+                : categoryChoice === 'gewuerze'
+                ? '🧂 Gewürze'
+                : '📦 Sonstiges'}
+            </span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-[#686E6A] transition-transform duration-150 ${
+                isCategoryDropdownOpen ? 'rotate-180 text-[#4A7856]' : ''
+              }`}
+            />
+          </button>
+
+          {/* Popover Menu with categories */}
+          {isCategoryDropdownOpen && (
+            <div className="absolute right-0 top-full mt-1.5 z-40 w-52 bg-white rounded-xl shadow-lg border border-[#ECEBE8] p-1.5 animate-in fade-in zoom-in-95 duration-150">
+              <button
+                type="button"
+                onClick={() => {
+                  setCategoryChoice('auto');
+                  setIsCategoryDropdownOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer text-left ${
+                  categoryChoice === 'auto'
+                    ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold'
+                    : 'text-[#2D3E40] hover:bg-[#FAF9F6]'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span>✨</span>
+                  <span>Auto-Erkennung</span>
+                </span>
+                {categoryChoice === 'auto' && <Check className="w-4 h-4 text-[#4A7856]" />}
+              </button>
+
+              <div className="my-1 border-t border-[#ECEBE8]" />
+
+              {(
+                [
+                  ['gemuese', '🥦 Gemüse', 'Frisches Gemüse'],
+                  ['kuehlregal', '🥛 Kühlregal', 'Kühlwaren & Milch/Tofu'],
+                  ['huelsenfruechte', '🫘 Hülsenfrüchte', 'Bohnen, Linsen & Tofu'],
+                  ['trockenwaren', '🌾 Vorrat', 'Nudeln, Reis & Konserven'],
+                  ['gewuerze', '🧂 Gewürze', 'Gewürze & Öle'],
+                  ['sonstiges', '📦 Sonstiges', 'Haushalt & Sonstiges'],
+                ] as const
+              ).map(([catKey, catLabel]) => {
+                const isSelected = categoryChoice === catKey;
+                return (
+                  <button
+                    key={catKey}
+                    type="button"
+                    onClick={() => {
+                      setCategoryChoice(catKey as IngredientCategory);
+                      setIsCategoryDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer text-left ${
+                      isSelected
+                        ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold'
+                        : 'text-[#2D3E40] hover:bg-[#FAF9F6] font-normal'
+                    }`}
+                  >
+                    <span>{catLabel}</span>
+                    {isSelected && <Check className="w-4 h-4 text-[#4A7856]" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Right: Square or compact icon button (+) */}
@@ -1341,7 +1437,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <List className="w-4 h-4 text-[#4A7856]" />
                 <span>Offene Artikel</span>
               </div>
-              <span className="text-[12px] font-medium text-[#686E6A] bg-[#F4F3F0] px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#ECEBE8]">
+              <span className="text-xs font-semibold text-[#2D3E40] bg-white px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
                 {activeItems.length} offen
               </span>
             </div>
@@ -1417,12 +1513,19 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                     </div>
 
                     {/* Clean & minimal count pill + chevron */}
-                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                      <span className="text-xs font-semibold text-[#686e6a] bg-[#F4F3F0] px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#ECEBE8]">
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCategoryCollapse(catKey);
+                      }}
+                      className="flex items-center gap-1.5 shrink-0 ml-2 cursor-pointer"
+                      title={isCollapsed ? 'Regal aufklappen' : 'Regal zuklappen'}
+                    >
+                      <span className="text-xs font-semibold text-[#2D3E40] bg-white px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
                         {activeInCat.length} offen
                       </span>
 
-                      <div className="p-1 text-[#686e6a] group-hover:text-[#57534d] transition-colors">
+                      <div className="p-1 text-[#4A7856] group-hover:text-[#3D6447] transition-colors">
                         <ChevronDown
                           className={`w-4 h-4 transition-transform duration-200 ${
                             isCollapsed ? '-rotate-90' : 'rotate-0'
@@ -1464,7 +1567,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         <div className="bg-white rounded-2xl border border-[#ECEBE8] overflow-hidden shadow-xs mt-6">
           <div
             onClick={() => setShowCompletedSection(!showCompletedSection)}
-            className="w-full flex items-center justify-between p-4 sm:p-5 bg-[#FAF9F6] hover:bg-[#F5F4F0] text-left transition-colors cursor-pointer select-none"
+            className="w-full flex items-center justify-between p-4 sm:p-5 bg-[#F1F5F2] hover:bg-[#E3EBE5] text-left transition-colors cursor-pointer select-none"
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
