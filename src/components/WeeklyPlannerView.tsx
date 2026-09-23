@@ -5,6 +5,7 @@ import {
   Sparkles, 
   ShoppingCart, 
   Plus, 
+  Minus,
   Trash2, 
   Check, 
   Clock, 
@@ -134,14 +135,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const [showConfirmClearAll, setShowConfirmClearAll] = useState(false);
   const [showContextMenu, setShowContextMenu] = useState(false);
   const contextMenuRef = useRef<HTMLDivElement>(null);
-  const mobileContextMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      const insideDesktop = contextMenuRef.current && contextMenuRef.current.contains(target);
-      const insideMobile = mobileContextMenuRef.current && mobileContextMenuRef.current.contains(target);
-      if (!insideDesktop && !insideMobile) {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(target)) {
         setShowContextMenu(false);
       }
     };
@@ -744,7 +742,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   ) : (
                     <>
                       <Cloud className="w-3 h-3 text-[#57534d]" />
-                      <span>Lokal</span>
+                      <span>Lokal • Teilen</span>
                     </>
                   )}
                 </button>
@@ -752,18 +750,42 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             </div>
 
             {/* Title */}
-            <h1 className="text-2xl font-bold tracking-tight text-[#2D3E40]">
+            <h1 className="text-[24px] leading-[32px] font-bold tracking-tight text-[#2D3E40]">
               Dein Wochenplan
             </h1>
-            <p className="text-sm font-medium text-[#686e6a]">
-              Mahlzeiten planen, Nährwerte prüfen & Zutaten einkaufen.
+            <p className="text-[14px] leading-[20px] font-medium text-[#686e6a]">
+              Mahlzeiten planen, Nährwerte prüfen &amp; Zutaten einkaufen.
             </p>
           </div>
 
           {/* Primary Action Buttons */}
-          <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-            {/* 3-Punkte-Menü Button direkt links neben dem KI-Wochenplan (auf Desktop) */}
-            <div className="relative shrink-0 hidden sm:block" ref={contextMenuRef}>
+          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+            {/* 3-Punkte-Menü Button (Desktop Popover + Mobile Native Select) */}
+            <div className="relative shrink-0" ref={contextMenuRef}>
+              {/* Native iOS / Mobile Dropdown Select: opens native iOS picker sheet / wheel */}
+              <select
+                aria-label="Wochenplan Optionen"
+                value=""
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'add') {
+                    setNewWeekTitleInput('');
+                    setShowCreateWeekModal(true);
+                  } else if (val === 'all') {
+                    setShowAllWeeksModal(true);
+                  } else if (val === 'clear') {
+                    setShowConfirmClearAll(true);
+                  }
+                  e.target.value = '';
+                }}
+                className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
+              >
+                <option value="" disabled>Wochenplan Optionen...</option>
+                <option value="add">➕ Woche hinzufügen</option>
+                <option value="all">📚 Alle Wochen anzeigen</option>
+                {totalPlannedMeals > 0 && <option value="clear">🗑️ Plan leeren</option>}
+              </select>
+
               <button
                 type="button"
                 id="weekly-planner-context-menu-btn"
@@ -780,7 +802,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               </button>
 
               {showContextMenu && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl border border-[#ECEBE8] shadow-xl p-1.5 z-40 animate-in fade-in zoom-in-95 duration-100 space-y-1">
+                <div className="hidden sm:block absolute right-0 top-full mt-2 w-64 bg-white rounded-xl border border-[#ECEBE8] shadow-xl p-1.5 z-40 animate-in fade-in zoom-in-95 duration-100 space-y-1">
                   <button
                     type="button"
                     id="context-menu-add-week-btn"
@@ -829,7 +851,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             <button
               id="open-ai-meal-plan-modal-btn"
               onClick={() => setShowAIGeneratorModal(true)}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 sm:px-4.5 rounded-xl bg-stone-800 hover:bg-stone-900 text-white font-semibold text-sm shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap h-10 sm:h-11 min-h-[40px] sm:min-h-[44px]"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 sm:px-4.5 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-900 text-white font-semibold text-sm shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap h-11 min-h-[44px]"
             >
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#4A7856]" />
               <span>KI-Wochenplan</span>
@@ -840,7 +862,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               id="transfer-week-to-shopping-btn"
               onClick={handleTransferAllToShopping}
               disabled={totalPlannedMeals === 0}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 sm:px-4.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white font-semibold text-sm shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap h-10 sm:h-11 min-h-[40px] sm:min-h-[44px]"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 sm:px-4.5 py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white font-semibold text-sm shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap h-11 min-h-[44px]"
             >
               <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Zutaten auf Liste</span>
@@ -848,27 +870,27 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           </div>
         </div>
 
-        {/* Filter-Zeile: Links komfortabler Switch für Mittag + 3-Punkte-Menü auf Mobile, rechts Portionen */}
-        <div className="bg-[#FAF9F6] rounded-xl px-3.5 py-2 sm:py-2.5 border border-[#ECEBE8] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3">
-          {/* Zeile auf Mobile: Switch für Mittags-Slot + 3-Punkte-Menü (auf Mobile) */}
-          <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+        {/* Filter- & Einstellungszeile: Links Switch für Mittag, rechts Portionen mit +/- Stepper */}
+        <div className="bg-[#FAF9F6] rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 border border-[#ECEBE8] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-2xs">
+          {/* Switch für Mittags-Slot */}
+          <div className="flex items-center">
             <button
               type="button"
               id="toggle-show-lunch-btn"
               onClick={handleToggleLunchSlot}
               role="switch"
               aria-checked={showLunchSlot}
-              className="flex items-center gap-2.5 text-sm font-semibold text-[#57534d] cursor-pointer select-none group touch-manipulation active:scale-98 min-h-[38px]"
+              className="flex items-center gap-3 text-sm sm:text-base font-semibold text-[#57534d] cursor-pointer select-none group touch-manipulation active:scale-98 min-h-[44px]"
               title={showLunchSlot ? 'Mittagsgerichte ausblenden' : 'Mittagsgerichte anzeigen'}
             >
               <div
-                className={`w-10 h-6 rounded-full p-0.5 transition-colors duration-200 ease-in-out flex items-center shadow-inner ${
+                className={`w-[51px] h-[31px] rounded-full p-[2px] transition-colors duration-200 ease-in-out flex items-center shadow-inner shrink-0 ${
                   showLunchSlot ? 'bg-[#4A7856]' : 'bg-[#CCD5CF]'
                 }`}
               >
                 <div
-                  className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ease-in-out ${
-                    showLunchSlot ? 'translate-x-4' : 'translate-x-0'
+                  className={`w-[27px] h-[27px] rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.2)] transform transition-transform duration-200 ease-in-out ${
+                    showLunchSlot ? 'translate-x-[20px]' : 'translate-x-0'
                   }`}
                 />
               </div>
@@ -876,56 +898,36 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 Mittags-Slot anzeigen
               </span>
             </button>
-
-            {/* 3-Punkte-Menü Button auf Mobile in der Zeile vom Mittags-Slot */}
-            <div className="relative shrink-0 sm:hidden" ref={mobileContextMenuRef}>
-              {/* Native iOS / Mobile Dropdown Select: opens native iOS picker sheet / wheel */}
-              <select
-                aria-label="Wochenplan Optionen"
-                value=""
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === 'add') {
-                    setNewWeekTitleInput('');
-                    setShowCreateWeekModal(true);
-                  } else if (val === 'all') {
-                    setShowAllWeeksModal(true);
-                  } else if (val === 'clear') {
-                    setShowConfirmClearAll(true);
-                  }
-                  e.target.value = '';
-                }}
-                className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
-              >
-                <option value="" disabled>Wochenplan Optionen...</option>
-                <option value="add">➕ Woche hinzufügen</option>
-                <option value="all">📚 Alle Wochen anzeigen</option>
-                {totalPlannedMeals > 0 && <option value="clear">🗑️ Plan leeren</option>}
-              </select>
-
-              <button
-                type="button"
-                id="mobile-weekly-planner-context-menu-btn"
-                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs border bg-[#F1F5F2] hover:bg-[#E5EBE6] text-[#57534d] border-[#ECEBE8]"
-                title="Weitere Optionen (Woche hinzufügen, Alle Wochen anzeigen, Plan leeren)"
-                aria-label="Weitere Optionen"
-              >
-                <MoreHorizontal className="w-5 h-5 text-[#57534d]" />
-              </button>
-            </div>
           </div>
 
-          {/* Rechts/Unten: Portionen-Auswahl direkt anschließend an die Beschriftung */}
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
-            <span className="text-sm font-semibold text-[#57534d] select-none shrink-0">
+          {/* Portionen-Auswahl: Simpler +/- Stepper wie in der Rezept-Detailansicht */}
+          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-[#ECEBE8]/70">
+            <span className="text-sm sm:text-base font-semibold text-[#2D3E40] select-none shrink-0">
               Portionen:
             </span>
-            <div className="flex-1 sm:flex-initial sm:w-72 max-w-[290px]">
-              <HybridPortionStepper
-                value={planServings}
-                onChange={setPlanServings}
-                idPrefix="weekly-plan-servings"
-              />
+            <div className="inline-flex items-center bg-white border border-[#ECEBE8] rounded-xl p-1 shadow-2xs">
+              <button
+                id="weekly-plan-servings-decrease-btn"
+                type="button"
+                onClick={() => setPlanServings((prev) => Math.max(1, prev - 1))}
+                disabled={planServings <= 1}
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-[#FAF9F6] active:bg-[#ECEBE8] disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                aria-label="Portion verringern"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <span className="px-3 sm:px-4 text-[16px] font-bold text-[#57534d] tabular-nums min-w-[85px] sm:min-w-[95px] text-center select-none">
+                {planServings} {planServings === 1 ? 'Portion' : 'Portionen'}
+              </span>
+              <button
+                id="weekly-plan-servings-increase-btn"
+                type="button"
+                onClick={() => setPlanServings((prev) => Math.min(24, prev + 1))}
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-[#FAF9F6] active:bg-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                aria-label="Portion erhöhen"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
