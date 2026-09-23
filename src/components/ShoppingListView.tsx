@@ -117,30 +117,41 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const [touchCurrentOffset, setTouchCurrentOffset] = useState<number>(0);
   const touchStartRef = useRef<{ startX: number; startY: number; baseOffset: number; itemWidth?: number } | null>(null);
   const justClosedSwipeMenuRef = useRef<boolean>(false);
+  const swipeOpenAtTouchStartRef = useRef<boolean>(false);
+  const lastClosedSwipeMenuTimeRef = useRef<number>(0);
   const didSwipeRef = useRef<boolean>(false);
   const lastSwipedTimeRef = useRef<number>(0);
   const lastTouchOffsetRef = useRef<number>(0);
+
+  const closeSwipeMenu = () => {
+    if (swipedItemIdRef.current !== null || swipedItemId !== null) {
+      setSwipedItemId(null);
+      justClosedSwipeMenuRef.current = true;
+      lastClosedSwipeMenuTimeRef.current = Date.now();
+      setActiveTouchItemId(null);
+      setTouchCurrentOffset(0);
+      setTimeout(() => {
+        justClosedSwipeMenuRef.current = false;
+      }, 500);
+    }
+  };
 
   // Auto-close swiped menu when tapping anywhere outside on the screen
   useEffect(() => {
     if (!swipedItemId) return;
 
     const handleGlobalTap = (e: MouseEvent | TouchEvent) => {
-      // Wenn das Menü erst vor kurzem (< 500ms) aufgeswipt wurde, nicht durch auslaufende Events schließen
-      if (Date.now() - lastSwipedTimeRef.current < 500) {
+      // Wenn das Menü erst vor kurzem (< 350ms) aufgeswipt wurde, nicht durch auslaufende Events schließen
+      if (Date.now() - lastSwipedTimeRef.current < 350) {
         return;
       }
       const target = e.target as HTMLElement | null;
-      // Falls auf oder innerhalb des aktuell geöffneten Items getippt wird, nicht global schließen
-      if (target?.closest(`[data-swipe-item="${swipedItemId}"]`)) {
+      // Falls auf die Swipe-Aktionsbuttons (Stift, Mülleimer) geklickt wird, dieses Event zulassen
+      if (target?.closest('[data-swipe-action="true"]')) {
         return;
       }
       // Ansonsten schließt jeder Klick/Tap außerhalb das Menü
-      setSwipedItemId(null);
-      justClosedSwipeMenuRef.current = true;
-      setTimeout(() => {
-        justClosedSwipeMenuRef.current = false;
-      }, 300);
+      closeSwipeMenu();
     };
 
     // Leichte Verzögerung damit nicht das Loslassen des Touches sofort schließt
@@ -780,20 +791,32 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         <div
           onTouchStart={(e) => {
             if (isEditing) return;
-            // Falls bereits ein anderes Menü offen ist, dieses zuerst schließen
-            if (swipedItemId && swipedItemId !== item.id) {
-              setSwipedItemId(null);
+            // Falls ein ANDERES Menü offen ist, dieses schließen und Klick für diese Zutat sperren
+            if (swipedItemIdRef.current !== null && swipedItemIdRef.current !== item.id) {
+              swipeOpenAtTouchStartRef.current = true;
+              closeSwipeMenu();
+              touchStartRef.current = null;
+              return;
             }
+
+            // Falls dieses Item selbst das Menü offen hat:
+            // Wir merken uns, dass das Menü offen war, damit ein einfacher Tap das Menü nur schließt und nicht abcheckt
+            if (swipedItemIdRef.current === item.id) {
+              swipeOpenAtTouchStartRef.current = true;
+            } else {
+              swipeOpenAtTouchStartRef.current = false;
+            }
+
             const touch = e.touches[0];
             const targetEl = e.currentTarget as HTMLElement;
             const width = targetEl.offsetWidth || window.innerWidth;
             touchStartRef.current = {
               startX: touch.clientX,
               startY: touch.clientY,
-              baseOffset: swipedItemId === item.id ? -MENU_SWIPE_OFFSET : 0,
+              baseOffset: swipedItemIdRef.current === item.id ? -MENU_SWIPE_OFFSET : 0,
               itemWidth: width,
             };
-            lastTouchOffsetRef.current = swipedItemId === item.id ? -MENU_SWIPE_OFFSET : 0;
+            lastTouchOffsetRef.current = swipedItemIdRef.current === item.id ? -MENU_SWIPE_OFFSET : 0;
             didSwipeRef.current = false;
             setActiveTouchItemId(item.id);
           }}
@@ -803,8 +826,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             const diffX = touch.clientX - touchStartRef.current.startX;
             const diffY = touch.clientY - touchStartRef.current.startY;
 
-            // Vertikales Scrollen durchlassen, falls rein vertikal gescrollt wird
-            if (!didSwipeRef.current && Math.abs(diffY) > 12 && Math.abs(diffY) > Math.abs(diffX) * 1.5) {
+            // Vertikales Scrollen durchlassen, falls primär vertikal gescrollt wird
+            if (!didSwipeRef.current && Math.abs(diffY) > 10 && Math.abs(diffY) > Math.abs(diffX) * 1.3) {
               return;
             }
 
@@ -828,7 +851,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             setTouchCurrentOffset(clamped);
           }}
           onTouchEnd={() => {
-            if (!touchStartRef.current) return;
+            if (!touchStartRef.current) {
+              setActiveTouchItemId(null);
+              setTouchCurrentOffset(0);
+              return;
+            }
             const width = touchStartRef.current.itemWidth || 360;
             const deleteThreshold = width * 0.7; // Exakt ~70% der Breite
             const offset = lastTouchOffsetRef.current;
@@ -839,17 +866,15 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               if (offset <= -deleteThreshold) {
                 // Erst wenn bis ca. 70% der Breite gezogen wurde: direkt löschen
                 handleDeleteBySwipe(item);
-              } else if (offset < -35 || (didActuallySwipe && offset < -25)) {
+              } else if (didActuallySwipe && offset < -35) {
                 // Menü öffnet sich geschmeidig (-132px)
                 setSwipedItemId(item.id);
                 lastSwipedTimeRef.current = Date.now();
                 setActiveTouchItemId(null);
                 setTouchCurrentOffset(0);
               } else {
-                // Unter Schwellenwert: geschmeidig zurückfedern (0px)
-                setSwipedItemId(null);
-                setActiveTouchItemId(null);
-                setTouchCurrentOffset(0);
+                // Nicht weit genug geswipt, zurückgewischt oder reiner Tap: geschmeidig schließen
+                closeSwipeMenu();
               }
             }
           }}
@@ -859,83 +884,33 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             setTouchCurrentOffset(0);
             didSwipeRef.current = false;
           }}
-          onPointerDown={(e) => {
-            // Swipe-Geste ist exklusiv für Touch-Geräte; auf PC/Maus deaktiviert
-            if (e.pointerType !== 'touch') return;
-            if (isEditing) return;
-            if ((e.target as HTMLElement).closest('button, input')) return;
-            if (swipedItemIdRef.current && swipedItemIdRef.current !== item.id) {
-              setSwipedItemId(null);
-            }
-            const targetEl = e.currentTarget as HTMLElement;
-            const width = targetEl.offsetWidth || 360;
-            touchStartRef.current = {
-              startX: e.clientX,
-              startY: e.clientY,
-              baseOffset: swipedItemIdRef.current === item.id ? -MENU_SWIPE_OFFSET : 0,
-              itemWidth: width,
-            };
-            lastTouchOffsetRef.current = swipedItemIdRef.current === item.id ? -MENU_SWIPE_OFFSET : 0;
-            didSwipeRef.current = false;
-            setActiveTouchItemId(item.id);
-          }}
-          onPointerMove={(e) => {
-            if (e.pointerType !== 'touch' || !touchStartRef.current || isEditing) return;
-            const diffX = e.clientX - touchStartRef.current.startX;
-            if (Math.abs(diffX) > 6) {
-              didSwipeRef.current = true;
-            }
-            if (!didSwipeRef.current) return;
-            const width = touchStartRef.current.itemWidth || 360;
-            const rawOffset = touchStartRef.current.baseOffset + diffX;
-            const clamped = rawOffset > 0 ? Math.min(15, rawOffset * 0.2) : Math.max(-width, rawOffset);
-            lastTouchOffsetRef.current = clamped;
-            setTouchCurrentOffset(clamped);
-          }}
-          onPointerUp={(e) => {
-            if (e.pointerType !== 'touch' || !touchStartRef.current) return;
-            const width = touchStartRef.current.itemWidth || 360;
-            const deleteThreshold = width * 0.7;
-            const offset = lastTouchOffsetRef.current;
-            const didActuallySwipe = didSwipeRef.current;
-            touchStartRef.current = null;
-
-            if (offset <= -deleteThreshold) {
-              handleDeleteBySwipe(item);
-            } else if (offset < -35 || (didActuallySwipe && offset < -25)) {
-              setSwipedItemId(item.id);
-              lastSwipedTimeRef.current = Date.now();
-              setActiveTouchItemId(null);
-              setTouchCurrentOffset(0);
-            } else {
-              setSwipedItemId(null);
-              setActiveTouchItemId(null);
-              setTouchCurrentOffset(0);
-            }
-          }}
-          onPointerCancel={(e) => {
-            if (e.pointerType !== 'touch') return;
-            touchStartRef.current = null;
-            setActiveTouchItemId(null);
-            setTouchCurrentOffset(0);
-            didSwipeRef.current = false;
-          }}
           onClick={(e) => {
-            // Wenn gerade erst geswipt wurde (< 500ms), Klick ignorieren (Menü bleibt ungestört offen)
-            if (Date.now() - lastSwipedTimeRef.current < 500 || didSwipeRef.current) {
+            // 1. Wenn gerade erst geswipt wurde (< 400ms) oder tatsächlich gewischt wurde: Klick ignorieren
+            if (Date.now() - lastSwipedTimeRef.current < 400 || didSwipeRef.current) {
               didSwipeRef.current = false;
               e.preventDefault();
               e.stopPropagation();
               return;
             }
-            // Wenn ein Swipe-Menü offen ist (dieses oder ein beliebiges anderes):
-            // Klick schließt das Menü, hakt aber NIEMALS die Zutat ab!
-            if (swipedItemIdRef.current !== null || swipedItemId !== null) {
+
+            // 2. ABSOLUTER SCHUTZ: Wenn irgendein Swipe-Menü offen war, beim Touchstart offen war,
+            // oder gerade geschlossen wurde:
+            // Es darf schlicht NICHT möglich sein, irgendeine Zutat abzuhaken!
+            if (
+              swipedItemId !== null ||
+              swipedItemIdRef.current !== null ||
+              swipeOpenAtTouchStartRef.current ||
+              justClosedSwipeMenuRef.current ||
+              Date.now() - lastClosedSwipeMenuTimeRef.current < 500
+            ) {
               e.preventDefault();
               e.stopPropagation();
-              setSwipedItemId(null);
+              swipeOpenAtTouchStartRef.current = false;
+              justClosedSwipeMenuRef.current = false;
+              closeSwipeMenu();
               return;
             }
+
             if (!isEditing) {
               toggleItem(item.id);
             }
@@ -1099,7 +1074,18 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               {/* RIGHT SIDE: [Desktop Actions: Pencil & Trash (LINKS)] -> [Menge (GANZ RECHTS)] -> [Drag Handle] */}
               <div className={`flex items-center gap-2 shrink-0 ml-auto ${
                 hasSecondaryText ? 'self-start mt-0.5' : 'self-center'
-              }`} onClick={(e) => e.stopPropagation()}>
+              }`} onClick={(e) => {
+                if (
+                  swipedItemIdRef.current !== null ||
+                  justClosedSwipeMenuRef.current ||
+                  Date.now() - lastClosedSwipeMenuTimeRef.current < 500
+                ) {
+                  e.stopPropagation();
+                  closeSwipeMenu();
+                  return;
+                }
+                e.stopPropagation();
+              }}>
                 {/* Desktop hover actions: LINKS von der Mengenangabe (44x44px Buttons) */}
                 <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
@@ -1131,6 +1117,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (
+                        swipedItemIdRef.current !== null ||
+                        justClosedSwipeMenuRef.current ||
+                        Date.now() - lastClosedSwipeMenuTimeRef.current < 500
+                      ) {
+                        closeSwipeMenu();
+                        return;
+                      }
                       startEditingItem(item);
                     }}
                     className={`text-base font-semibold tabular-nums select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline ${
@@ -1345,12 +1339,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
           >
             <option value="auto">✨ Auto-Erkennung</option>
-            <option value="gemuese">🥦 Gemüse (Frisches Gemüse)</option>
-            <option value="kuehlregal">🥛 Kühlregal (Kühlwaren & Milch/Tofu)</option>
-            <option value="huelsenfruechte">🫘 Hülsenfrüchte (Bohnen, Linsen & Tofu)</option>
-            <option value="trockenwaren">🌾 Vorrat (Nudeln, Reis & Konserven)</option>
-            <option value="gewuerze">🧂 Gewürze (Gewürze & Öle)</option>
-            <option value="sonstiges">📦 Sonstiges (Haushalt & Sonstiges)</option>
+            <option value="gemuese">🥦 Gemüse</option>
+            <option value="kuehlregal">🥛 Kühlregal</option>
+            <option value="huelsenfruechte">🫘 Hülsenfrüchte</option>
+            <option value="trockenwaren">🌾 Vorrat</option>
+            <option value="gewuerze">🧂 Gewürze</option>
+            <option value="sonstiges">📦 Sonstiges</option>
           </select>
 
           <button
