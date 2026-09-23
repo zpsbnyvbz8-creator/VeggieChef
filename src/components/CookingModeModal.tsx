@@ -996,10 +996,10 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-lg font-bold text-white">
+              <h3 className="text-xl font-bold text-white">
                 Aktiver Küchen-Timer läuft noch!
               </h3>
-              <p className="text-sm text-white/70 leading-relaxed">
+              <p className="text-[16px] text-white/90 leading-relaxed">
                 Für diesen Schritt läuft noch ein aktiver Timer mit{' '}
                 <strong className="text-amber-300 font-mono font-bold">{formatTime(timerSecondsLeft)}</strong> verbleibender Zeit.
                 Möchtest du den Kochmodus wirklich verlassen? Der Timer wird dabei gestoppt.
@@ -1010,14 +1010,14 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
               <button
                 type="button"
                 onClick={() => setShowExitConfirm(false)}
-                className="flex-1 h-12 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-sm transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="flex-1 h-12 min-h-[48px] rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-[16px] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 Weiterkochen
               </button>
               <button
                 type="button"
                 onClick={handleConfirmClose}
-                className="flex-1 h-12 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="flex-1 h-12 min-h-[48px] rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[16px] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 Kochmodus beenden
               </button>

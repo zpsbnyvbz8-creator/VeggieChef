@@ -1569,24 +1569,24 @@ export const RecipeDetailPage: React.FC = () => {
             <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>
-            <div className="text-center space-y-1">
-              <h3 className="text-lg font-bold text-[#2D3E40]">Rezept löschen?</h3>
-              <p className="text-xs text-[#686E6A]">
+            <div className="text-center space-y-1.5">
+              <h3 className="text-xl font-bold text-[#2D3E40]">Rezept löschen?</h3>
+              <p className="text-[16px] text-[#57534d] leading-relaxed">
                 Möchtest du "{recipe.title}" wirklich unwiderruflich aus deiner Rezeptsammlung entfernen?
               </p>
             </div>
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex items-center gap-2.5 pt-2">
               <button
                 type="button"
                 onClick={() => setIsDeleteConfirmOpen(false)}
-                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-[#686E6A] bg-[#FAF9F6] hover:bg-[#F1F5F2] cursor-pointer"
+                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-[#57534d] bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 Abbrechen
               </button>
               <button
                 type="button"
                 onClick={handleDeleteConfirm}
-                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-xs cursor-pointer active:scale-95"
+                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 Endgültig löschen
               </button>
@@ -1605,10 +1605,10 @@ export const RecipeDetailPage: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
             className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-xl border border-[#ECEBE8] animate-in zoom-in-95 duration-200"
           >
-            <div className="text-center space-y-1">
+            <div className="text-center space-y-1.5">
               <span className="text-3xl">🎉</span>
               <h3 className="text-xl font-bold text-[#2D3E40]">Guten Appetit!</h3>
-              <p className="text-xs text-[#686E6A]">
+              <p className="text-[16px] text-[#57534d] leading-relaxed">
                 Möchtest du "{recipe.title}" in deiner Kochstatistik erfassen?
               </p>
             </div>
@@ -1631,18 +1631,18 @@ export const RecipeDetailPage: React.FC = () => {
               <strong>{savings.savedWaterLiters} Liter Wasser</strong> eingespart!
             </div>
 
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex items-center gap-2.5 pt-2">
               <button
                 type="button"
                 onClick={() => setShowCookedDialog(false)}
-                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-[#686E6A] bg-[#FAF9F6] hover:bg-[#F1F5F2] cursor-pointer"
+                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-[#57534d] bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 Abbrechen
               </button>
               <button
                 type="button"
                 onClick={handleConfirmCooked}
-                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#4A7856] hover:bg-[#3D6447] shadow-xs cursor-pointer active:scale-95"
+                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-white bg-[#4A7856] hover:bg-[#3D6447] shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 In Statistik speichern
               </button>

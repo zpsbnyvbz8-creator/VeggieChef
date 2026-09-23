@@ -1336,7 +1336,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         /* Gesamtansicht (Liste mit Drag & Drop Sortierung) */
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-[#ECEBE8] shadow-xs overflow-hidden">
-            <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-[#ECEBE8] bg-[#FAF9F6]">
+            <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-[#ECEBE8] bg-[#F1F5F2]">
               <div className="flex items-center gap-2 font-semibold text-[#2D3E40] text-sm">
                 <List className="w-4 h-4 text-[#4A7856]" />
                 <span>Offene Artikel</span>
@@ -1390,7 +1390,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       setDragOverShelf(null);
                       setIsDragOverDelete(false);
                     }}
-                    className="flex items-center justify-between p-3.5 sm:p-4 hover:bg-[#FAF9F6] transition-colors border-b border-[#ECEBE8] cursor-grab active:cursor-grabbing select-none"
+                    className="flex items-center justify-between p-3.5 sm:p-4 bg-[#F1F5F2] hover:bg-[#E8EFEA] transition-colors border-b border-[#ECEBE8] cursor-grab active:cursor-grabbing select-none"
                     title="Gedrückt halten und ziehen, um das Regal zu sortieren oder auf 'Löschen' zu ziehen"
                   >
                     {/* Category Title & Drag Handle */}
@@ -1572,7 +1572,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">
                   Sicherheitsabfrage
                 </span>
-                <h3 className="text-lg font-bold text-[#2D3E40] leading-snug">
+                <h3 className="text-xl font-bold text-[#2D3E40] leading-snug">
                   {confirmDeleteState.type === 'all'
                     ? 'Liste wirklich löschen?'
                     : 'Erledigte Zutaten entfernen?'}
@@ -1580,18 +1580,18 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               </div>
             </div>
 
-            <p className="text-sm text-[#686E6A] leading-relaxed">
+            <p className="text-[16px] text-[#57534d] leading-relaxed">
               {confirmDeleteState.type === 'all'
                 ? `Bist du sicher, dass du alle ${items.length} Zutaten von deiner Liste löschen möchtest?`
                 : `Bist du sicher, dass du alle ${completedCount} erledigten Zutaten löschen möchtest?`}
             </p>
 
-            <div className="flex items-center justify-end gap-2 sm:gap-3 pt-2">
+            <div className="flex items-center justify-end gap-2.5 sm:gap-3 pt-2">
               <button
                 id="cancel-delete-shopping-btn"
                 type="button"
                 onClick={() => setConfirmDeleteState(null)}
-                className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#57534d] font-semibold text-xs transition-colors cursor-pointer"
+                className="min-h-[44px] sm:min-h-[48px] px-5 py-2.5 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#57534d] font-semibold text-[16px] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 Abbrechen
               </button>
@@ -1599,9 +1599,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 id="confirm-delete-shopping-btn"
                 type="button"
                 onClick={handleConfirmDeleteAction}
-                className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                className="min-h-[44px] sm:min-h-[48px] px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-[16px] shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
               >
-                <Trash2 className="w-3.5 h-3.5 text-white" />
+                <Trash2 className="w-4 h-4 text-white" />
                 <span>Ja, wirklich löschen</span>
               </button>
             </div>

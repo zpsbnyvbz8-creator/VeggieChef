@@ -1941,7 +1941,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 <AlertTriangle className="w-5 h-5 text-rose-600" />
               </div>
               <div>
-                <span className="text-sm font-semibold text-rose-600 uppercase tracking-wider">
+                <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">
                   Sicherheitsabfrage
                 </span>
                 <h3 className="text-xl font-bold text-[#2D3E40]">
@@ -1950,7 +1950,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               </div>
             </div>
 
-            <p className="text-[15px] text-[#686E6A] leading-relaxed">
+            <p className="text-[16px] text-[#57534d] leading-relaxed">
               Möchtest du wirklich alle geplanten Mahlzeiten dieser Woche aus deinem Wochenplan löschen? Du kannst diese Aktion danach über den Rückgängig-Button widerrufen.
             </p>
 
@@ -1959,7 +1959,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 id="cancel-clear-plan-btn"
                 type="button"
                 onClick={() => setShowConfirmClearAll(false)}
-                className="min-h-[44px] h-11 px-4 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#57534d] font-semibold text-sm transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                className="min-h-[44px] sm:min-h-[48px] h-12 px-5 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#57534d] font-semibold text-[16px] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 Abbrechen
               </button>
@@ -1967,7 +1967,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 id="confirm-clear-plan-btn"
                 type="button"
                 onClick={handleConfirmClearAll}
-                className="min-h-[44px] h-11 px-5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-base shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-2"
+                className="min-h-[44px] sm:min-h-[48px] h-12 px-5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-[16px] shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-2"
               >
                 <Trash2 className="w-4 h-4 text-white" />
                 <span>Ja, Plan leeren</span>
@@ -2055,7 +2055,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                     {confirmDeleteWeekId === w.id ? (
                       <div 
                         onClick={(e) => e.stopPropagation()} 
-                        className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 p-1.5 rounded-xl animate-in fade-in duration-150 shrink-0"
+                        className="flex items-center gap-2 bg-rose-50 border border-rose-200 p-1.5 rounded-xl animate-in fade-in duration-150 shrink-0"
                       >
                         <span className="text-xs font-bold text-rose-700">Löschen?</span>
                         <button
@@ -2068,7 +2068,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                             }
                             setConfirmDeleteWeekId(null);
                           }}
-                          className="min-h-[40px] px-3 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                          className="min-h-[44px] px-3.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[14px] font-bold shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
                         >
                           Ja
                         </button>
@@ -2078,7 +2078,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                             e.stopPropagation();
                             setConfirmDeleteWeekId(null);
                           }}
-                          className="min-h-[40px] px-2.5 rounded-lg bg-white border border-rose-200 text-[#57534d] hover:text-[#4A7856] text-xs font-medium cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                          className="min-h-[44px] px-3 rounded-lg bg-white border border-rose-200 text-[#57534d] hover:text-[#4A7856] text-[14px] font-semibold cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
                         >
                           Nein
                         </button>

@@ -247,7 +247,7 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
                 type="button"
                 id="fridge-error-cancel-btn"
                 onClick={onCancel}
-                className="flex-1 h-12 min-h-[48px] rounded-xl bg-white hover:bg-stone-100 border border-[#ECEBE8] text-[#57534d] font-semibold text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer touch-manipulation"
+                className="flex-1 h-12 min-h-[48px] rounded-xl bg-white hover:bg-stone-100 border border-[#ECEBE8] text-[#57534d] font-semibold text-[16px] flex items-center justify-center gap-2 transition-colors cursor-pointer touch-manipulation"
               >
                 <X className="w-4 h-4" />
                 <span>Abbrechen</span>
@@ -261,20 +261,20 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
                 type="button"
                 disabled={isLoadingIdea || isCreatingFinalRecipe || !idea}
                 onClick={onConfirmCreate}
-                className="w-full h-12 min-h-[48px] rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-50 text-white font-semibold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
+                className="w-full h-12 min-h-[48px] rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-50 text-white font-semibold text-[16px] flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
               >
                 <Sparkles className="w-5 h-5" />
                 <span>Gericht endgültig erstellen</span>
               </button>
 
               {/* Options 2 & 3: Neu probieren & Abbrechen */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <button
                   id="fridge-idea-retry-btn"
                   type="button"
                   disabled={isLoadingIdea || isCreatingFinalRecipe}
                   onClick={onRetryIdea}
-                  className="flex-1 h-11 min-h-[44px] rounded-xl bg-white hover:bg-stone-50 disabled:opacity-50 border border-[#ECEBE8] text-[#57534d] font-semibold text-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                  className="flex-1 h-12 min-h-[48px] rounded-xl bg-white hover:bg-stone-50 disabled:opacity-50 border border-[#ECEBE8] text-[#57534d] font-semibold text-[16px] flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer touch-manipulation"
                 >
                   <RotateCcw className="w-4 h-4 text-[#4A7856]" />
                   <span>Neu probieren</span>
@@ -285,7 +285,7 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
                   type="button"
                   disabled={isCreatingFinalRecipe}
                   onClick={onCancel}
-                  className="flex-1 h-11 min-h-[44px] rounded-xl bg-transparent hover:bg-stone-200/60 disabled:opacity-50 text-[#57534d] font-medium text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="flex-1 h-12 min-h-[48px] rounded-xl bg-white hover:bg-stone-50 disabled:opacity-50 border border-[#ECEBE8] text-[#57534d] font-semibold text-[16px] flex items-center justify-center gap-2 transition-colors cursor-pointer touch-manipulation active:scale-95"
                 >
                   <X className="w-4 h-4" />
                   <span>Abbrechen</span>

@@ -260,31 +260,33 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
               </div>
               <div>
                 <span className="text-xs font-bold text-amber-600 uppercase tracking-wider">Achtung: Bestätigung erforderlich</span>
-                <h3 className="text-lg font-bold text-[#2D3E40] leading-snug">
+                <h3 className="text-xl font-bold text-[#2D3E40] leading-snug">
                   Statistiken wirklich löschen?
                 </h3>
               </div>
             </div>
 
-            <p className="text-sm text-[#686E6A] leading-relaxed">
+            <p className="text-[16px] text-[#57534d] leading-relaxed">
               Bist du sicher, dass du deinen gesamten Kochverlauf und alle <strong className="text-[#2D3E40]">{logs.length} erfassten Einträge</strong> löschen möchtest? Alle bisher berechneten CO₂- und Wasserersparnisse werden zurückgesetzt.
             </p>
 
             <div className="flex items-center justify-end gap-2.5 sm:gap-3 pt-2">
               <button
                 id="cancel-clear-stats-btn"
+                type="button"
                 onClick={() => setShowConfirmModal(false)}
-                className="min-h-[44px] px-4 sm:px-5 py-2.5 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#57534d] font-semibold text-sm transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="min-h-[44px] sm:min-h-[48px] px-5 py-3 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#57534d] font-semibold text-[16px] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 Abbrechen
               </button>
               <button
                 id="confirm-clear-stats-btn"
+                type="button"
                 onClick={() => {
                   setShowConfirmModal(false);
                   handleClearAllLogs();
                 }}
-                className="min-h-[44px] px-4 sm:px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
+                className="min-h-[44px] sm:min-h-[48px] px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-[16px] shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Ja, wirklich löschen</span>
@@ -685,9 +687,9 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                       {confirmDeleteLogId === log.id ? (
                         <div
                           data-inline-confirm="true"
-                          className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-xl p-1 animate-in fade-in zoom-in-95 duration-150"
+                          className="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-xl p-1 animate-in fade-in zoom-in-95 duration-150"
                         >
-                          <span className="text-[11px] font-semibold text-rose-700 px-1.5 hidden sm:inline whitespace-nowrap">
+                          <span className="text-xs font-semibold text-rose-700 px-1.5 hidden sm:inline whitespace-nowrap">
                             Wirklich löschen?
                           </span>
                           <button
@@ -697,14 +699,14 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                               setConfirmDeleteLogId(null);
                               onCopyFeedback(`"${log.recipeTitle}" aus Verlauf entfernt.`);
                             }}
-                            className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer active:scale-95 touch-manipulation"
+                            className="min-h-[40px] px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[14px] font-semibold shadow-2xs transition-colors cursor-pointer active:scale-95 touch-manipulation flex items-center justify-center"
                           >
                             Löschen
                           </button>
                           <button
                             type="button"
                             onClick={() => setConfirmDeleteLogId(null)}
-                            className="px-2 py-1.5 rounded-lg bg-white hover:bg-[#ECEBE8] text-[#57534d] hover:text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold transition-colors cursor-pointer active:scale-95 touch-manipulation"
+                            className="min-h-[40px] px-3 py-2 rounded-lg bg-white hover:bg-[#ECEBE8] text-[#57534d] hover:text-[#4A7856] border border-[#ECEBE8] text-[14px] font-semibold transition-colors cursor-pointer active:scale-95 touch-manipulation flex items-center justify-center"
                           >
                             Abbrechen
                           </button>

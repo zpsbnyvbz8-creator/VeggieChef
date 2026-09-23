@@ -682,17 +682,17 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                 <button
                   type="button"
                   onClick={() => setPreviewRecipe(null)}
-                  className="px-4 py-2.5 rounded-xl border border-[#ECEBE8] hover:bg-[#FAF9F6] text-sm font-semibold text-[#57534d] transition-colors"
+                  className="min-h-[48px] h-12 px-5 py-2.5 rounded-xl border border-[#ECEBE8] hover:bg-[#FAF9F6] text-[16px] font-semibold text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
                 >
                   ← Zurück & Anpassen
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmPreview}
-                  className="px-6 py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-sm font-bold shadow-md shadow-[#4A7856]/20 flex items-center gap-2 transition-all cursor-pointer"
+                  className="min-h-[48px] h-12 px-6 py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[16px] font-bold shadow-md shadow-[#4A7856]/20 flex items-center justify-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95"
                 >
-                  <Check className="w-4 h-4" />
-                  Ins Rezeptbuch speichern
+                  <Check className="w-5 h-5" />
+                  <span>Ins Rezeptbuch speichern</span>
                 </button>
               </div>
             </div>
@@ -1343,7 +1343,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   <div className="pt-2">
                     <button
                       type="submit"
-                      className="w-full py-3.5 px-5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-base font-bold shadow-md shadow-[#4A7856]/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                      className="w-full min-h-[48px] h-12 py-3 px-5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[16px] font-bold shadow-md shadow-[#4A7856]/20 flex items-center justify-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95"
                     >
                       <Check className="w-5 h-5" />
                       <span>Rezept speichern</span>

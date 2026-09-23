@@ -232,17 +232,17 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 pt-2">
+          <div className="flex items-center gap-2.5 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-[#ECEBE8] text-[#57534d] hover:text-[#57534d] text-xs font-semibold hover:bg-[#FAF9F6] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+              className="flex-1 min-h-[48px] h-12 py-3 rounded-xl border border-[#ECEBE8] text-[#57534d] hover:bg-[#FAF9F6] text-[16px] font-semibold transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation active:scale-95"
+              className="flex-1 min-h-[48px] h-12 py-3 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[16px] font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-95"
             >
               <Check className="w-4 h-4" />
               <span>Jetzt einplanen</span>
