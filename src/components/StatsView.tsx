@@ -206,23 +206,28 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
     <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-300">
       {/* Undo Banner */}
       {showUndoBanner && undoBackup && (
-        <div className="p-3.5 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8] flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-top duration-200">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <RotateCcw className="w-4 h-4 text-[#4A7856] shrink-0" />
-            <span className="text-sm">Statistiken zurückgesetzt ({undoBackup.length} Einträge).</span>
+        <div className="p-3.5 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8]/20 flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-top duration-200">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-[#4A7856] shrink-0" />
+            <span className="text-[16px] font-medium text-white/95 truncate">
+              Statistiken zurückgesetzt ({undoBackup.length} Einträge).
+            </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleUndo}
-              className="min-h-[42px] px-4 py-2 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center"
+              className="h-[44px] min-h-[44px] px-4 sm:px-5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[16px] font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center gap-2"
             >
-              Rückgängig
+              <RotateCcw className="w-4 h-4 sm:hidden" />
+              <span>Rückgängig</span>
             </button>
             <button
               onClick={() => setShowUndoBanner(false)}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 text-sm cursor-pointer touch-manipulation active:scale-95"
+              className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer touch-manipulation active:scale-95"
+              title="Schließen"
+              aria-label="Schließen"
             >
-              ✕
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -286,7 +291,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                   setShowConfirmModal(false);
                   handleClearAllLogs();
                 }}
-                className="min-h-[44px] sm:min-h-[48px] px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-[16px] shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
+                className="min-h-[44px] sm:min-h-[48px] px-5 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-[16px] shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Ja, wirklich löschen</span>
@@ -715,7 +720,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                         <button
                           type="button"
                           onClick={() => setConfirmDeleteLogId(log.id)}
-                          className="hidden sm:flex w-9 h-9 items-center justify-center rounded-xl bg-[#FAF9F6] text-rose-500 hover:text-rose-600 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs shrink-0"
+                          className="hidden sm:flex w-9 h-9 items-center justify-center rounded-xl bg-[#FAF9F6] text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs shrink-0"
                           title="Eintrag entfernen (Bestätigung erforderlich)"
                           aria-label="Eintrag entfernen"
                         >
@@ -930,10 +935,10 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
           <button
             id="clear-all-stats-btn"
             onClick={() => setShowConfirmModal(true)}
-            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-sm border border-red-200 transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-2 shadow-2xs w-full sm:w-auto shrink-0"
+            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold text-sm border border-rose-200 transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-2 shadow-2xs w-full sm:w-auto shrink-0"
             title="Statistik und Kochverlauf leeren (erfordert Bestätigung)"
           >
-            <Trash2 className="w-4 h-4 text-red-600" />
+            <Trash2 className="w-4 h-4 text-rose-600" />
             <span>Statistik leeren</span>
           </button>
         </div>

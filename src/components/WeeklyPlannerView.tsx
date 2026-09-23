@@ -818,7 +818,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                     disabled={totalPlannedMeals === 0}
                     className="w-full min-h-[38px] px-3 py-2 rounded-xl text-left text-sm font-medium text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
                   >
-                    <Trash2 className="w-4 h-4 text-rose-500 shrink-0" />
+                    <Trash2 className="w-4 h-4 text-rose-600 shrink-0" />
                     <span>Plan leeren</span>
                   </button>
                 </div>
@@ -933,7 +933,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                     disabled={totalPlannedMeals === 0}
                     className="w-full min-h-[38px] px-3 py-2 rounded-lg text-left text-sm font-medium text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
                   >
-                    <Trash2 className="w-4 h-4 text-rose-500 shrink-0" />
+                    <Trash2 className="w-4 h-4 text-rose-600 shrink-0" />
                     <span>Plan leeren</span>
                   </button>
                 </div>
@@ -959,25 +959,29 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
       {/* Undo Banner when cleared */}
       {showUndoBanner && undoBackup && (
-        <div className="bg-[#57534d] text-white p-3 rounded-xl shadow-md flex items-center justify-between gap-3 animate-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Trash2 className="w-4 h-4 text-white/70" />
-            <span>Der Wochenplan wurde geleert.</span>
+        <div className="p-3.5 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8]/20 flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-[#4A7856] shrink-0" />
+            <span className="text-[16px] font-medium text-white/95 truncate">
+              Der Wochenplan wurde geleert.
+            </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               id="undo-clear-meal-plan-btn"
               onClick={handleUndoClearMealPlan}
-              className="flex items-center gap-1.5 bg-[#4A7856] hover:bg-[#3D6447] text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-all cursor-pointer min-h-[36px] touch-manipulation active:scale-95"
+              className="h-[44px] min-h-[44px] px-4 sm:px-5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[16px] font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center gap-2"
             >
-              <Undo2 className="w-3.5 h-3.5" />
+              <RotateCcw className="w-4 h-4" />
               <span>Rückgängig machen</span>
             </button>
             <button
               onClick={() => setShowUndoBanner(false)}
-              className="text-white/60 hover:text-white w-8 h-8 rounded-lg touch-manipulation cursor-pointer flex items-center justify-center"
+              className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer touch-manipulation active:scale-95"
+              title="Schließen"
+              aria-label="Schließen"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>

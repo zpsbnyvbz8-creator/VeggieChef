@@ -1216,7 +1216,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                               onClick={() =>
                                 setManualIngredients((prev) => prev.filter((_, i) => i !== idx))
                               }
-                              className="p-2 text-[#686E6A] hover:text-red-600 transition-colors"
+                              className="p-2 text-[#686E6A] hover:text-rose-600 transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1300,7 +1300,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                                   onClick={() =>
                                     setManualSteps((prev) => prev.filter((_, i) => i !== idx))
                                   }
-                                  className="p-1 text-[#686E6A] hover:text-red-600 transition-colors"
+                                  className="p-1 text-[#686E6A] hover:text-rose-600 transition-colors"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>

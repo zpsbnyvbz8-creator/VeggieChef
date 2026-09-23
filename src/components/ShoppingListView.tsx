@@ -946,176 +946,218 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             willChange: isThisItemTouching ? 'transform' : 'auto',
           }}
           className={`relative z-10 w-full flex justify-between py-2.5 sm:py-2 px-3.5 sm:px-4 gap-2.5 sm:gap-3 min-h-[52px] sm:min-h-[52px] touch-pan-y transition-colors ${
-            hasSecondaryText ? 'items-start' : 'items-center'
+            isEditing
+              ? 'cursor-default bg-[#FAF9F6] items-stretch'
+              : hasSecondaryText
+              ? 'items-start'
+              : 'items-center'
           } ${
             isEditing
-              ? 'cursor-default bg-[#FAF9F6]'
+              ? ''
               : item.completed
               ? 'cursor-pointer bg-white hover:bg-[#FAF9F6] text-[#686E6A]'
               : 'cursor-pointer bg-white hover:bg-[#FAF9F6] active:bg-[#F5F4F0] text-[#2D3E40]'
           }`}
         >
-          {/* LEFT SIDE: Checkbox -> Name & Quelle */}
-          <div className={`flex flex-1 min-w-0 gap-2.5 sm:gap-3 ${
-            hasSecondaryText ? 'items-start' : 'items-center'
-          }`}>
-            {/* Square Checkbox Indicator: mt-0.5 verankert ihn bei Sekundärtext exakt neben der ersten Zeile */}
+          {isEditing ? (
+            /* Smart, compact editing view with 44px touch targets and full-width text protection */
             <div
-              className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors shrink-0 ${
-                hasSecondaryText ? 'mt-0.5' : ''
-              } ${
-                item.completed
-                  ? 'bg-[#4A7856] border-[#4A7856] text-white'
-                  : 'border-[#D1D5D2] bg-white group-hover:border-[#4A7856]'
-              }`}
+              ref={editContainerRef}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full flex flex-col gap-2.5 py-1 animate-in fade-in duration-150"
             >
-              {item.completed && <Check className="w-3 h-3 stroke-[3]" />}
-            </div>
-
-            {/* Name & Quelle */}
-            <div className={`flex-1 min-w-0 flex flex-col ${
-              hasSecondaryText ? 'justify-start' : 'justify-center'
-            }`}>
-              <span
-                className={`text-base font-medium block break-words leading-tight ${
-                  item.completed ? 'line-through text-[#686e6a]' : 'text-[#2D3E40]'
-                }`}
-              >
-                {item.name}
-              </span>
-              {recipeSourceText && (
-                <span 
-                  className="text-[13px] font-normal text-[#686e6a] break-words leading-normal mt-0.5 line-clamp-2"
-                  title={item.recipeSource}
-                >
-                  {recipeSourceText}
+              {/* Header row: Checkbox/Pencil icon, item name and status badge */}
+              <div className="flex items-center justify-between gap-2 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-5 h-5 rounded-md flex items-center justify-center border-2 border-[#4A7856] bg-white text-[#4A7856] shrink-0">
+                    <Pencil className="w-3 h-3 stroke-[2.5]" />
+                  </div>
+                  <div className="min-w-0 flex flex-col">
+                    <span className="text-base font-semibold text-[#2D3E40] truncate">
+                      {item.name}
+                    </span>
+                    {recipeSourceText && (
+                      <span className="text-[13px] text-[#686e6a] truncate">
+                        {recipeSourceText}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span className="text-xs font-semibold text-[#4A7856] bg-[#F1F5F2] px-2.5 py-0.5 rounded-full shrink-0 border border-[#D5DDD7]">
+                  Menge anpassen
                 </span>
-              )}
-            </div>
-          </div>
-
-          {/* RIGHT SIDE: [Desktop Actions: Pencil & Trash (LINKS)] -> [Menge (GANZ RECHTS) / Stepper] -> [Drag Handle] */}
-          <div className={`flex items-center gap-2 shrink-0 ml-auto ${
-            hasSecondaryText ? 'self-start mt-0.5' : 'self-center'
-          }`} onClick={(e) => e.stopPropagation()}>
-            {/* Desktop hover actions: LINKS von der Mengenangabe (44x44px Buttons) */}
-            {!isEditing && (
-              <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  type="button"
-                  onClick={() => startEditingItem(item)}
-                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[#FAF9F6] text-[#4A7856] hover:bg-[#E8EFEA] hover:text-[#3D6447] border border-[#ECEBE8] transition-all cursor-pointer active:scale-95 shadow-2xs"
-                  title="Menge bearbeiten"
-                  aria-label="Menge bearbeiten"
-                >
-                  <Pencil className="w-4 h-4 stroke-[2.2]" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    deleteItem(item.id);
-                    onCopyFeedback(`"${item.name}" gelöscht.`);
-                  }}
-                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[#FAF9F6] text-rose-500 hover:text-rose-600 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer active:scale-95 shadow-2xs"
-                  title="Löschen"
-                  aria-label="Löschen"
-                >
-                  <Trash2 className="w-4 h-4 stroke-[2.2]" />
-                </button>
               </div>
-            )}
 
-            {/* Menge ganz rechts / Inline Stepper */}
-            {isEditing ? (
-              /* Inline Stepper */
-              <div
-                ref={editContainerRef}
-                className="flex items-center gap-1 bg-white p-1 rounded-xl border-2 border-[#4A7856] shadow-md animate-in zoom-in-95 duration-150"
-              >
-                <button
-                  type="button"
-                  onClick={() => stepEditedAmount(-1)}
-                  className="w-7 h-7 rounded-lg bg-[#F1F5F2] hover:bg-[#E8EFEA] text-[#57534d] flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
-                  title="Menge verringern"
-                >
-                  <Minus className="w-3 h-3" />
-                </button>
+              {/* Controls row: Stepper (- / input / +) and actions (Cancel / Save) - all 44px buttons! */}
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#ECEBE8]">
+                {/* Stepper with 44px buttons and 44px input */}
+                <div className="flex items-center bg-white border border-[#D1D5D2] rounded-xl shadow-2xs overflow-hidden h-[44px]">
+                  <button
+                    type="button"
+                    onClick={() => stepEditedAmount(-1)}
+                    className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] flex items-center justify-center bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors cursor-pointer touch-manipulation active:scale-95 border-r border-[#ECEBE8]"
+                    title="Menge verringern (-1)"
+                    aria-label="Menge verringern"
+                  >
+                    <Minus className="w-4 h-4 stroke-[2.5]" />
+                  </button>
 
-                <input
-                  type="text"
-                  value={editingAmountValue}
-                  onChange={(e) => setEditingAmountValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      saveEditedAmount(item.id);
-                    } else if (e.key === 'Escape') {
-                      cancelEditing();
-                    }
-                  }}
-                  autoFocus
-                  placeholder="1 Stk"
-                  className="w-16 sm:w-18 px-1 py-0.5 text-center text-base font-semibold text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg focus:border-[#4A7856] focus:outline-hidden"
-                />
+                  <input
+                    type="text"
+                    value={editingAmountValue}
+                    onChange={(e) => setEditingAmountValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveEditedAmount(item.id);
+                      } else if (e.key === 'Escape') {
+                        cancelEditing();
+                      }
+                    }}
+                    autoFocus
+                    placeholder="1 Stk"
+                    className="w-20 sm:w-24 h-full px-2 text-center text-[16px] font-semibold text-[#2D3E40] bg-white focus:outline-hidden focus:bg-[#FAF9F6]"
+                  />
 
-                <button
-                  type="button"
-                  onClick={() => stepEditedAmount(1)}
-                  className="w-7 h-7 rounded-lg bg-[#F1F5F2] hover:bg-[#E8EFEA] text-[#57534d] flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
-                  title="Menge erhöhen"
-                >
-                  <Plus className="w-3 h-3" />
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => stepEditedAmount(1)}
+                    className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] flex items-center justify-center bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors cursor-pointer touch-manipulation active:scale-95 border-l border-[#ECEBE8]"
+                    title="Menge erhöhen (+1)"
+                    aria-label="Menge erhöhen"
+                  >
+                    <Plus className="w-4 h-4 stroke-[2.5]" />
+                  </button>
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => saveEditedAmount(item.id)}
-                  className="w-7 h-7 rounded-lg bg-[#4A7856] hover:bg-[#3D6447] text-white flex items-center justify-center transition-colors active:scale-90 cursor-pointer touch-manipulation"
-                  title="Speichern"
-                >
-                  <Check className="w-3 h-3 stroke-[2.5]" />
-                </button>
+                {/* Action buttons: Cancel (44x44px) & Save (44px min-h) */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={cancelEditing}
+                    className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#686e6a] hover:text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shadow-2xs"
+                    title="Abbrechen"
+                    aria-label="Abbrechen"
+                  >
+                    <X className="w-4 h-4 stroke-[2.2]" />
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={cancelEditing}
-                  className="w-7 h-7 rounded-lg text-[#57534d] hover:text-[#57534d] hover:bg-[#ECEBE8] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-90"
-                  title="Abbrechen"
-                >
-                  <X className="w-3 h-3" />
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => saveEditedAmount(item.id)}
+                    className="h-[44px] min-h-[44px] px-3.5 sm:px-4 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white flex items-center justify-center gap-1.5 font-semibold text-[14px] sm:text-[15px] shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
+                    title="Speichern"
+                    aria-label="Speichern"
+                  >
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                    <span>Fertig</span>
+                  </button>
+                </div>
               </div>
-            ) : item.amount ? (
-              /* Mengenangabe ganz rechts: Exakt wie in der Rezept-Detailansicht (font-semibold tabular-nums text-[#4A7856]) */
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  startEditingItem(item);
-                }}
-                className={`text-base font-semibold tabular-nums select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline ${
-                  item.completed
-                    ? 'text-[#686e6a] line-through opacity-60'
-                    : 'text-[#4A7856] hover:text-[#3D6447]'
-                }`}
-                title="Menge anpassen (- / +)"
-              >
-                {item.amount} {item.unit}
-              </button>
-            ) : null}
-
-            {/* Drag Handle am äußersten rechten Rand */}
-            <div
-              className={`p-1 transition-colors hidden sm:flex items-center justify-center ${
-                isAnySwiped
-                  ? 'text-[#686e6a] opacity-30 cursor-not-allowed pointer-events-none'
-                  : 'text-[#686e6a] hover:text-[#57534d] cursor-grab active:cursor-grabbing'
-              }`}
-              title={isAnySwiped ? 'Verschieben gesperrt' : 'Gedrückt halten zum Verschieben'}
-            >
-              <GripVertical className="w-3.5 h-3.5" />
             </div>
-          </div>
+          ) : (
+            <>
+              {/* LEFT SIDE: Checkbox -> Name & Quelle */}
+              <div className={`flex flex-1 min-w-0 gap-2.5 sm:gap-3 ${
+                hasSecondaryText ? 'items-start' : 'items-center'
+              }`}>
+                {/* Square Checkbox Indicator: mt-0.5 verankert ihn bei Sekundärtext exakt neben der ersten Zeile */}
+                <div
+                  className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors shrink-0 ${
+                    hasSecondaryText ? 'mt-0.5' : ''
+                  } ${
+                    item.completed
+                      ? 'bg-[#4A7856] border-[#4A7856] text-white'
+                      : 'border-[#D1D5D2] bg-white group-hover:border-[#4A7856]'
+                  }`}
+                >
+                  {item.completed && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+
+                {/* Name & Quelle */}
+                <div className={`flex-1 min-w-0 flex flex-col ${
+                  hasSecondaryText ? 'justify-start' : 'justify-center'
+                }`}>
+                  <span
+                    className={`text-base font-medium block break-words leading-tight ${
+                      item.completed ? 'line-through text-[#686e6a]' : 'text-[#2D3E40]'
+                    }`}
+                  >
+                    {item.name}
+                  </span>
+                  {recipeSourceText && (
+                    <span 
+                      className="text-[13px] font-normal text-[#686e6a] break-words leading-normal mt-0.5 line-clamp-2"
+                      title={item.recipeSource}
+                    >
+                      {recipeSourceText}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* RIGHT SIDE: [Desktop Actions: Pencil & Trash (LINKS)] -> [Menge (GANZ RECHTS)] -> [Drag Handle] */}
+              <div className={`flex items-center gap-2 shrink-0 ml-auto ${
+                hasSecondaryText ? 'self-start mt-0.5' : 'self-center'
+              }`} onClick={(e) => e.stopPropagation()}>
+                {/* Desktop hover actions: LINKS von der Mengenangabe (44x44px Buttons) */}
+                <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    type="button"
+                    onClick={() => startEditingItem(item)}
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[#FAF9F6] text-[#4A7856] hover:bg-[#E8EFEA] hover:text-[#3D6447] border border-[#ECEBE8] transition-all cursor-pointer active:scale-95 shadow-2xs"
+                    title="Menge bearbeiten"
+                    aria-label="Menge bearbeiten"
+                  >
+                    <Pencil className="w-4 h-4 stroke-[2.2]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      deleteItem(item.id);
+                      onCopyFeedback(`"${item.name}" gelöscht.`);
+                    }}
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[#FAF9F6] text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer active:scale-95 shadow-2xs"
+                    title="Löschen"
+                    aria-label="Löschen"
+                  >
+                    <Trash2 className="w-4 h-4 stroke-[2.2]" />
+                  </button>
+                </div>
+
+                {item.amount ? (
+                  /* Mengenangabe ganz rechts: Exakt wie in der Rezept-Detailansicht (font-semibold tabular-nums text-[#4A7856]) */
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEditingItem(item);
+                    }}
+                    className={`text-base font-semibold tabular-nums select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline ${
+                      item.completed
+                        ? 'text-[#686e6a] line-through opacity-60'
+                        : 'text-[#4A7856] hover:text-[#3D6447]'
+                    }`}
+                    title="Menge anpassen (- / +)"
+                  >
+                    {item.amount} {item.unit}
+                  </button>
+                ) : null}
+
+                {/* Drag Handle am äußersten rechten Rand */}
+                <div
+                  className={`p-1 transition-colors hidden sm:flex items-center justify-center ${
+                    isAnySwiped
+                      ? 'text-[#686e6a] opacity-30 cursor-not-allowed pointer-events-none'
+                      : 'text-[#686e6a] hover:text-[#57534d] cursor-grab active:cursor-grabbing'
+                  }`}
+                  title={isAnySwiped ? 'Verschieben gesperrt' : 'Gedrückt halten zum Verschieben'}
+                >
+                  <GripVertical className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -1267,7 +1309,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   isDragOverDelete
                     ? 'text-white animate-bounce'
                     : items.length > 0
-                    ? 'text-rose-500/80 group-hover:text-rose-600'
+                    ? 'text-rose-600 group-hover:text-rose-700'
                     : 'text-[#686e6a]'
                 }`}
               />
@@ -1417,7 +1459,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       setItems(backup);
                       onCopyFeedback(`${backup.length} Zutaten wiederhergestellt! 🛒`);
                     }}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FAF9F6] hover:bg-[#E8EFEA] border border-[#ECEBE8] text-[#4A7856] text-xs font-semibold shadow-2xs transition-all cursor-pointer active:scale-95"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FAF9F6] hover:bg-[#E8EFEA] border border-[#ECEBE8] text-[#4A7856] text-sm font-semibold shadow-2xs transition-all cursor-pointer active:scale-95 min-h-[44px] touch-manipulation"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Gesicherte Liste wiederherstellen ({backup.length} {backup.length === 1 ? 'Zutat' : 'Zutaten'})</span>
@@ -1586,7 +1628,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               <button
                 type="button"
                 onClick={() => setConfirmDeleteState({ type: 'completed' })}
-                className="text-xs font-semibold text-rose-600 hover:text-rose-700 px-2.5 py-1 rounded-lg hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer mr-1"
+                className="text-sm font-semibold text-rose-600 hover:text-rose-700 px-3 py-1.5 rounded-lg hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer mr-1"
                 title="Erledigte Zutaten entfernen"
               >
                 Entfernen
@@ -1627,10 +1669,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
       {/* Undo Notification Banner (Nach unten gerückt: hinter 'Erledigt', sowohl Mobile als auch PC) */}
       {showUndoBanner && undoBackup && (
-        <div className="p-3 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8] flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-bottom duration-200 mt-2">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4A7856] shrink-0" />
-            <span className="text-xs">
+        <div className="p-3.5 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8]/20 flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-bottom duration-200 mt-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-[#4A7856] shrink-0" />
+            <span className="text-[16px] font-medium text-white/95 truncate">
               {lastDeletedInfo?.type === 'completed'
                 ? `${lastDeletedInfo.count} erledigte ${lastDeletedInfo.count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`
                 : lastDeletedInfo?.type === 'category'
@@ -1643,15 +1685,18 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleUndo}
-              className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
+              className="h-[44px] min-h-[44px] px-4 sm:px-5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[16px] font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center gap-2"
             >
-              Rückgängig
+              <RotateCcw className="w-4 h-4 sm:hidden" />
+              <span>Rückgängig</span>
             </button>
             <button
               onClick={() => setShowUndoBanner(false)}
-              className="p-1 text-white/70 hover:text-white text-xs cursor-pointer"
+              className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer touch-manipulation active:scale-95"
+              title="Schließen"
+              aria-label="Schließen"
             >
-              ✕
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
