@@ -1255,7 +1255,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               {copied ? (
                 <Check className="w-4 h-4 text-[#4A7856]" />
               ) : (
-                <Copy className="w-4 h-4 text-[#686e6a] group-hover:text-[#57534d] transition-colors" />
+                <Copy className="w-4 h-4 text-[#57534d] transition-colors" />
               )}
               <span>{copied ? 'Kopiert!' : 'Kopieren'}</span>
             </button>
@@ -1489,7 +1489,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <List className="w-4 h-4 text-[#4A7856]" />
                 <span>Offene Artikel</span>
               </div>
-              <span className="text-xs font-semibold text-[#2D3E40] bg-white px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
+              <span className="text-xs font-semibold text-[#57534d] bg-white px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
                 {activeItems.length} offen
               </span>
             </div>
@@ -1573,7 +1573,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       className="flex items-center gap-1.5 shrink-0 ml-2 cursor-pointer"
                       title={isCollapsed ? 'Regal aufklappen' : 'Regal zuklappen'}
                     >
-                      <span className="text-xs font-semibold text-[#2D3E40] bg-white px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
+                      <span className="text-xs font-semibold text-[#57534d] bg-white px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
                         {activeInCat.length} offen
                       </span>
 

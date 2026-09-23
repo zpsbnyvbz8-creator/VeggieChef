@@ -28,7 +28,8 @@ import {
   GripVertical,
   MoreHorizontal,
   ChefHat,
-  ChevronDown
+  ChevronDown,
+  LayoutGrid
 } from 'lucide-react';
 import { DayPlan, MealPlanSlot, Recipe, WeekPlan } from '../types';
 import { RecipeImage } from './RecipeImage';
@@ -111,6 +112,23 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       } catch {}
       return next;
     });
+  };
+
+  // Desktop Grid Mode: 'comfort' (4 Spalten mit großzügigen Karten wie auf iPad) or 'compact7' (7 Tage nebeneinander)
+  const [desktopGridMode, setDesktopGridMode] = useState<'comfort' | 'compact7'>(() => {
+    try {
+      const saved = safeStorage.getItem('veggiechef_planner_desktop_mode');
+      return saved === 'compact7' ? 'compact7' : 'comfort';
+    } catch {
+      return 'comfort';
+    }
+  });
+
+  const handleSetDesktopGridMode = (mode: 'comfort' | 'compact7') => {
+    setDesktopGridMode(mode);
+    try {
+      safeStorage.setItem('veggiechef_planner_desktop_mode', mode);
+    } catch {}
   };
 
   // Multi-week navigation modals
@@ -707,6 +725,24 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     0
   );
 
+  const weeklyMetrics = mealPlan.reduce(
+    (acc, day) => {
+      const lunchCal = day.lunch?.calories || 0;
+      const lunchProt = day.lunch?.protein || 0;
+      const dinnerCal = day.dinner?.calories || 0;
+      const dinnerProt = day.dinner?.protein || 0;
+      return {
+        meals: acc.meals + (day.lunch ? 1 : 0) + (day.dinner ? 1 : 0),
+        calories: acc.calories + lunchCal + dinnerCal,
+        protein: acc.protein + lunchProt + dinnerProt,
+      };
+    },
+    { meals: 0, calories: 0, protein: 0 }
+  );
+
+  const avgCaloriesPerDay = Math.round(weeklyMetrics.calories / 7);
+  const avgProteinPerDay = Math.round(weeklyMetrics.protein / 7);
+
   const renderMealItem = (day: DayPlan, mealType: 'lunch' | 'dinner', slot: MealPlanSlot) => {
     const recipe = allRecipes.find((r) => r.id === slot.recipeId);
     const isDraggingThis = draggingItem?.dayId === day.dayId && draggingItem?.mealType === mealType;
@@ -750,6 +786,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           }
         }}
         className={`p-2.5 sm:p-3 transition-colors group relative flex items-center gap-2.5 cursor-grab active:cursor-grabbing hover:bg-[#FAF9F6] flex-1 ${
+          desktopGridMode === 'compact7' ? 'xl:p-2 xl:gap-2' : ''
+        } ${
           isDraggingThis
             ? 'opacity-30 bg-stone-50'
             : isDragOverThis
@@ -762,7 +800,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           onClick={() => {
             if (recipe) onSelectRecipe(recipe);
           }}
-          className="w-[52px] h-[52px] min-w-[52px] min-h-[52px] rounded-xl overflow-hidden border border-[#ECEBE8] shrink-0 bg-[#FAF9F6] relative cursor-pointer group-hover:shadow-2xs transition-shadow"
+          className={`${
+            desktopGridMode === 'compact7'
+              ? 'w-[52px] h-[52px] min-w-[52px] min-h-[52px] xl:w-[42px] xl:h-[42px] xl:min-w-[42px] xl:min-h-[42px]'
+              : 'w-[52px] h-[52px] min-w-[52px] min-h-[52px]'
+          } rounded-xl overflow-hidden border border-[#ECEBE8] shrink-0 bg-[#FAF9F6] relative cursor-pointer group-hover:shadow-2xs transition-shadow`}
         >
           {recipe ? (
             <RecipeImage recipe={recipe} className="w-full h-full" imgClassName="w-full h-full object-cover" />
@@ -791,9 +833,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               {mealType === 'lunch' ? 'Mittag' : 'Abendessen'}
             </span>
             {slot.isVegan ? (
-              <span className="text-[12px] text-[#4A7856] font-medium">• 🌱 Vegan</span>
+              <span className="text-[12px] text-[#686e6a] font-medium">• 🌱 Vegan</span>
             ) : (
-              <span className="text-[12px] text-[#57534d] font-medium">• 🧀 Veggie</span>
+              <span className="text-[12px] text-[#686e6a] font-medium">• 🧀 Veggie</span>
             )}
             {isSwapTarget && (
               <span className="text-[10px] font-bold text-[#4A7856] bg-white px-1.5 py-0.2 rounded border border-[#4A7856] shadow-2xs ml-auto">
@@ -806,14 +848,18 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             onClick={() => {
               if (recipe) onSelectRecipe(recipe);
             }}
-            className="text-[16px] font-medium text-[#2D3E40] leading-snug line-clamp-2 hover:text-[#4A7856] cursor-pointer transition-colors"
+            className={`${
+              desktopGridMode === 'compact7' ? 'text-[16px] xl:text-[14px]' : 'text-[16px]'
+            } font-medium text-[#2D3E40] leading-snug line-clamp-2 hover:text-[#4A7856] cursor-pointer transition-colors`}
             title={slot.recipeTitle}
           >
             {slot.recipeTitle}
           </h4>
 
           {/* Key Stats row beneath title */}
-          <div className="flex items-center text-[13px] text-[#686e6a] font-medium gap-1.5 mt-1 truncate">
+          <div className={`flex items-center ${
+            desktopGridMode === 'compact7' ? 'text-[13px] xl:text-[11px]' : 'text-[13px]'
+          } text-[#686e6a] font-medium gap-1.5 mt-1 truncate`}>
             <span className="text-[#686e6a]">⏱️ {slot.prepTime}m</span>
             <span className="text-[#686e6a]">·</span>
             <span className="text-[13px] text-[#686e6a]">🔥 {slot.calories} kcal</span>
@@ -830,7 +876,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             removeSlot(day.dayId, mealType);
             onCopyFeedback(`"${slot.recipeTitle || 'Mahlzeit'}" entfernt.`);
           }}
-          className="text-[#686e6a] hover:text-rose-600 hover:bg-rose-50 rounded-xl w-8 h-8 min-w-[32px] min-h-[32px] flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
+          className={`text-[#686e6a] hover:text-rose-600 hover:bg-rose-50 rounded-xl ${
+            desktopGridMode === 'compact7' ? 'w-8 h-8 min-w-[32px] min-h-[32px] xl:w-7 xl:h-7 xl:min-w-[28px] xl:min-h-[28px]' : 'w-8 h-8 min-w-[32px] min-h-[32px]'
+          } flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95`}
           title="Mahlzeit entfernen"
         >
           <Trash2 className="w-4 h-4" />
@@ -882,8 +930,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               : 'border-[#D5DDD7] hover:border-[#4A7856] text-[#57534d] hover:text-[#4A7856] bg-[#FAF9F6]/40 hover:bg-[#F1F5F2]'
           }`}
         >
-          <Plus className="w-3.5 h-3.5" />
-          <span className="text-[#57534d] group-hover:text-[#4A7856]">{label}</span>
+          <Plus className="w-3.5 h-3.5 shrink-0" />
+          <span className="text-[#57534d] group-hover:text-[#4A7856] truncate">
+            {desktopGridMode === 'compact7' ? (mealType === 'lunch' ? '+ Mittag' : '+ Abend') : label}
+          </span>
         </button>
       </div>
     );
@@ -1080,6 +1130,38 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             </span>
           </button>
 
+          {/* Desktop Only: View mode switcher (Komfort 4-Spalten vs. Woche 7-Tage) */}
+          <div className="hidden xl:flex items-center p-0.5 bg-white border border-[#ECEBE8] rounded-xl text-xs font-semibold shadow-2xs">
+            <button
+              type="button"
+              id="planner-desktop-mode-comfort-btn"
+              onClick={() => handleSetDesktopGridMode('comfort')}
+              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer select-none flex items-center gap-1.5 ${
+                desktopGridMode === 'comfort'
+                  ? 'bg-[#4A7856] text-white shadow-2xs'
+                  : 'text-[#57534d] hover:text-[#4A7856]'
+              }`}
+              title="Komfort-Ansicht mit großzügigen Karten (4 Spalten)"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>4 Spalten</span>
+            </button>
+            <button
+              type="button"
+              id="planner-desktop-mode-7col-btn"
+              onClick={() => handleSetDesktopGridMode('compact7')}
+              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer select-none flex items-center gap-1.5 ${
+                desktopGridMode === 'compact7'
+                  ? 'bg-[#4A7856] text-white shadow-2xs'
+                  : 'text-[#57534d] hover:text-[#4A7856]'
+              }`}
+              title="Kompaktansicht aller 7 Tage nebeneinander"
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>7 Tage</span>
+            </button>
+          </div>
+
           {/* Right side: Compact servings stepper [ - 3 Port. + ] */}
           <div className="flex items-center gap-2">
             <span className="text-xs sm:text-sm font-semibold text-[#2D3E40] hidden xs:inline select-none">
@@ -1192,7 +1274,13 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       )}
 
       {/* 7-Day Grid: Clean Day Containers following "Regale" pattern */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3 xl:gap-2.5 2xl:gap-3">
+      <div
+        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${
+          desktopGridMode === 'compact7'
+            ? 'xl:grid-cols-7 gap-2.5 xl:gap-2 2xl:gap-2.5'
+            : 'xl:grid-cols-4 gap-3.5 sm:gap-4'
+        }`}
+      >
         {mealPlan.map((day) => {
           const totalCalories = (day.lunch?.calories || 0) + (day.dinner?.calories || 0);
           const totalProtein = (day.lunch?.protein || 0) + (day.dinner?.protein || 0);
@@ -1204,18 +1292,18 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               className="bg-white rounded-2xl border border-[#ECEBE8] overflow-hidden shadow-xs hover:border-[#4A7856]/40 hover:shadow-sm transition-all flex flex-col justify-between"
             >
               {/* Day Header Bar: #f1f5f2 top header strip */}
-              <div className="bg-[#f1f5f2] px-3.5 py-2.5 border-b border-[#ECEBE8] flex items-center justify-between gap-2">
-                <span className="font-semibold text-[16px] text-[#2D3E40]">
+              <div className="bg-[#f1f5f2] px-3.5 py-2.5 border-b border-[#ECEBE8] flex items-center justify-between gap-1.5 flex-wrap">
+                <span className={`font-semibold ${desktopGridMode === 'compact7' ? 'text-[15px] xl:text-[14px]' : 'text-[16px]'} text-[#2D3E40]`}>
                   {day.dayName}
                 </span>
                 {totalCalories > 0 || totalProtein > 0 ? (
                   <div
-                    className="text-xs text-[#686e6a] font-medium flex items-center gap-1.5 shrink-0"
+                    className={`${desktopGridMode === 'compact7' ? 'text-[11px] xl:text-[10.5px]' : 'text-xs'} text-[#57534d] font-medium flex items-center gap-1.5 shrink-0`}
                     title={`Tagesgesamtwerte: ${totalCalories} kcal, ${totalProtein}g Protein`}
                   >
-                    {totalCalories > 0 && <span className="text-[#686e6a]">🔥 {totalCalories} kcal</span>}
+                    {totalCalories > 0 && <span className="text-[#57534d]">🔥 {totalCalories} kcal</span>}
                     {totalCalories > 0 && totalProtein > 0 && <span className="text-[#686e6a]">•</span>}
-                    {totalProtein > 0 && <span className="text-[#686e6a] font-semibold">💪 {totalProtein}g</span>}
+                    {totalProtein > 0 && <span className="text-[#57534d] font-semibold">💪 {totalProtein}g</span>}
                   </div>
                 ) : (
                   <span className="text-xs text-[#686e6a] font-normal">
@@ -1235,11 +1323,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   /* Subtle non-interactive note when lunch slot is disabled but a dish is planned */
                   day.lunch && (
                     <div
-                      className="px-3 py-1.5 bg-[#FAF9F6] border-b border-[#ECEBE8] flex items-center gap-1.5 text-[12px] text-[#686e6a] select-none"
+                      className="px-3 py-1.5 bg-[#FAF9F6] border-b border-[#ECEBE8] flex items-center gap-1.5 text-[12px] text-[#57534d] select-none"
                       title={`Mittagsgericht: ${day.lunch.recipeTitle}`}
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-[#4A7856]/80 shrink-0" />
-                      <span className="truncate text-[12px]">Mittag: {day.lunch.recipeTitle}</span>
+                      <span className="truncate text-[12px] text-[#57534d]">Mittag: {day.lunch.recipeTitle}</span>
                     </div>
                   )
                 )}
@@ -1252,6 +1340,60 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             </div>
           );
         })}
+
+        {/* Slot 8 on PC in Comfort Mode: Sleek Weekly Summary Card */}
+        {desktopGridMode === 'comfort' && (
+          <div className="hidden xl:flex bg-gradient-to-b from-[#FAF9F6] to-white rounded-2xl border border-[#ECEBE8] overflow-hidden shadow-xs flex-col justify-between p-0">
+            {/* Header */}
+            <div className="bg-[#f1f5f2] px-3.5 py-2.5 border-b border-[#ECEBE8] flex items-center justify-between gap-2">
+              <span className="font-semibold text-[16px] text-[#2D3E40] flex items-center gap-1.5">
+                <span>📊</span> Wochen-Bilanz
+              </span>
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white text-[#4A7856] border border-[#CCD5CF] shadow-2xs">
+                {weeklyMetrics.meals} von 14
+              </span>
+            </div>
+
+            {/* Body */}
+            <div className="p-3.5 sm:p-4 space-y-3 flex-1 flex flex-col justify-between">
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs text-[#57534d] pb-1.5 border-b border-[#ECEBE8]">
+                  <span>Ø Kalorien pro Tag</span>
+                  <span className="font-bold text-[#2D3E40]">🔥 {avgCaloriesPerDay} kcal</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-[#57534d] pb-1.5 border-b border-[#ECEBE8]">
+                  <span>Ø Protein pro Tag</span>
+                  <span className="font-bold text-[#4A7856]">💪 {avgProteinPerDay}g</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-[#57534d]">
+                  <span>Geplante Portionen</span>
+                  <span className="font-semibold text-[#2D3E40]">{planServings} Port.</span>
+                </div>
+              </div>
+
+              {/* Quick Action Buttons */}
+              <div className="pt-2.5 space-y-2 border-t border-[#ECEBE8]">
+                <button
+                  type="button"
+                  onClick={handleTransferAllToShopping}
+                  disabled={weeklyMetrics.meals === 0}
+                  className="w-full h-11 min-h-[44px] px-3 py-2 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white font-semibold text-xs shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-95"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>Zutaten auf Liste</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAIGeneratorModal(true)}
+                  className="w-full h-11 min-h-[44px] px-3 py-2 rounded-xl bg-white hover:bg-[#FAF9F6] border border-[#ECEBE8] text-[#57534d] hover:text-[#4A7856] font-semibold text-xs shadow-2xs transition-colors flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-95"
+                >
+                  <Sparkles className="w-4 h-4 text-[#4A7856]" />
+                  <span>KI-Wochenplan</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Floating Drag & Drop Ghost for Touch Devices */}
