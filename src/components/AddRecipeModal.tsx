@@ -16,7 +16,8 @@ import {
   Leaf,
   AlertCircle,
   Loader2,
-  RotateCcw
+  RotateCcw,
+  ChevronDown
 } from 'lucide-react';
 import { Recipe, RecipeCategory, RecipeIngredient, RecipeStep } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
@@ -816,34 +817,40 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
                         Kategorie (Optional)
                       </label>
-                      <select
-                        value={aiCategory}
-                        onChange={(e) => setAiCategory(e.target.value as RecipeCategory)}
-                        className="w-full px-3 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-sm text-[#2D3E40] focus:outline-none focus:border-[#4A7856]"
-                      >
-                        <option value="">Automatisch erkennen</option>
-                        {CATEGORIES.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={aiCategory}
+                          onChange={(e) => setAiCategory(e.target.value as RecipeCategory)}
+                          className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-9 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] font-medium text-[#2D3E40] focus:outline-none focus:border-[#4A7856] cursor-pointer"
+                        >
+                          <option value="">Automatisch erkennen</option>
+                          {CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
                     </div>
 
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
                         Zubereitungszeit
                       </label>
-                      <select
-                        value={aiTimeOption}
-                        onChange={(e) => setAiTimeOption(e.target.value as any)}
-                        className="w-full px-3 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-sm text-[#2D3E40] focus:outline-none focus:border-[#4A7856]"
-                      >
-                        <option value="medium">Ausgewogen (~ 30 Min.)</option>
-                        <option value="quick">Express (&lt; 20 Min.)</option>
-                        <option value="elaborate">Ausführlich / Festlich (~ 50 Min.)</option>
-                        <option value="any">Keine Einschränkung</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={aiTimeOption}
+                          onChange={(e) => setAiTimeOption(e.target.value as any)}
+                          className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-9 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] font-medium text-[#2D3E40] focus:outline-none focus:border-[#4A7856] cursor-pointer"
+                        >
+                          <option value="medium">Ausgewogen (~ 30 Min.)</option>
+                          <option value="quick">Express (&lt; 20 Min.)</option>
+                          <option value="elaborate">Ausführlich / Festlich (~ 50 Min.)</option>
+                          <option value="any">Keine Einschränkung</option>
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
                     </div>
                   </div>
 
@@ -1031,31 +1038,37 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       <label className="text-[11px] font-bold text-[#2D3E40] uppercase tracking-wider block mb-1">
                         Kategorie
                       </label>
-                      <select
-                        value={manualCategory}
-                        onChange={(e) => setManualCategory(e.target.value as RecipeCategory)}
-                        className="w-full px-2.5 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-xs font-medium text-[#2D3E40]"
-                      >
-                        {CATEGORIES.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={manualCategory}
+                          onChange={(e) => setManualCategory(e.target.value as RecipeCategory)}
+                          className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-8 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] font-medium text-[#2D3E40] focus:outline-none focus:border-[#4A7856] cursor-pointer"
+                        >
+                          {CATEGORIES.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
                     </div>
 
                     <div>
                       <label className="text-[11px] font-bold text-[#2D3E40] uppercase tracking-wider block mb-1">
                         Ernährung
                       </label>
-                      <select
-                        value={manualIsVegan ? 'vegan' : 'vegetarian'}
-                        onChange={(e) => setManualIsVegan(e.target.value === 'vegan')}
-                        className="w-full px-2.5 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-xs font-medium text-[#2D3E40]"
-                      >
-                        <option value="vegan">100% Vegan</option>
-                        <option value="vegetarian">Vegetarisch</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={manualIsVegan ? 'vegan' : 'vegetarian'}
+                          onChange={(e) => setManualIsVegan(e.target.value === 'vegan')}
+                          className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-8 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] font-medium text-[#2D3E40] focus:outline-none focus:border-[#4A7856] cursor-pointer"
+                        >
+                          <option value="vegan">100% Vegan</option>
+                          <option value="vegetarian">Vegetarisch</option>
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
                     </div>
 
                     <div>

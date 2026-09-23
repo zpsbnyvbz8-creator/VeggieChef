@@ -624,6 +624,31 @@ export const RecipeDetailPage: React.FC = () => {
 
             {/* Overflow Menu Button */}
             <div ref={overflowMenuRef} className="relative">
+              {/* Native iOS / Mobile Dropdown Select */}
+              <select
+                aria-label="Rezept Optionen"
+                value=""
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'copy') handleCopyIngredients();
+                  else if (val === 'edit') setIsEditModalOpen(true);
+                  else if (val === 'duplicate') handleDuplicate();
+                  else if (val === 'cooked') setShowCookedDialog(true);
+                  else if (val === 'dislike') toggleDislike(recipe.id);
+                  else if (val === 'delete') setIsDeleteConfirmOpen(true);
+                  e.target.value = '';
+                }}
+                className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
+              >
+                <option value="" disabled>Rezept-Optionen...</option>
+                <option value="copy">📋 Zutaten kopieren</option>
+                <option value="edit">✏️ Rezept bearbeiten</option>
+                <option value="duplicate">📑 Rezept duplizieren</option>
+                <option value="cooked">🍳 Als gekocht erfassen</option>
+                <option value="dislike">{isDisliked ? '👍 Nicht mehr disliken' : '👎 Seltener anzeigen'}</option>
+                <option value="delete">🗑️ Rezept löschen</option>
+              </select>
+
               <button
                 id="recipe-overflow-menu-btn"
                 type="button"
@@ -638,21 +663,20 @@ export const RecipeDetailPage: React.FC = () => {
                 <MoreVertical className="w-5 h-5" />
               </button>
 
-              {/* Overflow Dropdown */}
+              {/* Desktop Overflow Dropdown */}
               {isOverflowMenuOpen && (
                 <>
                   <div
                     className="fixed inset-0 z-40"
                     onClick={() => setIsOverflowMenuOpen(false)}
                   />
-                  <div className="absolute right-0 top-14 z-50 w-60 bg-white rounded-2xl shadow-xl border border-[#ECEBE8] py-2 animate-in fade-in zoom-in-95 duration-150">
-                    {/* Moved 'Kopieren' to overflow menu as requested */}
+                  <div className="hidden sm:block absolute right-0 top-14 z-50 w-64 bg-white rounded-2xl shadow-xl border border-[#ECEBE8] py-2 animate-in fade-in zoom-in-95 duration-150">
                     <button
                       type="button"
                       onClick={handleCopyIngredients}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
+                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
                     >
-                      <Copy className="w-4 h-4 text-[#4A7856]" />
+                      <Copy className="w-5 h-5 text-[#4A7856]" />
                       <span>Kopieren</span>
                     </button>
 
@@ -662,18 +686,18 @@ export const RecipeDetailPage: React.FC = () => {
                         setIsOverflowMenuOpen(false);
                         setIsEditModalOpen(true);
                       }}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
+                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
                     >
-                      <Pencil className="w-4 h-4 text-[#4A7856]" />
+                      <Pencil className="w-5 h-5 text-[#4A7856]" />
                       <span>Rezept bearbeiten</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={handleDuplicate}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
+                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
                     >
-                      <Copy className="w-4 h-4 text-[#4A7856]" />
+                      <Copy className="w-5 h-5 text-[#4A7856]" />
                       <span>Rezept duplizieren</span>
                     </button>
 
@@ -683,9 +707,9 @@ export const RecipeDetailPage: React.FC = () => {
                         setIsOverflowMenuOpen(false);
                         setShowCookedDialog(true);
                       }}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
+                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
                     >
-                      <SmilePlus className="w-4 h-4 text-[#4A7856]" />
+                      <SmilePlus className="w-5 h-5 text-[#4A7856]" />
                       <span>Als gekocht erfassen</span>
                     </button>
 
@@ -695,9 +719,9 @@ export const RecipeDetailPage: React.FC = () => {
                         setIsOverflowMenuOpen(false);
                         toggleDislike(recipe.id);
                       }}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
+                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
                     >
-                      <ThumbsDown className="w-4 h-4 text-[#686e6a]" />
+                      <ThumbsDown className="w-5 h-5 text-[#686e6a]" />
                       <span>{isDisliked ? 'Nicht mehr disliken' : 'Seltener anzeigen'}</span>
                     </button>
 
@@ -709,9 +733,9 @@ export const RecipeDetailPage: React.FC = () => {
                         setIsOverflowMenuOpen(false);
                         setIsDeleteConfirmOpen(true);
                       }}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                     >
-                      <Trash2 className="w-4 h-4 text-rose-600" />
+                      <Trash2 className="w-5 h-5 text-rose-600" />
                       <span>Rezept löschen</span>
                     </button>
                   </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Calendar, Clock, Flame, Dumbbell, Sun, Moon, Check } from 'lucide-react';
+import { X, Calendar, Clock, Flame, Dumbbell, Sun, Moon, Check, ChevronDown } from 'lucide-react';
 import { Recipe, DayPlan, WeekPlan } from '../types';
 import { RecipeImage } from './RecipeImage';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
@@ -114,17 +114,20 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
           {weeks && weeks.length > 1 && (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-[#2D3E40]">Woche auswählen</label>
-              <select
-                value={selectedWeekId}
-                onChange={(e) => setSelectedWeekId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8] text-xs font-medium text-[#2D3E40] focus:outline-none focus:border-[#4A7856] cursor-pointer"
-              >
-                {weeks.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.title}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={selectedWeekId}
+                  onChange={(e) => setSelectedWeekId(e.target.value)}
+                  className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-9 py-2.5 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8] text-[16px] font-medium text-[#2D3E40] focus:outline-none focus:border-[#4A7856] cursor-pointer"
+                >
+                  {weeks.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.title}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
           )}
 

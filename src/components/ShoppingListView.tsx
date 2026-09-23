@@ -1337,11 +1337,27 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
         {/* Middle: Truly dynamic compact button & custom dropdown */}
         <div ref={categoryDropdownRef} className="relative shrink-0">
+          {/* Mobile Native iOS Dropdown Menu: Triggers native iOS picker wheel / action sheet on iPhone / iPad */}
+          <select
+            aria-label="Regal / Kategorie wählen"
+            value={categoryChoice}
+            onChange={(e) => setCategoryChoice(e.target.value as any)}
+            className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
+          >
+            <option value="auto">✨ Auto-Erkennung</option>
+            <option value="gemuese">🥦 Gemüse (Frisches Gemüse)</option>
+            <option value="kuehlregal">🥛 Kühlregal (Kühlwaren & Milch/Tofu)</option>
+            <option value="huelsenfruechte">🫘 Hülsenfrüchte (Bohnen, Linsen & Tofu)</option>
+            <option value="trockenwaren">🌾 Vorrat (Nudeln, Reis & Konserven)</option>
+            <option value="gewuerze">🧂 Gewürze (Gewürze & Öle)</option>
+            <option value="sonstiges">📦 Sonstiges (Haushalt & Sonstiges)</option>
+          </select>
+
           <button
             type="button"
             id="shopping-item-category-select"
             onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-            className="inline-flex items-center gap-1.5 bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] rounded-xl px-2.5 py-2 text-sm font-semibold text-[#2D3E40] cursor-pointer focus:border-[#4A7856] focus:outline-hidden h-12 sm:h-10 min-h-[48px] sm:min-h-0 transition-colors select-none"
+            className="inline-flex items-center gap-2 bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] rounded-xl px-3 sm:px-3.5 py-2 text-[16px] font-semibold text-[#2D3E40] cursor-pointer focus:border-[#4A7856] focus:outline-hidden h-12 sm:h-11 min-h-[44px] transition-colors select-none"
             title="Regal / Kategorie wählen"
             aria-label="Regal / Kategorie wählen"
             aria-expanded={isCategoryDropdownOpen}
@@ -1362,22 +1378,22 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 : '📦 Sonstiges'}
             </span>
             <ChevronDown
-              className={`w-3.5 h-3.5 text-[#686E6A] transition-transform duration-150 ${
+              className={`w-4 h-4 text-[#686E6A] transition-transform duration-150 ${
                 isCategoryDropdownOpen ? 'rotate-180 text-[#4A7856]' : ''
               }`}
             />
           </button>
 
-          {/* Popover Menu with categories */}
+          {/* Desktop Popover Menu with categories */}
           {isCategoryDropdownOpen && (
-            <div className="absolute right-0 top-full mt-1.5 z-40 w-52 bg-white rounded-xl shadow-lg border border-[#ECEBE8] p-1.5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="hidden sm:block absolute right-0 top-full mt-1.5 z-40 w-64 bg-white rounded-xl shadow-lg border border-[#ECEBE8] p-1.5 animate-in fade-in zoom-in-95 duration-150">
               <button
                 type="button"
                 onClick={() => {
                   setCategoryChoice('auto');
                   setIsCategoryDropdownOpen(false);
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer text-left ${
+                className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-lg text-[16px] font-medium transition-colors cursor-pointer text-left ${
                   categoryChoice === 'auto'
                     ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold'
                     : 'text-[#2D3E40] hover:bg-[#FAF9F6]'
@@ -1411,7 +1427,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       setCategoryChoice(catKey as IngredientCategory);
                       setIsCategoryDropdownOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer text-left ${
+                    className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-lg text-[16px] transition-colors cursor-pointer text-left ${
                       isSelected
                         ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold'
                         : 'text-[#2D3E40] hover:bg-[#FAF9F6] font-normal'

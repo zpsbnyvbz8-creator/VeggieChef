@@ -522,7 +522,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                     id="fridge-filter-calories"
                     value={calorieFilter}
                     onChange={(e) => setCalorieFilter(e.target.value)}
-                    className="w-full appearance-none h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[13px] font-semibold rounded-xl pl-8 pr-6 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
+                    className="w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[16px] font-medium rounded-xl pl-9 pr-7 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
                   >
                     <option value="all">Alle Kalorien</option>
                     <option value="high">High Cal (750+)</option>
@@ -539,7 +539,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                     id="fridge-filter-protein"
                     value={proteinFilter}
                     onChange={(e) => setProteinFilter(e.target.value)}
-                    className="w-full appearance-none h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[13px] font-semibold rounded-xl pl-8 pr-6 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
+                    className="w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[16px] font-medium rounded-xl pl-9 pr-7 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
                   >
                     <option value="all">Alle Protein</option>
                     <option value="high">High Prot (30g+)</option>

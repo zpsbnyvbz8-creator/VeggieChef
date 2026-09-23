@@ -4,7 +4,8 @@ import {
   Dumbbell, 
   Flame, 
   ChefHat,
-  RotateCcw
+  RotateCcw,
+  ChevronDown
 } from 'lucide-react';
 import { FilterState, RecipeCategory } from '../types';
 import { useRecipes } from '../context/RecipeContext';
@@ -137,7 +138,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               id="filter-difficulty"
               value={filters.difficulty}
               onChange={(e) => setFilters((prev) => ({ ...prev, difficulty: e.target.value }))}
-              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#57534d] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
+              className="appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-[16px] font-medium rounded-xl pl-9 pr-8 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856] transition-colors"
             >
               {DIFFICULTY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -146,6 +147,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               ))}
             </select>
             <ChefHat className="w-4 h-4 text-[#686E6A] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-[#686E6A] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* Filter nach Kalorien */}
@@ -154,7 +156,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               id="filter-max-calories"
               value={filters.maxCalories}
               onChange={(e) => setFilters((prev) => ({ ...prev, maxCalories: Number(e.target.value) }))}
-              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#57534d] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
+              className="appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-[16px] font-medium rounded-xl pl-9 pr-8 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856] transition-colors"
             >
               {CALORIE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -163,6 +165,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               ))}
             </select>
             <Flame className="w-4 h-4 text-[#E67E22] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-[#686E6A] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* Filter nach Protein */}
@@ -171,7 +174,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               id="filter-min-protein"
               value={filters.minProtein}
               onChange={(e) => setFilters((prev) => ({ ...prev, minProtein: Number(e.target.value) }))}
-              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#57534d] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
+              className="appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-[16px] font-medium rounded-xl pl-9 pr-8 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856] transition-colors"
             >
               {PROTEIN_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -180,6 +183,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               ))}
             </select>
             <Dumbbell className="w-4 h-4 text-[#4A7856] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-[#686E6A] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* Reset Filter Button */}
@@ -187,10 +191,10 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
             <button
               id="reset-filters-btn"
               onClick={resetFilters}
-              className="min-h-[40px] flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-[#57534d] hover:text-[#57534d] hover:bg-[#F1F5F2] transition-colors cursor-pointer touch-manipulation active:scale-95"
+              className="h-11 min-h-[44px] flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[16px] text-[#57534d] hover:text-[#2D3E40] hover:bg-[#F1F5F2] transition-colors cursor-pointer touch-manipulation active:scale-95"
               title="Filter zurücksetzen"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-4 h-4" />
               <span>Zurücksetzen</span>
             </button>
           )}
@@ -207,7 +211,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               id="filter-sort-by"
               value={filters.sortBy}
               onChange={(e) => setFilters((prev) => ({ ...prev, sortBy: e.target.value as FilterState['sortBy'] }))}
-              className="appearance-none min-h-[40px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#57534d] text-xs font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856]"
+              className="appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-[16px] font-medium rounded-xl pl-9 pr-8 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856] transition-colors"
             >
               {SORT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -216,6 +220,7 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
               ))}
             </select>
             <ArrowUpDown className="w-4 h-4 text-[#686E6A] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-[#686E6A] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
       </div>

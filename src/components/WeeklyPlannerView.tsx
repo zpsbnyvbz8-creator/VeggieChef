@@ -768,7 +768,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 type="button"
                 id="weekly-planner-context-menu-btn"
                 onClick={() => setShowContextMenu((prev) => !prev)}
-                className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs border ${
+                className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs border ${
                   showContextMenu
                     ? 'bg-[#E5EBE6] text-[#57534d] border-[#CCD5CF] ring-2 ring-[#4A7856]/25'
                     : 'bg-[#F1F5F2] hover:bg-[#E5EBE6] text-[#57534d] hover:text-[#57534d] border-[#ECEBE8] hover:border-[#CCD5CF]'
@@ -780,7 +780,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               </button>
 
               {showContextMenu && (
-                <div className="absolute right-0 top-full mt-2 w-56 sm:w-64 bg-white rounded-xl border border-[#ECEBE8] shadow-xl p-1.5 z-40 animate-in fade-in zoom-in-95 duration-100 space-y-0.5">
+                <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl border border-[#ECEBE8] shadow-xl p-1.5 z-40 animate-in fade-in zoom-in-95 duration-100 space-y-1">
                   <button
                     type="button"
                     id="context-menu-add-week-btn"
@@ -789,7 +789,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setNewWeekTitleInput('');
                       setShowCreateWeekModal(true);
                     }}
-                    className="w-full min-h-[38px] px-3 py-2 rounded-xl text-left text-sm font-medium text-[#57534d] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl text-left text-[16px] font-medium text-[#57534d] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
                   >
                     <Plus className="w-4 h-4 text-[#686e6a] shrink-0" />
                     <span>Woche hinzufügen</span>
@@ -802,7 +802,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setShowContextMenu(false);
                       setShowAllWeeksModal(true);
                     }}
-                    className="w-full min-h-[38px] px-3 py-2 rounded-xl text-left text-sm font-medium text-[#57534d] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl text-left text-[16px] font-medium text-[#57534d] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
                   >
                     <Layers className="w-4 h-4 text-[#686e6a] shrink-0" />
                     <span>Alle Wochen anzeigen</span>
@@ -816,7 +816,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setShowConfirmClearAll(true);
                     }}
                     disabled={totalPlannedMeals === 0}
-                    className="w-full min-h-[38px] px-3 py-2 rounded-xl text-left text-sm font-medium text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl text-left text-[16px] font-medium text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
                   >
                     <Trash2 className="w-4 h-4 text-rose-600 shrink-0" />
                     <span>Plan leeren</span>
@@ -879,65 +879,39 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
             {/* 3-Punkte-Menü Button auf Mobile in der Zeile vom Mittags-Slot */}
             <div className="relative shrink-0 sm:hidden" ref={mobileContextMenuRef}>
+              {/* Native iOS / Mobile Dropdown Select: opens native iOS picker sheet / wheel */}
+              <select
+                aria-label="Wochenplan Optionen"
+                value=""
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'add') {
+                    setNewWeekTitleInput('');
+                    setShowCreateWeekModal(true);
+                  } else if (val === 'all') {
+                    setShowAllWeeksModal(true);
+                  } else if (val === 'clear') {
+                    setShowConfirmClearAll(true);
+                  }
+                  e.target.value = '';
+                }}
+                className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
+              >
+                <option value="" disabled>Wochenplan Optionen...</option>
+                <option value="add">➕ Woche hinzufügen</option>
+                <option value="all">📚 Alle Wochen anzeigen</option>
+                {totalPlannedMeals > 0 && <option value="clear">🗑️ Plan leeren</option>}
+              </select>
+
               <button
                 type="button"
                 id="mobile-weekly-planner-context-menu-btn"
-                onClick={() => setShowContextMenu((prev) => !prev)}
-                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs border ${
-                  showContextMenu
-                    ? 'bg-[#E5EBE6] text-[#57534d] border-[#CCD5CF] ring-2 ring-[#4A7856]/25'
-                    : 'bg-[#F1F5F2] hover:bg-[#E5EBE6] text-[#57534d] hover:text-[#57534d] border-[#ECEBE8] hover:border-[#CCD5CF]'
-                }`}
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs border bg-[#F1F5F2] hover:bg-[#E5EBE6] text-[#57534d] border-[#ECEBE8]"
                 title="Weitere Optionen (Woche hinzufügen, Alle Wochen anzeigen, Plan leeren)"
                 aria-label="Weitere Optionen"
               >
-                <MoreHorizontal className="w-4 h-4 text-[#57534d]" />
+                <MoreHorizontal className="w-5 h-5 text-[#57534d]" />
               </button>
-
-              {showContextMenu && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl border border-[#ECEBE8] shadow-xl p-1.5 z-40 animate-in fade-in zoom-in-95 duration-100 space-y-0.5">
-                  <button
-                    type="button"
-                    id="mobile-context-menu-add-week-btn"
-                    onClick={() => {
-                      setShowContextMenu(false);
-                      setNewWeekTitleInput('');
-                      setShowCreateWeekModal(true);
-                    }}
-                    className="w-full min-h-[38px] px-3 py-2 rounded-lg text-left text-sm font-medium text-[#57534d] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
-                  >
-                    <Plus className="w-4 h-4 text-[#686e6a] shrink-0" />
-                    <span>Woche hinzufügen</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    id="mobile-context-menu-all-weeks-btn"
-                    onClick={() => {
-                      setShowContextMenu(false);
-                      setShowAllWeeksModal(true);
-                    }}
-                    className="w-full min-h-[38px] px-3 py-2 rounded-lg text-left text-sm font-medium text-[#57534d] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
-                  >
-                    <Layers className="w-4 h-4 text-[#686e6a] shrink-0" />
-                    <span>Alle Wochen anzeigen</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    id="mobile-context-menu-clear-plan-btn"
-                    onClick={() => {
-                      setShowContextMenu(false);
-                      setShowConfirmClearAll(true);
-                    }}
-                    disabled={totalPlannedMeals === 0}
-                    className="w-full min-h-[38px] px-3 py-2 rounded-lg text-left text-sm font-medium text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
-                  >
-                    <Trash2 className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>Plan leeren</span>
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 
@@ -1832,7 +1806,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                         id="ai-filter-calories"
                         value={aiCalorieFilter}
                         onChange={(e) => setAiCalorieFilter(e.target.value)}
-                        className="w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[13px] font-semibold rounded-xl pl-7 pr-6 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
+                        className="w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[16px] font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
                       >
                         <option value="all">Alle Kalorien</option>
                         <option value="high">High Cal (750+)</option>
@@ -1849,7 +1823,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                         id="ai-filter-protein"
                         value={aiProteinFilter}
                         onChange={(e) => setAiProteinFilter(e.target.value)}
-                        className="w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[13px] font-semibold rounded-xl pl-7 pr-6 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
+                        className="w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[16px] font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
                       >
                         <option value="all">Alle Protein</option>
                         <option value="high">High Prot (30g+)</option>
@@ -1866,7 +1840,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                         id="ai-filter-difficulty"
                         value={aiDifficultyFilter}
                         onChange={(e) => setAiDifficultyFilter(e.target.value)}
-                        className="w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[13px] font-semibold rounded-xl pl-7 pr-6 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
+                        className="w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[16px] font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
                       >
                         <option value="all">Alle Levels</option>
                         <option value="Einfach">Einfach</option>

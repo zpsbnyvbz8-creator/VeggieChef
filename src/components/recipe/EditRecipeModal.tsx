@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Save, Plus, Trash2, Clock, Users, ChefHat } from 'lucide-react';
+import { X, Save, Plus, Trash2, Clock, Users, ChefHat, ChevronDown } from 'lucide-react';
 import { Recipe, RecipeCategory, RecipeIngredient, RecipeStep } from '../../types';
 
 interface EditRecipeModalProps {
@@ -176,30 +176,36 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-[11px] font-bold text-[#2D3E40] mb-1">Kategorie</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as RecipeCategory)}
-                  className="w-full h-10 px-2 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs text-[#2D3E40]"
-                >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value as RecipeCategory)}
+                    className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-8 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] font-medium text-[#2D3E40] cursor-pointer focus:outline-none focus:border-[#4A7856]"
+                  >
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-[#2D3E40] mb-1">Schwierigkeit</label>
-                <select
-                  value={difficulty}
-                  onChange={(e) => setDifficulty(e.target.value as any)}
-                  className="w-full h-10 px-2 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs text-[#2D3E40]"
-                >
-                  <option value="Einfach">Einfach</option>
-                  <option value="Mittel">Mittel</option>
-                  <option value="Anspruchsvoll">Anspruchsvoll</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value as any)}
+                    className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-8 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] font-medium text-[#2D3E40] cursor-pointer focus:outline-none focus:border-[#4A7856]"
+                  >
+                    <option value="Einfach">Einfach</option>
+                    <option value="Mittel">Mittel</option>
+                    <option value="Anspruchsvoll">Anspruchsvoll</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
 
               <div>
