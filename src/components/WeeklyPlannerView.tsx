@@ -707,6 +707,188 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     0
   );
 
+  const renderMealItem = (day: DayPlan, mealType: 'lunch' | 'dinner', slot: MealPlanSlot) => {
+    const recipe = allRecipes.find((r) => r.id === slot.recipeId);
+    const isDraggingThis = draggingItem?.dayId === day.dayId && draggingItem?.mealType === mealType;
+    const isDragOverThis = dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === mealType;
+    const isSwapTarget = isDragOverThis && draggingItem && (draggingItem.dayId !== day.dayId || draggingItem.mealType !== mealType);
+
+    return (
+      <div
+        key={`${day.dayId}-${mealType}`}
+        draggable={true}
+        onDragStart={(e) => {
+          e.dataTransfer.setData('text/plain', JSON.stringify({ dayId: day.dayId, mealType }));
+          e.dataTransfer.effectAllowed = 'move';
+          setDraggingItem({ dayId: day.dayId, dayName: day.dayName, mealType, slot });
+        }}
+        onDragEnd={() => {
+          setDraggingItem(null);
+          setDragOverTarget(null);
+        }}
+        data-drop-slot="true"
+        data-day-id={day.dayId}
+        data-meal-type={mealType}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          if (draggingItem?.dayId !== day.dayId || draggingItem?.mealType !== mealType) {
+            setDragOverTarget({ dayId: day.dayId, mealType });
+          }
+        }}
+        onDragLeave={() => {
+          if (dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === mealType) {
+            setDragOverTarget(null);
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (draggingItem && (draggingItem.dayId !== day.dayId || draggingItem.mealType !== mealType)) {
+            handleMoveOrSwap(draggingItem.dayId, draggingItem.mealType, day.dayId, mealType);
+            setDraggingItem(null);
+            setDragOverTarget(null);
+          }
+        }}
+        className={`p-2.5 sm:p-3 transition-colors group relative flex items-center gap-2.5 cursor-grab active:cursor-grabbing hover:bg-[#FAF9F6] flex-1 ${
+          isDraggingThis
+            ? 'opacity-30 bg-stone-50'
+            : isDragOverThis
+            ? 'bg-[#E8F1EC] ring-2 ring-inset ring-[#4A7856]'
+            : ''
+        }`}
+      >
+        {/* Left: Thumbnail Preview (~52px) */}
+        <div
+          onClick={() => {
+            if (recipe) onSelectRecipe(recipe);
+          }}
+          className="w-[52px] h-[52px] min-w-[52px] min-h-[52px] rounded-xl overflow-hidden border border-[#ECEBE8] shrink-0 bg-[#FAF9F6] relative cursor-pointer group-hover:shadow-2xs transition-shadow"
+        >
+          {recipe ? (
+            <RecipeImage recipe={recipe} className="w-full h-full" imgClassName="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-[#686E6A]">
+              <ChefHat className="w-5 h-5 text-[#686E6A]" />
+            </div>
+          )}
+          {/* Subtle touch drag grip handle on mobile */}
+          <div
+            className="absolute bottom-0 right-0 p-0.5 bg-black/40 text-white rounded-tl-md sm:opacity-0 group-hover:opacity-100 transition-opacity touch-none"
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              startTouchDrag(e, day.dayId, day.dayName, mealType, slot);
+            }}
+            title="Ziehen zum Tauschen/Verschieben"
+          >
+            <GripVertical className="w-3 h-3" />
+          </div>
+        </div>
+
+        {/* Center: Main Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#686e6a]">
+              {mealType === 'lunch' ? 'Mittag' : 'Abendessen'}
+            </span>
+            {slot.isVegan ? (
+              <span className="text-[11px] text-[#4A7856] font-medium">• 🌱 Vegan</span>
+            ) : (
+              <span className="text-[11px] text-[#57534d] font-medium">• 🧀 Veggie</span>
+            )}
+            {isSwapTarget && (
+              <span className="text-[10px] font-bold text-[#4A7856] bg-white px-1.5 py-0.2 rounded border border-[#4A7856] shadow-2xs ml-auto">
+                Tauschen ⇄
+              </span>
+            )}
+          </div>
+
+          <h4
+            onClick={() => {
+              if (recipe) onSelectRecipe(recipe);
+            }}
+            className="text-sm font-medium text-[#2D3E40] leading-snug line-clamp-2 hover:text-[#4A7856] cursor-pointer transition-colors"
+            title={slot.recipeTitle}
+          >
+            {slot.recipeTitle}
+          </h4>
+
+          {/* Key Stats row beneath title */}
+          <div className="flex items-center text-xs text-[#57534d] font-medium gap-1.5 mt-1 truncate">
+            <span>⏱️ {slot.prepTime}m</span>
+            <span className="text-[#686e6a]">·</span>
+            <span>🔥 {slot.calories} kcal</span>
+            <span className="text-[#686e6a]">·</span>
+            <span className="text-[#4A7856] font-semibold">💪 {slot.protein}g</span>
+          </div>
+        </div>
+
+        {/* Right: Actions */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            removeSlot(day.dayId, mealType);
+            onCopyFeedback(`"${slot.recipeTitle || 'Mahlzeit'}" entfernt.`);
+          }}
+          className="text-[#686e6a] hover:text-rose-600 hover:bg-rose-50 rounded-xl w-8 h-8 min-w-[32px] min-h-[32px] flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
+          title="Mahlzeit entfernen"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  };
+
+  const renderEmptySlot = (day: DayPlan, mealType: 'lunch' | 'dinner') => {
+    const isDragOverThis = dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === mealType;
+    const label = mealType === 'lunch'
+      ? '+ Gericht für Mittagessen hinzufügen'
+      : '+ Gericht für Abendessen hinzufügen';
+
+    return (
+      <div
+        key={`${day.dayId}-${mealType}-empty`}
+        data-drop-slot="true"
+        data-day-id={day.dayId}
+        data-meal-type={mealType}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          setDragOverTarget({ dayId: day.dayId, mealType });
+        }}
+        onDragLeave={() => {
+          if (dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === mealType) {
+            setDragOverTarget(null);
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (draggingItem) {
+            handleMoveOrSwap(draggingItem.dayId, draggingItem.mealType, day.dayId, mealType);
+            setDraggingItem(null);
+            setDragOverTarget(null);
+          }
+        }}
+        className="p-2 sm:p-2.5 flex-1 flex flex-col justify-center"
+      >
+        <button
+          type="button"
+          onClick={() => openRecipePicker(day.dayId, mealType)}
+          className={`w-full py-2.5 px-3 rounded-xl border border-dashed text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 transition-all min-h-[44px] touch-manipulation active:scale-[0.99] cursor-pointer ${
+            isDragOverThis
+              ? 'border-[#4A7856] bg-[#E8F1EC] text-[#4A7856] ring-2 ring-[#4A7856]/40 font-semibold'
+              : draggingItem
+              ? 'border-[#4A7856]/60 bg-[#FAF9F6] text-[#4A7856]'
+              : 'border-[#D5DDD7] hover:border-[#4A7856] text-[#686e6a] hover:text-[#4A7856] bg-[#FAF9F6]/40 hover:bg-[#F1F5F2]'
+          }`}
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>{label}</span>
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-5 sm:space-y-8 animate-in fade-in duration-300">
       {/* Header & Controls */}
@@ -870,63 +1052,61 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           </div>
         </div>
 
-        {/* Filter- & Einstellungszeile: Links Switch für Mittag, rechts Portionen mit +/- Stepper */}
-        <div className="bg-[#FAF9F6] rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 border border-[#ECEBE8] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-2xs">
-          {/* Switch für Mittags-Slot */}
-          <div className="flex items-center">
-            <button
-              type="button"
-              id="toggle-show-lunch-btn"
-              onClick={handleToggleLunchSlot}
-              role="switch"
-              aria-checked={showLunchSlot}
-              className="flex items-center gap-3 text-sm sm:text-base font-semibold text-[#57534d] cursor-pointer select-none group touch-manipulation active:scale-98 min-h-[44px]"
-              title={showLunchSlot ? 'Mittagsgerichte ausblenden' : 'Mittagsgerichte anzeigen'}
+        {/* 1-Row Settings Bar: Merged single horizontal toolbar */}
+        <div className="bg-[#FAF9F6] rounded-xl px-3 sm:px-4 py-2 border border-[#ECEBE8] flex items-center justify-between gap-3 shadow-2xs">
+          {/* Left side: Compact toggle switch [ Mittags-Slot ] */}
+          <button
+            type="button"
+            id="toggle-show-lunch-btn"
+            onClick={handleToggleLunchSlot}
+            role="switch"
+            aria-checked={showLunchSlot}
+            className="flex items-center gap-2.5 text-sm font-semibold text-[#2D3E40] cursor-pointer select-none group touch-manipulation active:scale-98 min-h-[40px]"
+            title={showLunchSlot ? 'Mittagsgerichte ausblenden' : 'Mittagsgerichte anzeigen'}
+          >
+            <div
+              className={`w-[46px] h-[28px] rounded-full p-[2px] transition-colors duration-200 ease-in-out flex items-center shadow-inner shrink-0 ${
+                showLunchSlot ? 'bg-[#4A7856]' : 'bg-[#CCD5CF]'
+              }`}
             >
               <div
-                className={`w-[51px] h-[31px] rounded-full p-[2px] transition-colors duration-200 ease-in-out flex items-center shadow-inner shrink-0 ${
-                  showLunchSlot ? 'bg-[#4A7856]' : 'bg-[#CCD5CF]'
+                className={`w-[24px] h-[24px] rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.2)] transform transition-transform duration-200 ease-in-out ${
+                  showLunchSlot ? 'translate-x-[18px]' : 'translate-x-0'
                 }`}
-              >
-                <div
-                  className={`w-[27px] h-[27px] rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.2)] transform transition-transform duration-200 ease-in-out ${
-                    showLunchSlot ? 'translate-x-[20px]' : 'translate-x-0'
-                  }`}
-                />
-              </div>
-              <span className="font-semibold text-[#57534d] group-hover:text-[#4A7856] transition-colors">
-                Mittags-Slot anzeigen
-              </span>
-            </button>
-          </div>
+              />
+            </div>
+            <span className="font-semibold text-[#2D3E40] group-hover:text-[#4A7856] transition-colors text-sm">
+              Mittags-Slot
+            </span>
+          </button>
 
-          {/* Portionen-Auswahl: Simpler +/- Stepper wie in der Rezept-Detailansicht */}
-          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-[#ECEBE8]/70">
-            <span className="text-sm sm:text-base font-semibold text-[#2D3E40] select-none shrink-0">
+          {/* Right side: Compact servings stepper [ - 3 Port. + ] */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs sm:text-sm font-semibold text-[#2D3E40] hidden xs:inline select-none">
               Portionen:
             </span>
-            <div className="inline-flex items-center bg-white border border-[#ECEBE8] rounded-xl p-1 shadow-2xs">
+            <div className="inline-flex items-center bg-white border border-[#ECEBE8] rounded-xl p-0.5 shadow-2xs">
               <button
                 id="weekly-plan-servings-decrease-btn"
                 type="button"
                 onClick={() => setPlanServings((prev) => Math.max(1, prev - 1))}
                 disabled={planServings <= 1}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-[#FAF9F6] active:bg-[#ECEBE8] disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="w-9 h-9 min-w-[36px] min-h-[36px] sm:w-10 sm:h-10 sm:min-w-[40px] sm:min-h-[40px] flex items-center justify-center rounded-lg hover:bg-[#FAF9F6] active:bg-[#ECEBE8] disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 aria-label="Portion verringern"
               >
-                <Minus className="w-4 h-4" />
+                <Minus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
-              <span className="px-3 sm:px-4 text-[16px] font-bold text-[#57534d] tabular-nums min-w-[85px] sm:min-w-[95px] text-center select-none">
-                {planServings} {planServings === 1 ? 'Portion' : 'Portionen'}
+              <span className="px-2 sm:px-3 text-sm sm:text-base font-bold text-[#2D3E40] tabular-nums min-w-[70px] sm:min-w-[78px] text-center select-none">
+                {planServings} Port.
               </span>
               <button
                 id="weekly-plan-servings-increase-btn"
                 type="button"
                 onClick={() => setPlanServings((prev) => Math.min(24, prev + 1))}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-[#FAF9F6] active:bg-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="w-9 h-9 min-w-[36px] min-h-[36px] sm:w-10 sm:h-10 sm:min-w-[40px] sm:min-h-[40px] flex items-center justify-center rounded-lg hover:bg-[#FAF9F6] active:bg-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 aria-label="Portion erhöhen"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>
@@ -963,25 +1143,25 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         </div>
       )}
 
-      {/* Discreet Minimalist Week Navigation Bar - Single slim line */}
+      {/* Sleek Week Selector: directly above day cards without exaggerated margins */}
       {weeks && weeks.length > 0 && (
-        <div className="flex items-center justify-between gap-2 p-1.5 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl">
+        <div className="flex items-center justify-between gap-2 p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl my-1">
           <button
             type="button"
             id="prev-week-btn"
             onClick={handlePrevWeek}
             disabled={activeWeekIndex <= 0}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-[#ECEBE8] bg-white text-[#57534d] hover:bg-[#F1F5F2] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs flex items-center justify-center touch-manipulation active:scale-95 shrink-0"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg border border-[#ECEBE8] bg-white text-[#57534d] hover:bg-[#F1F5F2] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs flex items-center justify-center touch-manipulation active:scale-95 shrink-0"
             title="Vorherige Woche aufrufen"
           >
             <ChevronLeft className="w-4 h-4 text-[#57534d]" />
           </button>
 
           {/* Central Week Indicator */}
-          <div className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-white border border-[#ECEBE8] rounded-xl shadow-2xs min-h-[38px] sm:min-h-[40px]">
+          <div className="flex-1 flex items-center justify-center gap-2 px-3 py-1 bg-white border border-[#ECEBE8] rounded-lg shadow-2xs min-h-[36px]">
             <div className="flex items-center gap-1.5 min-w-0">
-              <Calendar className="w-4 h-4 text-[#4A7856] shrink-0" />
-              <span className="text-sm font-semibold text-[#57534d] truncate">
+              <Calendar className="w-3.5 h-3.5 text-[#4A7856] shrink-0" />
+              <span className="text-sm font-semibold text-[#2D3E40] truncate">
                 {activeWeek?.title || 'Aktuelle Woche'}
               </span>
               {activeWeek?.startDate && (
@@ -990,7 +1170,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 </span>
               )}
             </div>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] whitespace-nowrap shrink-0">
+            <span className="text-[#686e6a] text-xs font-normal">•</span>
+            <span className="text-xs font-semibold text-[#4A7856] whitespace-nowrap shrink-0">
               {totalPlannedMeals} {totalPlannedMeals === 1 ? 'Gericht' : 'Gerichte'}
             </span>
           </div>
@@ -1000,7 +1181,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             id="next-week-btn"
             onClick={handleNextWeek}
             disabled={activeWeekIndex >= weeks.length - 1}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-[#ECEBE8] bg-white text-[#57534d] hover:bg-[#F1F5F2] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs flex items-center justify-center touch-manipulation active:scale-95 shrink-0"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg border border-[#ECEBE8] bg-white text-[#57534d] hover:bg-[#F1F5F2] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs flex items-center justify-center touch-manipulation active:scale-95 shrink-0"
             title="Nächste Woche aufrufen"
           >
             <ChevronRight className="w-4 h-4 text-[#57534d]" />
@@ -1008,372 +1189,52 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         </div>
       )}
 
-      {/* 7-Day Grid - On PC balanced across columns with high-end card proportions */}
+      {/* 7-Day Grid: Clean Day Containers following "Regale" pattern */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3 xl:gap-2.5 2xl:gap-3">
         {mealPlan.map((day) => {
           const totalCalories = (day.lunch?.calories || 0) + (day.dinner?.calories || 0);
           const totalProtein = (day.lunch?.protein || 0) + (day.dinner?.protein || 0);
-          const hasAnyMeals = Boolean(day.lunch || day.dinner);
 
           return (
             <div
               key={day.dayId}
               id={`meal-plan-day-${day.dayId}`}
-              className={`bg-white rounded-2xl border border-[#ECEBE8] p-3 sm:p-3.5 flex flex-col justify-between gap-2.5 shadow-xs hover:border-[#4A7856]/40 hover:shadow-sm transition-all ${
-                hasAnyMeals
-                  ? (showLunchSlot ? 'min-h-[220px]' : 'min-h-0 sm:min-h-[220px]')
-                  : 'min-h-0 sm:min-h-[220px]'
-              } xl:min-h-[250px]`}
+              className="bg-white rounded-2xl border border-[#ECEBE8] overflow-hidden shadow-xs hover:border-[#4A7856]/40 hover:shadow-sm transition-all flex flex-col justify-between"
             >
-              {/* Day Header */}
-              <div className="border-b border-[#ECEBE8] pb-1.5 flex items-center justify-between gap-1.5">
-                <span className="font-bold text-sm text-[#2D3E40]">
+              {/* Day Header Bar: #f1f5f2 top header strip */}
+              <div className="bg-[#f1f5f2] px-3.5 py-2.5 border-b border-[#ECEBE8] flex items-center justify-between gap-2">
+                <span className="font-semibold text-sm text-[#2D3E40]">
                   {day.dayName}
                 </span>
-                {(totalCalories > 0 || totalProtein > 0) && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#F1F5F2] text-xs font-semibold border border-[#ECEBE8] shrink-0 text-[#57534d]" title={`Tagesgesamtwerte: ${totalCalories} kcal, ${totalProtein}g Protein`}>
-                    {totalCalories > 0 && (
-                      <span className="text-[#57534d]">🔥 {totalCalories}</span>
-                    )}
-                    {totalCalories > 0 && totalProtein > 0 && (
-                      <span className="text-[#686e6a] font-normal">·</span>
-                    )}
-                    {totalProtein > 0 && (
-                      <span className="text-[#4A7856]">💪 {totalProtein}g</span>
-                    )}
+                {totalCalories > 0 || totalProtein > 0 ? (
+                  <div
+                    className="text-xs text-[#57534d] font-medium flex items-center gap-1.5 shrink-0"
+                    title={`Tagesgesamtwerte: ${totalCalories} kcal, ${totalProtein}g Protein`}
+                  >
+                    {totalCalories > 0 && <span>🔥 {totalCalories} kcal</span>}
+                    {totalCalories > 0 && totalProtein > 0 && <span className="text-[#686e6a]">•</span>}
+                    {totalProtein > 0 && <span className="text-[#4A7856] font-semibold">💪 {totalProtein}g</span>}
+                  </div>
+                ) : (
+                  <span className="text-xs text-[#686e6a] font-normal">
+                    Keine Mahlzeiten
                   </span>
                 )}
               </div>
 
-              {/* Lunch Slot - nur anzeigen wenn showLunchSlot aktiviert ist */}
-              {showLunchSlot && (
-                <div className="space-y-1 flex-1 flex flex-col justify-between">
-                  <div className="text-xs font-semibold text-[#686e6a] uppercase tracking-wider flex items-center justify-between">
-                    <span>Mittag</span>
-                  </div>
-
-                  {day.lunch ? (
-                    <div
-                      draggable={true}
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData('text/plain', JSON.stringify({ dayId: day.dayId, mealType: 'lunch' }));
-                        e.dataTransfer.effectAllowed = 'move';
-                        setDraggingItem({ dayId: day.dayId, dayName: day.dayName, mealType: 'lunch', slot: day.lunch! });
-                      }}
-                      onDragEnd={() => {
-                        setDraggingItem(null);
-                        setDragOverTarget(null);
-                      }}
-                      data-drop-slot="true"
-                      data-day-id={day.dayId}
-                      data-meal-type="lunch"
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = 'move';
-                        if (draggingItem?.dayId !== day.dayId || draggingItem?.mealType !== 'lunch') {
-                          setDragOverTarget({ dayId: day.dayId, mealType: 'lunch' });
-                        }
-                      }}
-                      onDragLeave={() => {
-                        if (dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === 'lunch') {
-                          setDragOverTarget(null);
-                        }
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        if (draggingItem && (draggingItem.dayId !== day.dayId || draggingItem.mealType !== 'lunch')) {
-                          handleMoveOrSwap(draggingItem.dayId, draggingItem.mealType, day.dayId, 'lunch');
-                          setDraggingItem(null);
-                          setDragOverTarget(null);
-                        }
-                      }}
-                      className={`p-2 sm:p-2.5 bg-[#FAF9F6] hover:bg-[#F1F5F2] rounded-xl border space-y-1.5 transition-colors group relative flex-1 flex flex-col justify-between cursor-grab active:cursor-grabbing ${
-                        draggingItem?.dayId === day.dayId && draggingItem?.mealType === 'lunch'
-                          ? 'opacity-40 border-dashed border-[#4A7856]'
-                          : dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === 'lunch'
-                          ? 'border-[#4A7856] ring-2 ring-[#4A7856]/50 bg-[#E8F1EC] shadow-xs'
-                          : 'border-[#ECEBE8]'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-1">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1 mb-1 flex-wrap">
-                            <div
-                              className="w-6 h-6 rounded-md flex items-center justify-center text-[#686e6a] hover:text-[#4A7856] hover:bg-stone-100 cursor-grab active:cursor-grabbing touch-none shrink-0"
-                              title="Ziehen zum Verschieben/Tauschen oder auf »Plan leeren« ziehen zum Löschen"
-                              onTouchStart={(e) => {
-                                e.stopPropagation();
-                                startTouchDrag(e, day.dayId, day.dayName, 'lunch', day.lunch!);
-                              }}
-                            >
-                              <GripVertical className="w-3.5 h-3.5" />
-                            </div>
-                            {day.lunch.isVegan ? (
-                              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
-                                <span>🌱</span>
-                                <span>Vegan</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-white text-[#57534d] text-xs font-semibold border border-[#ECEBE8]">
-                                <span>🧀</span>
-                                <span>Veggie</span>
-                              </span>
-                            )}
-                            {dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === 'lunch' && draggingItem?.dayId !== day.dayId && (
-                              <span className="absolute top-1.5 right-10 text-[11px] font-semibold text-[#4A7856] bg-white px-1.5 py-0.5 rounded border border-[#4A7856] shadow-xs pointer-events-none z-10">
-                                Tauschen ⇄
-                              </span>
-                            )}
-                          </div>
-                          <h4 
-                            onClick={() => {
-                              const r = allRecipes.find((rec) => rec.id === day.lunch?.recipeId);
-                              if (r) onSelectRecipe(r);
-                            }}
-                            className="text-sm font-semibold text-[#2D3E40] leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] transition-colors"
-                            title={day.lunch.recipeTitle}
-                          >
-                            {day.lunch.recipeTitle}
-                          </h4>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeSlot(day.dayId, 'lunch');
-                            onCopyFeedback(`"${day.lunch?.recipeTitle || 'Mahlzeit'}" entfernt.`);
-                          }}
-                          className="text-[#686e6a] hover:text-rose-600 hover:bg-rose-50 rounded-xl w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
-                          title="Mahlzeit entfernen"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </button>
-                      </div>
-
-                      {/* Dezent gehaltene Info-Leiste mit Zeit, Kalorien & Protein */}
-                      <div className="flex items-center justify-between text-xs text-[#686e6a] pt-1.5 border-t border-[#ECEBE8] font-medium gap-1 flex-wrap">
-                        <span className="flex items-center gap-0.5 shrink-0" title={`Zubereitungszeit: ${day.lunch.prepTime} Minuten`}>
-                          <span>⏱️</span>
-                          <span>{day.lunch.prepTime}m</span>
-                        </span>
-                        <span className="flex items-center gap-0.5 text-[#686e6a] shrink-0" title={`Kalorien: ${day.lunch.calories} kcal`}>
-                          <span>🔥</span>
-                          <span>{day.lunch.calories} kcal</span>
-                        </span>
-                        <span className="flex items-center gap-0.5 font-semibold text-[#4A7856] shrink-0" title={`Protein: ${day.lunch.protein}g`}>
-                          <span>💪</span>
-                          <span>{day.lunch.protein}g</span>
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      data-drop-slot="true"
-                      data-day-id={day.dayId}
-                      data-meal-type="lunch"
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = 'move';
-                        setDragOverTarget({ dayId: day.dayId, mealType: 'lunch' });
-                      }}
-                      onDragLeave={() => {
-                        if (dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === 'lunch') {
-                          setDragOverTarget(null);
-                        }
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        if (draggingItem) {
-                          handleMoveOrSwap(draggingItem.dayId, draggingItem.mealType, day.dayId, 'lunch');
-                          setDraggingItem(null);
-                          setDragOverTarget(null);
-                        }
-                      }}
-                      className="w-full flex-1 flex flex-col"
-                    >
-                      <button
-                        onClick={() => openRecipePicker(day.dayId, 'lunch')}
-                        className={`w-full py-2 px-2.5 rounded-xl border border-dashed text-sm font-medium flex items-center justify-center gap-1.5 transition-colors min-h-[38px] sm:min-h-[40px] touch-manipulation active:scale-98 cursor-pointer flex-1 ${
-                          dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === 'lunch'
-                            ? 'border-[#4A7856] bg-[#E8F1EC] text-[#4A7856] ring-2 ring-[#4A7856]/40 font-semibold'
-                            : draggingItem
-                            ? 'border-[#4A7856]/60 bg-[#FAF9F6] text-[#4A7856]'
-                            : 'border-[#D5DDD7] hover:border-[#4A7856] text-[#57534d] hover:text-[#4A7856] bg-[#FAF9F6]/60 hover:bg-[#F1F5F2]'
-                        }`}
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Gericht wählen</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Dinner Slot - wenn Mittag ausgeblendet ist, geräumiger */}
-              <div className={`space-y-1 ${showLunchSlot ? 'flex-1' : 'flex-initial sm:flex-1'} flex flex-col justify-between`}>
-                <div className="text-xs font-semibold text-[#686e6a] uppercase tracking-wider flex items-center justify-between">
-                  <span>Abendessen</span>
-                  {!showLunchSlot && day.lunch && (
-                    <span className="text-xs text-[#686E6A] normal-case font-medium">
-                      (1 Mittag)
-                    </span>
-                  )}
-                </div>
-
-                {day.dinner ? (
-                  <div
-                    draggable={true}
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('text/plain', JSON.stringify({ dayId: day.dayId, mealType: 'dinner' }));
-                      e.dataTransfer.effectAllowed = 'move';
-                      setDraggingItem({ dayId: day.dayId, dayName: day.dayName, mealType: 'dinner', slot: day.dinner! });
-                    }}
-                    onDragEnd={() => {
-                      setDraggingItem(null);
-                      setDragOverTarget(null);
-                    }}
-                    data-drop-slot="true"
-                    data-day-id={day.dayId}
-                    data-meal-type="dinner"
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = 'move';
-                      if (draggingItem?.dayId !== day.dayId || draggingItem?.mealType !== 'dinner') {
-                        setDragOverTarget({ dayId: day.dayId, mealType: 'dinner' });
-                      }
-                    }}
-                    onDragLeave={() => {
-                      if (dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === 'dinner') {
-                        setDragOverTarget(null);
-                      }
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      if (draggingItem && (draggingItem.dayId !== day.dayId || draggingItem.mealType !== 'dinner')) {
-                        handleMoveOrSwap(draggingItem.dayId, draggingItem.mealType, day.dayId, 'dinner');
-                        setDraggingItem(null);
-                        setDragOverTarget(null);
-                      }
-                    }}
-                    className={`p-2 sm:p-2.5 bg-[#FAF9F6] hover:bg-[#F1F5F2] rounded-xl border space-y-1.5 transition-colors group relative flex-1 flex flex-col justify-between cursor-grab active:cursor-grabbing ${
-                      draggingItem?.dayId === day.dayId && draggingItem?.mealType === 'dinner'
-                        ? 'opacity-40 border-dashed border-[#4A7856]'
-                        : dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === 'dinner'
-                        ? 'border-[#4A7856] ring-2 ring-[#4A7856]/50 bg-[#E8F1EC] shadow-xs'
-                        : 'border-[#ECEBE8]'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-1">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1 mb-1 flex-wrap">
-                          <div
-                            className="w-6 h-6 rounded-md flex items-center justify-center text-[#686e6a] hover:text-[#4A7856] hover:bg-stone-100 cursor-grab active:cursor-grabbing touch-none shrink-0"
-                            title="Ziehen zum Verschieben/Tauschen oder auf »Plan leeren« ziehen zum Löschen"
-                            onTouchStart={(e) => {
-                              e.stopPropagation();
-                              startTouchDrag(e, day.dayId, day.dayName, 'dinner', day.dinner!);
-                            }}
-                          >
-                            <GripVertical className="w-3.5 h-3.5" />
-                          </div>
-                          {day.dinner.isVegan ? (
-                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
-                              <span>🌱</span>
-                              <span>Vegan</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-white text-[#57534d] text-xs font-semibold border border-[#ECEBE8]">
-                              <span>🧀</span>
-                              <span>Veggie</span>
-                            </span>
-                          )}
-                          {dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === 'dinner' && draggingItem?.dayId !== day.dayId && (
-                            <span className="absolute top-1.5 right-10 text-[11px] font-semibold text-[#4A7856] bg-white px-1.5 py-0.5 rounded border border-[#4A7856] shadow-xs pointer-events-none z-10">
-                              Tauschen ⇄
-                            </span>
-                          )}
-                        </div>
-                        <h4 
-                          onClick={() => {
-                            const r = allRecipes.find((rec) => rec.id === day.dinner?.recipeId);
-                            if (r) onSelectRecipe(r);
-                          }}
-                          className="text-sm font-semibold text-[#2D3E40] leading-snug break-words whitespace-normal cursor-pointer hover:text-[#4A7856] transition-colors"
-                          title={day.dinner.recipeTitle}
-                        >
-                          {day.dinner.recipeTitle}
-                        </h4>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeSlot(day.dayId, 'dinner');
-                          onCopyFeedback(`"${day.dinner?.recipeTitle || 'Mahlzeit'}" entfernt.`);
-                        }}
-                        className="text-[#686e6a] hover:text-rose-600 hover:bg-rose-50 rounded-xl w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95"
-                        title="Mahlzeit entfernen"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      </button>
-                    </div>
-
-                    {/* Dezent gehaltene Info-Leiste mit Zeit, Kalorien & Protein */}
-                    <div className="flex items-center justify-between text-xs text-[#686e6a] pt-1.5 border-t border-[#ECEBE8] font-medium gap-1 flex-wrap">
-                      <span className="flex items-center gap-0.5 shrink-0" title={`Zubereitungszeit: ${day.dinner.prepTime} Minuten`}>
-                        <span>⏱️</span>
-                        <span>{day.dinner.prepTime}m</span>
-                      </span>
-                      <span className="flex items-center gap-0.5 text-[#686e6a] shrink-0" title={`Kalorien: ${day.dinner.calories} kcal`}>
-                        <span>🔥</span>
-                        <span>{day.dinner.calories} kcal</span>
-                      </span>
-                      <span className="flex items-center gap-0.5 font-semibold text-[#4A7856] shrink-0" title={`Protein: ${day.dinner.protein}g`}>
-                        <span>💪</span>
-                        <span>{day.dinner.protein}g</span>
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    data-drop-slot="true"
-                    data-day-id={day.dayId}
-                    data-meal-type="dinner"
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = 'move';
-                      setDragOverTarget({ dayId: day.dayId, mealType: 'dinner' });
-                    }}
-                    onDragLeave={() => {
-                      if (dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === 'dinner') {
-                        setDragOverTarget(null);
-                      }
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      if (draggingItem) {
-                        handleMoveOrSwap(draggingItem.dayId, draggingItem.mealType, day.dayId, 'dinner');
-                        setDraggingItem(null);
-                        setDragOverTarget(null);
-                      }
-                    }}
-                    className={`w-full ${!showLunchSlot ? 'h-[42px] sm:h-auto sm:flex-1' : 'flex-1'} flex flex-col`}
-                  >
-                    <button
-                      onClick={() => openRecipePicker(day.dayId, 'dinner')}
-                      className={`w-full py-2 px-2.5 rounded-xl border border-dashed text-sm font-medium flex items-center justify-center gap-1.5 transition-colors min-h-[38px] sm:min-h-[40px] touch-manipulation active:scale-98 cursor-pointer ${
-                        !showLunchSlot ? 'h-[42px] sm:h-auto sm:flex-1' : 'flex-1'
-                      } ${
-                        dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === 'dinner'
-                          ? 'border-[#4A7856] bg-[#E8F1EC] text-[#4A7856] ring-2 ring-[#4A7856]/40 font-semibold'
-                          : draggingItem
-                          ? 'border-[#4A7856]/60 bg-[#FAF9F6] text-[#4A7856]'
-                          : 'border-[#D5DDD7] hover:border-[#4A7856] text-[#57534d] hover:text-[#4A7856] bg-[#FAF9F6]/60 hover:bg-[#F1F5F2]'
-                      }`}
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Gericht wählen</span>
-                    </button>
-                  </div>
+              {/* Flat Interior: Clean white background, separated only by subtle hairline dividers */}
+              <div className="divide-y divide-[#ECEBE8] flex-1 flex flex-col">
+                {/* Lunch Slot */}
+                {showLunchSlot && (
+                  day.lunch
+                    ? renderMealItem(day, 'lunch', day.lunch)
+                    : renderEmptySlot(day, 'lunch')
                 )}
+
+                {/* Dinner Slot */}
+                {day.dinner
+                  ? renderMealItem(day, 'dinner', day.dinner)
+                  : renderEmptySlot(day, 'dinner')}
               </div>
             </div>
           );
