@@ -232,7 +232,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
               placeholder="z.B. habe nur Hafermilch da / nussfrei / proteinreich..."
               value={userWish}
               onChange={(e) => setUserWish(e.target.value)}
-              className="flex-1 h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden"
+              className="flex-1 h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden"
             />
             <button
               type="submit"
@@ -369,7 +369,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
               placeholder="z.B. Cashewmus, Räuchertofu, Kokosjoghurt..."
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
-              className="flex-1 h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden"
+              className="flex-1 h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden"
             />
             <button
               type="button"

@@ -1864,7 +1864,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                     value={aiWishes}
                     onChange={(e) => setAiWishes(e.target.value)}
                     placeholder="z. B. keine Pilze, asiatisch angehaucht..."
-                    className="w-full h-11 min-h-[44px] px-3.5 py-2 rounded-xl bg-[#FAF9F6] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-sm text-[#2D3E40] placeholder-[#A0A5A1] transition-all outline-none"
+                    className="w-full h-11 min-h-[44px] px-3.5 py-2 rounded-xl bg-[#FAF9F6] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-[16px] text-[#2D3E40] placeholder-[#A0A5A1] transition-all outline-none"
                   />
                 </div>
               </div>

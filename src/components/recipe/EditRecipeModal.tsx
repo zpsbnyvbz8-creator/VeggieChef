@@ -157,7 +157,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full h-11 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-sm font-semibold text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden"
+                className="w-full h-11 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] font-semibold text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden"
               />
             </div>
 
@@ -169,7 +169,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                 type="text"
                 value={subtitle}
                 onChange={(e) => setSubtitle(e.target.value)}
-                className="w-full h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden"
+                className="w-full h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden"
               />
             </div>
 
@@ -216,7 +216,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                   max="24"
                   value={servings}
                   onChange={(e) => setServings(parseInt(e.target.value) || 1)}
-                  className="w-full h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs text-[#2D3E40]"
+                  className="w-full h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] text-[#2D3E40]"
                 />
               </div>
 
@@ -227,7 +227,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                   min="5"
                   value={cookTime}
                   onChange={(e) => setCookTime(parseInt(e.target.value) || 0)}
-                  className="w-full h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs text-[#2D3E40]"
+                  className="w-full h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] text-[#2D3E40]"
                 />
               </div>
             </div>
@@ -269,21 +269,21 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                     value={ing.name}
                     placeholder="Zutat (z.B. Kichererbsen)"
                     onChange={(e) => handleUpdateIngredient(idx, 'name', e.target.value)}
-                    className="flex-2 h-9 px-2.5 bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg text-xs text-[#2D3E40]"
+                    className="flex-2 h-9 px-2.5 bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg text-[16px] text-[#2D3E40]"
                   />
                   <input
                     type="text"
                     value={ing.amount}
                     placeholder="Menge"
                     onChange={(e) => handleUpdateIngredient(idx, 'amount', e.target.value)}
-                    className="w-16 h-9 px-2 bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg text-xs text-[#57534d] text-center"
+                    className="w-16 h-9 px-2 bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg text-[16px] text-[#57534d] text-center"
                   />
                   <input
                     type="text"
                     value={ing.unit}
                     placeholder="Einheit"
                     onChange={(e) => handleUpdateIngredient(idx, 'unit', e.target.value)}
-                    className="w-20 h-9 px-2 bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg text-xs text-[#2D3E40]"
+                    className="w-20 h-9 px-2 bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg text-[16px] text-[#2D3E40]"
                   />
                   <button
                     type="button"
@@ -324,7 +324,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                     value={step.text}
                     placeholder={`Schritt ${idx + 1} beschreiben...`}
                     onChange={(e) => handleUpdateStep(idx, e.target.value)}
-                    className="flex-1 p-2 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs text-[#2D3E40] focus:border-[#4A7856]"
+                    className="flex-1 p-2 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] text-[#2D3E40] focus:border-[#4A7856]"
                   />
                   <button
                     type="button"
@@ -349,7 +349,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
               value={chefTip}
               placeholder="Besonderer Küchen-Kniff oder Serviervorschlag..."
               onChange={(e) => setChefTip(e.target.value)}
-              className="w-full p-2.5 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs text-[#2D3E40] focus:border-[#4A7856]"
+              className="w-full p-2.5 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] text-[#2D3E40] focus:border-[#4A7856]"
             />
           </div>
         </div>

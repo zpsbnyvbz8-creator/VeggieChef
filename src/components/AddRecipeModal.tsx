@@ -752,7 +752,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       value={aiTitle}
                       onChange={(e) => setAiTitle(e.target.value)}
                       placeholder="z.B. Vegane Linsen-Bolognese, Cremiges Pilz-Risotto, Tofu Tikka..."
-                      className="w-full px-4 py-3 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] focus:bg-white focus:outline-none focus:border-[#4A7856] text-sm text-[#57534d] transition-colors"
+                      className="w-full px-4 py-3 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] focus:bg-white focus:outline-none focus:border-[#4A7856] text-[16px] text-[#57534d] transition-colors"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -864,7 +864,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       value={aiExtraIngredients}
                       onChange={(e) => setAiExtraIngredients(e.target.value)}
                       placeholder="z.B. Champignons, Spinat, Cashewmus..."
-                      className="w-full px-3 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-sm text-[#2D3E40] focus:outline-none focus:border-[#4A7856]"
+                      className="w-full px-3 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] text-[#2D3E40] focus:outline-none focus:border-[#4A7856]"
                     />
                   </div>
 
@@ -975,7 +975,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       value={scanNotes}
                       onChange={(e) => setScanNotes(e.target.value)}
                       placeholder="z.B. Bitte ohne Koriander, mild gewürzt"
-                      className="w-full px-3 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-sm text-[#2D3E40] focus:outline-none focus:border-[#4A7856]"
+                      className="w-full px-3 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] text-[#2D3E40] focus:outline-none focus:border-[#4A7856]"
                     />
                   </div>
 
@@ -1015,7 +1015,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                         value={manualTitle}
                         onChange={(e) => setManualTitle(e.target.value)}
                         placeholder="z.B. Cremige Avocadopasta mit Kirschtomaten"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] focus:bg-white text-sm text-[#57534d] focus:outline-none focus:border-[#4A7856]"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] focus:bg-white text-[16px] text-[#57534d] focus:outline-none focus:border-[#4A7856]"
                       />
                     </div>
                     <div>
@@ -1027,7 +1027,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                         value={manualSubtitle}
                         onChange={(e) => setManualSubtitle(e.target.value)}
                         placeholder="z.B. Herrlich cremig, nussig und in 15 Minuten fertig"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-sm text-[#2D3E40] focus:outline-none focus:border-[#4A7856]"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] text-[#2D3E40] focus:outline-none focus:border-[#4A7856]"
                       />
                     </div>
                   </div>
@@ -1080,7 +1080,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                         min="1"
                         value={manualPrepTime}
                         onChange={(e) => setManualPrepTime(Number(e.target.value))}
-                        className="w-full px-2.5 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-xs font-medium text-[#2D3E40]"
+                        className="w-full px-2.5 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] font-medium text-[#2D3E40]"
                       />
                     </div>
 
@@ -1093,7 +1093,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                         min="0"
                         value={manualCookTime}
                         onChange={(e) => setManualCookTime(Number(e.target.value))}
-                        className="w-full px-2.5 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-xs font-medium text-[#2D3E40]"
+                        className="w-full px-2.5 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] font-medium text-[#2D3E40]"
                       />
                     </div>
                   </div>
@@ -1122,7 +1122,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                           type="number"
                           value={manualCalories}
                           onChange={(e) => setManualCalories(Number(e.target.value))}
-                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-xs font-bold text-[#2D3E40]"
+                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-[16px] font-bold text-[#2D3E40]"
                         />
                       </div>
                       <div>
@@ -1131,7 +1131,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                           type="number"
                           value={manualProtein}
                           onChange={(e) => setManualProtein(Number(e.target.value))}
-                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-xs font-bold text-[#4A7856]"
+                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-[16px] font-bold text-[#4A7856]"
                         />
                       </div>
                       <div>
@@ -1140,7 +1140,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                           type="number"
                           value={manualCarbs}
                           onChange={(e) => setManualCarbs(Number(e.target.value))}
-                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-xs font-bold text-[#2D3E40]"
+                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-[16px] font-bold text-[#2D3E40]"
                         />
                       </div>
                       <div>
@@ -1149,7 +1149,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                           type="number"
                           value={manualFat}
                           onChange={(e) => setManualFat(Number(e.target.value))}
-                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-xs font-bold text-[#2D3E40]"
+                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-[16px] font-bold text-[#2D3E40]"
                         />
                       </div>
                       <div>
@@ -1158,7 +1158,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                           type="number"
                           value={manualFiber}
                           onChange={(e) => setManualFiber(Number(e.target.value))}
-                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-xs font-bold text-[#2D3E40]"
+                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-[16px] font-bold text-[#2D3E40]"
                         />
                       </div>
                     </div>
@@ -1197,7 +1197,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                               );
                             }}
                             placeholder="Zutat (z.B. Kichererbsen)"
-                            className="flex-1 px-3 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-xs text-[#2D3E40]"
+                            className="flex-1 px-3 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] text-[#2D3E40]"
                           />
                           <input
                             type="text"
@@ -1209,7 +1209,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                               );
                             }}
                             placeholder="Menge"
-                            className="w-20 px-2 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-xs text-[#2D3E40] text-center"
+                            className="w-20 px-2 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] text-[#2D3E40] text-center"
                           />
                           <input
                             type="text"
@@ -1221,7 +1221,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                               );
                             }}
                             placeholder="Einheit"
-                            className="w-16 px-2 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-xs text-[#2D3E40] text-center"
+                            className="w-16 px-2 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] text-[#2D3E40] text-center"
                           />
                           {manualIngredients.length > 1 && (
                             <button
@@ -1285,7 +1285,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                                   );
                                 }}
                                 placeholder="Schritt-Titel (z.B. Gemüse vorbereiten)"
-                                className="px-2.5 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-xs font-bold text-[#2D3E40] w-full max-w-xs"
+                                className="px-2.5 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-[16px] font-bold text-[#2D3E40] w-full max-w-xs"
                               />
                             </div>
 
@@ -1303,7 +1303,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                                     );
                                   }}
                                   placeholder="Timer (Min.)"
-                                  className="w-24 px-2 py-1 bg-white border border-[#ECEBE8] rounded-lg text-[11px] text-[#57534d] text-center"
+                                  className="w-24 px-2 py-1 bg-white border border-[#ECEBE8] rounded-lg text-[16px] text-[#57534d] text-center"
                                 />
                               </div>
 
@@ -1331,7 +1331,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                               );
                             }}
                             placeholder="Erkläre die Zubereitung für diesen Schritt genau..."
-                            className="w-full px-3 py-2 bg-white border border-[#ECEBE8] rounded-xl text-xs text-[#57534d] focus:outline-none focus:border-[#4A7856]"
+                            className="w-full px-3 py-2 bg-white border border-[#ECEBE8] rounded-xl text-[16px] text-[#57534d] focus:outline-none focus:border-[#4A7856]"
                           />
                         </div>
                       ))}
@@ -1348,7 +1348,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       value={manualChefTip}
                       onChange={(e) => setManualChefTip(e.target.value)}
                       placeholder="z.B. Zum Schluss einen Spritzer Limette oder Hefeflocken darübergeben..."
-                      className="w-full px-3 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-sm text-[#2D3E40]"
+                      className="w-full px-3 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] text-[#2D3E40]"
                     />
                   </div>
 

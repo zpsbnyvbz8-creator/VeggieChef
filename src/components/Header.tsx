@@ -106,7 +106,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
               placeholder="Suchen..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-8 sm:pl-9 pr-7 text-sm bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-full text-[#57534d] placeholder-[#686E6A] focus:outline-hidden focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] shadow-2xs transition-all truncate"
+              className="w-full h-10 pl-8 sm:pl-9 pr-7 text-[16px] bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-full text-[#57534d] placeholder-[#686E6A] focus:outline-hidden focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] shadow-2xs transition-all truncate"
             />
             {searchQuery && (
               <button

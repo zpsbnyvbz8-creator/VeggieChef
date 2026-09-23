@@ -583,7 +583,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
               placeholder="z.B. cremig, One-Pot, ohne Zwiebeln..."
               value={extraWishes}
               onChange={(e) => setExtraWishes(e.target.value)}
-              className="w-full h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-3.5 text-sm font-medium text-[#2D3E40] focus:outline-hidden focus:border-[#4A7856]"
+              className="w-full h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-3.5 text-[16px] font-medium text-[#2D3E40] focus:outline-hidden focus:border-[#4A7856]"
             />
           </div>
 

@@ -414,7 +414,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                   value={historySearchQuery}
                   onChange={(e) => setHistorySearchQuery(e.target.value)}
                   placeholder="Gericht filtern..."
-                  className="w-full pl-10 pr-10 py-2.5 text-sm bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[#2D3E40] placeholder:text-[#686E6A] focus:outline-none focus:border-[#4A7856] focus:bg-white transition-all min-h-[44px] sm:min-h-0"
+                  className="w-full pl-10 pr-10 py-2.5 text-[16px] bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[#2D3E40] placeholder:text-[#686E6A] focus:outline-none focus:border-[#4A7856] focus:bg-white transition-all min-h-[44px]"
                 />
                 {historySearchQuery && (
                   <button

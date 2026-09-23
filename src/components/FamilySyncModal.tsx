@@ -258,7 +258,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
                     value={groupIdInput}
                     onChange={(e) => setGroupIdInput(e.target.value)}
                     placeholder="z.B. 7m2p9x4w8k3qzt"
-                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-white border border-[#ECEBE8] text-sm text-[#2D3E40] font-mono focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] outline-hidden shadow-2xs"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-white border border-[#ECEBE8] text-[16px] text-[#2D3E40] font-mono focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] outline-hidden shadow-2xs"
                     required
                   />
                   <p className="text-[11px] text-[#686E6A] mt-1">
@@ -277,7 +277,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
                       value={groupNameInput}
                       onChange={(e) => setGroupNameInput(e.target.value)}
                       placeholder="Unsere Familie"
-                      className="w-full min-h-[42px] px-3 py-2 rounded-xl bg-white border border-[#ECEBE8] text-xs text-[#2D3E40] focus:border-[#4A7856] outline-hidden"
+                      className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-white border border-[#ECEBE8] text-[16px] text-[#2D3E40] focus:border-[#4A7856] outline-hidden"
                     />
                   </div>
 
@@ -291,7 +291,7 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
                       value={memberNameInput}
                       onChange={(e) => setMemberNameInput(e.target.value)}
                       placeholder="z.B. Mama, Felix..."
-                      className="w-full min-h-[42px] px-3 py-2 rounded-xl bg-white border border-[#ECEBE8] text-xs text-[#2D3E40] focus:border-[#4A7856] outline-hidden"
+                      className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-white border border-[#ECEBE8] text-[16px] text-[#2D3E40] focus:border-[#4A7856] outline-hidden"
                     />
                   </div>
                 </div>

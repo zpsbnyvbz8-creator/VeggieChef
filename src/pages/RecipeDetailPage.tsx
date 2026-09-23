@@ -1646,7 +1646,7 @@ export const RecipeDetailPage: React.FC = () => {
                 onChange={(e) => setCookedNotes(e.target.value)}
                 placeholder="z.B. 'Super lecker, nächstes Mal noch etwas Chili dazugeben!'"
                 rows={3}
-                className="w-full text-xs p-3 border border-[#ECEBE8] rounded-xl focus:border-[#4A7856] focus:outline-hidden text-[#2D3E40]"
+                className="w-full text-[16px] p-3 border border-[#ECEBE8] rounded-xl focus:border-[#4A7856] focus:outline-hidden text-[#2D3E40]"
               />
             </div>
 
