@@ -109,14 +109,24 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     }
   });
 
-  const handleToggleLunchSlot = () => {
-    setShowLunchSlot((prev) => {
-      const next = !prev;
-      try {
-        safeStorage.setItem('veggiechef_show_lunch_slot', JSON.stringify(next));
-      } catch {}
-      return next;
+  // Per-day lunch slot collapse/expand state (overrides global showLunchSlot)
+  const [expandedLunchDayIds, setExpandedLunchDayIds] = useState<Record<string, boolean>>({});
+
+  const toggleDayLunch = (dayId: string) => {
+    setExpandedLunchDayIds((prev) => {
+      const current = prev[dayId] !== undefined ? prev[dayId] : showLunchSlot;
+      return { ...prev, [dayId]: !current };
     });
+  };
+
+  const handleToggleAllLunch = () => {
+    const next = !showLunchSlot;
+    setShowLunchSlot(next);
+    setExpandedLunchDayIds({});
+    try {
+      safeStorage.setItem('veggiechef_show_lunch_slot', JSON.stringify(next));
+    } catch {}
+    onCopyFeedback(next ? 'Mittags-Slots eingeblendet.' : 'Mittags-Slots ausgeblendet.');
   };
 
   // Multi-week navigation modals
@@ -814,14 +824,14 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             onClick={() => {
               if (recipe) onSelectRecipe(recipe);
             }}
-            className="text-[16px] font-medium text-[#2D3E40] leading-snug line-clamp-2 hover:text-[#4A7856] cursor-pointer transition-colors"
+            className="text-[16px] font-bold text-[#2D3E40] leading-snug hover:text-[#4A7856] cursor-pointer transition-colors break-words"
             title={slot.recipeTitle}
           >
             {slot.recipeTitle}
           </h4>
 
-          {/* Key Stats row beneath title: Klare Design-Elemente, kein Truncate damit Protein nicht abgeschnitten wird */}
-          <div className="flex flex-wrap items-center text-[12px] sm:text-[13px] text-[#686e6a] font-medium gap-x-1.5 gap-y-0.5 mt-1">
+          {/* Key Stats row beneath title: 13px auf Mobile und Desktop, kein Abschneiden */}
+          <div className="flex flex-wrap items-center text-[13px] text-[#686e6a] font-medium gap-x-1.5 gap-y-0.5 mt-1">
             <span className="inline-flex items-center gap-1 text-[#686e6a] whitespace-nowrap">
               <Clock className="w-3.5 h-3.5 text-[#8a918d] shrink-0" />
               <span>{slot.prepTime}m</span>
@@ -912,64 +922,98 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     <div className="space-y-5 sm:space-y-8 animate-in fade-in duration-300">
       {/* Header & Controls */}
       <div className="bg-white rounded-2xl p-4 sm:p-6 border border-[#ECEBE8] shadow-xs space-y-3 sm:space-y-4">
-        {/* Top: Header Info, Dropdown Menu & Main Action CTAs */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-          <div className="space-y-1 min-w-0">
-            {/* Badges row: Status badge & Family sync button side by side */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] whitespace-nowrap">
-                <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-                <span>Wöchentliche Essensplanung</span>
-              </div>
-
-              {onOpenSyncModal && (
-                <button
-                  type="button"
-                  id="header-family-sync-btn"
-                  onClick={onOpenSyncModal}
-                  className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap ${
-                    syncConfig?.mode === 'family' && syncConfig?.groupId
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                      : 'bg-[#FAF9F6] text-[#686e6a] border-[#ECEBE8] hover:bg-[#F1F5F2]'
-                  }`}
-                  title="Synchronisationseinstellungen öffnen"
-                >
-                  {syncConfig?.mode === 'family' && syncConfig?.groupId ? (
-                    <>
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                      <Users className="w-3 h-3 text-emerald-700" />
-                      <span>Familie: {syncConfig.groupName || syncConfig.groupId}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Cloud className="w-3 h-3 text-[#686e6a]" />
-                      <span style={{ color: '#686e6a' }}>Lokal • Teilen</span>
-                    </>
-                  )}
-                </button>
-              )}
+        {/* Header Title & Subtitle */}
+        <div className="space-y-1">
+          {/* Badges row: Status badge & Family sync button side by side */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] whitespace-nowrap">
+              <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+              <span>Wöchentliche Essensplanung</span>
             </div>
 
-            {/* Title */}
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#2D3E40] leading-tight">
-              Dein Wochenplan
-            </h1>
-            <p className="text-base text-[#686E6A] leading-relaxed mt-1">
-              Mahlzeiten planen, Nährwerte prüfen &amp; Zutaten einkaufen.
-            </p>
+            {onOpenSyncModal && (
+              <button
+                type="button"
+                id="header-family-sync-btn"
+                onClick={onOpenSyncModal}
+                className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                  syncConfig?.mode === 'family' && syncConfig?.groupId
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                    : 'bg-[#FAF9F6] text-[#686e6a] border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                }`}
+                title="Synchronisationseinstellungen öffnen"
+              >
+                {syncConfig?.mode === 'family' && syncConfig?.groupId ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                    <Users className="w-3 h-3 text-emerald-700" />
+                    <span>Familie: {syncConfig.groupName || syncConfig.groupId}</span>
+                  </>
+                ) : (
+                  <>
+                    <Cloud className="w-3 h-3 text-[#686e6a]" />
+                    <span style={{ color: '#686e6a' }}>Lokal • Teilen</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
-          {/* Primary Action Buttons */}
-          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+          {/* Title */}
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#2D3E40] leading-tight">
+            Dein Wochenplan
+          </h1>
+          <p className="text-base text-[#686E6A] leading-relaxed mt-1">
+            Mahlzeiten planen, Nährwerte prüfen &amp; Zutaten einkaufen.
+          </p>
+        </div>
+
+        {/* Unified Action Row with divider after header (wie in der Einkaufsliste) */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-[#ECEBE8]">
+          {/* Left side: Compact servings stepper */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs sm:text-sm font-semibold text-[#2D3E40] hidden xs:inline select-none">
+              Portionen:
+            </span>
+            <div className="inline-flex items-center bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl p-0.5 shadow-2xs h-11 min-h-[44px]">
+              <button
+                id="weekly-plan-servings-decrease-btn"
+                type="button"
+                onClick={() => setPlanServings((prev) => Math.max(1, prev - 1))}
+                disabled={planServings <= 1}
+                className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                aria-label="Portion verringern"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <span className="px-2.5 sm:px-3 text-sm sm:text-base font-bold text-[#2D3E40] tabular-nums min-w-[70px] sm:min-w-[78px] text-center select-none">
+                {planServings} Port.
+              </span>
+              <button
+                id="weekly-plan-servings-increase-btn"
+                type="button"
+                onClick={() => setPlanServings((prev) => Math.min(24, prev + 1))}
+                className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                aria-label="Portion erhöhen"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Right side: Action buttons */}
+          <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
             {/* 3-Punkte-Menü Button (Desktop Popover + Mobile Native Select) */}
             <div className="relative shrink-0" ref={contextMenuRef}>
-              {/* Native iOS / Mobile Dropdown Select: opens native iOS picker sheet / wheel */}
+              {/* Native iOS / Mobile Dropdown Select */}
               <select
                 aria-label="Wochenplan Optionen"
                 value=""
                 onChange={(e) => {
                   const val = e.target.value;
-                  if (val === 'add') {
+                  if (val === 'toggle-lunch') {
+                    handleToggleAllLunch();
+                  } else if (val === 'add') {
                     setNewWeekTitleInput('');
                     setShowCreateWeekModal(true);
                   } else if (val === 'all') {
@@ -982,6 +1026,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
               >
                 <option value="" disabled>Wochenplan Optionen...</option>
+                <option value="toggle-lunch">
+                  {showLunchSlot ? 'Mittags-Slots verbergen' : 'Mittags-Slots anzeigen'}
+                </option>
                 <option value="add">Woche hinzufügen</option>
                 <option value="all">Alle Wochen anzeigen</option>
                 {totalPlannedMeals > 0 && <option value="clear">Plan leeren</option>}
@@ -993,17 +1040,30 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 onClick={() => setShowContextMenu((prev) => !prev)}
                 className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs border ${
                   showContextMenu
-                    ? 'bg-[#E5EBE6] text-[#57534d] border-[#CCD5CF] ring-2 ring-[#4A7856]/25'
-                    : 'bg-[#F1F5F2] hover:bg-[#E5EBE6] text-[#57534d] hover:text-[#57534d] border-[#ECEBE8] hover:border-[#CCD5CF]'
+                    ? 'bg-[#E5EBE6] text-[#2D3E40] border-[#CCD5CF] ring-2 ring-[#4A7856]/25'
+                    : 'bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#2D3E40] hover:text-[#2D3E40] border-[#ECEBE8] hover:border-[#CCD5CF]'
                 }`}
-                title="Weitere Optionen (Woche hinzufügen, Alle Wochen anzeigen, Plan leeren)"
+                title="Weitere Optionen"
                 aria-label="Weitere Optionen"
               >
-                <MoreHorizontal className="w-5 h-5 text-[#57534d]" />
+                <MoreHorizontal className="w-5 h-5 text-[#2D3E40]" />
               </button>
 
               {showContextMenu && (
                 <div className="hidden sm:block absolute right-0 top-full mt-2 w-64 bg-white rounded-xl border border-[#ECEBE8] shadow-xl p-1.5 z-40 animate-in fade-in zoom-in-95 duration-100 space-y-1">
+                  <button
+                    type="button"
+                    id="context-menu-toggle-lunch-btn"
+                    onClick={() => {
+                      setShowContextMenu(false);
+                      handleToggleAllLunch();
+                    }}
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl text-left text-[16px] font-medium text-[#57534d] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                  >
+                    <Sun className="w-4 h-4 text-[#686e6a] shrink-0" />
+                    <span>{showLunchSlot ? 'Mittags-Slots verbergen' : 'Mittags-Slots anzeigen'}</span>
+                  </button>
+
                   <button
                     type="button"
                     id="context-menu-add-week-btn"
@@ -1048,86 +1108,26 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               )}
             </div>
 
-            {/* AI Generator Modal Trigger */}
+            {/* AI Generator Modal Trigger - Harmonized secondary action */}
             <button
               id="open-ai-meal-plan-modal-btn"
               onClick={() => setShowAIGeneratorModal(true)}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 sm:px-4.5 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-900 text-white font-semibold text-sm shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap h-11 min-h-[44px]"
+              className="flex items-center justify-center gap-2 px-3.5 sm:px-4.5 py-2.5 rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] active:bg-[#ECEBE8] border border-[#ECEBE8] hover:border-[#CCD5CF] text-[#2D3E40] font-semibold text-sm sm:text-base shadow-2xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap h-11 min-h-[44px]"
             >
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#4A7856]" />
               <span>KI-Wochenplan</span>
             </button>
 
-            {/* 1-Click All to Shopping List */}
+            {/* 1-Click All to Shopping List - Single prominent filled primary CTA */}
             <button
               id="transfer-week-to-shopping-btn"
               onClick={handleTransferAllToShopping}
               disabled={totalPlannedMeals === 0}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 sm:px-4.5 py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white font-semibold text-sm shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap h-11 min-h-[44px]"
+              className="flex items-center justify-center gap-2 px-3.5 sm:px-4.5 py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white font-semibold text-sm sm:text-base shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap h-11 min-h-[44px]"
             >
               <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Zutaten auf Liste</span>
             </button>
-          </div>
-        </div>
-
-        {/* 1-Row Settings Bar: Merged single horizontal toolbar */}
-        <div className="bg-[#FAF9F6] rounded-xl px-3 sm:px-4 py-2 border border-[#ECEBE8] flex items-center justify-between gap-3 shadow-2xs">
-          {/* Left side: Compact toggle switch [ Mittags-Slot ] */}
-          <button
-            type="button"
-            id="toggle-show-lunch-btn"
-            onClick={handleToggleLunchSlot}
-            role="switch"
-            aria-checked={showLunchSlot}
-            className="flex items-center gap-2.5 font-semibold text-[#2D3E40] cursor-pointer select-none group touch-manipulation active:scale-98 min-h-[44px]"
-            title={showLunchSlot ? 'Mittagsgerichte ausblenden' : 'Mittagsgerichte anzeigen'}
-          >
-            <div
-              className={`w-[46px] h-[28px] rounded-full p-[2px] transition-colors duration-200 ease-in-out flex items-center shadow-inner shrink-0 ${
-                showLunchSlot ? 'bg-[#4A7856]' : 'bg-[#CCD5CF]'
-              }`}
-            >
-              <div
-                className={`w-[24px] h-[24px] rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.2)] transform transition-transform duration-200 ease-in-out ${
-                  showLunchSlot ? 'translate-x-[18px]' : 'translate-x-0'
-                }`}
-              />
-            </div>
-            <span className="font-semibold text-[#2D3E40] group-hover:text-[#4A7856] transition-colors text-[16px] leading-[24px]">
-              Mittags-Slot
-            </span>
-          </button>
-
-          {/* Right side: Compact servings stepper [ - 3 Port. + ] */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs sm:text-sm font-semibold text-[#2D3E40] hidden xs:inline select-none">
-              Portionen:
-            </span>
-            <div className="inline-flex items-center bg-white border border-[#ECEBE8] rounded-xl p-0.5 shadow-2xs">
-              <button
-                id="weekly-plan-servings-decrease-btn"
-                type="button"
-                onClick={() => setPlanServings((prev) => Math.max(1, prev - 1))}
-                disabled={planServings <= 1}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-[#FAF9F6] active:bg-[#ECEBE8] disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
-                aria-label="Portion verringern"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-              <span className="px-2.5 sm:px-3 text-sm sm:text-base font-bold text-[#2D3E40] tabular-nums min-w-[70px] sm:min-w-[78px] text-center select-none">
-                {planServings} Port.
-              </span>
-              <button
-                id="weekly-plan-servings-increase-btn"
-                type="button"
-                onClick={() => setPlanServings((prev) => Math.min(24, prev + 1))}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-[#FAF9F6] active:bg-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
-                aria-label="Portion erhöhen"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -1213,6 +1213,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       {/* 7-Day Grid: Clean Day Containers following "Regale" pattern */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">
         {mealPlan.map((day) => {
+          const isLunchVisible = expandedLunchDayIds[day.dayId] !== undefined
+            ? expandedLunchDayIds[day.dayId]
+            : showLunchSlot;
+
           const totalCalories = (day.lunch?.calories || 0) + (day.dinner?.calories || 0);
           const totalProtein = (day.lunch?.protein || 0) + (day.dinner?.protein || 0);
 
@@ -1222,11 +1226,31 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               id={`meal-plan-day-${day.dayId}`}
               className="bg-white rounded-2xl border border-[#ECEBE8] overflow-hidden shadow-xs hover:border-[#4A7856]/40 hover:shadow-sm transition-all flex flex-col justify-between"
             >
-              {/* Day Header Bar: #f1f5f2 top header strip */}
-              <div className="bg-[#f1f5f2] px-3.5 py-2.5 border-b border-[#ECEBE8] flex items-center justify-between gap-1.5 flex-wrap">
-                <span className="font-semibold text-[16px] text-[#2D3E40]">
-                  {day.dayName}
-                </span>
+              {/* Day Header Bar: Klickbar zum Ein- und Ausfahren des Mittags-Slots (ohne Text) */}
+              <button
+                type="button"
+                onClick={() => toggleDayLunch(day.dayId)}
+                className="w-full bg-[#f1f5f2] hover:bg-[#e7eee9] active:bg-[#dde6e0] px-3.5 py-2.5 border-b border-[#ECEBE8] flex items-center justify-between gap-1.5 flex-wrap cursor-pointer transition-colors text-left select-none group min-h-[44px]"
+                title={isLunchVisible ? `${day.dayName}: Mittagessen einklappen` : `${day.dayName}: Mittagessen ausklappen`}
+                aria-expanded={isLunchVisible}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold text-[16px] text-[#2D3E40] group-hover:text-[#4A7856] transition-colors">
+                    {day.dayName}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-[#686e6a] group-hover:text-[#4A7856] transition-transform duration-200 ${
+                      isLunchVisible ? 'rotate-180' : 'rotate-0'
+                    }`}
+                  />
+                  {!isLunchVisible && day.lunch && (
+                    <span
+                      className="w-2 h-2 rounded-full bg-[#4A7856] shrink-0 inline-block"
+                      title={`Mittagsgericht vorhanden: ${day.lunch.recipeTitle}`}
+                    />
+                  )}
+                </div>
+
                 {totalCalories > 0 || totalProtein > 0 ? (
                   <div
                     className="text-xs text-[#57534d] font-medium flex items-center gap-1.5 shrink-0"
@@ -1246,31 +1270,16 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       </span>
                     )}
                   </div>
-                ) : (
-                  <span className="text-xs text-[#686e6a] font-normal">
-                    Keine Mahlzeiten
-                  </span>
-                )}
-              </div>
+                ) : null}
+              </button>
 
               {/* Flat Interior: Clean white background, separated only by subtle hairline dividers */}
               <div className="divide-y divide-[#ECEBE8] flex-1 flex flex-col">
-                {/* Lunch Slot */}
-                {showLunchSlot ? (
+                {/* Lunch Slot: Ein- und ausfahrbar per Klick auf den Tagesheader */}
+                {isLunchVisible && (
                   day.lunch
                     ? renderMealItem(day, 'lunch', day.lunch)
                     : renderEmptySlot(day, 'lunch')
-                ) : (
-                  /* Subtle non-interactive note when lunch slot is disabled but a dish is planned */
-                  day.lunch && (
-                    <div
-                      className="px-3 py-1.5 bg-[#FAF9F6] border-b border-[#ECEBE8] flex items-center gap-1.5 text-[12px] text-[#57534d] select-none"
-                      title={`Mittagsgericht: ${day.lunch.recipeTitle}`}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#4A7856]/80 shrink-0" />
-                      <span className="truncate text-[12px] text-[#57534d]">Mittag: {day.lunch.recipeTitle}</span>
-                    </div>
-                  )
                 )}
 
                 {/* Dinner Slot */}

@@ -1253,9 +1253,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               title="Kopiert die Liste formatiert für WhatsApp & Notizen"
             >
               {copied ? (
-                <Check className="w-4 h-4 text-[#4A7856]" />
+                <Check className="w-4 h-4 text-[#4a7856]" />
               ) : (
-                <Copy className="w-4 h-4 text-[#57534d] transition-colors" />
+                <Copy className="w-4 h-4 text-[#4a7856] transition-colors" />
               )}
               <span>{copied ? 'Kopiert!' : 'Kopieren'}</span>
             </button>
