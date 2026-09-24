@@ -1074,11 +1074,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             </div>
           </div>
 
-          {/* Trennlinie auf Mobile unter Portionen (wie in der Rezept-Detailansicht) */}
-          <div className="w-full border-t border-[#ECEBE8]/70 sm:hidden my-0.5" />
+          {/* Trennlinie auf Mobile unter Portionen (wie in der Rezept-Detailansicht: pt-1, reduzierter Abstand nach unten) */}
+          <div className="w-full border-t border-[#ECEBE8]/70 sm:hidden -mb-1 mt-0.5" />
 
-          {/* Right side: Action buttons */}
-          <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap w-full sm:w-auto justify-between sm:justify-end">
+          {/* Right side: Action buttons - auf Mobile linksbündig (justify-start), wie in Desktop sm:justify-end */}
+          <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap w-full sm:w-auto justify-start sm:justify-end pt-1 sm:pt-0">
             {/* 3-Punkte-Menü Button (Rich Dropdown Menu mit Design-Elementen/Icons für Mobile & Desktop) */}
             <div className="relative shrink-0" ref={contextMenuRef}>
               <button
