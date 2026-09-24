@@ -41,7 +41,7 @@
     opacity: 1;
   }
 
-  h1, h2, h3, .font-serif {
+  h1, h2, h3, h4, h5, h6, .font-serif {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     letter-spacing: -0.02em;
     color: #2D3E40;

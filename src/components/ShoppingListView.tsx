@@ -1176,7 +1176,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap ${
                   syncConfig?.mode === 'family' && syncConfig?.groupId
                     ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                    : 'bg-[#FAF9F6] text-[#57534d] border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                    : 'bg-[#FAF9F6] text-[#686e6a] border-[#ECEBE8] hover:bg-[#F1F5F2]'
                 }`}
                 title="Synchronisationseinstellungen öffnen"
               >
@@ -1188,17 +1188,17 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   </>
                 ) : (
                   <>
-                    <Cloud className="w-3 h-3 text-[#57534d]" />
-                    <span>Lokal • Teilen</span>
+                    <Cloud className="w-3 h-3 text-[#686e6a]" />
+                    <span style={{ color: '#686e6a' }}>Lokal • Teilen</span>
                   </>
                 )}
               </button>
             )}
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#2D3E40]">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#2D3E40] leading-tight">
             Einkaufsliste
           </h1>
-          <p className="text-sm font-medium text-[#686e6a]">
+          <p className="text-base text-[#686E6A] leading-relaxed mt-1">
             Alles für deine Woche – geordnet nach Supermarkt-Regal.
           </p>
         </div>
@@ -1454,8 +1454,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           <div className="w-14 h-14 rounded-full bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center mx-auto text-2xl border border-[#ECEBE8]">
             🛒
           </div>
-          <h3 className="text-lg font-semibold text-[#2D3E40]">Deine Liste ist leer</h3>
-          <p className="text-xs text-[#686E6A] max-w-sm mx-auto">
+          <h3 className="text-xl font-bold tracking-tight text-[#2D3E40]">Deine Liste ist leer</h3>
+          <p className="text-base text-[#686E6A] leading-relaxed max-w-sm mx-auto">
             Füge Zutaten direkt aus Rezepten oder dem Wochenplan hinzu, oder tippe oben z.B. „400g Tofu“ ein.
           </p>
           {(() => {
@@ -1485,9 +1485,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-[#ECEBE8] shadow-xs overflow-hidden">
             <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-[#ECEBE8] bg-[#F1F5F2]">
-              <div className="flex items-center gap-2 font-semibold text-[#2D3E40] text-sm">
+              <div className="flex items-center gap-2 font-semibold text-[#2D3E40] text-base">
                 <List className="w-4 h-4 text-[#4A7856]" />
-                <span>Offene Artikel</span>
+                <span style={{ fontSize: '16px' }} className="text-[16px]">Offene Artikel</span>
               </div>
               <span className="text-xs font-semibold text-[#57534d] bg-white px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
                 {activeItems.length} offen

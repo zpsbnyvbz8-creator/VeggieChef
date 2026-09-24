@@ -346,10 +346,10 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             <Sparkles className="w-3.5 h-3.5 text-[#4A7856]" />
             Vorratskammer & KI-Rezeptsuche
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#2D3E40]">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#2D3E40] leading-tight">
             Was hast du im Kühlschrank?
           </h1>
-          <p className="text-sm font-medium text-[#686e6a]">
+          <p className="text-base text-[#686E6A] leading-relaxed">
             Vorhandene Zutaten wählen und passende Gerichte oder KI-Rezepte entdecken.
           </p>
         </div>
@@ -360,7 +360,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
         {/* Selected Items Tags */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-[#57534d]">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-[#686E6A]">
               Deine ausgewählten Zutaten ({selectedIngredients.length})
             </h2>
             {selectedIngredients.length > 0 && (
@@ -375,7 +375,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
 
           <div className="flex flex-wrap gap-2.5 min-h-[48px] p-3 bg-[#FAF9F6] rounded-xl border border-[#ECEBE8] items-center">
             {selectedIngredients.length === 0 ? (
-              <span className="text-sm font-medium text-[#686e6a] italic">
+              <span className="text-base text-[#686E6A] leading-relaxed italic">
                 Noch keine Zutaten ausgewählt. Klicke unten auf Zutaten oder tippe eigene ein!
               </span>
             ) : (
@@ -727,10 +727,10 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                   </span>
                 )}
               </div>
-              <h3 className="text-3xl font-semibold text-[#2D3E40] tracking-tight">
+              <h3 className="text-3xl sm:text-4xl font-bold text-[#2D3E40] tracking-tight leading-tight">
                 {generatedRecipe.title}
               </h3>
-              <p className="text-sm text-[#686E6A] mt-0.5">
+              <p className="text-base text-[#686E6A] leading-relaxed mt-1">
                 {generatedRecipe.subtitle}
               </p>
             </div>
@@ -874,7 +874,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
         <div className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-lg font-semibold text-[#2D3E40]">
+              <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-[#2D3E40]">
                 Oder entdecke passende Rezepte aus unserer Sammlung:
               </h3>
               {(proteinFilter === 'high' || proteinFilter === 'very-high') && (

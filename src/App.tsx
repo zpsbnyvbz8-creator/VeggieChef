@@ -78,10 +78,10 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
       {/* View Header with Search Input */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#2D3E40]">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#2D3E40] leading-tight">
             {isFavorites ? 'Deine Lieblingsrezepte ❤️' : 'Auswahl an Gerichten'}
           </h1>
-          <p className="text-sm font-medium text-[#686e6a] mt-1">
+          <p className="text-base text-[#686E6A] leading-relaxed mt-1">
             {isFavorites
               ? `${favorites.length} gespeicherte Favoriten`
               : '100% vegetarisch & vegan – nährstoffreich & gelingsicher'}
@@ -94,7 +94,7 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
             id="explorer-add-recipe-btn"
             type="button"
             onClick={() => setIsAddRecipeOpen(true)}
-            className="flex items-center gap-2 h-12 px-5 rounded-xl text-base font-semibold bg-[#4A7856] hover:bg-[#3D6447] text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
+            className="flex items-center gap-2 h-12 min-h-[48px] px-5 rounded-xl text-base font-semibold bg-[#4A7856] hover:bg-[#3D6447] text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
             title="Neues Gericht per KI, Foto oder manuell hinzufügen"
           >
             <Plus className="w-5 h-5" />
@@ -116,7 +116,7 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
               <button
                 type="button"
                 onClick={() => setFilters((prev) => ({ ...prev, searchQuery: '' }))}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#57534d] hover:text-[#4A7856] w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#686E6A] hover:text-[#4A7856] w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer"
               >
                 ✕
               </button>
@@ -135,10 +135,10 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
             🌱
           </div>
           <div className="space-y-1">
-            <h3 className="text-lg font-bold text-[#2D3E40]">
+            <h3 className="text-xl font-bold tracking-tight text-[#2D3E40]">
               {isFavorites ? 'Noch keine Favoriten vorhanden' : 'Keine passenden Rezepte gefunden'}
             </h3>
-            <p className="text-sm text-[#686E6A] max-w-md mx-auto">
+            <p className="text-base text-[#686E6A] leading-relaxed max-w-md mx-auto">
               {isFavorites
                 ? 'Klicke auf das Herz-Symbol bei einem Rezept, um es in deiner Favoritenliste zu speichern.'
                 : 'Passe deine Filterkriterien an oder suche nach einer anderen Zutat.'}
@@ -148,7 +148,7 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
             <button
               type="button"
               onClick={resetFilters}
-              className="px-4 py-2 rounded-xl bg-[#4A7856] text-white text-sm font-semibold hover:bg-[#3D6447] transition-colors cursor-pointer"
+              className="min-h-[44px] px-5 py-2.5 rounded-xl bg-[#4A7856] text-white text-base font-semibold hover:bg-[#3D6447] transition-colors cursor-pointer"
             >
               Filter zurücksetzen
             </button>
@@ -179,7 +179,7 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
                       id="load-more-recipes-btn"
                       type="button"
                       onClick={() => setVisibleRecipeCount((prev) => Math.min(prev + 8, displayedFilteredRecipes.length))}
-                      className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#57534d] text-sm font-semibold shadow-2xs transition-all cursor-pointer active:scale-95"
+                      className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] text-base font-semibold shadow-2xs transition-all cursor-pointer active:scale-95"
                     >
                       Mehr anzeigen ({remainingCount} weitere {remainingCount === 1 ? 'Rezept' : 'Rezepte'})
                     </button>
@@ -187,7 +187,7 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
                       id="load-all-recipes-btn"
                       type="button"
                       onClick={() => setVisibleRecipeCount(displayedFilteredRecipes.length)}
-                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#F1F5F2] hover:bg-[#E3EBE5] text-[#4A7856] text-sm font-semibold transition-all cursor-pointer active:scale-95"
+                      className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl bg-[#F1F5F2] hover:bg-[#E3EBE5] text-[#4A7856] text-base font-semibold transition-all cursor-pointer active:scale-95"
                     >
                       Alle anzeigen ({displayedFilteredRecipes.length})
                     </button>

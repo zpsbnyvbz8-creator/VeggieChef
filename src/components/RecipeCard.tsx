@@ -159,11 +159,11 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
             </span>
           </div>
 
-          <h3 className="font-semibold text-[#2D3E40] text-base leading-snug line-clamp-2 group-hover:text-[#4A7856] transition-colors">
+          <h3 className="font-bold text-[#2D3E40] text-base leading-snug line-clamp-2 group-hover:text-[#4A7856] transition-colors">
             {recipe.title}
           </h3>
 
-          <p className="text-sm font-medium text-[#686e6a] line-clamp-2 mt-1 leading-relaxed">
+          <p className="text-sm text-[#686E6A] line-clamp-2 mt-1 leading-relaxed">
             {recipe.subtitle}
           </p>
         </div>
