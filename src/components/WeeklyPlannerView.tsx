@@ -36,7 +36,7 @@ import {
   Utensils,
   Zap
 } from 'lucide-react';
-import { DayPlan, MealPlanSlot, Recipe, WeekPlan } from '../types';
+import { DayPlan, MealPlanSlot, Recipe, WeekPlan, FilterState } from '../types';
 import { RecipeImage } from './RecipeImage';
 import { SyncConfig } from '../lib/syncService';
 import { Users, Cloud } from 'lucide-react';
@@ -48,6 +48,16 @@ import { useSync } from '../context/SyncContext';
 import { useToast } from '../context/ToastContext';
 import { HybridPortionStepper } from './HybridPortionStepper';
 import { safeStorage } from '../utils/helpers';
+
+const PICKER_SORT_OPTIONS: { label: string; value: FilterState['sortBy'] }[] = [
+  { label: 'Standard-Sortierung', value: 'featured' },
+  { label: '✨ Zuletzt hinzugefügt', value: 'recentlyAdded' },
+  { label: '🍳 Zuletzt gekocht', value: 'recentlyCooked' },
+  { label: '⚡ Schnelligkeit (Zubereitung)', value: 'timeAsc' },
+  { label: '💪 Höchster Proteingehalt', value: 'proteinDesc' },
+  { label: '🥗 Kalorienarm', value: 'caloriesAsc' },
+  { label: '⭐ Beste Bewertung', value: 'ratingDesc' },
+];
 
 interface WeeklyPlannerViewProps {
   mealPlan?: DayPlan[];
@@ -96,8 +106,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const [selectedMealType, setSelectedMealType] = useState<'lunch' | 'dinner'>('dinner');
   const [showRecipePickerModal, setShowRecipePickerModal] = useState(false);
   const [pickerSearchQuery, setPickerSearchQuery] = useState('');
-  const [pickerFilter, setPickerFilter] = useState<'all' | 'favorites' | 'vegan' | 'quick' | 'protein'>('all');
-  const [pickerSortFavoritesFirst, setPickerSortFavoritesFirst] = useState(true);
+  const [pickerOnlyVegan, setPickerOnlyVegan] = useState(false);
+  const [pickerOnlyFavorites, setPickerOnlyFavorites] = useState(false);
+  const [pickerQuick, setPickerQuick] = useState(false);
+  const [pickerHighProtein, setPickerHighProtein] = useState(false);
+  const [pickerSortBy, setPickerSortBy] = useState<FilterState['sortBy']>('featured');
 
   // Toggle showing lunch slot - persisted in safeStorage
   const [showLunchSlot, setShowLunchSlot] = useState<boolean>(() => {
@@ -153,7 +166,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const contextMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node;
       if (contextMenuRef.current && !contextMenuRef.current.contains(target)) {
         setShowContextMenu(false);
@@ -161,9 +174,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     };
     if (showContextMenu) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [showContextMenu]);
 
@@ -258,16 +273,30 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     setSelectedDayId(dayId);
     setSelectedMealType(mealType);
     setPickerSearchQuery('');
-    setPickerFilter(onlyVeganGlobal ? 'vegan' : 'all');
+    setPickerOnlyVegan(false);
+    setPickerOnlyFavorites(false);
+    setPickerQuick(false);
+    setPickerHighProtein(false);
+    setPickerSortBy('featured');
     setShowRecipePickerModal(true);
   };
 
   const filteredPickerRecipes = React.useMemo(() => {
+    const cookedLogs = recipesCtx.cookedLogs;
     let list = allRecipes.filter((recipe) => {
-      if (pickerFilter === 'vegan' && !recipe.isVegan) return false;
-      if (pickerFilter === 'favorites' && !favorites.includes(recipe.id)) return false;
-      if (pickerFilter === 'quick' && recipe.totalTimeMinutes > 30) return false;
-      if (pickerFilter === 'protein' && recipe.nutrients.protein < 20) return false;
+      // 1. Vegan filter (kombinierbar)
+      if (pickerOnlyVegan && !recipe.isVegan) return false;
+
+      // 2. Favoriten / Gelikt filter (kombinierbar)
+      if (pickerOnlyFavorites && !favorites.includes(recipe.id)) return false;
+
+      // 3. Schnell (<= 30 min, kombinierbar)
+      if (pickerQuick && (recipe.totalTimeMinutes || 0) > 30) return false;
+
+      // 4. High Protein (>= 20g Protein, kombinierbar)
+      if (pickerHighProtein && (recipe.nutrients?.protein || 0) < 20) return false;
+
+      // 5. Suche
       if (!pickerSearchQuery.trim()) return true;
       const query = pickerSearchQuery.toLowerCase().trim();
       const matchesTitle = recipe.title.toLowerCase().includes(query);
@@ -275,16 +304,62 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       return matchesTitle || matchesIngredient;
     });
 
-    if (pickerSortFavoritesFirst) {
-      list = [...list].sort((a, b) => {
-        const aFav = favorites.includes(a.id) ? 1 : 0;
-        const bFav = favorites.includes(b.id) ? 1 : 0;
-        return bFav - aFav;
-      });
-    }
+    // 4. Sortierung wie auf Startseite
+    list = [...list].sort((a, b) => {
+      const aNutrients = a.nutrients || { calories: 0, protein: 0, fiber: 0 };
+      const bNutrients = b.nutrients || { calories: 0, protein: 0, fiber: 0 };
+
+      switch (pickerSortBy) {
+        case 'recentlyCooked': {
+          if (!cookedLogs || cookedLogs.length === 0) {
+            return (b.rating || 0) - (a.rating || 0);
+          }
+          const getLatestCookedTime = (recId: string) => {
+            let maxTime = 0;
+            for (const log of cookedLogs) {
+              if (log.recipeId === recId) {
+                const t = new Date(log.date).getTime();
+                if (t > maxTime) maxTime = t;
+              }
+            }
+            return maxTime;
+          };
+          const aTime = getLatestCookedTime(a.id);
+          const bTime = getLatestCookedTime(b.id);
+          if (bTime !== aTime) return bTime - aTime;
+          return (b.rating || 0) - (a.rating || 0);
+        }
+        case 'recentlyAdded': {
+          const getAddedTimestamp = (r: Recipe) => {
+            if (r.createdAt) {
+              return typeof r.createdAt === 'number' ? r.createdAt : new Date(r.createdAt).getTime();
+            }
+            const numMatch = r.id.match(/\d{10,}/);
+            if (numMatch) return parseInt(numMatch[0], 10);
+            const idNum = parseInt(r.id.replace(/\D/g, ''), 10);
+            return isNaN(idNum) ? 0 : idNum;
+          };
+          const aTime = getAddedTimestamp(a);
+          const bTime = getAddedTimestamp(b);
+          if (bTime !== aTime) return bTime - aTime;
+          return (b.rating || 0) - (a.rating || 0);
+        }
+        case 'timeAsc':
+          return (a.totalTimeMinutes || 0) - (b.totalTimeMinutes || 0);
+        case 'proteinDesc':
+          return (bNutrients.protein || 0) - (aNutrients.protein || 0);
+        case 'caloriesAsc':
+          return (aNutrients.calories || 0) - (bNutrients.calories || 0);
+        case 'ratingDesc':
+          return (b.rating || 0) - (a.rating || 0);
+        case 'featured':
+        default:
+          return 0;
+      }
+    });
 
     return list;
-  }, [allRecipes, pickerFilter, pickerSearchQuery, pickerSortFavoritesFirst, favorites]);
+  }, [allRecipes, pickerOnlyVegan, pickerOnlyFavorites, pickerQuick, pickerHighProtein, pickerSearchQuery, pickerSortBy, favorites, recipesCtx.cookedLogs]);
 
   const assignRecipeToSlot = (recipe: Recipe) => {
     if (!selectedDayId) return;
@@ -802,16 +877,14 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             <span className="text-[12px] font-semibold uppercase tracking-wider text-[#686e6a]">
               {mealType === 'lunch' ? 'Mittag' : 'Abendessen'}
             </span>
-            <span className="text-[#686e6a]">·</span>
-            {slot.isVegan ? (
-              <span className="inline-flex items-center gap-1 text-[12px] text-[#4A7856] font-medium">
-                <Leaf className="w-3 h-3 text-[#4A7856] shrink-0" />
-                <span>Vegan</span>
-              </span>
-            ) : (
-              <span className="text-[12px] text-[#686e6a] font-medium">
-                Veggie
-              </span>
+            {slot.isVegan && (
+              <>
+                <span className="text-[#686e6a]">·</span>
+                <span className="inline-flex items-center gap-1 text-[12px] text-[#4A7856] font-medium">
+                  <Leaf className="w-3 h-3 text-[#4A7856] shrink-0" />
+                  <span>Vegan</span>
+                </span>
+              </>
             )}
             {isSwapTarget && (
               <span className="text-[10px] font-bold text-[#4A7856] bg-white px-1.5 py-0.2 rounded border border-[#4A7856] shadow-2xs ml-auto">
@@ -901,7 +974,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         <button
           type="button"
           onClick={() => openRecipePicker(day.dayId, mealType)}
-          className={`w-full py-2.5 px-3 rounded-xl border border-dashed text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 transition-all min-h-[44px] touch-manipulation active:scale-[0.99] cursor-pointer ${
+          className={`w-full py-2.5 px-3 rounded-xl border border-dashed text-[14px] font-medium flex items-center justify-center gap-1.5 transition-all min-h-[44px] touch-manipulation active:scale-[0.99] cursor-pointer ${
             isDragOverThis
               ? 'border-[#4A7856] bg-[#E8F1EC] text-[#4A7856] ring-2 ring-[#4A7856]/40 font-semibold'
               : draggingItem
@@ -909,8 +982,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               : 'border-[#D5DDD7] hover:border-[#4A7856] text-[#57534d] hover:text-[#4A7856] bg-[#FAF9F6]/40 hover:bg-[#F1F5F2]'
           }`}
         >
-          <Plus className="w-3.5 h-3.5 shrink-0" />
-          <span className="text-[#57534d] group-hover:text-[#4A7856] truncate">
+          <Plus className="w-4 h-4 shrink-0" />
+          <span className="text-[#57534d] group-hover:text-[#4A7856] truncate text-[14px]">
             {label}
           </span>
         </button>
@@ -1001,39 +1074,13 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             </div>
           </div>
 
-          {/* Right side: Action buttons */}
-          <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-            {/* 3-Punkte-Menü Button (Desktop Popover + Mobile Native Select) */}
-            <div className="relative shrink-0" ref={contextMenuRef}>
-              {/* Native iOS / Mobile Dropdown Select */}
-              <select
-                aria-label="Wochenplan Optionen"
-                value=""
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === 'toggle-lunch') {
-                    handleToggleAllLunch();
-                  } else if (val === 'add') {
-                    setNewWeekTitleInput('');
-                    setShowCreateWeekModal(true);
-                  } else if (val === 'all') {
-                    setShowAllWeeksModal(true);
-                  } else if (val === 'clear') {
-                    setShowConfirmClearAll(true);
-                  }
-                  e.target.value = '';
-                }}
-                className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
-              >
-                <option value="" disabled>Wochenplan Optionen...</option>
-                <option value="toggle-lunch">
-                  {showLunchSlot ? 'Mittags-Slots verbergen' : 'Mittags-Slots anzeigen'}
-                </option>
-                <option value="add">Woche hinzufügen</option>
-                <option value="all">Alle Wochen anzeigen</option>
-                {totalPlannedMeals > 0 && <option value="clear">Plan leeren</option>}
-              </select>
+          {/* Trennlinie auf Mobile unter Portionen (wie in der Rezept-Detailansicht) */}
+          <div className="w-full border-t border-[#ECEBE8]/70 sm:hidden my-0.5" />
 
+          {/* Right side: Action buttons */}
+          <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap w-full sm:w-auto justify-between sm:justify-end">
+            {/* 3-Punkte-Menü Button (Rich Dropdown Menu mit Design-Elementen/Icons für Mobile & Desktop) */}
+            <div className="relative shrink-0" ref={contextMenuRef}>
               <button
                 type="button"
                 id="weekly-planner-context-menu-btn"
@@ -1045,12 +1092,13 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 }`}
                 title="Weitere Optionen"
                 aria-label="Weitere Optionen"
+                aria-expanded={showContextMenu}
               >
                 <MoreHorizontal className="w-5 h-5 text-[#2D3E40]" />
               </button>
 
               {showContextMenu && (
-                <div className="hidden sm:block absolute right-0 top-full mt-2 w-64 bg-white rounded-xl border border-[#ECEBE8] shadow-xl p-1.5 z-40 animate-in fade-in zoom-in-95 duration-100 space-y-1">
+                <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-[#ECEBE8] shadow-xl p-1.5 z-40 animate-in fade-in zoom-in-95 duration-100 space-y-1">
                   <button
                     type="button"
                     id="context-menu-toggle-lunch-btn"
@@ -1058,10 +1106,12 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setShowContextMenu(false);
                       handleToggleAllLunch();
                     }}
-                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl text-left text-[16px] font-medium text-[#57534d] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                    className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-[#2D3E40] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
                   >
-                    <Sun className="w-4 h-4 text-[#686e6a] shrink-0" />
-                    <span>{showLunchSlot ? 'Mittags-Slots verbergen' : 'Mittags-Slots anzeigen'}</span>
+                    <div className="w-8 h-8 rounded-lg bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
+                      <Sun className="w-4 h-4 shrink-0" />
+                    </div>
+                    <span className="truncate">{showLunchSlot ? 'Mittags-Slots verbergen' : 'Mittags-Slots anzeigen'}</span>
                   </button>
 
                   <button
@@ -1072,10 +1122,12 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setNewWeekTitleInput('');
                       setShowCreateWeekModal(true);
                     }}
-                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl text-left text-[16px] font-medium text-[#57534d] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                    className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-[#2D3E40] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
                   >
-                    <Plus className="w-4 h-4 text-[#686e6a] shrink-0" />
-                    <span>Woche hinzufügen</span>
+                    <div className="w-8 h-8 rounded-lg bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
+                      <Plus className="w-4 h-4 shrink-0" />
+                    </div>
+                    <span className="truncate">Woche hinzufügen</span>
                   </button>
 
                   <button
@@ -1085,11 +1137,15 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setShowContextMenu(false);
                       setShowAllWeeksModal(true);
                     }}
-                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl text-left text-[16px] font-medium text-[#57534d] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                    className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-[#2D3E40] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
                   >
-                    <Layers className="w-4 h-4 text-[#686e6a] shrink-0" />
-                    <span>Alle Wochen anzeigen</span>
+                    <div className="w-8 h-8 rounded-lg bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
+                      <Layers className="w-4 h-4 shrink-0" />
+                    </div>
+                    <span className="truncate">Alle Wochen anzeigen</span>
                   </button>
+
+                  <div className="border-t border-[#ECEBE8] my-1" />
 
                   <button
                     type="button"
@@ -1099,10 +1155,12 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       setShowConfirmClearAll(true);
                     }}
                     disabled={totalPlannedMeals === 0}
-                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl text-left text-[16px] font-medium text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-2.5 transition-colors cursor-pointer touch-manipulation"
+                    className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
                   >
-                    <Trash2 className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>Plan leeren</span>
+                    <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center shrink-0 text-rose-600">
+                      <Trash2 className="w-4 h-4 shrink-0" />
+                    </div>
+                    <span className="truncate">Plan leeren</span>
                   </button>
                 </div>
               )}
@@ -1177,11 +1235,18 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             <ChevronLeft className="w-5 h-5 text-[#57534d]" />
           </button>
 
-          {/* Central Week Indicator */}
-          <div className="flex-1 flex items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4 bg-white border border-[#ECEBE8] rounded-xl shadow-2xs h-11 min-h-[44px]">
+          {/* Central Week Indicator - Direkt klickbar zum Öffnen des "Alle Wochen" Pop-ups */}
+          <button
+            type="button"
+            id="weekly-planner-open-all-weeks-btn"
+            onClick={() => setShowAllWeeksModal(true)}
+            className="flex-1 flex items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4 bg-white hover:bg-[#FAF9F6] active:bg-[#F1F5F2] border border-[#ECEBE8] hover:border-[#4A7856]/40 rounded-xl shadow-2xs h-11 min-h-[44px] cursor-pointer touch-manipulation active:scale-[0.99] transition-all group"
+            title="Alle Wochen anzeigen & verwalten"
+            aria-label="Alle Wochen anzeigen"
+          >
             <div className="flex items-center gap-2 min-w-0">
-              <Calendar className="w-4 h-4 text-[#4A7856] shrink-0" />
-              <span className="text-sm sm:text-base font-semibold text-[#2D3E40] truncate">
+              <Calendar className="w-4 h-4 text-[#4A7856] shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="text-sm sm:text-base font-semibold text-[#2D3E40] group-hover:text-[#4A7856] truncate transition-colors">
                 {activeWeek?.title || 'Aktuelle Woche'}
               </span>
               {activeWeek?.startDate && (
@@ -1191,10 +1256,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               )}
             </div>
             <span className="text-[#686e6a] text-xs font-normal">•</span>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] whitespace-nowrap shrink-0">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] whitespace-nowrap shrink-0 group-hover:bg-[#E8F1EC] transition-colors">
               {totalPlannedMeals} {totalPlannedMeals === 1 ? 'Gericht' : 'Gerichte'}
             </span>
-          </div>
+          </button>
 
           <button
             type="button"
@@ -1305,7 +1370,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           <div className="w-2 h-2 rounded-full bg-[#4A7856] shrink-0" />
           <div className="min-w-0">
             <div className="text-[10px] font-semibold text-[#4A7856] truncate">
-              {touchDragState.source.slot.isVegan ? 'Vegan' : 'Veggie'} • {touchDragState.source.mealType === 'lunch' ? 'Mittag' : 'Abend'}
+              {touchDragState.source.slot.isVegan ? 'Vegan • ' : ''}{touchDragState.source.mealType === 'lunch' ? 'Mittag' : 'Abend'}
             </div>
             <div className="text-xs font-bold text-[#2D3E40] truncate max-w-[180px]">
               {touchDragState.source.slot.recipeTitle}
@@ -1346,105 +1411,126 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               </button>
             </div>
 
-            {/* Search, Filter & Sort Bar: Aufgeräumt, vollwertige Buttons */}
-            <div className="py-2.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 border-b border-[#ECEBE8]">
-              <div className="relative flex-1">
-                <Search className="w-5 h-5 text-[#686e6a] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={pickerSearchQuery}
-                  onChange={(e) => setPickerSearchQuery(e.target.value)}
-                  placeholder="Gericht oder Zutat suchen..."
-                  className="w-full h-11 min-h-[44px] pl-11 pr-10 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[#2D3E40] placeholder:text-[#686e6a] text-base font-medium focus:bg-white focus:outline-hidden focus:border-[#4A7856] transition-all"
-                />
-                {pickerSearchQuery && (
-                  <button
-                    onClick={() => setPickerSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#57534d] hover:text-[#4A7856] w-8 h-8 flex items-center justify-center rounded-xl"
+            {/* Search, Filter & Sort Bar: Aufgeräumt, vollwertige Buttons & Sortierung wie auf Startseite */}
+            <div className="py-2.5 flex flex-col gap-2 border-b border-[#ECEBE8]">
+              {/* Row 1: Search, Sort Dropdown & Favoriten-Herz-Button */}
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="w-5 h-5 text-[#686e6a] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={pickerSearchQuery}
+                    onChange={(e) => setPickerSearchQuery(e.target.value)}
+                    placeholder="Gericht oder Zutat suchen..."
+                    className="w-full h-11 min-h-[44px] pl-11 pr-10 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[#2D3E40] placeholder:text-[#686e6a] text-base font-medium focus:bg-white focus:outline-hidden focus:border-[#4A7856] transition-all"
+                  />
+                  {pickerSearchQuery && (
+                    <button
+                      onClick={() => setPickerSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#57534d] hover:text-[#4A7856] w-8 h-8 flex items-center justify-center rounded-xl"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Sortierung wie auf der Startseite */}
+                <div className="relative shrink-0">
+                  <select
+                    id="picker-sort-by"
+                    value={pickerSortBy}
+                    onChange={(e) => setPickerSortBy(e.target.value as FilterState['sortBy'])}
+                    className="appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 text-[#2D3E40] text-[15px] sm:text-[16px] font-medium rounded-xl pl-9 pr-8 py-2 cursor-pointer focus:outline-hidden focus:border-[#4A7856] transition-colors"
                   >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+                    {PICKER_SORT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ArrowUpDown className="w-4 h-4 text-[#686E6A] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-3.5 h-3.5 text-[#686E6A] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
 
-              {/* Filter pills and Sort favorites button - Buttons nicht kleiner gemacht */}
-              <div className="flex items-center gap-1.5 shrink-0 overflow-x-auto pb-0.5 sm:pb-0 text-sm font-medium">
+              {/* Row 2: Filter pills: Pixel-Perfect vertikale Zentrierung, Pill-Shape (rounded-full), kombinierbare Filter inkl. Gelikt (Herz) */}
+              <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 overflow-x-auto py-1 overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden text-sm">
+                {/* Alle Button - aktiv wenn kein Filter gewählt ist */}
                 <button
                   type="button"
-                  onClick={() => setPickerFilter('all')}
-                  className={`h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap text-sm font-semibold ${
-                    pickerFilter === 'all'
-                      ? 'bg-[#2D3E40] text-white shadow-2xs'
-                      : 'bg-[#FAF9F6] text-[#57534d] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                  onClick={() => {
+                    setPickerOnlyVegan(false);
+                    setPickerOnlyFavorites(false);
+                    setPickerQuick(false);
+                    setPickerHighProtein(false);
+                  }}
+                  className={`inline-flex items-center justify-center h-12 sm:h-11 min-h-[48px] sm:min-h-[44px] px-4.5 sm:px-4.5 rounded-full transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap text-sm border ${
+                    !pickerOnlyVegan && !pickerOnlyFavorites && !pickerQuick && !pickerHighProtein
+                      ? 'bg-[#4A7856] text-white border-transparent font-semibold shadow-xs'
+                      : 'bg-white text-[#57534D] border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-[#2D3E40] hover:border-[#D6D3D1] font-medium'
                   }`}
                 >
-                  Alle ({allRecipes.length})
+                  <span className="leading-none">Alle ({allRecipes.length})</span>
                 </button>
 
+                {/* Gelikt / Favoriten Pill - frei kombinierbar, rote Farbe bei Aktivierung */}
                 <button
                   type="button"
-                  onClick={() => setPickerFilter('favorites')}
-                  className={`h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap flex items-center gap-1.5 text-sm font-semibold ${
-                    pickerFilter === 'favorites'
-                      ? 'bg-rose-600 text-white shadow-2xs'
-                      : 'bg-[#FAF9F6] text-[#57534d] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                  id="picker-favorites-filter-btn"
+                  onClick={() => setPickerOnlyFavorites((prev) => !prev)}
+                  className={`inline-flex items-center justify-center gap-2 h-12 sm:h-11 min-h-[48px] sm:min-h-[44px] px-4.5 sm:px-4.5 rounded-full transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap text-sm border group ${
+                    pickerOnlyFavorites
+                      ? 'bg-[#E74C3C] text-white border-transparent font-semibold shadow-xs'
+                      : 'bg-white text-[#57534D] border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-[#2D3E40] hover:border-[#D6D3D1] font-medium'
                   }`}
+                  title="Gelikte Rezepte filtern (kombinierbar)"
                 >
-                  <Heart className={`w-4 h-4 ${pickerFilter === 'favorites' ? 'fill-white' : 'fill-rose-500 text-rose-500'}`} />
-                  <span>Gelikt ({favorites.filter((id) => allRecipes.some((r) => r.id === id)).length})</span>
+                  <Heart className={`w-4 h-4 shrink-0 transition-colors ${pickerOnlyFavorites ? 'fill-white text-white' : 'text-[#78716C] group-hover:text-[#E74C3C]'}`} />
+                  <span className="leading-none">Gelikt ({favorites.filter((id) => allRecipes.some((r) => r.id === id)).length})</span>
                 </button>
 
+                {/* Vegan Pill - frei kombinierbar */}
                 <button
                   type="button"
-                  onClick={() => setPickerFilter('vegan')}
-                  className={`h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap flex items-center gap-1.5 text-sm font-semibold ${
-                    pickerFilter === 'vegan'
-                      ? 'bg-[#4A7856] text-white shadow-2xs'
-                      : 'bg-[#FAF9F6] text-[#57534d] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                  id="picker-vegan-filter-btn"
+                  onClick={() => setPickerOnlyVegan((prev) => !prev)}
+                  className={`inline-flex items-center justify-center gap-2 h-12 sm:h-11 min-h-[48px] sm:min-h-[44px] px-4.5 sm:px-4.5 rounded-full transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap text-sm border group ${
+                    pickerOnlyVegan
+                      ? 'bg-[#4A7856] text-white border-transparent font-semibold shadow-xs'
+                      : 'bg-white text-[#57534D] border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-[#2D3E40] hover:border-[#D6D3D1] font-medium'
                   }`}
+                  title="Vegan zusätzlich filtern (kombinierbar)"
                 >
-                  <Leaf className={`w-3.5 h-3.5 ${pickerFilter === 'vegan' ? 'text-white' : 'text-[#4A7856]'}`} />
-                  <span>Vegan ({allRecipes.filter((r) => r.isVegan).length})</span>
+                  <Leaf className={`w-4 h-4 shrink-0 transition-colors ${pickerOnlyVegan ? 'text-white' : 'text-[#78716C] group-hover:text-[#2D3E40]'}`} />
+                  <span className="leading-none">Vegan</span>
                 </button>
 
+                {/* Schnell Pill - frei kombinierbar mit Vegan & High Protein */}
                 <button
                   type="button"
-                  onClick={() => setPickerFilter(pickerFilter === 'quick' ? 'all' : 'quick')}
-                  className={`h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap flex items-center gap-1.5 text-sm font-semibold ${
-                    pickerFilter === 'quick'
-                      ? 'bg-[#4A7856] text-white shadow-2xs'
-                      : 'bg-[#FAF9F6] text-[#57534d] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                  onClick={() => setPickerQuick((prev) => !prev)}
+                  className={`inline-flex items-center justify-center gap-2 h-12 sm:h-11 min-h-[48px] sm:min-h-[44px] px-4.5 sm:px-4.5 rounded-full transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap text-sm border group ${
+                    pickerQuick
+                      ? 'bg-[#4A7856] text-white border-transparent font-semibold shadow-xs'
+                      : 'bg-white text-[#57534D] border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-[#2D3E40] hover:border-[#D6D3D1] font-medium'
                   }`}
                 >
-                  <Zap className={`w-3.5 h-3.5 ${pickerFilter === 'quick' ? 'text-white' : 'text-amber-500'}`} />
-                  <span>Schnell (&le;30m)</span>
+                  <Zap className={`w-4 h-4 shrink-0 transition-colors ${pickerQuick ? 'text-white' : 'text-[#78716C] group-hover:text-[#2D3E40]'}`} />
+                  <span className="leading-none">Schnell (&le;30m)</span>
                 </button>
 
+                {/* High Protein Pill - frei kombinierbar mit Vegan & Schnell */}
                 <button
                   type="button"
-                  onClick={() => setPickerFilter(pickerFilter === 'protein' ? 'all' : 'protein')}
-                  className={`h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap flex items-center gap-1.5 text-sm font-semibold ${
-                    pickerFilter === 'protein'
-                      ? 'bg-[#4A7856] text-white shadow-2xs'
-                      : 'bg-[#FAF9F6] text-[#57534d] border border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                  onClick={() => setPickerHighProtein((prev) => !prev)}
+                  className={`inline-flex items-center justify-center gap-2 h-12 sm:h-11 min-h-[48px] sm:min-h-[44px] px-4.5 sm:px-4.5 rounded-full transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap text-sm border group ${
+                    pickerHighProtein
+                      ? 'bg-[#4A7856] text-white border-transparent font-semibold shadow-xs'
+                      : 'bg-white text-[#57534D] border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-[#2D3E40] hover:border-[#D6D3D1] font-medium'
                   }`}
                 >
-                  <Dumbbell className={`w-3.5 h-3.5 ${pickerFilter === 'protein' ? 'text-white' : 'text-[#4A7856]'}`} />
-                  <span>High Protein</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPickerSortFavoritesFirst((prev) => !prev)}
-                  className={`h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl border transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap flex items-center gap-1.5 text-sm ${
-                    pickerSortFavoritesFirst
-                      ? 'bg-rose-50 border-rose-300 text-rose-700 font-bold'
-                      : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#686E6A] hover:bg-[#F1F5F2] font-semibold'
-                  }`}
-                  title={pickerSortFavoritesFirst ? 'Favoriten werden zuerst angezeigt' : 'Normale Sortierung'}
-                >
-                  <ArrowUpDown className="w-4 h-4" />
-                  <span>Favoriten zuerst</span>
+                  <Dumbbell className={`w-4 h-4 shrink-0 transition-colors ${pickerHighProtein ? 'text-white' : 'text-[#78716C] group-hover:text-[#2D3E40]'}`} />
+                  <span className="leading-none">High Protein</span>
                 </button>
               </div>
             </div>
@@ -1455,9 +1541,15 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 <div className="text-center py-12 px-4 space-y-2">
                   <p className="text-base font-semibold text-[#2D3E40]">Keine passenden Rezepte gefunden</p>
                   <p className="text-sm text-[#686E6A]">Passe deinen Suchbegriff oder Filter an.</p>
-                  {pickerFilter !== 'all' && (
+                  {(pickerOnlyVegan || pickerOnlyFavorites || pickerQuick || pickerHighProtein || pickerSearchQuery) && (
                     <button
-                      onClick={() => setPickerFilter('all')}
+                      onClick={() => {
+                        setPickerOnlyVegan(false);
+                        setPickerOnlyFavorites(false);
+                        setPickerQuick(false);
+                        setPickerHighProtein(false);
+                        setPickerSearchQuery('');
+                      }}
                       className="mt-2 text-sm font-semibold text-[#4A7856] hover:underline cursor-pointer"
                     >
                       Filter aufheben
@@ -1487,22 +1579,16 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                             alt={recipe.title}
                           />
                           
-                          {/* Badges oben links */}
-                          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap">
-                            {recipe.isVegan ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-[#4A7856] bg-white/95 backdrop-blur-xs border border-[#ECEBE8] shadow-xs">
-                                <Leaf className="w-3.5 h-3.5 text-[#4A7856]" />
-                                <span>Vegan</span>
+                          {/* Badges oben links (Liquid Glass) - nur Vegan anzeigen */}
+                          {recipe.isVegan && (
+                            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap pointer-events-none">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/35 backdrop-blur-md text-white text-xs font-semibold border border-white/20 shadow-xs">
+                                🌱 Vegan
                               </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-[#57534d] bg-white/95 backdrop-blur-xs border border-[#ECEBE8] shadow-xs">
-                                <Salad className="w-3.5 h-3.5 text-[#57534d]" />
-                                <span>Veggie</span>
-                              </span>
-                            )}
-                          </div>
+                            </div>
+                          )}
 
-                          {/* Favoriten-Button oben rechts */}
+                          {/* Favoriten-Button oben rechts (48x48px Liquid Glass Effect) */}
                           {onToggleFavorite && (
                             <button
                               type="button"
@@ -1510,14 +1596,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                                 e.stopPropagation();
                                 onToggleFavorite(recipe.id);
                               }}
-                              className={`absolute top-2.5 right-2.5 w-10 h-10 rounded-xl border flex items-center justify-center cursor-pointer transition-all active:scale-90 shadow-xs ${
-                                isFav
-                                  ? 'bg-rose-500 border-rose-600 text-white'
-                                  : 'bg-white/95 hover:bg-white border-[#ECEBE8] text-[#686e6a] hover:text-rose-500'
-                              }`}
+                              className="absolute top-2.5 right-2.5 w-12 h-12 min-w-[48px] min-h-[48px] rounded-full bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md flex items-center justify-center transition-all hover:scale-105 active:scale-95 touch-manipulation cursor-pointer border border-white/10 z-10"
                               title={isFav ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
+                              aria-label={isFav ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
                             >
-                              <Heart className={`w-5 h-5 ${isFav ? 'fill-white text-white' : ''}`} />
+                              <Heart className={`w-5 h-5 transition-colors ${isFav ? 'fill-[#E74C3C] text-[#E74C3C]' : 'text-white'}`} />
                             </button>
                           )}
                         </div>
@@ -1525,7 +1608,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                         {/* Rezept-Details & Nährwerte */}
                         <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between gap-3">
                           <div>
-                            <h4 className="text-[17px] font-bold text-[#2D3E40] group-hover:text-[#4A7856] leading-snug line-clamp-1 transition-colors">
+                            <h4 className="text-[17px] font-bold text-[#2D3E40] group-hover:text-[#4A7856] leading-snug transition-colors">
                               {recipe.title}
                             </h4>
                             <div className="flex items-center justify-between text-[13px] font-medium text-[#686e6a] mt-2 pt-2 border-t border-[#ECEBE8]">

@@ -639,13 +639,9 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                         <span className="font-semibold text-[#2D3E40] text-sm truncate">
                           {log.recipeTitle}
                         </span>
-                        {log.isVegan ? (
+                        {log.isVegan && (
                           <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] shrink-0">
                             🌱 Vegan
-                          </span>
-                        ) : (
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[#FAF9F6] text-[#686E6A] border border-[#ECEBE8] shrink-0">
-                            🧀 Veggie
                           </span>
                         )}
                       </div>

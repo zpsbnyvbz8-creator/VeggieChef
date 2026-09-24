@@ -92,21 +92,17 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
         <div className="absolute top-2 sm:top-3 left-2 sm:left-3 right-2 sm:right-3 flex items-center justify-between gap-2 pointer-events-none">
           <div className="flex flex-wrap gap-1 sm:gap-1.5 pointer-events-auto">
             {isDisliked ? (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-xs font-semibold border border-rose-600 shadow-xs">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-600/85 backdrop-blur-md text-white text-xs font-semibold border border-white/20 shadow-xs">
                 <ThumbsDown className="w-2.5 h-2.5" /> Seltener anzeigen
               </span>
             ) : recipe.isVegan ? (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#4A7856] text-white text-xs font-semibold border border-[#4A7856] shadow-xs">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/35 backdrop-blur-md text-white text-xs font-semibold border border-white/20 shadow-xs">
                 🌱 Vegan
               </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/95 text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] shadow-xs backdrop-blur-xs">
-                🧀 Veggie
-              </span>
-            )}
+            ) : null}
           </div>
 
-          {/* Action buttons: Dislike & Favorite (Icon-Buttons: Minimaler Klickbereich 44x44px w-11 h-11, Icon w-5 h-5) */}
+          {/* Action buttons: Dislike & Favorite (Liquid Glass, 48x48px touch target) */}
           <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
             {onToggleDislike && (
               <button
@@ -115,10 +111,10 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
                   e.stopPropagation();
                   onToggleDislike(recipe.id);
                 }}
-                className={`w-11 h-11 rounded-full backdrop-blur-md shadow-xs flex items-center justify-center transition-all hover:scale-105 active:scale-95 touch-manipulation cursor-pointer ${
+                className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full backdrop-blur-md shadow-md flex items-center justify-center transition-all hover:scale-105 active:scale-95 touch-manipulation cursor-pointer border border-white/10 ${
                   isDisliked
-                    ? 'bg-rose-500 text-white'
-                    : 'bg-white/95 text-[#686e6a] hover:text-rose-600 hover:bg-white'
+                    ? 'bg-rose-500/90 text-white'
+                    : 'bg-black/35 hover:bg-black/55 text-white'
                 }`}
                 title={isDisliked ? 'Dislike entfernen' : 'Seltener anzeigen (Dislike)'}
               >
@@ -126,17 +122,18 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
               </button>
             )}
 
-            {/* Favorite heart button */}
+            {/* Favorite heart button (48x48px Liquid Glass Effect) */}
             <button
               id={`fav-btn-${recipe.id}`}
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleFavorite(recipe.id);
               }}
-              className="w-11 h-11 rounded-full bg-white/95 backdrop-blur-md text-[#686e6a] hover:text-[#D35400] hover:bg-white shadow-xs flex items-center justify-center transition-all hover:scale-105 active:scale-95 touch-manipulation cursor-pointer"
+              className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-full bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md flex items-center justify-center transition-all hover:scale-105 active:scale-95 touch-manipulation cursor-pointer border border-white/10"
               title="Favorit umschalten"
+              aria-label={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
             >
-              <Heart className={`w-5 h-5 ${isFavorite ? 'fill-[#D35400] text-[#D35400]' : ''}`} />
+              <Heart className={`w-5 h-5 transition-colors ${isFavorite ? 'fill-[#E74C3C] text-[#E74C3C]' : 'text-white'}`} />
             </button>
           </div>
         </div>

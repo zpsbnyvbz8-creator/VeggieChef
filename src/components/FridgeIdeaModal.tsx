@@ -129,13 +129,11 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
               {/* Dish Concept Highlight */}
               <div className="p-4 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8] space-y-2.5">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
-                    isVegan 
-                      ? 'bg-[#EBF3ED] text-[#4A7856] border-[#D4E6D8]' 
-                      : 'bg-[#FAF2EC] text-[#E67E22] border-[#F5DFCD]'
-                  }`}>
-                    {isVegan ? '🌱 100% Vegan' : '🧀 Vegetarisch'}
-                  </span>
+                  {isVegan && (
+                    <span className="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full border bg-[#EBF3ED] text-[#4A7856] border-[#D4E6D8]">
+                      🌱 100% Vegan
+                    </span>
+                  )}
                   {idea.dishType && (
                     <span className="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white border border-[#ECEBE8] text-[#57534d]">
                       {idea.dishType}

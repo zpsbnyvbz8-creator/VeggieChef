@@ -94,13 +94,11 @@ const DishOfTheDayComponent: React.FC<DishOfTheDayProps> = (props) => {
               <Sparkles className="w-2.5 h-2.5" />
               <span>Tagesrezept</span>
             </span>
-            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border shadow-xs ${
-              activeRecipe.isVegan 
-                ? 'bg-[#4A7856] text-white border-[#4A7856]' 
-                : 'bg-white/95 text-[#4A7856] border-[#ECEBE8]'
-            }`}>
-              {activeRecipe.isVegan ? '🌱 Vegan' : '🧀 Veggie'}
-            </span>
+            {activeRecipe.isVegan && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/35 backdrop-blur-md text-white text-xs font-semibold border border-white/20 shadow-xs">
+                🌱 Vegan
+              </span>
+            )}
           </div>
         </div>
 

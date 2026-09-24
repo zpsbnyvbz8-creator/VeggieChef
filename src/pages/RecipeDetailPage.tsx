@@ -896,54 +896,46 @@ export const RecipeDetailPage: React.FC = () => {
 
         {/* 5. SERVINGS CARD & BALANCED 3-COLUMN ACTION ROW */}
         <section className="bg-white border border-[#ECEBE8] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            {/* Servings Stepper */}
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-[#4A7856]" />
-              <span className="text-[16px] font-semibold text-[#2D3E40]">Portionen anpassen:</span>
+          <div className="flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 flex-wrap">
+            <div className="inline-flex items-center bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl p-1 shadow-2xs">
+              <button
+                id="servings-step-decrease-btn"
+                type="button"
+                onClick={() => setServings(Math.max(1, servings - 1))}
+                disabled={servings <= 1}
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation"
+                aria-label="Portion verringern"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <span className="px-3 sm:px-4 text-[16px] font-bold text-[#57534d] tabular-nums min-w-[85px] text-center select-none">
+                {servings} {servings === 1 ? 'Portion' : 'Portionen'}
+              </span>
+              <button
+                id="servings-step-increase-btn"
+                type="button"
+                onClick={() => setServings(Math.min(24, servings + 1))}
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation"
+                aria-label="Portion erhöhen"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
             </div>
 
-            <div className="flex items-center gap-2.5">
-              {!recipe.isVegan && (
-                <button
-                  type="button"
-                  onClick={handleVeganize}
-                  className={`h-11 px-3.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                    isVeganized
-                      ? 'bg-[#4A7856] text-white border-[#4A7856]'
-                      : 'bg-[#FAF9F6] text-[#4A7856] border-[#ECEBE8] hover:border-[#4A7856]/40'
-                  }`}
-                >
-                  <Leaf className="w-3.5 h-3.5" />
-                  <span>{isVeganized ? '✓ Vegan' : 'Veganisieren'}</span>
-                </button>
-              )}
-
-              <div className="inline-flex items-center bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl p-1 shadow-2xs">
-                <button
-                  id="servings-step-decrease-btn"
-                  type="button"
-                  onClick={() => setServings(Math.max(1, servings - 1))}
-                  disabled={servings <= 1}
-                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation"
-                  aria-label="Portion verringern"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <span className="px-3 sm:px-4 text-[16px] font-bold text-[#57534d] tabular-nums min-w-[85px] text-center select-none">
-                  {servings} {servings === 1 ? 'Portion' : 'Portionen'}
-                </span>
-                <button
-                  id="servings-step-increase-btn"
-                  type="button"
-                  onClick={() => setServings(Math.min(24, servings + 1))}
-                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation"
-                  aria-label="Portion erhöhen"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+            {!recipe.isVegan && (
+              <button
+                type="button"
+                onClick={handleVeganize}
+                className={`h-11 px-3.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                  isVeganized
+                    ? 'bg-[#4A7856] text-white border-[#4A7856]'
+                    : 'bg-[#FAF9F6] text-[#4A7856] border-[#ECEBE8] hover:border-[#4A7856]/40'
+                }`}
+              >
+                <Leaf className="w-3.5 h-3.5" />
+                <span>{isVeganized ? '✓ Vegan' : 'Veganisieren'}</span>
+              </button>
+            )}
           </div>
 
           {/* Under servings counter: Clean 3-Column Action Row */}

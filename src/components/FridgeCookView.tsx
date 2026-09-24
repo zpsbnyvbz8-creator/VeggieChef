@@ -694,9 +694,11 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FDF6F0] text-[#D35400] border border-[#ECEBE8] text-xs font-semibold">
                   ✨ KI-Rezept
                 </span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
-                  {generatedRecipe.isVegan ? '🌱 Vegan' : '🧀 Veggie'}
-                </span>
+                {generatedRecipe.isVegan && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
+                    🌱 Vegan
+                  </span>
+                )}
                 {(proteinFilter === 'high' || proteinFilter === 'very-high') && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
                     <Dumbbell className="w-3 h-3" />
