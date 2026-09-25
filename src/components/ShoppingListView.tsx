@@ -29,7 +29,9 @@ import {
   loadFromLocalStorage,
   saveToLocalStorage,
   formatRecipeSource,
-  safeCopyToClipboard
+  safeCopyToClipboard,
+  formatDisplayGrocery,
+  normalizeAndScaleGroceryQuantity
 } from '../utils/helpers';
 import { SyncConfig } from '../lib/syncService';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
@@ -264,6 +266,15 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   };
 
   const deleteItem = (id: string) => {
+    const itemToDelete = items.find((i) => i.id === id);
+    if (!itemToDelete) return;
+    setUndoBackup([...items]);
+    setLastDeletedInfo({
+      type: 'single',
+      count: 1,
+      name: itemToDelete.name,
+    });
+    setShowUndoBanner(true);
     setItems((prev) => prev.filter((item) => item.id !== id));
     if (swipedItemId === id) {
       setSwipedItemId(null);
@@ -292,11 +303,22 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         }
         const parsed = parseNaturalLanguageGroceryItem(val);
         if (parsed.amount) {
+          const num = typeof parsed.amount === 'number' ? parsed.amount : parseFloat(String(parsed.amount).replace(',', '.'));
+          if (!isNaN(num)) {
+            const scaled = normalizeAndScaleGroceryQuantity(num, parsed.unit, it.name);
+            return { ...it, amount: scaled.amount, unit: scaled.unit };
+          }
           return { ...it, amount: parsed.amount, unit: parsed.unit };
         }
         const match = val.match(/^([\d.,]+)\s*(.*)$/);
         if (match && match[1]) {
-          return { ...it, amount: match[1], unit: match[2] || '' };
+          const num = parseFloat(match[1].replace(',', '.'));
+          const unit = match[2] || '';
+          if (!isNaN(num)) {
+            const scaled = normalizeAndScaleGroceryQuantity(num, unit, it.name);
+            return { ...it, amount: scaled.amount, unit: scaled.unit };
+          }
+          return { ...it, amount: match[1], unit };
         }
         return { ...it, amount: val, unit: '' };
       })
@@ -558,13 +580,6 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
   // Helper für Apple iOS Swipe-to-Delete
   const handleDeleteBySwipe = (item: ShoppingItem) => {
-    setUndoBackup([...items]);
-    setLastDeletedInfo({
-      type: 'single',
-      count: 1,
-      name: item.name,
-    });
-    setShowUndoBanner(true);
     deleteItem(item.id);
     onCopyFeedback(`"${item.name}" gelöscht.`);
     setSwipedItemId(null);
@@ -1111,32 +1126,42 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   </button>
                 </div>
 
-                {item.amount ? (
-                  /* Mengenangabe ganz rechts: Exakt wie in der Rezept-Detailansicht (font-semibold tabular-nums text-[#4A7856]) */
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (
-                        swipedItemIdRef.current !== null ||
-                        justClosedSwipeMenuRef.current ||
-                        Date.now() - lastClosedSwipeMenuTimeRef.current < 500
-                      ) {
-                        closeSwipeMenu();
-                        return;
-                      }
-                      startEditingItem(item);
-                    }}
-                    className={`text-base font-semibold tabular-nums select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline ${
-                      item.completed
-                        ? 'text-[#686e6a] line-through opacity-60'
-                        : 'text-[#4A7856] hover:text-[#3D6447]'
-                    }`}
-                    title="Menge anpassen (- / +)"
-                  >
-                    {item.amount} {item.unit}
-                  </button>
-                ) : null}
+                {item.amount ? (() => {
+                  const display = formatDisplayGrocery(item.amount, item.unit, item.name);
+                  return (
+                    /* Mengenangabe ganz rechts: Exakt wie in der Rezept-Detailansicht (font-semibold tabular-nums text-[#4A7856]) */
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (
+                          swipedItemIdRef.current !== null ||
+                          justClosedSwipeMenuRef.current ||
+                          Date.now() - lastClosedSwipeMenuTimeRef.current < 500
+                        ) {
+                          closeSwipeMenu();
+                          return;
+                        }
+                        startEditingItem(item);
+                      }}
+                      className={`text-base font-semibold tabular-nums select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline flex items-baseline gap-1.5 ${
+                        item.completed
+                          ? 'text-[#686e6a] line-through opacity-60'
+                          : 'text-[#4A7856] hover:text-[#3D6447]'
+                      }`}
+                      title="Menge anpassen (- / +)"
+                    >
+                      <span>
+                        {display.formattedAmount} {display.formattedUnit}
+                      </span>
+                      {display.hintBadge && (
+                        <span className="text-[12px] font-medium text-[#686e6a] bg-stone-100 px-1.5 py-0.2 rounded-md border border-[#ECEBE8] no-underline inline-block">
+                          {display.hintBadge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })() : null}
 
                 {/* Drag Handle am äußersten rechten Rand */}
                 <div

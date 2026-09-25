@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ShoppingItem, Recipe } from '../types';
-import { loadFromLocalStorage, saveToLocalStorage, mergeOrAddShoppingItems, smartRoundGroceryAmount, cleanIngredientNameForShopping } from '../utils/helpers';
+import { 
+  loadFromLocalStorage, 
+  saveToLocalStorage, 
+  mergeOrAddShoppingItems, 
+  normalizeAndScaleGroceryQuantity,
+  cleanIngredientNameForShopping 
+} from '../utils/helpers';
 import { subscribeToFamilyShopping } from '../lib/syncService';
 import { useToast } from './ToastContext';
 import { useSync } from './SyncContext';
@@ -95,15 +101,20 @@ export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const addToShoppingList = (recipe: Recipe, servings: number) => {
     const newItems: ShoppingItem[] = recipe.ingredients.map((ing) => {
       let calcAmount: string | number = ing.amount;
+      let calcUnit: string = ing.unit;
+      const cleanName = cleanIngredientNameForShopping(ing.name);
+
       if (typeof ing.amount === 'number') {
         const rawScaled = (ing.amount / recipe.servings) * servings;
-        calcAmount = smartRoundGroceryAmount(rawScaled, ing.unit, ing.name);
+        const scaled = normalizeAndScaleGroceryQuantity(rawScaled, ing.unit, cleanName);
+        calcAmount = scaled.amount;
+        calcUnit = scaled.unit;
       }
       return {
         id: `shop-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        name: cleanIngredientNameForShopping(ing.name),
+        name: cleanName,
         amount: calcAmount,
-        unit: ing.unit,
+        unit: calcUnit,
         category: ing.category,
         completed: false,
         recipeSource: recipe.title,
@@ -120,15 +131,20 @@ export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     items.forEach(({ recipe, servings }) => {
       const converted = recipe.ingredients.map((ing) => {
         let calcAmount: string | number = ing.amount;
+        let calcUnit: string = ing.unit;
+        const cleanName = cleanIngredientNameForShopping(ing.name);
+
         if (typeof ing.amount === 'number') {
           const rawScaled = (ing.amount / recipe.servings) * servings;
-          calcAmount = smartRoundGroceryAmount(rawScaled, ing.unit, ing.name);
+          const scaled = normalizeAndScaleGroceryQuantity(rawScaled, ing.unit, cleanName);
+          calcAmount = scaled.amount;
+          calcUnit = scaled.unit;
         }
         return {
           id: `shop-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-          name: cleanIngredientNameForShopping(ing.name),
+          name: cleanName,
           amount: calcAmount,
-          unit: ing.unit,
+          unit: calcUnit,
           category: ing.category,
           completed: false,
           recipeSource: recipe.title,

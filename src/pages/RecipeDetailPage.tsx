@@ -908,7 +908,7 @@ export const RecipeDetailPage: React.FC = () => {
               >
                 <Minus className="w-4 h-4" />
               </button>
-              <span className="px-3 sm:px-4 text-[16px] font-bold text-[#57534d] tabular-nums min-w-[85px] text-center select-none">
+              <span className="px-3 sm:px-4 text-[16px] font-bold text-[#2D3E40] tabular-nums min-w-[85px] text-center select-none">
                 {servings} {servings === 1 ? 'Portion' : 'Portionen'}
               </span>
               <button

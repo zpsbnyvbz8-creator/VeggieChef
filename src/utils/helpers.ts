@@ -127,8 +127,16 @@ export function generateShoppingListText(items: ShoppingItem[]): string {
     text += `${catLabels[catKey] || '📦 Sonstiges'}:\n`;
     catItems.forEach((item) => {
       const checkbox = item.completed ? '[x]' : '[ ]';
-      const amount = item.amount ? `${item.amount} ${item.unit} ` : '';
-      text += `  ${checkbox} ${amount}${item.name}\n`;
+      const formatted = formatDisplayGrocery(item.amount, item.unit, item.name);
+      let amountStr = '';
+      if (formatted.formattedAmount) {
+        amountStr = `${formatted.formattedAmount} ${formatted.formattedUnit}`.trim();
+        if (formatted.hintBadge) {
+          amountStr += ` (${formatted.hintBadge})`;
+        }
+        amountStr += ' ';
+      }
+      text += `  ${checkbox} ${amountStr}${item.name}\n`;
     });
     text += '\n';
   });
@@ -322,10 +330,147 @@ export const DISCRETE_COUNTABLE_UNITS: Set<string> = new Set([
 export const COUNTABLE_PRODUCE_REGEX = /\b(zwiebel|paprika|gurke|avocado|zitrone|limette|apfel|birne|banane|orange|mango|aubergine|zucchini|knoblauch|granatapfel|blumenkohl|brokkoli|salatkopf|kohlrabi|fenchel|grapefruit|kiwi|kartoffel|s[üu]ßkartoffel)\b/i;
 
 /**
+ * Standard-Konservengröße für Kichererbsen, Bohnen und Linsen (Abtropfgewicht ~240-265g je Standarddose/Glas).
+ */
+export const LEGUME_CAN_DRAINED_WEIGHT_G = 240;
+
+/**
+ * Prüft, ob es sich um typische Hülsenfrüchte in Dosen/Gläsern handelt (Kichererbsen, Kidneybohnen, weiße Bohnen, Linsen etc.)
+ */
+export function isCannedLegumeProduce(name?: string): boolean {
+  if (!name) return false;
+  const clean = name.trim().toLowerCase();
+  // Kichererbsenmehl oder Trockenerbsen ausschließen
+  if (clean.includes('mehl') || clean.includes('trocken') || clean.includes('falafel')) return false;
+  return /\b(kichererbse|kichererbsen|kidneybohne|kidneybohnen|schwarze bohne|schwarze bohnen|weiße bohne|weisse bohne|weiße bohnen|weisse bohnen|cannellini|edamame|linsen|tellerlinsen|berglinsen|belugalinsen)\b/i.test(clean);
+}
+
+/**
+ * Wandelt krumme oder unpraktische Mengenangaben in alltagstaugliche Einheiten um:
+ * 1. Krumme Löffel-Einheiten (EL/TL):
+ *    - Ab 4 EL Ingwer/Knoblauch -> Umrechnung in g (1 EL ~ 15g) oder Knollen/Stk (1 Knolle ~ 45-50g / 3 EL gerieben)
+ *    - Generell bei EL/TL: Rundung auf ganze Zahlen (z. B. 12.8 EL -> 13 EL bzw. bei Ingwer 190 g / 4 Knollen)
+ * 2. Einheiten-Skalierung:
+ *    - Gramm ab 1.000 g -> automatische Umrechnung in kg (z. B. 5760 g -> 5,8 kg)
+ *    - Kichererbsen / Bohnen: Bei größeren Grammmengen (ab ca. 480 g) zusätzlich oder direkt in handliche Dosen/Gläser (z. B. 5760 g -> 5,8 kg bzw. ~24 Dosen)
+ *    - Milliliter ab 1.000 ml -> automatische Umrechnung in Liter (z. B. 1500 ml -> 1,5 l)
+ * 3. Diskrete Stückeinheiten: Ganze Zahlen (Math.ceil)
+ */
+export function normalizeAndScaleGroceryQuantity(
+  amount: number,
+  unit?: string,
+  name?: string
+): { amount: number | string; unit: string } {
+  if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
+    return { amount, unit: unit || '' };
+  }
+
+  const cleanUnit = (unit || '').trim().toLowerCase();
+  const cleanName = (name || '').trim().toLowerCase();
+
+  // A. Spezialfall: Ingwer mit Löffel-Einheiten (z. B. "12.8 EL geriebener Ingwer")
+  const isGinger = cleanName.includes('ingwer');
+  if (isGinger && (cleanUnit === 'el' || cleanUnit === 'tl')) {
+    // 1 EL geriebener Ingwer entspricht ca. 15 Gramm frischem Ingwer
+    // 1 TL geriebener Ingwer entspricht ca. 5 Gramm
+    const grams = cleanUnit === 'el' ? amount * 15 : amount * 5;
+    if (amount >= 4) {
+      // Ab 4 EL ist ein Löffelmaß unpraktisch. In Gramm oder Knollen angeben:
+      if (grams >= 1000) {
+        const kg = Math.round((grams / 1000) * 10) / 10;
+        return { amount: kg, unit: 'kg' };
+      }
+      // Bis 1000g: auf glatte 5g oder 10g runden
+      const roundedGrams = Math.round(grams / 5) * 5;
+      return { amount: roundedGrams, unit: 'g' };
+    }
+    // Bei kleineren Mengen (< 4 EL): Auf halbe oder ganze EL runden
+    const roundedSpoons = Math.round(amount * 2) / 2;
+    return { amount: roundedSpoons, unit: cleanUnit === 'el' ? 'EL' : 'TL' };
+  }
+
+  // B. Generelle EL / TL: Krumme Kommazahlen (wie 12.8 EL) auf ganze Zahlen runden
+  if (cleanUnit === 'el' || cleanUnit === 'tl') {
+    if (amount >= 3) {
+      // Größere Löffelmengen immer auf ganze Zahlen runden (z. B. 12.8 EL -> 13 EL)
+      return { amount: Math.round(amount), unit: cleanUnit === 'el' ? 'EL' : 'TL' };
+    }
+    // Kleinere Löffelmengen auf halbe Einheiten runden (z. B. 1.3 EL -> 1.5 EL)
+    const roundedHalf = Math.round(amount * 2) / 2;
+    return { amount: roundedHalf, unit: cleanUnit === 'el' ? 'EL' : 'TL' };
+  }
+
+  // C. Diskrete Stück- & Packungs-Einheiten (Stk, Dosen, Gläser, Köpfe, Bünde)
+  const isDiscreteUnit = DISCRETE_COUNTABLE_UNITS.has(cleanUnit);
+  const isCountableProduce =
+    (!cleanUnit || cleanUnit === 'stk.' || cleanUnit === 'stk' || cleanUnit === 'stück') &&
+    COUNTABLE_PRODUCE_REGEX.test(cleanName);
+
+  if (isDiscreteUnit || isCountableProduce) {
+    const whole = Math.ceil(amount);
+    let outUnit = unit || '';
+    if (cleanUnit === 'dose' || cleanUnit === 'dosen') {
+      outUnit = whole === 1 ? 'Dose' : 'Dosen';
+    } else if (cleanUnit === 'glas' || cleanUnit === 'gläser' || cleanUnit === 'glaeser') {
+      outUnit = whole === 1 ? 'Glas' : 'Gläser';
+    } else if (cleanUnit === 'kopf' || cleanUnit === 'köpfe') {
+      outUnit = whole === 1 ? 'Kopf' : 'Köpfe';
+    } else if (cleanUnit === 'stange' || cleanUnit === 'stangen') {
+      outUnit = whole === 1 ? 'Stange' : 'Stangen';
+    } else if (cleanUnit === 'knolle' || cleanUnit === 'knollen') {
+      outUnit = whole === 1 ? 'Knolle' : 'Knollen';
+    } else if (cleanUnit === 'bund' || cleanUnit === 'bünde') {
+      outUnit = whole === 1 ? 'Bund' : 'Bünde';
+    } else if (cleanUnit === 'packung' || cleanUnit === 'packungen') {
+      outUnit = whole === 1 ? 'Packung' : 'Packungen';
+    } else if (cleanUnit === 'flasche' || cleanUnit === 'flaschen') {
+      outUnit = whole === 1 ? 'Flasche' : 'Flaschen';
+    }
+    return { amount: whole, unit: outUnit };
+  }
+
+  // D. Gewichtsskalierung: Gramm (g) ab 1.000 g automatisch in Kilogramm (kg)
+  if (cleanUnit === 'g' || cleanUnit === 'gramm') {
+    if (amount >= 1000) {
+      // z. B. 5760 g -> 5,8 kg
+      const kg = Math.round((amount / 1000) * 10) / 10;
+      return { amount: kg, unit: 'kg' };
+    }
+    // Unter 1.000 g: Ganze Gramm ohne Kommastellen (z. B. 480.3 g -> 480 g)
+    return { amount: Math.round(amount), unit: 'g' };
+  }
+
+  // E. Kilogramm (kg)
+  if (cleanUnit === 'kg' || cleanUnit === 'kilo' || cleanUnit === 'kilogramm') {
+    const roundedKg = Math.round(amount * 10) / 10;
+    return { amount: roundedKg, unit: 'kg' };
+  }
+
+  // F. Volumenskalierung: Milliliter (ml) ab 1.000 ml in Liter (l)
+  if (cleanUnit === 'ml' || cleanUnit === 'milliliter') {
+    if (amount >= 1000) {
+      const liters = Math.round((amount / 1000) * 10) / 10;
+      return { amount: liters, unit: 'l' };
+    }
+    // Unter 1.000 ml auf glatte 5er oder ganze ml runden
+    return { amount: Math.round(amount), unit: 'ml' };
+  }
+
+  // G. Liter (l)
+  if (cleanUnit === 'l' || cleanUnit === 'liter') {
+    const roundedL = Math.round(amount * 10) / 10;
+    return { amount: roundedL, unit: 'l' };
+  }
+
+  // Standard-Rundung für sonstige Einheiten (maximal 1 Dezimalstelle)
+  const fallback = Math.round(amount * 10) / 10;
+  return { amount: fallback, unit: unit || '' };
+}
+
+/**
  * Intelligentes Aufrunden von Mengenangaben beim Einkaufen:
  * - Zählbare Stückgüter & Gemüse/Obst (z. B. 1.5 Zwiebeln -> 2 Stk, 0.5 Bund -> 1 Bund, 1.2 Dosen -> 2 Dosen)
- * - Kontinuierliche Maße (EL, TL, g, kg, ml, l etc.) bleiben wie sie sind (z. B. 1.8 EL Olivenöl bleibt 1.8 EL).
- * - "lieber zu wenig aufrunden oder gar nicht, als dass man durcheinander kommt."
+ * - Kontinuierliche Maße (EL, TL, g, kg, ml, l etc.) werden praxisnah gerundet.
  */
 export function smartRoundGroceryAmount(
   amount: number,
@@ -336,22 +481,78 @@ export function smartRoundGroceryAmount(
     return amount;
   }
 
-  const cleanUnit = (unit || '').trim().toLowerCase();
-  const cleanName = (name || '').trim().toLowerCase();
+  const scaled = normalizeAndScaleGroceryQuantity(amount, unit, name);
+  if (typeof scaled.amount === 'number') {
+    return scaled.amount;
+  }
+  const parsed = parseFloat(String(scaled.amount).replace(',', '.'));
+  return isNaN(parsed) ? amount : parsed;
+}
 
-  const isDiscreteUnit = DISCRETE_COUNTABLE_UNITS.has(cleanUnit);
-  const isCountableProduce =
-    (!cleanUnit || cleanUnit === 'stk.' || cleanUnit === 'stk' || cleanUnit === 'stück') &&
-    COUNTABLE_PRODUCE_REGEX.test(cleanName);
-
-  if (isDiscreteUnit || isCountableProduce) {
-    // Aufrunden auf ganze Einheiten im Supermarkt
-    return Math.ceil(amount);
+/**
+ * Formatiert die Anzeige einer Zutat für Einkaufsliste und Export:
+ * - Skaliert Gramm ab 1.000 g automatisch in kg (z.B. 5760 g -> 5,8 kg)
+ * - Runder krumme Löffel-Angaben (12.8 EL Ingwer -> 190 g bzw. gerundet)
+ * - Zeigt bei Kichererbsen/Bohnen ab ~480g die passende Anzahl an Standard-Dosen/Gläsern an (z. B. "5,8 kg (~24 Dosen)" oder "4 Dosen")
+ */
+export function formatDisplayGrocery(
+  amount: number | string | undefined | null,
+  unit: string | undefined | null,
+  name?: string
+): { formattedAmount: string; formattedUnit: string; hintBadge?: string } {
+  if (amount === undefined || amount === null || amount === '') {
+    return { formattedAmount: '', formattedUnit: unit || '' };
   }
 
-  // Kontinuierliche Einheiten (EL, TL, ml, l, g, kg):
-  // Auf maximal 1 Dezimalstelle runden, aber niemals künstlich zur nächsten ganzen Zahl aufrunden!
-  return Math.round(amount * 10) / 10;
+  // Helper zum Parsen von Zahlen
+  const str = String(amount).trim().replace(',', '.');
+  let numVal: number | null = null;
+  if (str.includes('/')) {
+    const parts = str.split('/');
+    const n = parseFloat(parts[0]);
+    const d = parseFloat(parts[1]);
+    if (!isNaN(n) && !isNaN(d) && d !== 0) numVal = n / d;
+  } else {
+    const parsed = parseFloat(str);
+    if (!isNaN(parsed)) numVal = parsed;
+  }
+
+  if (numVal === null || isNaN(numVal)) {
+    return { formattedAmount: String(amount), formattedUnit: unit || '' };
+  }
+
+  const scaled = normalizeAndScaleGroceryQuantity(numVal, unit || '', name);
+  const outUnit = scaled.unit;
+  let outAmountStr = typeof scaled.amount === 'number'
+    ? scaled.amount.toLocaleString('de-DE', { maximumFractionDigits: 1 })
+    : String(scaled.amount).replace('.', ',');
+
+  // Zusatz-Hinweis (Dosen/Gläser) bei Kichererbsen & Hülsenfrüchten
+  let hintBadge: string | undefined = undefined;
+  if (isCannedLegumeProduce(name)) {
+    // Falls in Gramm oder kg angegeben: berechne Dosen (ca. 240g Abtropfgewicht je Dose)
+    let totalGrams: number | null = null;
+    const cleanUnit = (outUnit || '').toLowerCase();
+    if (cleanUnit === 'kg') {
+      const kgVal = typeof scaled.amount === 'number' ? scaled.amount : parseFloat(String(scaled.amount));
+      totalGrams = kgVal * 1000;
+    } else if (cleanUnit === 'g') {
+      totalGrams = typeof scaled.amount === 'number' ? scaled.amount : parseFloat(String(scaled.amount));
+    }
+
+    if (totalGrams !== null && totalGrams >= 400) {
+      const canCount = Math.round(totalGrams / LEGUME_CAN_DRAINED_WEIGHT_G);
+      if (canCount >= 2) {
+        hintBadge = `ca. ${canCount} Dosen`;
+      }
+    }
+  }
+
+  return {
+    formattedAmount: outAmountStr,
+    formattedUnit: outUnit,
+    hintBadge,
+  };
 }
 
 // Intelligenter Natural Language Parser für Einkaufslisten-Eingaben
@@ -671,24 +872,20 @@ export function mergeOrAddShoppingItem(
   // Fall 1: Beide haben explizite Zahlenwerte
   if (numA !== null && numB !== null) {
     if (unitA === unitB || !unitA || !unitB) {
-      combinedUnit = existing.unit || newItem.unit || '';
-      combinedAmount = smartRoundGroceryAmount(numA + numB, combinedUnit, existing.name);
+      const targetUnit = existing.unit || newItem.unit || '';
+      const scaled = normalizeAndScaleGroceryQuantity(numA + numB, targetUnit, existing.name);
+      combinedAmount = scaled.amount;
+      combinedUnit = scaled.unit;
     } else if ((unitA === 'kg' && unitB === 'g') || (unitA === 'g' && unitB === 'kg')) {
-      if (unitA === 'kg') {
-        combinedAmount = Math.round((numA + numB / 1000) * 100) / 100;
-        combinedUnit = 'kg';
-      } else {
-        combinedAmount = Math.round((numA + numB * 1000) * 100) / 100;
-        combinedUnit = 'g';
-      }
+      const totalG = unitA === 'kg' ? numA * 1000 + numB : numA + numB * 1000;
+      const scaled = normalizeAndScaleGroceryQuantity(totalG, 'g', existing.name);
+      combinedAmount = scaled.amount;
+      combinedUnit = scaled.unit;
     } else if ((unitA === 'l' && unitB === 'ml') || (unitA === 'ml' && unitB === 'l')) {
-      if (unitA === 'l') {
-        combinedAmount = Math.round((numA + numB / 1000) * 100) / 100;
-        combinedUnit = 'l';
-      } else {
-        combinedAmount = Math.round((numA + numB * 1000) * 100) / 100;
-        combinedUnit = 'ml';
-      }
+      const totalMl = unitA === 'l' ? numA * 1000 + numB : numA + numB * 1000;
+      const scaled = normalizeAndScaleGroceryQuantity(totalMl, 'ml', existing.name);
+      combinedAmount = scaled.amount;
+      combinedUnit = scaled.unit;
     } else {
       // Inkompatible Einheiten (z.B. "1 Dose + 200g")
       combinedAmount = `${existing.amount} ${existing.unit || ''} + ${newItem.amount} ${newItem.unit || ''}`.trim();
@@ -697,18 +894,18 @@ export function mergeOrAddShoppingItem(
   } 
   // Fall 2: Nur B hat eine Zahl (A hatte keine Menge -> implizit 1)
   else if (numA === null && numB !== null) {
-    if (unitB) {
-      combinedAmount = smartRoundGroceryAmount(numB, unitB, existing.name);
-      combinedUnit = newItem.unit || '';
-    } else {
-      combinedUnit = existing.unit || newItem.unit || '';
-      combinedAmount = smartRoundGroceryAmount(1 + numB, combinedUnit, existing.name);
-    }
+    const targetUnit = newItem.unit || existing.unit || '';
+    const targetAmount = unitB ? numB : 1 + numB;
+    const scaled = normalizeAndScaleGroceryQuantity(targetAmount, targetUnit, existing.name);
+    combinedAmount = scaled.amount;
+    combinedUnit = scaled.unit;
   } 
   // Fall 3: Nur A hat eine Zahl (B wurde ohne Zahl hinzugefügt -> implizit +1)
   else if (numA !== null && numB === null) {
-    combinedUnit = existing.unit || '';
-    combinedAmount = smartRoundGroceryAmount(numA + 1, combinedUnit, existing.name);
+    const targetUnit = existing.unit || '';
+    const scaled = normalizeAndScaleGroceryQuantity(numA + 1, targetUnit, existing.name);
+    combinedAmount = scaled.amount;
+    combinedUnit = scaled.unit;
   } 
   // Fall 4: Weder A noch B haben eine Zahl (z. B. "Tofu" hinzugefügt wenn "Tofu" schon existiert -> 1 + 1 = 2)
   else {
