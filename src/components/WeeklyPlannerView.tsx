@@ -112,7 +112,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const [pickerHighProtein, setPickerHighProtein] = useState(false);
   const [pickerSortBy, setPickerSortBy] = useState<FilterState['sortBy']>('featured');
 
-  // Toggle showing lunch slot - persisted in safeStorage
+  // Toggle showing lunch slot for all days - persisted in safeStorage
   const [showLunchSlot, setShowLunchSlot] = useState<boolean>(() => {
     try {
       const saved = safeStorage.getItem('veggiechef_show_lunch_slot');
@@ -122,24 +122,18 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     }
   });
 
-  // Per-day lunch slot collapse/expand state (overrides global showLunchSlot)
-  const [expandedLunchDayIds, setExpandedLunchDayIds] = useState<Record<string, boolean>>({});
-
-  const toggleDayLunch = (dayId: string) => {
-    setExpandedLunchDayIds((prev) => {
-      const current = prev[dayId] !== undefined ? prev[dayId] : showLunchSlot;
-      return { ...prev, [dayId]: !current };
-    });
-  };
-
-  const handleToggleAllLunch = () => {
+  // When clicking any day header, all days are expanded or collapsed together
+  const toggleDayLunch = () => {
     const next = !showLunchSlot;
     setShowLunchSlot(next);
-    setExpandedLunchDayIds({});
     try {
       safeStorage.setItem('veggiechef_show_lunch_slot', JSON.stringify(next));
     } catch {}
-    onCopyFeedback(next ? 'Mittags-Slots eingeblendet.' : 'Mittags-Slots ausgeblendet.');
+    onCopyFeedback(next ? 'Mittags-Slots aller Tage eingeblendet.' : 'Mittags-Slots aller Tage ausgeblendet.');
+  };
+
+  const handleToggleAllLunch = () => {
+    toggleDayLunch();
   };
 
   // Multi-week navigation modals
@@ -236,9 +230,25 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     }
   };
 
-  // Undo support for clearing entire meal plan
+  // Undo support for clearing entire meal plan or deleting single meals
   const [undoBackup, setUndoBackup] = useState<DayPlan[] | null>(null);
+  const [lastDeletedMealInfo, setLastDeletedMealInfo] = useState<{
+    type: 'single' | 'all';
+    title?: string;
+  } | null>(null);
   const [showUndoBanner, setShowUndoBanner] = useState(false);
+
+  // Auto-dismiss undo toast after 6 seconds (with clean unmount timer)
+  useEffect(() => {
+    if (showUndoBanner) {
+      const timer = setTimeout(() => {
+        setShowUndoBanner(false);
+        setUndoBackup(null);
+        setLastDeletedMealInfo(null);
+      }, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [showUndoBanner]);
 
   const handleClearEntireMealPlan = () => {
     // Check if there are any meals
@@ -246,21 +256,19 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     if (!hasAnyMeals) return;
 
     setUndoBackup(JSON.parse(JSON.stringify(mealPlan)));
+    setLastDeletedMealInfo({ type: 'all' });
     setMealPlan((prev) => prev.map((d) => ({ ...d, lunch: null, dinner: null })));
     setShowUndoBanner(true);
     onCopyFeedback('Wochenplan wurde geleert.');
-
-    setTimeout(() => {
-      setShowUndoBanner(false);
-    }, 10000);
   };
 
   const handleUndoClearMealPlan = () => {
     if (undoBackup) {
       setMealPlan(undoBackup);
       setUndoBackup(null);
+      setLastDeletedMealInfo(null);
       setShowUndoBanner(false);
-      onCopyFeedback('Wochenplan wiederhergestellt!');
+      onCopyFeedback('Wiederhergestellt! ✓');
     }
   };
 
@@ -391,6 +399,17 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   };
 
   const removeSlot = (dayId: string, mealType: 'lunch' | 'dinner') => {
+    const targetDay = mealPlan.find((d) => d.dayId === dayId);
+    const mealToDelete = targetDay?.[mealType];
+    if (mealToDelete) {
+      setUndoBackup(JSON.parse(JSON.stringify(mealPlan)));
+      setLastDeletedMealInfo({
+        type: 'single',
+        title: mealToDelete.recipeTitle,
+      });
+      setShowUndoBanner(true);
+    }
+
     setMealPlan((prev) =>
       prev.map((day) => {
         if (day.dayId === dayId) {
@@ -942,8 +961,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const renderEmptySlot = (day: DayPlan, mealType: 'lunch' | 'dinner') => {
     const isDragOverThis = dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === mealType;
     const label = mealType === 'lunch'
-      ? 'Gericht für Mittagessen hinzufügen'
-      : 'Gericht für Abendessen hinzufügen';
+      ? 'Mittagessen planen'
+      : 'Abendessen planen';
 
     return (
       <div
@@ -1074,11 +1093,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             </div>
           </div>
 
-          {/* Trennlinie auf Mobile unter Portionen (wie in der Rezept-Detailansicht: pt-1, reduzierter Abstand nach unten) */}
-          <div className="w-full border-t border-[#ECEBE8]/70 sm:hidden -mb-1 mt-0.5" />
-
-          {/* Right side: Action buttons - auf Mobile linksbündig (justify-start), wie in Desktop sm:justify-end */}
-          <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap w-full sm:w-auto justify-start sm:justify-end pt-1 sm:pt-0">
+          {/* Right side: Action buttons */}
+          <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap w-full sm:w-auto justify-start sm:justify-end">
             {/* 3-Punkte-Menü Button (Rich Dropdown Menu mit Design-Elementen/Icons für Mobile & Desktop) */}
             <div className="relative shrink-0" ref={contextMenuRef}>
               <button
@@ -1098,71 +1114,170 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               </button>
 
               {showContextMenu && (
-                <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-[#ECEBE8] shadow-xl p-1.5 z-40 animate-in fade-in zoom-in-95 duration-100 space-y-1">
-                  <button
-                    type="button"
-                    id="context-menu-toggle-lunch-btn"
-                    onClick={() => {
-                      setShowContextMenu(false);
-                      handleToggleAllLunch();
-                    }}
-                    className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-[#2D3E40] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
-                      <Sun className="w-4 h-4 shrink-0" />
-                    </div>
-                    <span className="truncate">{showLunchSlot ? 'Mittags-Slots verbergen' : 'Mittags-Slots anzeigen'}</span>
-                  </button>
+                <>
+                  {/* Backdrop for click outside */}
+                  <div
+                    className="fixed inset-0 z-40 bg-black/40 sm:bg-transparent backdrop-blur-[2px] sm:backdrop-blur-none transition-opacity"
+                    onClick={() => setShowContextMenu(false)}
+                    aria-hidden="true"
+                  />
 
-                  <button
-                    type="button"
-                    id="context-menu-add-week-btn"
-                    onClick={() => {
-                      setShowContextMenu(false);
-                      setNewWeekTitleInput('');
-                      setShowCreateWeekModal(true);
-                    }}
-                    className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-[#2D3E40] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
-                      <Plus className="w-4 h-4 shrink-0" />
-                    </div>
-                    <span className="truncate">Woche hinzufügen</span>
-                  </button>
+                  {/* Mobile iOS Action Sheet (< sm) */}
+                  <div className="fixed inset-x-0 bottom-0 z-50 p-3 sm:hidden animate-in slide-in-from-bottom duration-250 ease-out flex flex-col gap-2">
+                    {/* Main Options Group Card (iOS Cupertino Style) */}
+                    <div className="bg-white/95 backdrop-blur-xl rounded-2xl border border-[#ECEBE8] shadow-2xl overflow-hidden divide-y divide-[#ECEBE8]/80 text-[#2D3E40]">
+                      <div className="px-4 py-2.5 text-center text-xs font-semibold text-[#686E6A] tracking-wider uppercase bg-[#FAF9F6]/80">
+                        Wochenplan-Optionen
+                      </div>
 
-                  <button
-                    type="button"
-                    id="context-menu-all-weeks-btn"
-                    onClick={() => {
-                      setShowContextMenu(false);
-                      setShowAllWeeksModal(true);
-                    }}
-                    className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-[#2D3E40] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
-                      <Layers className="w-4 h-4 shrink-0" />
-                    </div>
-                    <span className="truncate">Alle Wochen anzeigen</span>
-                  </button>
+                      <button
+                        type="button"
+                        id="ios-context-menu-toggle-lunch-btn"
+                        onClick={() => {
+                          setShowContextMenu(false);
+                          handleToggleAllLunch();
+                        }}
+                        className="w-full min-h-[52px] px-4 py-3 text-left text-[16px] font-medium text-[#2D3E40] active:bg-[#F1F5F2] flex items-center justify-between transition-colors cursor-pointer touch-manipulation"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
+                            <Sun className="w-4 h-4 shrink-0" />
+                          </div>
+                          <span>{showLunchSlot ? 'Mittags-Slots verbergen' : 'Mittags-Slots anzeigen'}</span>
+                        </div>
+                      </button>
 
-                  <div className="border-t border-[#ECEBE8] my-1" />
+                      <button
+                        type="button"
+                        id="ios-context-menu-add-week-btn"
+                        onClick={() => {
+                          setShowContextMenu(false);
+                          setNewWeekTitleInput('');
+                          setShowCreateWeekModal(true);
+                        }}
+                        className="w-full min-h-[52px] px-4 py-3 text-left text-[16px] font-medium text-[#2D3E40] active:bg-[#F1F5F2] flex items-center justify-between transition-colors cursor-pointer touch-manipulation"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
+                            <Plus className="w-4 h-4 shrink-0" />
+                          </div>
+                          <span>Woche hinzufügen</span>
+                        </div>
+                      </button>
 
-                  <button
-                    type="button"
-                    id="context-menu-clear-plan-btn"
-                    onClick={() => {
-                      setShowContextMenu(false);
-                      setShowConfirmClearAll(true);
-                    }}
-                    disabled={totalPlannedMeals === 0}
-                    className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center shrink-0 text-rose-600">
-                      <Trash2 className="w-4 h-4 shrink-0" />
+                      <button
+                        type="button"
+                        id="ios-context-menu-all-weeks-btn"
+                        onClick={() => {
+                          setShowContextMenu(false);
+                          setShowAllWeeksModal(true);
+                        }}
+                        className="w-full min-h-[52px] px-4 py-3 text-left text-[16px] font-medium text-[#2D3E40] active:bg-[#F1F5F2] flex items-center justify-between transition-colors cursor-pointer touch-manipulation"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
+                            <Layers className="w-4 h-4 shrink-0" />
+                          </div>
+                          <span>Alle Wochen anzeigen</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        id="ios-context-menu-clear-plan-btn"
+                        onClick={() => {
+                          setShowContextMenu(false);
+                          setShowConfirmClearAll(true);
+                        }}
+                        disabled={totalPlannedMeals === 0}
+                        className="w-full min-h-[52px] px-4 py-3 text-left text-[16px] font-medium text-rose-600 active:bg-rose-50 disabled:opacity-40 disabled:hover:bg-transparent flex items-center justify-between transition-colors cursor-pointer touch-manipulation"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center shrink-0 text-rose-600">
+                            <Trash2 className="w-4 h-4 shrink-0" />
+                          </div>
+                          <span>Plan leeren</span>
+                        </div>
+                      </button>
                     </div>
-                    <span className="truncate">Plan leeren</span>
-                  </button>
-                </div>
+
+                    {/* iOS Cancel Button in separate card */}
+                    <button
+                      type="button"
+                      onClick={() => setShowContextMenu(false)}
+                      className="w-full min-h-[52px] py-3.5 rounded-2xl bg-white text-[17px] font-semibold text-[#2D3E40] shadow-lg border border-[#ECEBE8] flex items-center justify-center active:bg-[#F1F5F2] transition-colors cursor-pointer touch-manipulation"
+                    >
+                      Abbrechen
+                    </button>
+                  </div>
+
+                  {/* Desktop Dropdown Popover (>= sm) */}
+                  <div className="hidden sm:block absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl border border-[#ECEBE8] shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 space-y-1">
+                    <button
+                      type="button"
+                      id="context-menu-toggle-lunch-btn"
+                      onClick={() => {
+                        setShowContextMenu(false);
+                        handleToggleAllLunch();
+                      }}
+                      className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-[#2D3E40] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
+                        <Sun className="w-4 h-4 shrink-0" />
+                      </div>
+                      <span className="truncate">{showLunchSlot ? 'Mittags-Slots verbergen' : 'Mittags-Slots anzeigen'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      id="context-menu-add-week-btn"
+                      onClick={() => {
+                        setShowContextMenu(false);
+                        setNewWeekTitleInput('');
+                        setShowCreateWeekModal(true);
+                      }}
+                      className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-[#2D3E40] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
+                        <Plus className="w-4 h-4 shrink-0" />
+                      </div>
+                      <span className="truncate">Woche hinzufügen</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      id="context-menu-all-weeks-btn"
+                      onClick={() => {
+                        setShowContextMenu(false);
+                        setShowAllWeeksModal(true);
+                      }}
+                      className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-[#2D3E40] hover:bg-[#FAF9F6] active:bg-[#F1F5F2] flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
+                        <Layers className="w-4 h-4 shrink-0" />
+                      </div>
+                      <span className="truncate">Alle Wochen anzeigen</span>
+                    </button>
+
+                    <div className="border-t border-[#ECEBE8] my-1" />
+
+                    <button
+                      type="button"
+                      id="context-menu-clear-plan-btn"
+                      onClick={() => {
+                        setShowContextMenu(false);
+                        setShowConfirmClearAll(true);
+                      }}
+                      disabled={totalPlannedMeals === 0}
+                      className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center shrink-0 text-rose-600">
+                        <Trash2 className="w-4 h-4 shrink-0" />
+                      </div>
+                      <span className="truncate">Plan leeren</span>
+                    </button>
+                  </div>
+                </>
               )}
             </div>
 
@@ -1190,35 +1305,6 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         </div>
       </div>
 
-      {/* Undo Banner when cleared */}
-      {showUndoBanner && undoBackup && (
-        <div className="p-3.5 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8]/20 flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-[#4A7856] shrink-0" />
-            <span className="text-[16px] font-medium text-white/95 truncate">
-              Der Wochenplan wurde geleert.
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              id="undo-clear-meal-plan-btn"
-              onClick={handleUndoClearMealPlan}
-              className="h-[44px] min-h-[44px] px-4 sm:px-5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[16px] font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center gap-2"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>Rückgängig machen</span>
-            </button>
-            <button
-              onClick={() => setShowUndoBanner(false)}
-              className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer touch-manipulation active:scale-95"
-              title="Schließen"
-              aria-label="Schließen"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Sleek Week Selector: directly above day cards without exaggerated margins */}
       {weeks && weeks.length > 0 && (
@@ -1278,9 +1364,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       {/* 7-Day Grid: Clean Day Containers following "Regale" pattern */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">
         {mealPlan.map((day) => {
-          const isLunchVisible = expandedLunchDayIds[day.dayId] !== undefined
-            ? expandedLunchDayIds[day.dayId]
-            : showLunchSlot;
+          const isLunchVisible = showLunchSlot;
 
           const totalCalories = (day.lunch?.calories || 0) + (day.dinner?.calories || 0);
           const totalProtein = (day.lunch?.protein || 0) + (day.dinner?.protein || 0);
@@ -1291,12 +1375,12 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               id={`meal-plan-day-${day.dayId}`}
               className="bg-white rounded-2xl border border-[#ECEBE8] overflow-hidden shadow-xs hover:border-[#4A7856]/40 hover:shadow-sm transition-all flex flex-col justify-between"
             >
-              {/* Day Header Bar: Klickbar zum Ein- und Ausfahren des Mittags-Slots (ohne Text) */}
+              {/* Day Header Bar: Klickbar zum Ein- und Ausfahren des Mittags-Slots (schaltet alle Tage synchron) */}
               <button
                 type="button"
-                onClick={() => toggleDayLunch(day.dayId)}
+                onClick={toggleDayLunch}
                 className="w-full bg-[#f1f5f2] hover:bg-[#e7eee9] active:bg-[#dde6e0] px-3.5 py-2.5 border-b border-[#ECEBE8] flex items-center justify-between gap-1.5 flex-wrap cursor-pointer transition-colors text-left select-none group min-h-[44px]"
-                title={isLunchVisible ? `${day.dayName}: Mittagessen einklappen` : `${day.dayName}: Mittagessen ausklappen`}
+                title={isLunchVisible ? 'Alle Mittags-Slots einklappen' : 'Alle Mittags-Slots ausklappen'}
                 aria-expanded={isLunchVisible}
               >
                 <div className="flex items-center gap-1.5">
@@ -1356,6 +1440,40 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           );
         })}
       </div>
+
+      {/* Undo Notification Banner (Unten am Ende des Wochenplans, exakt gleiches Design wie Einkaufsliste) */}
+      {showUndoBanner && undoBackup && (
+        <div className="p-3.5 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8]/20 flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-bottom duration-200 mt-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-[#4A7856] shrink-0" />
+            <span className="text-[16px] font-medium text-white/95 truncate">
+              {lastDeletedMealInfo?.type === 'single' && lastDeletedMealInfo.title
+                ? `"${lastDeletedMealInfo.title}" entfernt.`
+                : 'Der Wochenplan wurde geleert.'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              id="undo-clear-meal-plan-btn"
+              type="button"
+              onClick={handleUndoClearMealPlan}
+              className="h-[44px] min-h-[44px] px-4 sm:px-5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[16px] font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center gap-2"
+            >
+              <RotateCcw className="w-4 h-4 sm:hidden" />
+              <span>Rückgängig</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowUndoBanner(false)}
+              className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer touch-manipulation active:scale-95"
+              title="Schließen"
+              aria-label="Schließen"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Floating Drag & Drop Ghost for Touch Devices */}
       {touchDragState && (
@@ -2199,6 +2317,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           </div>
         </div>
       )}
+
     </div>
   );
 };

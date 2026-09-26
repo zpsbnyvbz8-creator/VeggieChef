@@ -2616,9 +2616,9 @@ export const PANTRY_QUICK_ITEMS = [
   'Zitrone',
 
   // Vorratsschrank & Hülsenfrüchte
-  'Nudeln / Pasta',
+  'Nudeln',
   'Reis',
-  'Gehackte Tomaten (Dose)',
+  'Gehackte Tomaten',
   'Kichererbsen',
   'Kidneybohnen',
   'Linsen',
@@ -2626,15 +2626,18 @@ export const PANTRY_QUICK_ITEMS = [
   'Kokosmilch',
   'Mais',
 
-  // Kühlregal & Proteine
-  'Käse / Reibekäse',
+  // Kühlregal, Proteine & veg. Ersatzprodukte
+  'Käse',
   'Feta',
-  'Eier',
-  'Tofu / Räuchertofu',
-  'Milch / Pflanzendrink',
+  'Tofu',
+  'Räuchertofu',
+  'veg. Hack',
+  'veg. Chunks',
+  'veg. Schnitzel',
+  'veg. Würstchen',
+  'Hafermilch',
   'Naturjoghurt',
-  'Sahne / Kochcreme',
-  'Butter / Margarine',
+  'Kochcreme',
 
   // Würze & Basics
   'Tomatenmark',
