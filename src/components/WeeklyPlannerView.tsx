@@ -1117,13 +1117,13 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 <>
                   {/* Backdrop for click outside */}
                   <div
-                    className="fixed inset-0 z-40 bg-black/40 sm:bg-transparent backdrop-blur-[2px] sm:backdrop-blur-none transition-opacity"
+                    className="fixed inset-0 z-60 bg-black/50 sm:bg-transparent backdrop-blur-[2px] sm:backdrop-blur-none transition-opacity"
                     onClick={() => setShowContextMenu(false)}
                     aria-hidden="true"
                   />
 
                   {/* Mobile iOS Action Sheet (< sm) */}
-                  <div className="fixed inset-x-0 bottom-0 z-50 p-3 sm:hidden animate-in slide-in-from-bottom duration-250 ease-out flex flex-col gap-2">
+                  <div className="fixed inset-x-0 bottom-0 z-60 p-3 sm:hidden animate-in slide-in-from-bottom duration-250 ease-out flex flex-col gap-2">
                     {/* Main Options Group Card (iOS Cupertino Style) */}
                     <div className="bg-white/95 backdrop-blur-xl rounded-2xl border border-[#ECEBE8] shadow-2xl overflow-hidden divide-y divide-[#ECEBE8]/80 text-[#2D3E40]">
                       <div className="px-4 py-2.5 text-center text-xs font-semibold text-[#686E6A] tracking-wider uppercase bg-[#FAF9F6]/80">

@@ -481,41 +481,8 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           </motion.div>
         </div>
 
-        {/* Mobile Accordion Toggle: ab Ernährungsweise einklappbar (standardmäßig eingeklappt) */}
-        <div className="sm:hidden pt-3 border-t border-[#ECEBE8]">
-          <button
-            type="button"
-            id="mobile-fridge-preferences-toggle"
-            onClick={() => setIsPreferencesOpenOnMobile((prev) => !prev)}
-            className="w-full min-h-[48px] px-4 py-2.5 rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] flex items-center justify-between text-left transition-colors cursor-pointer touch-manipulation active:scale-98"
-            aria-expanded={isPreferencesOpenOnMobile}
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Sliders className="w-4 h-4 text-[#4A7856] shrink-0" />
-              <div className="min-w-0">
-                <span className="text-sm font-semibold text-[#57534d] block">
-                  Ernährungsweise & Feintuning
-                </span>
-                <span className="text-xs text-[#686E6A] truncate block">
-                  {isVegan ? '🌱 Vegan' : '🧀 Veggie'} • {maxTime} Min. • {getFilterSummary()}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0 ml-2">
-              <span className="text-xs font-semibold text-[#4A7856]">
-                {isPreferencesOpenOnMobile ? 'Schließen' : 'Anpassen'}
-              </span>
-              <ChevronDown
-                className={`w-4 h-4 text-[#686E6A] transition-transform duration-200 ${
-                  isPreferencesOpenOnMobile ? 'rotate-180' : ''
-                }`}
-              />
-            </div>
-          </button>
-        </div>
-
-        {/* Recipe Preferences Block: ab Ernährungsweise auf Mobile einklappbar (standardmäßig eingeklappt), auf Desktop immer sichtbar */}
-        <div className={`${isPreferencesOpenOnMobile ? 'block' : 'hidden sm:block'} space-y-4 pt-1 sm:pt-4 border-t-0 sm:border-t sm:border-[#ECEBE8]`}>
+        {/* Recipe Preferences Block: Direkt sichtbar auf Mobile & Desktop */}
+        <div className="space-y-4 pt-3 sm:pt-4 border-t border-[#ECEBE8]">
           {/* Zeile 1: Ernährungsweise (links) & Schieberegler für Zeit (rechts) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
             {/* Ernährungsweise Toggle */}
