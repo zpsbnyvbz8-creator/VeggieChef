@@ -34,7 +34,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { Recipe, RecipeIngredient, RecipeStep } from '../types';
-import { formatIngredientAmount, generateRecipeIngredientsText, calculateMealSavings, safeCopyToClipboard } from '../utils/helpers';
+import { formatIngredientAmount, generateRecipeIngredientsText, calculateMealSavings, safeCopyToClipboard, compressImageToDataUrl } from '../utils/helpers';
 import { useRecipes } from '../context/RecipeContext';
 import { useShopping } from '../context/ShoppingContext';
 import { usePlanner } from '../context/PlannerContext';
@@ -297,18 +297,7 @@ export const RecipeDetailPage: React.FC = () => {
     if (!files || files.length === 0) return;
 
     const fileList = Array.from(files) as File[];
-    const readPromises = fileList.map((file) => {
-      return new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const dataUrl = event.target?.result as string;
-          if (dataUrl) resolve(dataUrl);
-          else resolve('');
-        };
-        reader.onerror = () => resolve('');
-        reader.readAsDataURL(file);
-      });
-    });
+    const readPromises = fileList.map((file) => compressImageToDataUrl(file, 1200, 0.72));
 
     const newUrls = (await Promise.all(readPromises)).filter(Boolean);
     if (newUrls.length === 0) return;
@@ -317,11 +306,13 @@ export const RecipeDetailPage: React.FC = () => {
     const updated: Recipe = {
       ...recipe,
       userImages: updatedUserImages,
+      // Automatically make the newly uploaded photo the active cover
+      activeCoverImage: newUrls[0],
     };
 
     updateRecipe(updated);
-    setCurrentImageIndex(allImages.length);
-    showToast(newUrls.length > 1 ? `${newUrls.length} Fotos hinzugefügt! 📸` : 'Eigenes Kochfoto hinzugefügt! 📸');
+    setCurrentImageIndex(0);
+    showToast(newUrls.length > 1 ? `${newUrls.length} Fotos hinzugefügt & als Titelbild aktiv! 📸` : 'Kochfoto hinzugefügt & als Titelbild festgelegt! 📸');
     e.target.value = '';
   };
 
@@ -333,6 +324,41 @@ export const RecipeDetailPage: React.FC = () => {
     };
     updateRecipe(updated);
     showToast('Neues Titelbild festgelegt!');
+  };
+
+  // Delete a specific photo
+  const handleDeletePhoto = (imgUrl: string) => {
+    const newUserImages = (recipe.userImages || []).filter((url) => url !== imgUrl);
+    const isDeletingCover = recipe.activeCoverImage === imgUrl;
+    const isDeletingBaseImage = recipe.image === imgUrl;
+
+    // Determine fallback cover if current cover was deleted
+    let nextCover = recipe.activeCoverImage;
+    if (isDeletingCover) {
+      if (newUserImages.length > 0) {
+        nextCover = newUserImages[0];
+      } else if (!isDeletingBaseImage && recipe.image && recipe.image !== 'veggiechef-placeholder') {
+        nextCover = recipe.image;
+      } else {
+        nextCover = undefined;
+      }
+    }
+
+    const updated: Recipe = {
+      ...recipe,
+      userImages: newUserImages,
+      activeCoverImage: nextCover,
+      // If the deleted image was also the base image, clear it to placeholder
+      image: isDeletingBaseImage ? (newUserImages[0] || 'veggiechef-placeholder') : recipe.image,
+    };
+
+    updateRecipe(updated);
+    setCurrentImageIndex(0);
+    setLightboxIndex(0);
+    if (newUserImages.length === 0 && (isDeletingBaseImage || !updated.image || updated.image === 'veggiechef-placeholder')) {
+      setIsFullscreenImageOpen(false);
+    }
+    showToast('Foto erfolgreich gelöscht!');
   };
 
   // Duplicate recipe
@@ -1548,6 +1574,7 @@ export const RecipeDetailPage: React.FC = () => {
         }}
         onSelectIndex={(idx) => setLightboxIndex(idx)}
         onSetAsCover={handleSetAsCover}
+        onDeletePhoto={handleDeletePhoto}
         activeCoverUrl={recipe.activeCoverImage || recipe.image}
         recipeTitle={recipe.title}
       />

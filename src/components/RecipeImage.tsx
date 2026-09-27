@@ -19,14 +19,16 @@ export const RecipeImage: React.FC<RecipeImageProps> = ({
 }) => {
   const [imageError, setImageError] = useState(false);
 
-  // Newly generated recipes (isCustomAi), empty image, or load errors:
-  // Strictly DO NOT use external image URLs for generated recipes to save quota/usage.
-  // Instead, render the subtle light-gray VeggieChef logo.
+  // Prioritize activeCoverImage (e.g. user set or newly chosen cover) over default recipe.image
+  const displayImage = recipe.activeCoverImage || recipe.image;
+
+  // Newly generated recipes without photo, empty image, or load errors:
+  // Render the subtle light-gray VeggieChef logo placeholder.
   const shouldShowLogo =
-    recipe.isCustomAi ||
-    !recipe.image ||
-    recipe.image.trim() === '' ||
-    recipe.image === 'veggiechef-placeholder' ||
+    !displayImage ||
+    displayImage.trim() === '' ||
+    displayImage === 'veggiechef-placeholder' ||
+    (recipe.isCustomAi && !recipe.activeCoverImage && (!recipe.image || recipe.image === 'veggiechef-placeholder')) ||
     imageError;
 
   if (shouldShowLogo) {
@@ -76,7 +78,7 @@ export const RecipeImage: React.FC<RecipeImageProps> = ({
 
   return (
     <img
-      src={recipe.image}
+      src={displayImage}
       alt={alt || recipe.title}
       referrerPolicy="no-referrer"
       className={imgClassName}

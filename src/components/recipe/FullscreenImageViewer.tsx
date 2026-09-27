@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, CheckCircle2, Trash2 } from 'lucide-react';
 
 interface FullscreenImageViewerProps {
   isOpen: boolean;
@@ -8,6 +8,7 @@ interface FullscreenImageViewerProps {
   onClose: () => void;
   onSelectIndex: (index: number) => void;
   onSetAsCover?: (imageUrl: string) => void;
+  onDeletePhoto?: (imageUrl: string) => void;
   activeCoverUrl?: string;
   recipeTitle: string;
 }
@@ -19,6 +20,7 @@ export const FullscreenImageViewer: React.FC<FullscreenImageViewerProps> = ({
   onClose,
   onSelectIndex,
   onSetAsCover,
+  onDeletePhoto,
   activeCoverUrl,
   recipeTitle,
 }) => {
@@ -131,6 +133,18 @@ export const FullscreenImageViewer: React.FC<FullscreenImageViewerProps> = ({
               >
                 <CheckCircle2 className={`w-3.5 h-3.5 ${isCurrentCover ? 'text-emerald-400' : 'text-emerald-300'}`} />
                 <span>{isCurrentCover ? 'Titelbild' : 'Als Titelbild'}</span>
+              </button>
+            )}
+
+            {onDeletePhoto && (
+              <button
+                type="button"
+                onClick={() => onDeletePhoto(currentImage)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md transition-all cursor-pointer touch-manipulation active:scale-95 bg-rose-500/20 hover:bg-rose-500/35 text-rose-200 border border-rose-400/30"
+                title="Dieses Foto löschen"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-300" />
+                <span>Löschen</span>
               </button>
             )}
 

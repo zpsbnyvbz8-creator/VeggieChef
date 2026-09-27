@@ -1013,6 +1013,47 @@ class SafeStorage {
 
 export const safeStorage = new SafeStorage();
 
+// Client-side canvas image compression to keep photo size small (~60-120KB) and safely within localStorage quotas
+export function compressImageToDataUrl(file: File, maxDimension = 1000, quality = 0.72): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onerror = () => resolve('');
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => resolve('');
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve((reader.result as string) || '');
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressed = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressed);
+      };
+      img.src = (reader.result as string) || '';
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 // Safe Clipboard Copy abstraction preventing DOMException "The operation is insecure" in iframes
 export async function safeCopyToClipboard(text: string): Promise<boolean> {
   // Method 1: Modern navigator.clipboard API with safety guards

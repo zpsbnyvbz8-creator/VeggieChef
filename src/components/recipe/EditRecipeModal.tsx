@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Save, Plus, Trash2, Clock, Users, ChefHat, ChevronDown } from 'lucide-react';
+import { X, Save, Plus, Trash2, Clock, Users, ChefHat, ChevronDown, Camera, CheckCircle2 } from 'lucide-react';
 import { Recipe, RecipeCategory, RecipeIngredient, RecipeStep } from '../../types';
+import { compressImageToDataUrl } from '../../utils/helpers';
 
 interface EditRecipeModalProps {
   isOpen: boolean;
@@ -36,6 +37,9 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
   const [difficulty, setDifficulty] = useState<'Einfach' | 'Mittel' | 'Anspruchsvoll'>(recipe.difficulty || 'Einfach');
   const [isVegan, setIsVegan] = useState(recipe.isVegan);
   const [chefTip, setChefTip] = useState(recipe.chefTip || '');
+  const [activeCoverImage, setActiveCoverImage] = useState<string | undefined>(recipe.activeCoverImage);
+  const [image, setImage] = useState<string>(recipe.image || '');
+  const [userImages, setUserImages] = useState<string[]>(recipe.userImages || []);
 
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>(
     recipe.ingredients.map((i) => ({ ...i }))
@@ -107,6 +111,9 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
       difficulty,
       isVegan,
       chefTip: chefTip.trim(),
+      activeCoverImage,
+      image,
+      userImages,
       ingredients: ingredients.filter((i) => i.name.trim() !== ''),
       steps: steps.filter((s) => s.text.trim() !== ''),
     };
@@ -243,6 +250,131 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                 <span>🌱 Rezept ist 100% vegan</span>
               </label>
             </div>
+          </div>
+
+          {/* Photos & Cover Management Section */}
+          <div className="space-y-2.5 pt-3 border-t border-[#ECEBE8]">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-[#57534d] uppercase tracking-wider flex items-center gap-1.5">
+                <Camera className="w-3.5 h-3.5 text-[#4A7856]" />
+                <span>Fotos & Titelbild ({(() => {
+                  const list: string[] = [];
+                  if (activeCoverImage && activeCoverImage !== 'veggiechef-placeholder') list.push(activeCoverImage);
+                  if (image && image !== 'veggiechef-placeholder' && !list.includes(image)) list.push(image);
+                  userImages.forEach((img) => { if (!list.includes(img)) list.push(img); });
+                  return list.length;
+                })()})</span>
+              </label>
+              <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#4A7856] hover:text-[#3D6447] cursor-pointer">
+                <Plus className="w-3.5 h-3.5" />
+                <span>Neues Foto hinzufügen</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={async (e) => {
+                    const files = e.target.files;
+                    if (!files || files.length === 0) return;
+                    const fileList = Array.from(files) as File[];
+                    const readPromises = fileList.map((file) => compressImageToDataUrl(file, 1200, 0.72));
+                    const newUrls = (await Promise.all(readPromises)).filter(Boolean);
+                    if (newUrls.length > 0) {
+                      setUserImages((prev) => [...prev, ...newUrls]);
+                      if (!activeCoverImage || activeCoverImage === 'veggiechef-placeholder') {
+                        setActiveCoverImage(newUrls[0]);
+                      }
+                    }
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
+
+            {/* Thumbnail grid of photos */}
+            {(() => {
+              const list: string[] = [];
+              const cover = activeCoverImage || image;
+              if (cover && cover.trim() !== '' && cover !== 'veggiechef-placeholder') {
+                list.push(cover);
+              }
+              userImages.forEach((img) => {
+                if (!list.includes(img) && img.trim() !== '' && img !== 'veggiechef-placeholder') {
+                  list.push(img);
+                }
+              });
+              if (image && !list.includes(image) && image.trim() !== '' && image !== 'veggiechef-placeholder') {
+                list.push(image);
+              }
+
+              if (list.length === 0) {
+                return (
+                  <div className="p-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs text-[#686E6A] italic">
+                    Keine Fotos vorhanden. Lade oben ein Foto hoch, um ein Titelbild festzulegen.
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {list.map((imgUrl, idx) => {
+                    const isCover = (activeCoverImage || image) === imgUrl;
+                    return (
+                      <div
+                        key={idx}
+                        className={`relative rounded-xl overflow-hidden border-2 aspect-4/3 group bg-stone-100 ${
+                          isCover ? 'border-[#4A7856] ring-2 ring-[#4A7856]/20' : 'border-[#ECEBE8]'
+                        }`}
+                      >
+                        <img
+                          src={imgUrl}
+                          alt=""
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover"
+                        />
+                        {isCover && (
+                          <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full bg-[#4A7856] text-white text-[10px] font-bold shadow-xs">
+                            Titelbild
+                          </span>
+                        )}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
+                          {!isCover && (
+                            <button
+                              type="button"
+                              onClick={() => setActiveCoverImage(imgUrl)}
+                              className="px-2 py-1 rounded-lg bg-white text-[#4A7856] text-xs font-semibold shadow-xs hover:bg-[#F1F5F2] cursor-pointer"
+                              title="Als Titelbild wählen"
+                            >
+                              Titelbild
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newUserImages = userImages.filter((u) => u !== imgUrl);
+                              setUserImages(newUserImages);
+                              const isDeletingCover = activeCoverImage === imgUrl;
+                              const isDeletingBase = image === imgUrl;
+
+                              if (isDeletingBase) {
+                                setImage(newUserImages[0] || 'veggiechef-placeholder');
+                              }
+                              if (isDeletingCover) {
+                                setActiveCoverImage(newUserImages[0] || (isDeletingBase ? undefined : image) || undefined);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg bg-rose-600 text-white hover:bg-rose-700 shadow-xs cursor-pointer"
+                            title="Foto löschen"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Ingredients list editor */}

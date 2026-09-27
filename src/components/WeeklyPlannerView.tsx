@@ -151,6 +151,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const [aiProteinFilter, setAiProteinFilter] = useState<string>('all'); // 'all', 'high', 'very-high', 'medium'
   const [aiDifficultyFilter, setAiDifficultyFilter] = useState<string>('all'); // 'all', 'Einfach', 'Mittel', 'Anspruchsvoll'
   const [aiWishes, setAiWishes] = useState<string>('');
+  const [isAiWishesExpandedOnMobile, setIsAiWishesExpandedOnMobile] = useState<boolean>(false);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [planServings, setPlanServings] = useState<number>(3);
 
@@ -1983,19 +1984,65 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   </div>
                 </div>
 
-                {/* 6. Zusätzliche Wünsche & Notizen (optional) */}
-                <div>
-                  <label className="block font-bold text-[#2D3E40] text-[13px] uppercase tracking-wider mb-1.5">
+                {/* 6. Zusätzliche Wünsche & Notizen (optional) - Auf Mobile ein-/ausklappbar, auf Desktop dauerhaft sichtbar */}
+                <div className="pt-1 md:pt-0 border-t md:border-t-0 border-[#ECEBE8]">
+                  {/* Mobile Collapsible Header Button (< md) */}
+                  <div className="md:hidden">
+                    <button
+                      type="button"
+                      id="ai-wishes-mobile-accordion-toggle"
+                      onClick={() => setIsAiWishesExpandedOnMobile((prev) => !prev)}
+                      className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] flex items-center justify-between text-left transition-colors cursor-pointer touch-manipulation active:scale-[0.99]"
+                      aria-expanded={isAiWishesExpandedOnMobile || Boolean(aiWishes.trim())}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-bold text-[#2D3E40] text-xs uppercase tracking-wider block">
+                          6. Wünsche & Notizen
+                        </span>
+                        {aiWishes.trim() ? (
+                          <span className="text-[11px] font-semibold text-[#4A7856] truncate max-w-[140px] block">
+                            „{aiWishes}“
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-[#686E6A] block">
+                            (optional)
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        <span className="text-xs font-semibold text-[#4A7856]">
+                          {(isAiWishesExpandedOnMobile || Boolean(aiWishes.trim())) ? 'Schließen' : 'Hinzufügen'}
+                        </span>
+                        <ChevronDown
+                          className={`w-4 h-4 text-[#686E6A] transition-transform duration-200 ${
+                            (isAiWishesExpandedOnMobile || Boolean(aiWishes.trim())) ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Desktop Label (>= md) */}
+                  <label className="hidden md:block font-bold text-[#2D3E40] text-[13px] uppercase tracking-wider mb-1.5">
                     6. Wünsche & Notizen (optional)
                   </label>
-                  <input
-                    type="text"
-                    id="ai-meal-plan-wishes-input"
-                    value={aiWishes}
-                    onChange={(e) => setAiWishes(e.target.value)}
-                    placeholder="z. B. keine Pilze, asiatisch angehaucht..."
-                    className="w-full h-11 min-h-[44px] px-3.5 py-2 rounded-xl bg-[#FAF9F6] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-[16px] text-[#2D3E40] placeholder-[#A0A5A1] transition-all outline-none"
-                  />
+
+                  {/* Input Field: Expanded on mobile or always visible on desktop */}
+                  <div className={`${(isAiWishesExpandedOnMobile || Boolean(aiWishes.trim())) ? 'block pt-2 md:pt-0' : 'hidden md:block'}`}>
+                    <input
+                      type="text"
+                      id="ai-meal-plan-wishes-input"
+                      value={aiWishes}
+                      onChange={(e) => setAiWishes(e.target.value)}
+                      placeholder="z. B. keine Pilze, asiatisch angehaucht, schnell gekocht..."
+                      className="w-full h-11 min-h-[44px] px-3.5 py-2 rounded-xl bg-[#FAF9F6] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-[16px] text-[#2D3E40] placeholder-[#A0A5A1] transition-all outline-none"
+                    />
+                    {aiWishes.trim() && (
+                      <p className="text-[11px] text-[#4A7856] font-medium mt-1">
+                        ✓ Wünsche werden bei der KI-Generierung berücksichtigt
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

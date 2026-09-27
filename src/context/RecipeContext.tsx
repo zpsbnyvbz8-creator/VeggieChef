@@ -77,15 +77,29 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { showToast } = useToast();
   const { syncConfig, syncSingleRecipe, registerDomainSync } = useSync();
 
-  // Recipes State (Initial + Custom Saved AI Recipes)
+  // Recipes State (Initial + Custom Saved AI Recipes + User Modifications like Photos/Cover)
   const [recipes, setRecipes] = useState<Recipe[]>(() => {
     const saved = loadFromLocalStorage<Recipe[]>('veggiechef_recipes', []);
     if (!saved || saved.length === 0) {
       return INITIAL_RECIPES;
     }
+    const savedMap = new Map(saved.map((r) => [r.id, r]));
+    // Merge saved modifications into INITIAL_RECIPES (e.g. photos, custom cover, ratings)
+    const mergedInitial = INITIAL_RECIPES.map((initRecipe) => {
+      const savedVersion = savedMap.get(initRecipe.id);
+      if (savedVersion) {
+        return {
+          ...initRecipe,
+          ...savedVersion,
+        };
+      }
+      return initRecipe;
+    });
+
+    // Add user custom recipes that are not part of INITIAL_RECIPES
     const initialIds = new Set(INITIAL_RECIPES.map((r) => r.id));
-    const userCustom = saved.filter((r) => !initialIds.has(r.id) && !r.id.startsWith('rec-'));
-    return [...INITIAL_RECIPES, ...userCustom];
+    const userCustom = saved.filter((r) => !initialIds.has(r.id));
+    return [...mergedInitial, ...userCustom];
   });
 
   // Vegan toggle
