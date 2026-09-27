@@ -74,6 +74,14 @@ export const RecipeDetailPage: React.FC = () => {
 
   // Local interactive states
   const [servings, setServings] = useState<number>(recipe?.servings || 4);
+
+  // Sync servings if recipe is edited
+  useEffect(() => {
+    if (recipe?.servings) {
+      setServings(recipe.servings);
+    }
+  }, [recipe?.servings]);
+
   const [addedShopping, setAddedShopping] = useState(false);
   const [checkedIngredients, setCheckedIngredients] = useState<Record<string, boolean>>({});
   const [completedSteps, setCompletedSteps] = useState<Record<number, boolean>>({});
@@ -297,7 +305,7 @@ export const RecipeDetailPage: React.FC = () => {
     if (!files || files.length === 0) return;
 
     const fileList = Array.from(files) as File[];
-    const readPromises = fileList.map((file) => compressImageToDataUrl(file, 1200, 0.72));
+    const readPromises = fileList.map((file) => compressImageToDataUrl(file, 800, 0.65));
 
     const newUrls = (await Promise.all(readPromises)).filter(Boolean);
     if (newUrls.length === 0) return;
@@ -1591,10 +1599,20 @@ export const RecipeDetailPage: React.FC = () => {
 
       {/* 4. Edit Recipe Modal */}
       <EditRecipeModal
+        key={`${recipe.id}-${isEditModalOpen}`}
         isOpen={isEditModalOpen}
         recipe={recipe}
         onClose={() => setIsEditModalOpen(false)}
-        onSave={(updated) => updateRecipe(updated)}
+        onSave={(updated) => {
+          updateRecipe(updated);
+          if (updated.servings) {
+            setServings(updated.servings);
+          }
+          if (isVeganized) {
+            setIsVeganized(false);
+            setVeganizedIngredients(null);
+          }
+        }}
       />
 
       {/* 5. Delete Confirmation Modal */}

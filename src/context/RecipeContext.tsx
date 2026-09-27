@@ -317,6 +317,7 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const updateRecipe = (updatedRecipe: Recipe) => {
     setRecipes((prev) => prev.map((r) => (r.id === updatedRecipe.id ? updatedRecipe : r)));
+    setSelectedRecipe((prev) => (prev?.id === updatedRecipe.id ? updatedRecipe : prev));
     syncSingleRecipe(updatedRecipe);
     showToast(`Gericht "${updatedRecipe.title}" aktualisiert!`);
   };

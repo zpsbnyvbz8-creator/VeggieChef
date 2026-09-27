@@ -383,7 +383,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             prepTime: recipe.totalTimeMinutes,
             calories: recipe.nutrients.calories,
             protein: recipe.nutrients.protein,
-            servings: 2,
+            servings: planServings,
           };
 
           return {
@@ -1993,7 +1993,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       id="ai-wishes-mobile-accordion-toggle"
                       onClick={() => setIsAiWishesExpandedOnMobile((prev) => !prev)}
                       className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] flex items-center justify-between text-left transition-colors cursor-pointer touch-manipulation active:scale-[0.99]"
-                      aria-expanded={isAiWishesExpandedOnMobile || Boolean(aiWishes.trim())}
+                      aria-expanded={isAiWishesExpandedOnMobile}
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="font-bold text-[#2D3E40] text-xs uppercase tracking-wider block">
@@ -2011,11 +2011,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       </div>
                       <div className="flex items-center gap-1 shrink-0 ml-2">
                         <span className="text-xs font-semibold text-[#4A7856]">
-                          {(isAiWishesExpandedOnMobile || Boolean(aiWishes.trim())) ? 'Schließen' : 'Hinzufügen'}
+                          {isAiWishesExpandedOnMobile ? 'Schließen' : (aiWishes.trim() ? 'Bearbeiten' : 'Hinzufügen')}
                         </span>
                         <ChevronDown
                           className={`w-4 h-4 text-[#686E6A] transition-transform duration-200 ${
-                            (isAiWishesExpandedOnMobile || Boolean(aiWishes.trim())) ? 'rotate-180' : ''
+                            isAiWishesExpandedOnMobile ? 'rotate-180' : ''
                           }`}
                         />
                       </div>
@@ -2028,7 +2028,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   </label>
 
                   {/* Input Field: Expanded on mobile or always visible on desktop */}
-                  <div className={`${(isAiWishesExpandedOnMobile || Boolean(aiWishes.trim())) ? 'block pt-2 md:pt-0' : 'hidden md:block'}`}>
+                  <div className={`${isAiWishesExpandedOnMobile ? 'block pt-2 md:pt-0' : 'hidden md:block'}`}>
                     <input
                       type="text"
                       id="ai-meal-plan-wishes-input"

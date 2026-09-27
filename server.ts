@@ -330,7 +330,7 @@ const mealPlanRequestSchema = z.object({
   focus: z.string().max(100).optional().default("Ausgewogen & proteinreich"),
   maxMinutesPerMeal: z.number().int().min(10).max(120).optional().default(35),
   mealOption: z.enum(["lunch", "dinner", "both"]).optional().default("both"),
-  wishes: z.string().max(300).optional().default(""),
+  wishes: z.string().max(1000).optional().default(""),
 });
 
 const veganizeRequestSchema = z.object({

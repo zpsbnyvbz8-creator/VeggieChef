@@ -108,8 +108,10 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Synchronized setter (updates local state and delegates debounced upload to SyncContext)
   const setMealPlan: React.Dispatch<React.SetStateAction<DayPlan[]>> = (updater) => {
     setWeeks((prev) => {
+      // Find the target week id: activeWeekId or the first week
+      const targetId = prev.some((w) => w.id === activeWeekId) ? activeWeekId : prev[0]?.id;
       return prev.map((w) => {
-        if (w.id === activeWeek.id) {
+        if (w.id === targetId) {
           const nextDays = typeof updater === 'function' ? updater(w.days) : updater;
           syncMealPlanDays(nextDays, false);
           return { ...w, days: nextDays };

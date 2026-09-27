@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save, Plus, Trash2, Clock, Users, ChefHat, ChevronDown, Camera, CheckCircle2 } from 'lucide-react';
 import { Recipe, RecipeCategory, RecipeIngredient, RecipeStep } from '../../types';
 import { compressImageToDataUrl } from '../../utils/helpers';
@@ -51,6 +51,32 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
         : { ...s }
     )
   );
+
+  // Synchronize modal state whenever modal opens or recipe updates
+  useEffect(() => {
+    if (isOpen) {
+      setTitle(recipe.title);
+      setSubtitle(recipe.subtitle || '');
+      setCategory(recipe.category);
+      setServings(recipe.servings || 4);
+      setPrepTime(recipe.prepTimeMinutes || 15);
+      setCookTime(recipe.cookTimeMinutes || 20);
+      setDifficulty(recipe.difficulty || 'Einfach');
+      setIsVegan(recipe.isVegan);
+      setChefTip(recipe.chefTip || '');
+      setActiveCoverImage(recipe.activeCoverImage);
+      setImage(recipe.image || '');
+      setUserImages(recipe.userImages || []);
+      setIngredients(recipe.ingredients.map((i) => ({ ...i })));
+      setSteps(
+        recipe.steps.map((s, idx) =>
+          typeof s === 'string'
+            ? { stepNumber: idx + 1, title: `Schritt ${idx + 1}`, text: s }
+            : { ...s }
+        )
+      );
+    }
+  }, [isOpen, recipe]);
 
   if (!isOpen) return null;
 
@@ -277,7 +303,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                     const files = e.target.files;
                     if (!files || files.length === 0) return;
                     const fileList = Array.from(files) as File[];
-                    const readPromises = fileList.map((file) => compressImageToDataUrl(file, 1200, 0.72));
+                    const readPromises = fileList.map((file) => compressImageToDataUrl(file, 800, 0.65));
                     const newUrls = (await Promise.all(readPromises)).filter(Boolean);
                     if (newUrls.length > 0) {
                       setUserImages((prev) => [...prev, ...newUrls]);

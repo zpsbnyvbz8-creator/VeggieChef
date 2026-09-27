@@ -976,45 +976,61 @@ class SafeStorage {
   private memory = new Map<string, string>();
 
   getItem(key: string): string | null {
+    if (this.memory.has(key)) {
+      return this.memory.get(key) ?? null;
+    }
     try {
       if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage) {
-        return window.localStorage.getItem(key);
+        const val = window.localStorage.getItem(key);
+        if (val !== null) {
+          this.memory.set(key, val);
+          return val;
+        }
       }
     } catch {
       // Storage access blocked or insecure in sandboxed iframe / third-party context
     }
-    return this.memory.get(key) ?? null;
+    return null;
   }
 
   setItem(key: string, value: string): void {
+    // Keep in memory map so current session state is always accurate
+    this.memory.set(key, value);
     try {
       if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage) {
         window.localStorage.setItem(key, value);
         return;
       }
-    } catch {
-      // Insecure operation or quota exceeded
+    } catch (err) {
+      console.warn(`[SafeStorage] Failed to save "${key}" to localStorage, attempting cleanup:`, err);
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.removeItem('veggiechef_mealplan_old');
+          window.localStorage.removeItem('veggiechef_weeks');
+          window.localStorage.setItem(key, value);
+        }
+      } catch {
+        // Kept safely in this.memory
+      }
     }
-    this.memory.set(key, value);
   }
 
   removeItem(key: string): void {
+    this.memory.delete(key);
     try {
       if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage) {
         window.localStorage.removeItem(key);
-        return;
       }
     } catch {
       // Storage access blocked
     }
-    this.memory.delete(key);
   }
 }
 
 export const safeStorage = new SafeStorage();
 
-// Client-side canvas image compression to keep photo size small (~60-120KB) and safely within localStorage quotas
-export function compressImageToDataUrl(file: File, maxDimension = 1000, quality = 0.72): Promise<string> {
+// Client-side canvas image compression to keep photo size small (~35-60KB) and safely within localStorage quotas
+export function compressImageToDataUrl(file: File, maxDimension = 800, quality = 0.65): Promise<string> {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onerror = () => resolve('');
