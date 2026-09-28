@@ -90,6 +90,34 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   const [attemptNumber, setAttemptNumber] = useState(1);
   const [showAllPantryItems, setShowAllPantryItems] = useState(false);
   const [showAllMatchedRecipes, setShowAllMatchedRecipes] = useState(false);
+  const [isTimeSliderActive, setIsTimeSliderActive] = useState(false);
+  const [isExtraSliderActive, setIsExtraSliderActive] = useState(false);
+
+  useEffect(() => {
+    if (!isTimeSliderActive) return;
+    const handleRelease = () => setIsTimeSliderActive(false);
+    window.addEventListener('pointerup', handleRelease);
+    window.addEventListener('pointercancel', handleRelease);
+    window.addEventListener('touchend', handleRelease);
+    return () => {
+      window.removeEventListener('pointerup', handleRelease);
+      window.removeEventListener('pointercancel', handleRelease);
+      window.removeEventListener('touchend', handleRelease);
+    };
+  }, [isTimeSliderActive]);
+
+  useEffect(() => {
+    if (!isExtraSliderActive) return;
+    const handleRelease = () => setIsExtraSliderActive(false);
+    window.addEventListener('pointerup', handleRelease);
+    window.addEventListener('pointercancel', handleRelease);
+    window.addEventListener('touchend', handleRelease);
+    return () => {
+      window.removeEventListener('pointerup', handleRelease);
+      window.removeEventListener('pointercancel', handleRelease);
+      window.removeEventListener('touchend', handleRelease);
+    };
+  }, [isExtraSliderActive]);
 
   const nutritionGoal =
     proteinFilter === 'high' || proteinFilter === 'very-high'
@@ -548,15 +576,46 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
 
           {/* Schieberegler für Zeit - ohne Icon im Label, 22px Thumb & Track-Füllung */}
           <div className="flex flex-col justify-center min-h-[48px]">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 min-h-[26px]">
               <label htmlFor="fridge-time-slider" className="text-[16px] font-bold text-[#2D3E40]">
                 Max. Zeit:
               </label>
-              <span className="px-2 py-0.5 rounded-full bg-[#F1F5F2] border border-[#ECEBE8] text-[#4A7856] font-bold text-xs tabular-nums">
-                {maxTime} Min.
-              </span>
+              <AnimatePresence>
+                {!isTimeSliderActive && (
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2 }}
+                    className="px-2 py-0.5 rounded-full bg-[#F1F5F2] border border-[#ECEBE8] text-[#4A7856] font-bold text-xs tabular-nums"
+                  >
+                    {maxTime} Min.
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </div>
-            <div className="py-2.5 flex items-center">
+            <div className="relative py-2.5 flex items-center">
+              {/* Dynamische iOS-Wert-Pille */}
+              <AnimatePresence>
+                {isTimeSliderActive && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 7, scale: 0.85 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 5, scale: 0.88 }}
+                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                    style={{
+                      left: `calc(${((maxTime - 15) / (50 - 15)) * 100}% + ${(0.5 - (maxTime - 15) / (50 - 15)) * 24}px)`,
+                    }}
+                    className="absolute bottom-[calc(50%+20px)] -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center select-none"
+                  >
+                    <div className="px-2.5 py-0.5 rounded-full bg-[#F1F5F2] border border-[#ECEBE8] shadow-md text-[#4A7856] font-bold text-xs tabular-nums whitespace-nowrap">
+                      {maxTime} Min.
+                    </div>
+                    <div className="w-2 h-2 bg-[#F1F5F2] border-r border-b border-[#ECEBE8] rotate-45 -mt-1 shadow-xs" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <input
                 id="fridge-time-slider"
                 type="range"
@@ -564,6 +623,11 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 max="50"
                 step="5"
                 value={maxTime}
+                onPointerDown={() => setIsTimeSliderActive(true)}
+                onPointerUp={() => setIsTimeSliderActive(false)}
+                onPointerCancel={() => setIsTimeSliderActive(false)}
+                onTouchStart={() => setIsTimeSliderActive(true)}
+                onTouchEnd={() => setIsTimeSliderActive(false)}
                 onChange={(e) => {
                   const val = Number(e.target.value);
                   if (val !== maxTime && typeof window !== 'undefined' && 'vibrate' in navigator) {
@@ -709,17 +773,48 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
 
                     {/* Step Content */}
                     <div className="flex-1 min-w-0 pt-0.5 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 min-h-[26px]">
                         <h4 className="text-[16px] font-bold text-[#2D3E40]">
                           Zusätzliche Zutaten
                         </h4>
-                        <span className="px-2.5 py-0.5 rounded-full bg-[#F1F5F2] border border-[#ECEBE8] text-[#4A7856] font-bold text-xs tabular-nums shrink-0">
-                          {maxExtraIngredients === 0 ? 'Nur Vorräte' : `Max. ${maxExtraIngredients}`}
-                        </span>
+                        <AnimatePresence>
+                          {!isExtraSliderActive && (
+                            <motion.span
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.9 }}
+                              transition={{ duration: 0.2 }}
+                              className="px-2.5 py-0.5 rounded-full bg-[#F1F5F2] border border-[#ECEBE8] text-[#4A7856] font-bold text-xs tabular-nums shrink-0"
+                            >
+                              {maxExtraIngredients === 0 ? 'Nur Vorräte' : `Max. ${maxExtraIngredients}`}
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
                       </div>
 
                       <div className="pt-1">
-                        <div className="py-2.5 flex items-center">
+                        <div className="relative py-2.5 flex items-center">
+                          {/* Dynamische iOS-Wert-Pille */}
+                          <AnimatePresence>
+                            {isExtraSliderActive && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 7, scale: 0.85 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 5, scale: 0.88 }}
+                                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                                style={{
+                                  left: `calc(${(maxExtraIngredients / 6) * 100}% + ${(0.5 - maxExtraIngredients / 6) * 24}px)`,
+                                }}
+                                className="absolute bottom-[calc(50%+20px)] -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center select-none"
+                              >
+                                <div className="px-2.5 py-0.5 rounded-full bg-[#F1F5F2] border border-[#ECEBE8] shadow-md text-[#4A7856] font-bold text-xs tabular-nums whitespace-nowrap">
+                                  {maxExtraIngredients === 0 ? 'Nur Vorräte' : `Max. ${maxExtraIngredients}`}
+                                </div>
+                                <div className="w-2 h-2 bg-[#F1F5F2] border-r border-b border-[#ECEBE8] rotate-45 -mt-1 shadow-xs" />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
                           <input
                             id="ai-extra-ingredients-slider"
                             type="range"
@@ -727,6 +822,11 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                             max="6"
                             step="1"
                             value={maxExtraIngredients}
+                            onPointerDown={() => setIsExtraSliderActive(true)}
+                            onPointerUp={() => setIsExtraSliderActive(false)}
+                            onPointerCancel={() => setIsExtraSliderActive(false)}
+                            onTouchStart={() => setIsExtraSliderActive(true)}
+                            onTouchEnd={() => setIsExtraSliderActive(false)}
                             onChange={(e) => {
                               const val = Number(e.target.value);
                               if (val !== maxExtraIngredients && typeof window !== 'undefined' && 'vibrate' in navigator) {
