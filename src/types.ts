@@ -177,6 +177,7 @@ export interface FridgeCookIdea {
   estimatedProtein: number;
   keyIngredientsUsed: string[];
   basicPantryItemsNeeded?: string[];
+  additionalIngredientsProposed?: string[];
 }
 
 

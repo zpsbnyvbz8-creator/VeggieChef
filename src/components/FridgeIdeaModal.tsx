@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, Sparkles, RotateCcw, Clock, Flame, Dumbbell, Check, Lightbulb, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Sparkles, RotateCcw, Clock, Flame, Dumbbell, Check, Lightbulb, AlertTriangle, Leaf } from 'lucide-react';
 import { FridgeCookIdea } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 
@@ -10,7 +10,7 @@ interface FridgeIdeaModalProps {
   isLoadingIdea: boolean;
   isCreatingFinalRecipe: boolean;
   errorMessage?: string | null;
-  onConfirmCreate: () => void;
+  onConfirmCreate: (approvedAdditionalIngredients: string[]) => void;
   onRetryIdea: () => void;
   onRetryAfterError?: () => void;
   onCancel: () => void;
@@ -18,9 +18,18 @@ interface FridgeIdeaModalProps {
   attemptNumber?: number;
 }
 
+const getShortPitch = (text?: string): string => {
+  if (!text) return '';
+  const trimmed = text.trim();
+  const match = trimmed.match(/^([^.!?]+[.!?])/);
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+  return trimmed;
+};
+
 export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
   isOpen,
-  onClose,
   idea,
   isLoadingIdea,
   isCreatingFinalRecipe,
@@ -34,6 +43,36 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
 }) => {
   useLockBodyScroll(isOpen);
 
+  const [selectedAdditional, setSelectedAdditional] = useState<string[]>([]);
+  const [loadingSeconds, setLoadingSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!isLoadingIdea && !isCreatingFinalRecipe) {
+      setLoadingSeconds(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setLoadingSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isLoadingIdea, isCreatingFinalRecipe]);
+
+  useEffect(() => {
+    if (idea?.additionalIngredientsProposed) {
+      setSelectedAdditional(idea.additionalIngredientsProposed);
+    } else {
+      setSelectedAdditional([]);
+    }
+  }, [idea]);
+
+  const toggleAdditional = (ingredient: string) => {
+    setSelectedAdditional((prev) =>
+      prev.includes(ingredient)
+        ? prev.filter((item) => item !== ingredient)
+        : [...prev, ingredient]
+    );
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -42,7 +81,7 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="fridge-idea-title"
-        className="bg-white rounded-2xl border border-[#ECEBE8] shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
+        className="bg-white rounded-2xl border border-[#ECEBE8] shadow-xl w-full max-w-[640px] overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
       >
         {/* Modal Header */}
         <div className="p-4 sm:p-5 border-b border-[#ECEBE8] flex items-center justify-between bg-[#FAF9F6]">
@@ -65,7 +104,7 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-[#686e6a]">
+              <p className="text-xs text-[#686E6A]">
                 {errorMessage ? 'Hinweis zur Rezeptgenerierung' : 'Gefällt dir diese Idee für deine Vorräte?'}
               </p>
             </div>
@@ -92,10 +131,10 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
                 <h4 className="text-base font-bold text-[#2D3E40]">
                   Generierung fehlgeschlagen
                 </h4>
-                <p className="text-sm text-[#686e6a] leading-relaxed">
+                <p className="text-sm text-[#686E6A] leading-relaxed">
                   {errorMessage}
                 </p>
-                <p className="text-xs text-[#686e6a] pt-1">
+                <p className="text-xs text-[#686E6A] pt-1">
                   Es wurde kein unpassendes Fantasierezept erzeugt. Bitte versuche es mit einem Klick auf „Erneut versuchen“ noch einmal.
                 </p>
               </div>
@@ -103,44 +142,47 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
           ) : isLoadingIdea ? (
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
               <div className="w-10 h-10 border-3 border-[#ECEBE8] border-t-[#4A7856] rounded-full animate-spin" />
-              <div className="space-y-1">
+              <div className="space-y-1.5 max-w-sm">
                 <p className="text-sm font-semibold text-[#2D3E40]">
                   Kombiniere Vorräte zu einer Rezeptidee...
                 </p>
-                <p className="text-xs text-[#686e6a]">
-                  Leichtgewichtige Vorab-Generierung zur Ressourcenschonung
-                </p>
+                {loadingSeconds >= 5 && (
+                  <p className="text-xs text-[#686E6A] animate-in fade-in duration-300">
+                    {loadingSeconds >= 12
+                      ? 'Rezeptidee wird final verfeinert...'
+                      : 'Wird mit Gemini 3.8 Flash ausgearbeitet – bei hoher Nachfrage kann dies kurz dauern.'}
+                  </p>
+                )}
               </div>
             </div>
           ) : isCreatingFinalRecipe ? (
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
               <div className="w-10 h-10 border-3 border-[#ECEBE8] border-t-[#4A7856] rounded-full animate-spin" />
-              <div className="space-y-1">
+              <div className="space-y-1.5 max-w-sm">
                 <p className="text-sm font-semibold text-[#2D3E40]">
-                  Erstelle vollständiges Rezept mit Schritten & Mengenangaben...
+                  Erstelle vollständiges Rezept mit Schritten &amp; Mengenangaben...
                 </p>
-                <p className="text-xs text-[#686e6a]">
-                  Du wirst gleich automatisch zur Rezeptansicht weitergeleitet!
-                </p>
+                {loadingSeconds >= 5 && (
+                  <p className="text-xs text-[#686E6A] animate-in fade-in duration-300">
+                    {loadingSeconds >= 14
+                      ? 'Schritte und Nährwerte werden präzise berechnet...'
+                      : 'Sorgfältige Ausarbeitung mit Gemini 3.8 Flash – bei hoher Nachfrage dauert es kurz länger.'}
+                  </p>
+                )}
               </div>
             </div>
           ) : idea ? (
             <>
               {/* Dish Concept Highlight */}
-              <div className="p-4 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8] space-y-2.5">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {isVegan && (
-                    <span className="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full border bg-[#EBF3ED] text-[#4A7856] border-[#D4E6D8]">
-                      🌱 100% Vegan
-                    </span>
-                  )}
-                  {idea.dishType && (
-                    <span className="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white border border-[#ECEBE8] text-[#57534d]">
-                      {idea.dishType}
-                    </span>
-                  )}
+              <div className="p-4 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8] space-y-2">
+                {/* Pills at top: Vegan/Vegetarisch (voll grün) and Category (hellgrün) */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#4A7856] text-white text-xs font-semibold shadow-2xs">
+                    <Leaf className="w-3.5 h-3.5 text-white" />
+                    <span>{isVegan ? 'Vegan' : 'Vegetarisch'}</span>
+                  </span>
                   {idea.category && (
-                    <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-stone-100 text-[#686e6a]">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
                       {idea.category}
                     </span>
                   )}
@@ -150,79 +192,120 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
                   {idea.title}
                 </h4>
 
-                <p className="text-sm text-[#2D3E40] leading-relaxed">
-                  {idea.pitch}
+                {/* Subtitle / Pitch deutlich kürzer gefasst */}
+                <p className="text-sm text-[#686E6A] leading-relaxed">
+                  {getShortPitch(idea.pitch)}
                 </p>
               </div>
 
-              {/* Quick Estimated Stats */}
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="p-2.5 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8]">
-                  <div className="flex items-center justify-center gap-1 text-xs text-[#686e6a] font-medium mb-0.5">
-                    <Clock className="w-3.5 h-3.5 text-[#4A7856]" />
-                    <span>Dauer</span>
+              {/* Quick Estimated Stats - GENAUSO wie in der Rezept-Detailansicht, dynamisch nebeneinander */}
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                {/* Total Time / Dauer */}
+                <div className="p-2.5 sm:p-3.5 bg-white rounded-2xl border border-[#ECEBE8] flex items-center gap-2.5 sm:gap-3 shadow-2xs min-w-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center shrink-0">
+                    <Clock className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-[#4A7856]" />
                   </div>
-                  <span className="text-sm font-bold text-[#2D3E40]">
-                    ca. {idea.estimatedTimeMinutes} Min.
-                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[12px] sm:text-[14px] font-semibold text-[#686E6A] uppercase tracking-wider whitespace-nowrap">
+                      Dauer
+                    </div>
+                    <div className="font-bold text-[#2D3E40] text-sm sm:text-base tabular-nums whitespace-nowrap">
+                      ca. {idea.estimatedTimeMinutes} Min.
+                    </div>
+                  </div>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8]">
-                  <div className="flex items-center justify-center gap-1 text-xs text-[#686e6a] font-medium mb-0.5">
-                    <Flame className="w-3.5 h-3.5 text-[#E67E22]" />
-                    <span>Kalorien</span>
+                {/* Calories / Kalorien */}
+                <div className="p-2.5 sm:p-3.5 bg-white rounded-2xl border border-[#ECEBE8] flex items-center gap-2.5 sm:gap-3 shadow-2xs min-w-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#FDF6F0] text-[#E67E22] flex items-center justify-center shrink-0">
+                    <Flame className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-[#E67E22]" />
                   </div>
-                  <span className="text-sm font-bold text-[#2D3E40]">
-                    ~{idea.estimatedCalories} kcal
-                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[12px] sm:text-[14px] font-semibold text-[#686E6A] uppercase tracking-wider whitespace-nowrap">
+                      Kalorien
+                    </div>
+                    <div className="font-bold text-[#2D3E40] text-sm sm:text-base tabular-nums whitespace-nowrap">
+                      ~{idea.estimatedCalories} kcal
+                    </div>
+                  </div>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-[#FAF9F6] border border-[#ECEBE8]">
-                  <div className="flex items-center justify-center gap-1 text-xs text-[#686e6a] font-medium mb-0.5">
-                    <Dumbbell className="w-3.5 h-3.5 text-[#4A7856]" />
-                    <span>Protein</span>
+                {/* Protein */}
+                <div className="p-2.5 sm:p-3.5 bg-white rounded-2xl border border-[#ECEBE8] flex items-center gap-2.5 sm:gap-3 shadow-2xs min-w-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center shrink-0">
+                    <Dumbbell className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-[#4A7856]" />
                   </div>
-                  <span className="text-sm font-bold text-[#2D3E40]">
-                    ~{idea.estimatedProtein}g
-                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[12px] sm:text-[14px] font-semibold text-[#686E6A] uppercase tracking-wider whitespace-nowrap">
+                      Protein
+                    </div>
+                    <div className="font-bold text-[#4A7856] text-sm sm:text-base tabular-nums whitespace-nowrap">
+                      ~{idea.estimatedProtein}g
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Incorporated Ingredients */}
+              {/* Incorporated Ingredients - grau, kein Haken, gleiche Größe */}
               {idea.keyIngredientsUsed && idea.keyIngredientsUsed.length > 0 && (
-                <div className="space-y-1.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-[#686e6a]">
+                <div className="space-y-2">
+                  <span className="text-[12px] font-bold uppercase tracking-wider text-[#2D3E40] block">
                     Verwendete Vorratszutaten
                   </span>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {idea.keyIngredientsUsed.map((ing, idx) => (
-                      <span
+                      <div
                         key={idx}
-                        className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8]"
+                        className="h-11 min-h-[44px] px-3.5 py-2 rounded-xl text-sm font-medium flex items-center justify-center border border-[#ECEBE8] bg-[#FAF9F6] text-[#57534D] shadow-2xs select-none"
                       >
-                        <Check className="w-3 h-3 text-[#4A7856]" />
-                        <span>{ing}</span>
-                      </span>
+                        <span className="font-medium text-[#57534D]">{ing}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Basic Pantry Items if mentioned */}
-              {idea.basicPantryItemsNeeded && idea.basicPantryItemsNeeded.length > 0 && (
-                <div className="text-xs text-[#686e6a] flex items-center gap-1.5">
-                  <span className="font-semibold text-[#686e6a]">Küchen-Basics:</span>
-                  <span>{idea.basicPantryItemsNeeded.join(', ')}</span>
+              {/* Checklist for Additional Ingredients - Titel in #2D3E40, Text in #57534D */}
+              {idea.additionalIngredientsProposed && idea.additionalIngredientsProposed.length > 0 && (
+                <div className="space-y-2 pt-1 border-t border-[#ECEBE8]">
+                  <span className="text-[12px] font-bold uppercase tracking-wider text-[#2D3E40] block">
+                    Zusätzliche Zutaten
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {idea.additionalIngredientsProposed.map((ing, idx) => {
+                      const isSelected = selectedAdditional.includes(ing);
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => toggleAdditional(ing)}
+                          className={`h-11 min-h-[44px] px-3.5 py-2 rounded-xl text-sm font-medium transition-all select-none cursor-pointer touch-manipulation flex items-center gap-2 border ${
+                            isSelected
+                              ? 'bg-[#F1F5F2] border-[#4A7856]/40 text-[#57534D] shadow-2xs'
+                              : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#8A918D] line-through opacity-70'
+                          }`}
+                        >
+                          <div
+                            className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors shrink-0 ${
+                              isSelected
+                                ? 'bg-[#4A7856] text-white'
+                                : 'border border-[#C5CAC7] bg-white text-transparent'
+                            }`}
+                          >
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          </div>
+                          <span className={isSelected ? 'font-medium text-[#57534D]' : 'text-[#8A918D]'}>
+                            {ing}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
-
-              {/* Usage & AI Savings Hint */}
-              <div className="p-3 rounded-xl bg-[#F8F9FA] border border-[#ECEBE8] text-xs text-[#686e6a] leading-relaxed">
-                💡 <strong className="text-[#2D3E40]">Smarte Vorab-Idee:</strong> Gefällt dir diese Art von Gericht? Erst wenn du auf <span className="font-medium text-[#4A7856]">„Gericht endgültig erstellen“</span> klickst, wird das komplette Rezept mit allen Mengenangaben und Schritten generiert.
-              </div>
             </>
           ) : (
-            <div className="py-8 text-center text-[#686e6a] text-sm">
+            <div className="py-8 text-center text-[#686E6A] text-sm">
               Keine Idee verfügbar. Bitte klicke auf „Neu probieren“.
             </div>
           )}
@@ -253,16 +336,16 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
             </div>
           ) : (
             <>
-              {/* Option 1: Gericht endgültig erstellen */}
+              {/* Option 1: Gericht erstellen (ohne 'endgültig') */}
               <button
                 id="fridge-idea-confirm-btn"
                 type="button"
                 disabled={isLoadingIdea || isCreatingFinalRecipe || !idea}
-                onClick={onConfirmCreate}
+                onClick={() => onConfirmCreate(selectedAdditional)}
                 className="w-full h-12 min-h-[48px] rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-50 text-white font-semibold text-[16px] flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
               >
                 <Sparkles className="w-5 h-5" />
-                <span>Gericht endgültig erstellen</span>
+                <span>Gericht erstellen</span>
               </button>
 
               {/* Options 2 & 3: Neu probieren & Abbrechen */}

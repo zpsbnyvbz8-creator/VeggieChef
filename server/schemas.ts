@@ -22,6 +22,7 @@ export const fridgeCookIdeaRequestSchema = z.object({
   difficulty: z.string().max(40).optional().default("Einfach"),
   mealType: z.string().max(50).optional().default("Hauptgericht"),
   extraWishes: z.string().max(200).optional().default(""),
+  maxAdditionalIngredients: z.number().int().min(0).max(10).optional().default(2),
   nutritionGoal: z.enum(["balanced", "high_protein", "high_calorie"]).optional().default("balanced"),
   calorieFilter: z.string().max(40).optional().default("all"),
   proteinFilter: z.string().max(40).optional().default("all"),
@@ -46,6 +47,8 @@ export const fridgeCookRequestSchema = z.object({
   chosenIdeaTitle: z.string().max(200).optional(),
   chosenIdeaPitch: z.string().max(500).optional(),
   chosenIdeaCategory: z.string().max(100).optional(),
+  approvedAdditionalIngredients: z.array(z.string().max(80)).optional().default([]),
+  excludedAdditionalIngredients: z.array(z.string().max(80)).optional().default([]),
 });
 
 export const mealPlanRequestSchema = z.object({
@@ -150,6 +153,10 @@ export const structuredRecipeIdeaSchema = {
       items: { type: Type.STRING },
     },
     basicPantryItemsNeeded: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+    },
+    additionalIngredientsProposed: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
     },

@@ -140,6 +140,7 @@ aiRouter.post("/fridge-cook-idea", async (req: Request, res: Response) => {
     maxTimeMinutes,
     mealType,
     extraWishes,
+    maxAdditionalIngredients = 2,
     calorieFilter = "all",
     proteinFilter = "all",
     excludeTitles = [],
@@ -154,6 +155,7 @@ aiRouter.post("/fridge-cook-idea", async (req: Request, res: Response) => {
       calorieFilter,
       proteinFilter,
       excludeTitles,
+      maxAdditionalIngredients,
     });
     return res.json({ success: true, idea: fallbackIdea, isFallback: true });
   }
@@ -167,6 +169,11 @@ aiRouter.post("/fridge-cook-idea", async (req: Request, res: Response) => {
       excludeTitles && excludeTitles.length > 0
         ? `⭐ WICHTIG: Folgende Gerichte NICHT vorschlagen (wurde bereits abgelehnt): ${excludeTitles.join(", ")}. Erfinde ein komplett anderes Gerichtskonzept!`
         : "";
+
+    const additionalInstruction =
+      maxAdditionalIngredients > 0
+        ? `- 'additionalIngredientsProposed': Schlage bis zu ${maxAdditionalIngredients} zusätzliche Zutaten vor (z.B. Zitrone, Knoblauch, frische Kräuter, Kokosmilch), die NICHT in den Vorräten enthalten sind, um das Gericht optimal abzurunden. Gib diese als Array von Strings an.`
+        : `- 'additionalIngredientsProposed': Der Nutzer möchte KEINE zusätzlichen Zutaten. 'additionalIngredientsProposed' muss ein leeres Array [] sein.`;
 
     const prompt = `Du bist ein erfahrener Spitzenkoch für moderne, gesunde pflanzliche Alltagsküche.
 Der Nutzer hat Vorräte ausgewählt. Schlage EINE EINZIGE, besonders kreative, harmonische und alltagstaugliche REZEPTIDEE vor, die diese Vorräte sinnvoll verwertet.
@@ -192,12 +199,13 @@ STRIKTE VORGABEN:
 - 'title': Appetitanregender, kreativer und klarer Name des Gerichts
 - 'category': Passende Kategorie ("Schnelle Küche", "Currys & Eintöpfe", "Bowls & Salate", "Ofengerichte", "Pasta & Gnocchi")
 - 'dishType': Art des Gerichts (z.B. "Samtiges Kokos-Curry", "Cremige Blitz-Pfanne", "Knuspriges Blechgericht", "Nährstoffreiche Bowl")
-- 'pitch': 1-2 Sätze, warum dieses Gericht mit den vorhandenen Vorräten fantastisch schmeckt.
+- 'pitch': SEHR KURZ: maximal 1 kurzer, knackiger Satz (unter 14 Wörtern), der Appetit macht.
 - 'estimatedTimeMinutes': Geschätzte Kochzeit (z.B. 20)
 - 'estimatedCalories': Geschätzte Kalorien pro Portion
 - 'estimatedProtein': Geschätztes Eiweiß in Gramm pro Portion
 - 'keyIngredientsUsed': Array der verwendeten Vorratszutaten
 - 'basicPantryItemsNeeded': Array weniger Küchen-Basics (z.B. Öl, Salz, Pfeffer)
+${additionalInstruction}
 Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
@@ -208,7 +216,7 @@ Antworte als strukturiertes JSON-Objekt.`;
         responseSchema: structuredRecipeIdeaSchema,
         temperature: 0.7,
       },
-      timeoutMs: 22000,
+      timeoutMs: 40000,
     });
 
     const parsed = safeExtractJson(response.text, null);
@@ -224,16 +232,11 @@ Antworte als strukturiertes JSON-Objekt.`;
     res.json({ success: true, idea: parsed });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    logAiEvent("warn", "/api/ai/fridge-cook-idea", "Fallback triggered for fridge-cook-idea", { error: errMsg });
-    const fallbackIdea = buildFallbackFridgeIdea({
-      ingredients,
-      isVegan,
-      maxTimeMinutes,
-      calorieFilter,
-      proteinFilter,
-      excludeTitles,
+    logAiEvent("warn", "/api/ai/fridge-cook-idea", "All AI models failed for fridge-cook-idea", { error: errMsg });
+    res.status(503).json({
+      success: false,
+      error: "Die KI-Server sind momentan stark ausgelastet. Bitte versuche es mit einem Klick auf „Erneut versuchen“ noch einmal.",
     });
-    res.json({ success: true, idea: fallbackIdea, isFallback: true });
   }
 });
 
@@ -263,6 +266,8 @@ aiRouter.post("/fridge-cook", async (req: Request, res: Response) => {
     proteinFilter = "all",
     chosenIdeaTitle,
     chosenIdeaPitch,
+    approvedAdditionalIngredients = [],
+    excludedAdditionalIngredients = [],
   } = parseResult.data;
 
   const ai = getGenAI();
@@ -339,11 +344,25 @@ Der Nutzer hat folgende Rezeptidee vorab ausgewählt: "${chosenIdeaTitle}" (Konz
 Erstelle das vollständige Rezept für genau dieses Gericht! Passe den Titel bei Bedarf fein an, arbeite die Vorräte (${ingredients.join(", ")}) harmonisch ein und erstelle detaillierte Mengenangaben und meisterhafte Schritte.`
       : "";
 
+    const extraIngredientsClause =
+      excludedAdditionalIngredients.length > 0
+        ? `⚠️ VOM NUTZER AUSDRÜCKLICH ABGEWÄHLTE ZUSÄTZLICHE ZUTATEN (STRIKT VERBOTEN, AUF KEINEN FALL VERWENDEN!): ${excludedAdditionalIngredients.join(", ")}.`
+        : "";
+
+    const approvedClause =
+      approvedAdditionalIngredients.length > 0
+        ? `✅ VOM NUTZER GENEHMIGTE ZUSÄTZLICHE ZUTATEN (dürfen gerne verwendet werden): ${approvedAdditionalIngredients.join(", ")}.`
+        : maxAdditionalIngredients === 0
+        ? `⚠️ KEINE ZUSÄTZLICHEN ZUTATEN: Verwende NUR die Vorratszutaten und optionale Küchen-Basics!`
+        : "";
+
     const prompt = `Du bist ein meisterhafter Küchenchef für gesunde, alltagstaugliche vegane und vegetarische Spitzenküche.
 Erstelle ein aromatisches, gelingsicheres Rezept, das die vorhandenen Zutaten aus der Vorratskammer sinnvoll und fachgerecht verwertet.
 
 ${chosenIdeaInstruction}
 VORHANDENE ZUTATEN: ${JSON.stringify(ingredients)}
+${approvedClause}
+${extraIngredientsClause}
 KÜCHEN-BASICS (Salz, Pfeffer, Speiseöl, Wasser): ${includeBasics ? "Vorhanden" : "Nicht vorhanden"}
 MAXIMAL ZUSÄTZLICHE ZUTATEN: ${maxAdditionalIngredients} zusätzliche Zutat(en).
 ERNÄHRUNG: ${dietString}
@@ -378,7 +397,7 @@ Antworte als strukturiertes JSON-Objekt.`;
         responseSchema: structuredRecipeResponseSchema,
         temperature: 0.6,
       },
-      timeoutMs: 25000,
+      timeoutMs: 45000,
     });
 
     const parsed = safeExtractJson(response.text, null);
@@ -407,21 +426,11 @@ Antworte als strukturiertes JSON-Objekt.`;
     res.json({ success: true, recipe: normalizedRecipe });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    logAiEvent("warn", "/api/ai/fridge-cook", "Fallback triggered for fridge-cook", { error: errMsg });
-    const fallbackRecipe = buildFallbackFridgeRecipe({
-      ingredients,
-      isVegan,
-      maxTimeMinutes,
-      difficulty,
-      mealType,
-      extraWishes,
-      maxAdditionalIngredients,
-      includeBasics,
-      nutritionGoal,
-      calorieFilter,
-      proteinFilter,
+    logAiEvent("warn", "/api/ai/fridge-cook", "All AI models failed for fridge-cook", { error: errMsg });
+    res.status(503).json({
+      success: false,
+      error: "Das Rezept konnte wegen vorübergehender Auslastung der KI-Server nicht fertiggestellt werden. Bitte klicke auf „Erneut versuchen“.",
     });
-    res.json({ success: true, recipe: fallbackRecipe, isFallback: true });
   }
 });
 

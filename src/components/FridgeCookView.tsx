@@ -78,9 +78,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [generatedRecipe, setGeneratedRecipe] = useState<Recipe | null>(null);
   const [hasSaved, setHasSaved] = useState(false);
-  const [isPreferencesOpenOnMobile, setIsPreferencesOpenOnMobile] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth >= 640 : false
-  );
+  const [isPreferencesOpenOnMobile, setIsPreferencesOpenOnMobile] = useState(false);
   const [isIdeaModalOpen, setIsIdeaModalOpen] = useState(false);
   const [currentIdea, setCurrentIdea] = useState<FridgeCookIdea | null>(null);
   const [isLoadingIdea, setIsLoadingIdea] = useState(false);
@@ -177,6 +175,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           difficulty: difficulty === 'all' ? 'Beliebig' : difficulty,
           mealType: 'Hauptgericht',
           extraWishes,
+          maxAdditionalIngredients: maxExtraIngredients,
           calorieFilter,
           proteinFilter,
           excludeTitles: exclude,
@@ -225,11 +224,14 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   };
 
   // Step 2: Final Recipe Generation based on chosen idea
-  const handleConfirmCreateFinalRecipe = async () => {
+  const handleConfirmCreateFinalRecipe = async (approvedExtras: string[] = []) => {
     if (!currentIdea || selectedIngredients.length === 0) return;
     setIsCreatingFinalRecipe(true);
     setErrorMessage(null);
     setModalErrorMessage(null);
+
+    const proposed = currentIdea.additionalIngredientsProposed || [];
+    const excludedExtras = proposed.filter((item) => !approvedExtras.includes(item));
 
     try {
       const response = await fetch('/api/ai/fridge-cook', {
@@ -250,6 +252,8 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           chosenIdeaTitle: currentIdea.title,
           chosenIdeaPitch: currentIdea.pitch,
           chosenIdeaCategory: currentIdea.category,
+          approvedAdditionalIngredients: approvedExtras,
+          excludedAdditionalIngredients: excludedExtras,
         }),
       });
 
@@ -606,12 +610,12 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                     style={{
                       left: `calc(${((maxTime - 15) / (50 - 15)) * 100}% + ${(0.5 - (maxTime - 15) / (50 - 15)) * 24}px)`,
                     }}
-                    className="absolute bottom-[calc(50%+20px)] -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center select-none"
+                    className="absolute bottom-[calc(50%+26px)] -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center select-none"
                   >
-                    <div className="px-2.5 py-0.5 rounded-full bg-[#F1F5F2] border border-[#ECEBE8] shadow-md text-[#4A7856] font-bold text-xs tabular-nums whitespace-nowrap">
+                    <div className="px-4 py-1 rounded-full bg-white border border-[#D3DCD5] shadow-lg text-[#355F40] font-extrabold text-[17px] tabular-nums whitespace-nowrap">
                       {maxTime} Min.
                     </div>
-                    <div className="w-2 h-2 bg-[#F1F5F2] border-r border-b border-[#ECEBE8] rotate-45 -mt-1 shadow-xs" />
+                    <div className="w-3 h-3 bg-white border-r border-b border-[#D3DCD5] rotate-45 -mt-1.5 shadow-xs" />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -805,12 +809,12 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                                 style={{
                                   left: `calc(${(maxExtraIngredients / 6) * 100}% + ${(0.5 - maxExtraIngredients / 6) * 24}px)`,
                                 }}
-                                className="absolute bottom-[calc(50%+20px)] -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center select-none"
+                                className="absolute bottom-[calc(50%+26px)] -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center select-none"
                               >
-                                <div className="px-2.5 py-0.5 rounded-full bg-[#F1F5F2] border border-[#ECEBE8] shadow-md text-[#4A7856] font-bold text-xs tabular-nums whitespace-nowrap">
+                                <div className="px-4 py-1 rounded-full bg-white border border-[#D3DCD5] shadow-lg text-[#355F40] font-extrabold text-[17px] tabular-nums whitespace-nowrap">
                                   {maxExtraIngredients === 0 ? 'Nur Vorräte' : `Max. ${maxExtraIngredients}`}
                                 </div>
-                                <div className="w-2 h-2 bg-[#F1F5F2] border-r border-b border-[#ECEBE8] rotate-45 -mt-1 shadow-xs" />
+                                <div className="w-3 h-3 bg-white border-r border-b border-[#D3DCD5] rotate-45 -mt-1.5 shadow-xs" />
                               </motion.div>
                             )}
                           </AnimatePresence>

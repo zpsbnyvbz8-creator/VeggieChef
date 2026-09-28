@@ -7,6 +7,7 @@ export function buildFallbackFridgeIdea(params: {
   calorieFilter?: string;
   proteinFilter?: string;
   excludeTitles?: string[];
+  maxAdditionalIngredients?: number;
 }) {
   const {
     ingredients = [],
@@ -15,6 +16,7 @@ export function buildFallbackFridgeIdea(params: {
     calorieFilter = "all",
     proteinFilter = "all",
     excludeTitles = [],
+    maxAdditionalIngredients = 2,
   } = params;
 
   const lead = ingredients[0] || "Gemüse";
@@ -85,6 +87,12 @@ export function buildFallbackFridgeIdea(params: {
     estimatedProtein: protein,
     keyIngredientsUsed: ingredients.slice(0, Math.min(3, ingredients.length)),
     basicPantryItemsNeeded: chosen.basicPantryItemsNeeded,
+    additionalIngredientsProposed:
+      (maxAdditionalIngredients || 0) > 0
+        ? isVegan
+          ? ["Frischer Knoblauch", "Spritzer Zitronensaft"].slice(0, maxAdditionalIngredients || 2)
+          : ["Frischer Knoblauch"].slice(0, maxAdditionalIngredients || 2)
+        : [],
   };
 }
 
