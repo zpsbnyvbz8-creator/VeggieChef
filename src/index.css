@@ -1,6 +1,15 @@
 @import "tailwindcss";
 
 @theme {
+  --color-accent: #4A7856;
+  --color-accent-hover: #3D6447;
+  --color-accent-tint: #F1F5F2;
+  --color-accent-border: #CCD5CF;
+  --color-surface: #FAF9F6;
+  --color-card: #FFFFFF;
+  --color-border: #ECEBE8;
+  --color-text-main: #2D3E40;
+  --color-text-muted: #686E6A;
   --color-rose-50: #FFF1F2;
   --color-rose-100: #FFE4E6;
   --color-rose-200: #FECDD3;
@@ -18,6 +27,18 @@
   --color-red-500: #C91C43;
   --color-red-600: #B91C3C;
   --color-red-700: #991331;
+}
+
+:root {
+  --accent: #4A7856;
+  --accent-hover: #3D6447;
+  --accent-tint: #F1F5F2;
+  --accent-border: #CCD5CF;
+  --surface: #FAF9F6;
+  --card: #FFFFFF;
+  --border: #ECEBE8;
+  --text-main: #2D3E40;
+  --text-muted: #686E6A;
 }
 
 @layer base {
