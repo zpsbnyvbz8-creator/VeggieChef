@@ -365,7 +365,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             Was hast du im Kühlschrank?
           </h1>
           <p className="text-base text-[#686E6A] leading-relaxed">
-            Vorhandene Zutaten wählen und passende Gerichte oder KI-Rezepte entdecken.
+            Zutaten wählen und passende Rezepte finden.
           </p>
         </div>
       </div>
