@@ -69,7 +69,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   const [isVegan, setIsVegan] = useState(true);
   const [calorieFilter, setCalorieFilter] = useState<string>('all'); // 'all', 'high', 'low', 'moderate'
   const [proteinFilter, setProteinFilter] = useState<string>('all'); // 'all', 'high', 'very-high', 'medium'
-  const [difficulty, setDifficulty] = useState<string>('Einfach');
+  const [difficulty, setDifficulty] = useState<string>('all');
   const [maxTime, setMaxTime] = useState(25);
   const [maxExtraIngredients, setMaxExtraIngredients] = useState(2); // AI additional ingredient slider
   const [includeBasics, setIncludeBasics] = useState(true); // Basic staples (oil, salt, pepper, etc.) - standardmäßig aktiv
@@ -78,9 +78,9 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [generatedRecipe, setGeneratedRecipe] = useState<Recipe | null>(null);
   const [hasSaved, setHasSaved] = useState(false);
-  const [isPreferencesOpenOnMobile, setIsPreferencesOpenOnMobile] = useState(false);
-
-  // Two-step Idea Generation Flow States (saves AI token usage and lets user select concept)
+  const [isPreferencesOpenOnMobile, setIsPreferencesOpenOnMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 640 : false
+  );
   const [isIdeaModalOpen, setIsIdeaModalOpen] = useState(false);
   const [currentIdea, setCurrentIdea] = useState<FridgeCookIdea | null>(null);
   const [isLoadingIdea, setIsLoadingIdea] = useState(false);
@@ -101,18 +101,18 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
     maxExtraIngredients !== 2,
     calorieFilter !== 'all',
     proteinFilter !== 'all',
-    difficulty !== 'Einfach',
+    difficulty !== 'all',
   ].filter(Boolean).length;
 
   const getFilterSummary = () => {
     const parts: string[] = [];
-    if (calorieFilter === 'high') parts.push('High Cal (750+)');
-    else if (calorieFilter === 'low') parts.push('Leicht (< 500)');
+    if (calorieFilter === 'high') parts.push('750+ kcal');
+    else if (calorieFilter === 'low') parts.push('< 500 kcal');
     else if (calorieFilter === 'moderate') parts.push('500–700 kcal');
 
-    if (proteinFilter === 'high') parts.push('High Prot (30g+)');
-    else if (proteinFilter === 'very-high') parts.push('Extra Prot (40g+)');
-    else if (proteinFilter === 'medium') parts.push('20g+ Protein');
+    if (proteinFilter === 'high') parts.push('30+ g Protein');
+    else if (proteinFilter === 'very-high') parts.push('40+ g Protein');
+    else if (proteinFilter === 'medium') parts.push('20+ g Protein');
 
     if (parts.length === 0) return 'Ausgewogen';
     return parts.join(' • ');
@@ -144,7 +144,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           ingredients: selectedIngredients,
           isVegan,
           maxTimeMinutes: maxTime,
-          difficulty,
+          difficulty: difficulty === 'all' ? 'Beliebig' : difficulty,
           mealType: 'Hauptgericht',
           extraWishes,
           calorieFilter,
@@ -209,7 +209,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           ingredients: selectedIngredients,
           isVegan,
           maxTimeMinutes: maxTime,
-          difficulty,
+          difficulty: difficulty === 'all' ? 'Beliebig' : difficulty,
           mealType: 'Hauptgericht',
           extraWishes,
           maxAdditionalIngredients: maxExtraIngredients,
@@ -371,7 +371,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
         <div>
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-[#686E6A]">
-              Deine ausgewählten Zutaten ({selectedIngredients.length})
+              Deine ausgewählten Zutaten · {selectedIngredients.length}
             </h2>
             {selectedIngredients.length > 0 && (
               <button
@@ -544,147 +544,174 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 className="w-full accent-[#4A7856] cursor-pointer"
               />
               <div className="flex justify-between text-[11px] text-[#686E6A] mt-1">
-                <span>15 Min. (Express)</span>
+                <span>15 Min.</span>
                 <span>50 Min.</span>
               </div>
             </div>
           </div>
 
-          {/* Mobile Accordion Toggle: Ab den Wünschen einklappbar (Standard: eingeklappt) */}
-          <button
-            type="button"
-            id="fridge-toggle-wishes-mobile-btn"
-            onClick={() => setIsPreferencesOpenOnMobile((prev) => !prev)}
-            aria-expanded={isPreferencesOpenOnMobile}
-            aria-controls="fridge-extra-wishes-section"
-            className="sm:hidden w-full h-12 min-h-[48px] px-4 py-2.5 rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#2D3E40] text-sm font-semibold flex items-center justify-between transition-colors shadow-2xs touch-manipulation active:scale-[0.99] cursor-pointer"
-          >
-            <div className="flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-[#4A7856]" />
-              <span>Wünsche & Feineinstellungen</span>
-              {activeCustomSettingsCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-[#4A7856]/15 text-[#4A7856] text-xs font-bold">
-                  {activeCustomSettingsCount} aktiv
+          {/* Regal-Karte für Wünsche & Feineinstellungen (Hintergrund: #f1f5f2, analog zu den Regalen der Einkaufsliste) */}
+          <div className="bg-[#F1F5F2] rounded-2xl border border-[#ECEBE8] shadow-xs overflow-hidden transition-all duration-200">
+            {/* Shelf Header */}
+            <button
+              type="button"
+              id="fridge-toggle-wishes-mobile-btn"
+              onClick={() => setIsPreferencesOpenOnMobile((prev) => !prev)}
+              aria-expanded={isPreferencesOpenOnMobile}
+              aria-controls="fridge-extra-wishes-section"
+              className={`w-full min-h-[48px] p-3.5 sm:p-4 bg-[#F1F5F2] hover:bg-[#E8EFEA] transition-colors flex items-center justify-between text-left cursor-pointer select-none touch-manipulation group ${
+                isPreferencesOpenOnMobile ? 'border-b border-[#ECEBE8]' : ''
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-white border border-[#D5DDD7] flex items-center justify-center text-[#4A7856] shrink-0 shadow-2xs">
+                  <Sliders className="w-4 h-4" />
+                </div>
+                <span className="font-semibold text-[#2D3E40] text-base truncate">
+                  Wünsche &amp; Feineinstellungen
                 </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-[#686E6A] font-medium">
-              <span>{isPreferencesOpenOnMobile ? 'Einklappen' : 'Anpassen'}</span>
-              <ChevronDown
-                className={`w-4 h-4 text-[#686E6A] transition-transform duration-200 ${
-                  isPreferencesOpenOnMobile ? 'rotate-180' : ''
-                }`}
-              />
-            </div>
-          </button>
-
-          {/* Ab den Wünschen: Auf Mobile einklappbar (Standard eingeklappt), auf Desktop stets sichtbar */}
-          <div
-            id="fridge-extra-wishes-section"
-            className={`${
-              isPreferencesOpenOnMobile ? 'block' : 'hidden'
-            } sm:block space-y-4`}
-          >
-            {/* Zeile 2: Wünsche (links) & Zusätzliche Zutaten (rechts daneben) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
-              {/* Wünsche */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3E40] mb-1.5">
-                  Wünsche (optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="z.B. cremig, One-Pot, ohne Zwiebeln..."
-                  value={extraWishes}
-                  onChange={(e) => setExtraWishes(e.target.value)}
-                  className="w-full h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl px-3.5 text-[16px] font-medium text-[#2D3E40] focus:outline-hidden focus:border-[#4A7856]"
-                />
               </div>
 
-              {/* Zusätzliche Zutaten Schieberegler (rechts daneben) */}
-              <div className="bg-[#FAF9F6] border border-[#ECEBE8] p-3 rounded-xl min-h-[48px] flex flex-col justify-center">
-                <div className="flex items-center justify-between mb-1">
-                  <label htmlFor="ai-extra-ingredients-slider" className="text-xs font-bold uppercase tracking-wider text-[#2D3E40] flex items-center gap-1.5">
-                    <Sliders className="w-3.5 h-3.5 text-[#4A7856]" />
-                    <span>Zusätzliche Zutaten:</span>
-                  </label>
-                  <span className="px-2 py-0.5 rounded-full bg-white border border-[#ECEBE8] text-[#4A7856] font-bold text-xs">
-                    {maxExtraIngredients === 0 ? '0 (Nur Vorräte)' : `Max. ${maxExtraIngredients}`}
+              <div className="flex items-center gap-2 shrink-0 ml-2">
+                {activeCustomSettingsCount > 0 && (
+                  <span className="text-xs font-semibold text-[#4A7856] bg-white px-2.5 py-0.5 rounded-full border border-[#D5DDD7] shadow-2xs tabular-nums">
+                    {activeCustomSettingsCount} aktiv
                   </span>
-                </div>
-                <input
-                  id="ai-extra-ingredients-slider"
-                  type="range"
-                  min="0"
-                  max="6"
-                  step="1"
-                  value={maxExtraIngredients}
-                  onChange={(e) => setMaxExtraIngredients(Number(e.target.value))}
-                  className="w-full accent-[#4A7856] cursor-pointer"
-                />
-                <div className="flex justify-between text-[11px] text-[#686E6A] mt-1">
-                  <span>0 (Keine Zukäufe)</span>
-                  <span>1-2 (Minimal)</span>
-                  <span>3 (Ausgewogen)</span>
-                  <span>6 (Frei)</span>
+                )}
+                <div className="p-1 text-[#4A7856] group-hover:text-[#3D6447] transition-colors">
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-200 shrink-0 ${
+                      isPreferencesOpenOnMobile ? 'rotate-180' : 'rotate-0'
+                    }`}
+                  />
                 </div>
               </div>
-            </div>
+            </button>
 
-            {/* Zeile 3: Nährwerte & Feintuning: Kalorien, Proteine und Schwierigkeit */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3E40]">
-                Nährwerte & Schwierigkeit
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                {/* Kalorien Filter */}
-                <div className="relative">
-                  <select
-                    id="fridge-filter-calories"
-                    value={calorieFilter}
-                    onChange={(e) => setCalorieFilter(e.target.value)}
-                    className="w-full appearance-none h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[16px] font-medium rounded-xl pl-9 pr-8 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
-                  >
-                    <option value="all">Alle Kalorien</option>
-                    <option value="high">High Cal (750+)</option>
-                    <option value="low">Leicht (&lt; 500)</option>
-                    <option value="moderate">500–700 kcal</option>
-                  </select>
-                  <Flame className="w-4 h-4 text-amber-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+            {/* Shelf Content: Klappbereich analog zur Einkaufsliste */}
+            <div
+              id="fridge-extra-wishes-section"
+              className={`grid transition-all duration-250 ease-in-out ${
+                isPreferencesOpenOnMobile ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="p-3.5 sm:p-5 space-y-4">
+                  {/* Zeile 2: Wünsche (links) & Zusätzliche Zutaten (rechts daneben) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
+                    {/* Wünsche */}
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3E40] mb-1.5">
+                        Wünsche
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="z.B. cremig, One-Pot, ohne Zwiebeln..."
+                        value={extraWishes}
+                        onChange={(e) => setExtraWishes(e.target.value)}
+                        className="w-full h-12 min-h-[48px] bg-white border border-[#ECEBE8] hover:border-[#4A7856]/40 focus:border-[#4A7856] rounded-xl px-3.5 text-[16px] font-medium text-[#2D3E40] focus:outline-hidden shadow-2xs transition-colors"
+                      />
+                    </div>
 
-                {/* Protein Filter */}
-                <div className="relative">
-                  <select
-                    id="fridge-filter-protein"
-                    value={proteinFilter}
-                    onChange={(e) => setProteinFilter(e.target.value)}
-                    className="w-full appearance-none h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[16px] font-medium rounded-xl pl-9 pr-8 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
-                  >
-                    <option value="all">Alle Protein</option>
-                    <option value="high">High Prot (30g+)</option>
-                    <option value="very-high">Extra Prot (40g+)</option>
-                    <option value="medium">20g+ Protein</option>
-                  </select>
-                  <Dumbbell className="w-4 h-4 text-[#4A7856] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+                    {/* Zusätzliche Zutaten Schieberegler (rechts daneben) */}
+                    <div className="bg-white border border-[#ECEBE8] p-3 rounded-xl min-h-[48px] flex flex-col justify-center shadow-2xs">
+                      <div className="flex items-center justify-between mb-1">
+                        <label htmlFor="ai-extra-ingredients-slider" className="text-xs font-bold uppercase tracking-wider text-[#2D3E40] flex items-center gap-1.5">
+                          <Sliders className="w-3.5 h-3.5 text-[#4A7856]" />
+                          <span>Zusätzliche Zutaten:</span>
+                        </label>
+                        <span className="px-2 py-0.5 rounded-full bg-[#F1F5F2] border border-[#ECEBE8] text-[#4A7856] font-bold text-xs">
+                          {maxExtraIngredients === 0 ? 'Nur Vorräte' : `Max. ${maxExtraIngredients}`}
+                        </span>
+                      </div>
+                      <input
+                        id="ai-extra-ingredients-slider"
+                        type="range"
+                        min="0"
+                        max="6"
+                        step="1"
+                        value={maxExtraIngredients}
+                        onChange={(e) => setMaxExtraIngredients(Number(e.target.value))}
+                        className="w-full accent-[#4A7856] cursor-pointer"
+                      />
+                      {/* Mobile: gerade Zahlen (0, 2, 4, 6) auf der X-Achse für mehr Übersicht */}
+                      <div className="sm:hidden flex justify-between text-xs text-[#686E6A] mt-1.5 font-semibold tabular-nums px-1 select-none">
+                        <span>0</span>
+                        <span aria-hidden="true" className="invisible">1</span>
+                        <span>2</span>
+                        <span aria-hidden="true" className="invisible">3</span>
+                        <span>4</span>
+                        <span aria-hidden="true" className="invisible">5</span>
+                        <span>6</span>
+                      </div>
+                      {/* Desktop: Bezeichner */}
+                      <div className="hidden sm:flex justify-between text-[11px] text-[#686E6A] mt-1 font-medium">
+                        <span>Keine Zukäufe</span>
+                        <span>1–2 Zutaten</span>
+                        <span>3 Zutaten</span>
+                        <span>Bis zu 6</span>
+                      </div>
+                    </div>
+                  </div>
 
-                {/* Schwierigkeit Selector */}
-                <div className="relative">
-                  <select
-                    id="fridge-filter-difficulty"
-                    value={difficulty}
-                    onChange={(e) => setDifficulty(e.target.value)}
-                    className="w-full appearance-none h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[16px] font-medium rounded-xl pl-9 pr-8 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
-                  >
-                    <option value="Einfach">Einfach (Alltag)</option>
-                    <option value="Mittel">Mittel</option>
-                    <option value="Anspruchsvoll">Anspruchsvoll</option>
-                  </select>
-                  <ChefHat className="w-4 h-4 text-[#4A7856] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  {/* Zeile 3: Nährwerte & Feintuning: Kalorien, Proteine und Schwierigkeit */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3E40]">
+                      Nährwerte &amp; Schwierigkeit
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {/* Kalorien Filter */}
+                      <div className="relative">
+                        <select
+                          id="fridge-filter-calories"
+                          value={calorieFilter}
+                          onChange={(e) => setCalorieFilter(e.target.value)}
+                          className="w-full appearance-none h-12 min-h-[48px] bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[16px] font-medium rounded-xl pl-9 pr-8 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors shadow-2xs"
+                        >
+                          <option value="all">Kalorien: Alle</option>
+                          <option value="low">&lt; 500 kcal</option>
+                          <option value="moderate">500–700 kcal</option>
+                          <option value="high">750+ kcal</option>
+                        </select>
+                        <Flame className="w-4 h-4 text-amber-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+
+                      {/* Protein Filter */}
+                      <div className="relative">
+                        <select
+                          id="fridge-filter-protein"
+                          value={proteinFilter}
+                          onChange={(e) => setProteinFilter(e.target.value)}
+                          className="w-full appearance-none h-12 min-h-[48px] bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[16px] font-medium rounded-xl pl-9 pr-8 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors shadow-2xs"
+                        >
+                          <option value="all">Proteine: Alle</option>
+                          <option value="medium">20+ g Protein</option>
+                          <option value="high">30+ g Protein</option>
+                          <option value="very-high">40+ g Protein</option>
+                        </select>
+                        <Dumbbell className="w-4 h-4 text-[#4A7856] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+
+                      {/* Schwierigkeit Selector */}
+                      <div className="relative">
+                        <select
+                          id="fridge-filter-difficulty"
+                          value={difficulty}
+                          onChange={(e) => setDifficulty(e.target.value)}
+                          className="w-full appearance-none h-12 min-h-[48px] bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[16px] font-medium rounded-xl pl-9 pr-8 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors shadow-2xs"
+                        >
+                          <option value="all">Schwierigkeit: Alle</option>
+                          <option value="Einfach">Einfach</option>
+                          <option value="Mittel">Mittel</option>
+                          <option value="Anspruchsvoll">Anspruchsvoll</option>
+                        </select>
+                        <ChefHat className="w-4 h-4 text-[#4A7856] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -760,25 +787,25 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 {(proteinFilter === 'high' || proteinFilter === 'very-high') && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
                     <Dumbbell className="w-3 h-3" />
-                    {proteinFilter === 'very-high' ? 'Extra Protein (40g+)' : 'High Protein (30g+)'}
+                    {proteinFilter === 'very-high' ? '40+ g Protein' : '30+ g Protein'}
                   </span>
                 )}
                 {proteinFilter === 'medium' && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
                     <Dumbbell className="w-3 h-3" />
-                    20g+ Protein
+                    20+ g Protein
                   </span>
                 )}
                 {calorieFilter === 'high' && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold">
                     <Flame className="w-3 h-3 text-amber-500" />
-                    High Cal (750+)
+                    750+ kcal
                   </span>
                 )}
                 {calorieFilter === 'low' && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
                     <Flame className="w-3 h-3 text-emerald-600" />
-                    Leicht (&lt; 500 kcal)
+                    &lt; 500 kcal
                   </span>
                 )}
                 {calorieFilter === 'moderate' && (
@@ -846,7 +873,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-semibold text-[#57534d] uppercase tracking-wider">
-                  Zutaten ({generatedRecipe.ingredients.length})
+                  Zutaten · {generatedRecipe.ingredients.length}
                 </h4>
                 {(() => {
                   const extraCount = generatedRecipe.ingredients.filter((i) => (i as any).source === 'extra').length;
