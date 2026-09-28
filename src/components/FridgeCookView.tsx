@@ -4,7 +4,6 @@ import {
   Sparkles, 
   Plus, 
   X, 
-  ChefHat, 
   Clock, 
   Dumbbell, 
   Flame, 
@@ -90,6 +89,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   const [rejectedIdeaTitles, setRejectedIdeaTitles] = useState<string[]>([]);
   const [attemptNumber, setAttemptNumber] = useState(1);
   const [showAllPantryItems, setShowAllPantryItems] = useState(false);
+  const [showAllMatchedRecipes, setShowAllMatchedRecipes] = useState(false);
 
   const nutritionGoal =
     proteinFilter === 'high' || proteinFilter === 'very-high'
@@ -556,20 +556,28 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 {maxTime} Min.
               </span>
             </div>
-            <input
-              id="fridge-time-slider"
-              type="range"
-              min="15"
-              max="50"
-              step="5"
-              value={maxTime}
-              onChange={(e) => setMaxTime(Number(e.target.value))}
-              className="w-full h-2 rounded-lg appearance-none cursor-pointer focus:outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[22px] [&::-webkit-slider-thumb]:h-[22px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#4A7856] [&::-webkit-slider-thumb]:border-[2.5px] [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:w-[22px] [&::-moz-range-thumb]:h-[22px] [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#4A7856] [&::-moz-range-thumb]:border-[2.5px] [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-md"
-              style={{
-                background: `linear-gradient(to right, #4A7856 ${((maxTime - 15) / (50 - 15)) * 100}%, #ECEBE8 ${((maxTime - 15) / (50 - 15)) * 100}%)`,
-              }}
-            />
-            <div className="flex justify-between text-[13px] text-[#686E6A] mt-1.5 font-medium tabular-nums px-0.5">
+            <div className="py-2.5 flex items-center">
+              <input
+                id="fridge-time-slider"
+                type="range"
+                min="15"
+                max="50"
+                step="5"
+                value={maxTime}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  if (val !== maxTime && typeof window !== 'undefined' && 'vibrate' in navigator) {
+                    try { navigator.vibrate(8); } catch {}
+                  }
+                  setMaxTime(val);
+                }}
+                className="ios-slider"
+                style={{
+                  background: `linear-gradient(to right, #4A7856 ${((maxTime - 15) / (50 - 15)) * 100}%, #E3E8E5 ${((maxTime - 15) / (50 - 15)) * 100}%)`,
+                }}
+              />
+            </div>
+            <div className="flex justify-between text-[13px] text-[#686E6A] font-medium tabular-nums px-0.5">
               <span>15 Min.</span>
               <span>50 Min.</span>
             </div>
@@ -711,19 +719,27 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                       </div>
 
                       <div className="pt-1">
-                        <input
-                          id="ai-extra-ingredients-slider"
-                          type="range"
-                          min="0"
-                          max="6"
-                          step="1"
-                          value={maxExtraIngredients}
-                          onChange={(e) => setMaxExtraIngredients(Number(e.target.value))}
-                          className="w-full h-2 rounded-lg appearance-none cursor-pointer focus:outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[22px] [&::-webkit-slider-thumb]:h-[22px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#4A7856] [&::-webkit-slider-thumb]:border-[2.5px] [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:w-[22px] [&::-moz-range-thumb]:h-[22px] [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#4A7856] [&::-moz-range-thumb]:border-[2.5px] [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-md"
-                          style={{
-                            background: `linear-gradient(to right, #4A7856 ${(maxExtraIngredients / 6) * 100}%, #ECEBE8 ${(maxExtraIngredients / 6) * 100}%)`,
-                          }}
-                        />
+                        <div className="py-2.5 flex items-center">
+                          <input
+                            id="ai-extra-ingredients-slider"
+                            type="range"
+                            min="0"
+                            max="6"
+                            step="1"
+                            value={maxExtraIngredients}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              if (val !== maxExtraIngredients && typeof window !== 'undefined' && 'vibrate' in navigator) {
+                                try { navigator.vibrate(8); } catch {}
+                              }
+                              setMaxExtraIngredients(val);
+                            }}
+                            className="ios-slider"
+                            style={{
+                              background: `linear-gradient(to right, #4A7856 ${(maxExtraIngredients / 6) * 100}%, #E3E8E5 ${(maxExtraIngredients / 6) * 100}%)`,
+                            }}
+                          />
+                        </div>
                         {/* Mobile: gerade Zahlen (0, 2, 4, 6) auf der X-Achse */}
                         <div className="sm:hidden flex justify-between text-[13px] text-[#686E6A] mt-1.5 font-semibold tabular-nums px-1 select-none">
                           <span>0</span>
@@ -1110,7 +1126,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {matchedExistingRecipes.slice(0, 3).map((recipe) => (
+            {(showAllMatchedRecipes ? matchedExistingRecipes : matchedExistingRecipes.slice(0, 3)).map((recipe) => (
               <div
                 key={recipe.id}
                 onClick={() => onSelectRecipe(recipe)}
@@ -1128,10 +1144,6 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                   <div className="flex items-center justify-between gap-1.5 mb-1">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
                       {recipe.category}
-                    </span>
-                    <span className="text-[13px] text-[#686E6A] font-medium inline-flex items-center gap-1">
-                      <ChefHat className="w-3.5 h-3.5 text-[#8A918D]" />
-                      <span>{recipe.difficulty || 'Einfach'}</span>
                     </span>
                   </div>
                   <h4 className="font-bold text-[16px] text-[#2D3E40] truncate group-hover:text-[#4A7856] transition-colors leading-snug">
@@ -1155,6 +1167,23 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
               </div>
             ))}
           </div>
+
+          {matchedExistingRecipes.length > 3 && (
+            <div className="flex justify-center pt-1">
+              <button
+                type="button"
+                onClick={() => setShowAllMatchedRecipes((prev) => !prev)}
+                className="text-xs sm:text-sm font-semibold text-[#686E6A] hover:text-[#2D3E40] flex items-center gap-1.5 py-2 px-1 bg-transparent border-0 transition-colors cursor-pointer touch-manipulation min-h-[44px]"
+              >
+                <span>{showAllMatchedRecipes ? 'Weniger anzeigen' : 'Mehr anzeigen'}</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-[#686E6A] transition-transform duration-200 ${
+                    showAllMatchedRecipes ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
