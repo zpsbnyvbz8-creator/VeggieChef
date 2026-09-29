@@ -34,9 +34,11 @@ import {
   Sun,
   Moon,
   Utensils,
-  Zap
+  Zap,
+  Sliders
 } from 'lucide-react';
 import { DayPlan, MealPlanSlot, Recipe, WeekPlan, FilterState } from '../types';
+import { motion, AnimatePresence } from 'motion/react';
 import { RecipeImage } from './RecipeImage';
 import { SyncConfig } from '../lib/syncService';
 import { Users, Cloud } from 'lucide-react';
@@ -143,15 +145,16 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
   // AI Meal plan generator modal state - Reformed and simplified!
   const [showAIGeneratorModal, setShowAIGeneratorModal] = useState(false);
-  const [aiMealOption, setAiMealOption] = useState<'lunch' | 'dinner' | 'both'>('both');
+  const [aiMealOption, setAiMealOption] = useState<'lunch' | 'dinner' | 'both'>('dinner');
   const [aiIsVegan, setAiIsVegan] = useState(true);
   const [aiPeopleCount, setAiPeopleCount] = useState<number>(2);
-  const [aiMaxMinutes, setAiMaxMinutes] = useState<number>(0); // 0 = Standardmäßig "Beliebig"
+  const [aiMaxMinutes, setAiMaxMinutes] = useState<number>(35);
+  const [isAiTimeSliderActive, setIsAiTimeSliderActive] = useState<boolean>(false);
   const [aiCalorieFilter, setAiCalorieFilter] = useState<string>('all'); // 'all', 'high', 'low', 'moderate'
   const [aiProteinFilter, setAiProteinFilter] = useState<string>('all'); // 'all', 'high', 'very-high', 'medium'
   const [aiDifficultyFilter, setAiDifficultyFilter] = useState<string>('all'); // 'all', 'Einfach', 'Mittel', 'Anspruchsvoll'
   const [aiWishes, setAiWishes] = useState<string>('');
-  const [isAiWishesExpandedOnMobile, setIsAiWishesExpandedOnMobile] = useState<boolean>(false);
+  const [isAiPreferencesOpen, setIsAiPreferencesOpen] = useState<boolean>(false);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [planServings, setPlanServings] = useState<number>(3);
 
@@ -1100,8 +1103,36 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
           {/* Right side: Action buttons */}
           <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap w-full sm:w-auto justify-start sm:justify-end">
-            {/* 3-Punkte-Menü Button (Rich Dropdown Menu mit Design-Elementen/Icons für Mobile & Desktop) */}
+            {/* 3-Punkte-Menü Button (Klassisches iOS Select-Menü auf Mobile & Dropdown auf Desktop) */}
             <div className="relative shrink-0" ref={contextMenuRef}>
+              {/* Native iOS / Mobile Dropdown Select */}
+              <select
+                aria-label="Wochenplan-Optionen"
+                value=""
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'toggle-lunch') handleToggleAllLunch();
+                  else if (val === 'add-week') {
+                    setNewWeekTitleInput('');
+                    setShowCreateWeekModal(true);
+                  }
+                  else if (val === 'all-weeks') setShowAllWeeksModal(true);
+                  else if (val === 'clear-plan') setShowConfirmClearAll(true);
+                  e.target.value = '';
+                }}
+                className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
+              >
+                <option value="" disabled>Wochenplan-Optionen...</option>
+                <option value="toggle-lunch">
+                  {showLunchSlot ? '☀️ Mittags-Slots verbergen' : '☀️ Mittags-Slots anzeigen'}
+                </option>
+                <option value="add-week">➕ Woche hinzufügen</option>
+                <option value="all-weeks">📅 Alle Wochen anzeigen</option>
+                {totalPlannedMeals > 0 && (
+                  <option value="clear-plan">🗑️ Plan leeren</option>
+                )}
+              </select>
+
               <button
                 type="button"
                 id="weekly-planner-context-menu-btn"
@@ -1120,101 +1151,12 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
               {showContextMenu && (
                 <>
-                  {/* Backdrop for click outside */}
+                  {/* Backdrop for click outside on desktop */}
                   <div
-                    className="fixed inset-0 z-60 bg-black/50 sm:bg-transparent backdrop-blur-[2px] sm:backdrop-blur-none transition-opacity"
+                    className="hidden sm:block fixed inset-0 z-40"
                     onClick={() => setShowContextMenu(false)}
                     aria-hidden="true"
                   />
-
-                  {/* Mobile iOS Action Sheet (< sm) */}
-                  <div className="fixed inset-x-0 bottom-0 z-60 p-3 sm:hidden animate-in slide-in-from-bottom duration-250 ease-out flex flex-col gap-2">
-                    {/* Main Options Group Card (iOS Cupertino Style) */}
-                    <div className="bg-white/95 backdrop-blur-xl rounded-2xl border border-[#ECEBE8] shadow-2xl overflow-hidden divide-y divide-[#ECEBE8]/80 text-[#2D3E40]">
-                      <div className="px-4 py-2.5 text-center text-xs font-semibold text-[#686E6A] tracking-wider uppercase bg-[#FAF9F6]/80">
-                        Wochenplan-Optionen
-                      </div>
-
-                      <button
-                        type="button"
-                        id="ios-context-menu-toggle-lunch-btn"
-                        onClick={() => {
-                          setShowContextMenu(false);
-                          handleToggleAllLunch();
-                        }}
-                        className="w-full min-h-[52px] px-4 py-3 text-left text-[16px] font-medium text-[#2D3E40] active:bg-[#F1F5F2] flex items-center justify-between transition-colors cursor-pointer touch-manipulation"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
-                            <Sun className="w-4 h-4 shrink-0" />
-                          </div>
-                          <span>{showLunchSlot ? 'Mittags-Slots verbergen' : 'Mittags-Slots anzeigen'}</span>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        id="ios-context-menu-add-week-btn"
-                        onClick={() => {
-                          setShowContextMenu(false);
-                          setNewWeekTitleInput('');
-                          setShowCreateWeekModal(true);
-                        }}
-                        className="w-full min-h-[52px] px-4 py-3 text-left text-[16px] font-medium text-[#2D3E40] active:bg-[#F1F5F2] flex items-center justify-between transition-colors cursor-pointer touch-manipulation"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
-                            <Plus className="w-4 h-4 shrink-0" />
-                          </div>
-                          <span>Woche hinzufügen</span>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        id="ios-context-menu-all-weeks-btn"
-                        onClick={() => {
-                          setShowContextMenu(false);
-                          setShowAllWeeksModal(true);
-                        }}
-                        className="w-full min-h-[52px] px-4 py-3 text-left text-[16px] font-medium text-[#2D3E40] active:bg-[#F1F5F2] flex items-center justify-between transition-colors cursor-pointer touch-manipulation"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-[#F1F5F2] flex items-center justify-center shrink-0 text-[#4A7856]">
-                            <Layers className="w-4 h-4 shrink-0" />
-                          </div>
-                          <span>Alle Wochen anzeigen</span>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        id="ios-context-menu-clear-plan-btn"
-                        onClick={() => {
-                          setShowContextMenu(false);
-                          setShowConfirmClearAll(true);
-                        }}
-                        disabled={totalPlannedMeals === 0}
-                        className="w-full min-h-[52px] px-4 py-3 text-left text-[16px] font-medium text-rose-600 active:bg-rose-50 disabled:opacity-40 disabled:hover:bg-transparent flex items-center justify-between transition-colors cursor-pointer touch-manipulation"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center shrink-0 text-rose-600">
-                            <Trash2 className="w-4 h-4 shrink-0" />
-                          </div>
-                          <span>Plan leeren</span>
-                        </div>
-                      </button>
-                    </div>
-
-                    {/* iOS Cancel Button in separate card */}
-                    <button
-                      type="button"
-                      onClick={() => setShowContextMenu(false)}
-                      className="w-full min-h-[52px] py-3.5 rounded-2xl bg-white text-[17px] font-semibold text-[#2D3E40] shadow-lg border border-[#ECEBE8] flex items-center justify-center active:bg-[#F1F5F2] transition-colors cursor-pointer touch-manipulation"
-                    >
-                      Abbrechen
-                    </button>
-                  </div>
 
                   {/* Desktop Dropdown Popover (>= sm) */}
                   <div className="hidden sm:block absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl border border-[#ECEBE8] shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 space-y-1">
@@ -1734,11 +1676,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             {/* Modal Header */}
             <div className="flex items-start justify-between border-b border-[#ECEBE8] pb-3">
               <div>
-                <span className="px-3 py-1 rounded-full bg-[#FDF6F0] text-[#D35400] border border-[#F5EADF] text-xs font-semibold inline-flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#D35400]" />
-                  <span>Gemini KI-Wochenplaner</span>
-                </span>
-                <h3 className="text-xl font-bold text-[#2D3E40] mt-1 leading-snug">
+                <h3 className="text-xl font-bold text-[#2D3E40] leading-snug">
                   7-Tage-Wochenplan erstellen
                 </h3>
               </div>
@@ -1751,50 +1689,50 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               </button>
             </div>
 
-            {/* 2-Spaltiges Layout auf PC: Kein Scrollen nötig! */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 py-3">
-              {/* Linke Spalte */}
-              <div className="space-y-3.5">
+            {/* Modal Body */}
+            <div className="py-3.5 space-y-4">
+              {/* Hauptpunkte 1, 2, 3 in einem harmonischen Raster */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
                 {/* 1. Mahlzeiten */}
                 <div>
                   <label className="block font-bold text-[#2D3E40] text-[13px] uppercase tracking-wider mb-1.5">
-                    1. Mahlzeiten einplanen
+                    1. Mahlzeiten
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5">
                     <button
                       type="button"
                       onClick={() => setAiMealOption('lunch')}
-                      className={`h-11 min-h-[44px] py-2 px-2 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 ${
+                      className={`h-11 min-h-[44px] py-2 px-1 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 ${
                         aiMealOption === 'lunch'
                           ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
                           : 'bg-[#FAF9F6] text-[#686E6A] border-[#ECEBE8] hover:bg-white'
                       }`}
                     >
-                      <Sun className="w-4 h-4" />
+                      <Sun className="w-4 h-4 shrink-0" />
                       <span>Mittag</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setAiMealOption('dinner')}
-                      className={`h-11 min-h-[44px] py-2 px-2 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 ${
+                      className={`h-11 min-h-[44px] py-2 px-1 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 ${
                         aiMealOption === 'dinner'
                           ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
                           : 'bg-[#FAF9F6] text-[#686E6A] border-[#ECEBE8] hover:bg-white'
                       }`}
                     >
-                      <Moon className="w-4 h-4" />
+                      <Moon className="w-4 h-4 shrink-0" />
                       <span>Abend</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setAiMealOption('both')}
-                      className={`h-11 min-h-[44px] py-2 px-2 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 ${
+                      className={`h-11 min-h-[44px] py-2 px-1 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 ${
                         aiMealOption === 'both'
                           ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
                           : 'bg-[#FAF9F6] text-[#686E6A] border-[#ECEBE8] hover:bg-white'
                       }`}
                     >
-                      <Utensils className="w-4 h-4" />
+                      <Utensils className="w-4 h-4 shrink-0" />
                       <span>Beides</span>
                     </button>
                   </div>
@@ -1805,194 +1743,327 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   <label className="block font-bold text-[#2D3E40] text-[13px] uppercase tracking-wider mb-1.5">
                     2. Ernährungsweise
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-[#FAF9F6] p-1 rounded-xl grid grid-cols-2 gap-1.5 h-11 min-h-[44px] items-center border border-[#ECEBE8]">
                     <button
                       type="button"
-                      onClick={() => setAiIsVegan(true)}
-                      className={`h-11 min-h-[44px] py-2 px-3 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 ${
-                        aiIsVegan
-                          ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
-                          : 'bg-[#FAF9F6] text-[#686E6A] border-[#ECEBE8] hover:bg-white'
+                      id="ai-diet-veggie-btn"
+                      onClick={() => setAiIsVegan(false)}
+                      className={`h-9 min-h-[36px] px-3 rounded-lg transition-all flex items-center justify-center cursor-pointer touch-manipulation select-none ${
+                        !aiIsVegan
+                          ? 'bg-[#4A7856] text-white shadow-2xs font-semibold'
+                          : 'text-[#57534d] hover:text-[#2D3E40] border-0 bg-transparent font-medium'
                       }`}
                     >
-                      <Leaf className="w-4 h-4" />
-                      <span>100% Vegan</span>
+                      <span style={{ color: !aiIsVegan ? '#ffffff' : '#57534d', fontSize: '15px' }}>Veggie</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setAiIsVegan(false)}
-                      className={`h-11 min-h-[44px] py-2 px-3 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 ${
-                        !aiIsVegan
-                          ? 'bg-[#2D3E40] text-white border-[#2D3E40] shadow-xs'
-                          : 'bg-[#FAF9F6] text-[#686E6A] border-[#ECEBE8] hover:bg-white'
+                      id="ai-diet-vegan-btn"
+                      onClick={() => setAiIsVegan(true)}
+                      className={`h-9 min-h-[36px] px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none ${
+                        aiIsVegan
+                          ? 'bg-[#4A7856] text-white shadow-2xs font-semibold'
+                          : 'text-[#57534d] hover:text-[#2D3E40] border-0 bg-transparent font-medium'
                       }`}
                     >
-                      <Salad className="w-4 h-4" />
-                      <span>Veggie & Vegan</span>
+                      <Leaf className="w-4 h-4 shrink-0" />
+                      <span style={{ color: aiIsVegan ? '#ffffff' : '#57534d', fontSize: '15px' }}>Vegan</span>
                     </button>
                   </div>
                 </div>
 
-                {/* 3. Portionen / Personen */}
+                {/* 3. Portionen */}
                 <div>
                   <label className="block font-bold text-[#2D3E40] text-[13px] uppercase tracking-wider mb-1.5">
-                    3. Personen / Portionen
+                    3. Portionen
                   </label>
                   <HybridPortionStepper
                     value={aiPeopleCount}
                     onChange={setAiPeopleCount}
                     idPrefix="ai-modal-people-count"
+                    className="w-full justify-between"
                   />
                 </div>
               </div>
 
-              {/* Rechte Spalte */}
-              <div className="space-y-3.5">
-                {/* 4. Max. Zubereitungszeit */}
-                <div>
-                  <label className="block font-bold text-[#2D3E40] text-[13px] uppercase tracking-wider mb-1.5">
-                    4. Max. Zubereitungszeit
-                  </label>
-                  <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
-                    {[
-                      { val: 0, label: 'Beliebig' },
-                      { val: 20, label: '≤ 20 Min.' },
-                      { val: 35, label: '≤ 35 Min.' },
-                      { val: 50, label: '≤ 50 Min.' },
-                    ].map((opt) => (
-                      <button
-                        key={opt.val}
-                        type="button"
-                        onClick={() => setAiMaxMinutes(opt.val)}
-                        className={`py-2 px-1 rounded-xl font-semibold border text-center transition-all cursor-pointer h-11 min-h-[44px] flex items-center justify-center text-sm touch-manipulation active:scale-95 ${
-                          aiMaxMinutes === opt.val
-                            ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs'
-                            : 'bg-[#FAF9F6] text-[#686E6A] border-[#ECEBE8] hover:bg-white'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              {/* Dünne Trennlinie vor dem ausklappbaren Element */}
+              <div className="border-t border-[#ECEBE8]" />
 
-                {/* 5. Nährwerte & Filter: Klare Beschriftungen ohne abgeschnittene Texte */}
-                <div>
-                  <label className="block font-bold text-[#2D3E40] text-[13px] uppercase tracking-wider mb-1.5">
-                    5. Nährwerte & Filter
-                  </label>
-                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                    {/* Kalorien */}
-                    <div className="relative">
-                      <select
-                        id="ai-filter-calories"
-                        value={aiCalorieFilter}
-                        onChange={(e) => setAiCalorieFilter(e.target.value)}
-                        className="w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[16px] font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
-                      >
-                        <option value="all">Alle Kalorien</option>
-                        <option value="high">High Cal (750+)</option>
-                        <option value="low">Leicht (&lt; 500)</option>
-                        <option value="moderate">500–700 kcal</option>
-                      </select>
-                      <Flame className="w-3.5 h-3.5 text-[#686E6A] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <ChevronDown className="w-3.5 h-3.5 text-[#686E6A] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+              {/* Wünsche & Feineinstellungen - Einklappbares Element wie in der Vorratskammer */}
+              <div className="space-y-3">
+                {/* Accordion Toggle Header */}
+                <button
+                  type="button"
+                  id="ai-toggle-preferences-btn"
+                  onClick={() => setIsAiPreferencesOpen((prev) => !prev)}
+                  aria-expanded={isAiPreferencesOpen}
+                  aria-controls="ai-meal-plan-extra-section"
+                  className="w-full min-h-[48px] p-3 sm:p-4 rounded-xl bg-[#F1F5F2] hover:bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/40 flex items-center justify-between text-left cursor-pointer select-none touch-manipulation transition-all group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center justify-center text-[#4A7856] shrink-0">
+                      <Sliders className="w-5 h-5 text-[#4A7856]" />
                     </div>
-
-                    {/* Protein */}
-                    <div className="relative">
-                      <select
-                        id="ai-filter-protein"
-                        value={aiProteinFilter}
-                        onChange={(e) => setAiProteinFilter(e.target.value)}
-                        className="w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[16px] font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
-                      >
-                        <option value="all">Alle Protein</option>
-                        <option value="high">High Prot (30g+)</option>
-                        <option value="very-high">Extra Prot (40g+)</option>
-                        <option value="medium">20g+ Protein</option>
-                      </select>
-                      <Dumbbell className="w-3.5 h-3.5 text-[#686E6A] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <ChevronDown className="w-3.5 h-3.5 text-[#686E6A] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-
-                    {/* Schwierigkeit */}
-                    <div className="relative">
-                      <select
-                        id="ai-filter-difficulty"
-                        value={aiDifficultyFilter}
-                        onChange={(e) => setAiDifficultyFilter(e.target.value)}
-                        className="w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] text-[#2D3E40] text-[16px] font-medium rounded-xl pl-8 pr-7 py-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A7856] transition-colors"
-                      >
-                        <option value="all">Alle Levels</option>
-                        <option value="Einfach">Einfach</option>
-                        <option value="Mittel">Mittel</option>
-                        <option value="Anspruchsvoll">Anspruchsvoll</option>
-                      </select>
-                      <ChefHat className="w-3.5 h-3.5 text-[#686E6A] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <ChevronDown className="w-3.5 h-3.5 text-[#686E6A] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 6. Zusätzliche Wünsche & Notizen (optional) - Auf Mobile ein-/ausklappbar, auf Desktop dauerhaft sichtbar */}
-                <div className="pt-1 md:pt-0 border-t md:border-t-0 border-[#ECEBE8]">
-                  {/* Mobile Collapsible Header Button (< md) */}
-                  <div className="md:hidden">
-                    <button
-                      type="button"
-                      id="ai-wishes-mobile-accordion-toggle"
-                      onClick={() => setIsAiWishesExpandedOnMobile((prev) => !prev)}
-                      className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] flex items-center justify-between text-left transition-colors cursor-pointer touch-manipulation active:scale-[0.99]"
-                      aria-expanded={isAiWishesExpandedOnMobile}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-bold text-[#2D3E40] text-xs uppercase tracking-wider block">
-                          6. Wünsche & Notizen
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base font-bold text-[#2D3E40]">
+                          Wünsche &amp; Feineinstellungen
                         </span>
-                        {aiWishes.trim() ? (
-                          <span className="text-[11px] font-semibold text-[#4A7856] truncate max-w-[140px] block">
-                            „{aiWishes}“
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-[#686E6A] block">
-                            (optional)
-                          </span>
-                        )}
                       </div>
-                      <div className="flex items-center gap-1 shrink-0 ml-2">
-                        <span className="text-xs font-semibold text-[#4A7856]">
-                          {isAiWishesExpandedOnMobile ? 'Schließen' : (aiWishes.trim() ? 'Bearbeiten' : 'Hinzufügen')}
-                        </span>
-                        <ChevronDown
-                          className={`w-4 h-4 text-[#686E6A] transition-transform duration-200 ${
-                            isAiWishesExpandedOnMobile ? 'rotate-180' : ''
-                          }`}
-                        />
-                      </div>
-                    </button>
-                  </div>
-
-                  {/* Desktop Label (>= md) */}
-                  <label className="hidden md:block font-bold text-[#2D3E40] text-[13px] uppercase tracking-wider mb-1.5">
-                    6. Wünsche & Notizen (optional)
-                  </label>
-
-                  {/* Input Field: Expanded on mobile or always visible on desktop */}
-                  <div className={`${isAiWishesExpandedOnMobile ? 'block pt-2 md:pt-0' : 'hidden md:block'}`}>
-                    <input
-                      type="text"
-                      id="ai-meal-plan-wishes-input"
-                      value={aiWishes}
-                      onChange={(e) => setAiWishes(e.target.value)}
-                      placeholder="z. B. keine Pilze, asiatisch angehaucht, schnell gekocht..."
-                      className="w-full h-11 min-h-[44px] px-3.5 py-2 rounded-xl bg-[#FAF9F6] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-[16px] text-[#2D3E40] placeholder-[#A0A5A1] transition-all outline-none"
-                    />
-                    {aiWishes.trim() && (
-                      <p className="text-[11px] text-[#4A7856] font-medium mt-1">
-                        ✓ Wünsche werden bei der KI-Generierung berücksichtigt
+                      {/* Untertitel / Zusammenfassung */}
+                      <p className="text-xs text-[#686E6A] truncate mt-0.5">
+                        {`Max. ${aiMaxMinutes} Min.`}
+                        {' · '}
+                        {aiCalorieFilter !== 'all' ? (aiCalorieFilter === 'high' ? '750+ kcal' : aiCalorieFilter === 'low' ? '< 500 kcal' : '500–700 kcal') : 'Kalorien: Alle'}
+                        {' · '}
+                        {aiProteinFilter !== 'all' ? (aiProteinFilter === 'very-high' ? '40+ g' : aiProteinFilter === 'high' ? '30+ g' : '20+ g') : 'Protein: Alle'}
+                        {aiDifficultyFilter !== 'all' && ` · ${aiDifficultyFilter}`}
+                        {aiWishes.trim() ? ` · "${aiWishes.trim().slice(0, 16)}..."` : ' · Keine Wünsche'}
                       </p>
-                    )}
+                    </div>
+                  </div>
+
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[#686E6A] group-hover:text-[#4A7856] transition-colors shrink-0 ml-2">
+                    <ChevronDown
+                      className={`w-5 h-5 text-[#4A7856] transition-transform duration-200 shrink-0 ${
+                        isAiPreferencesOpen ? 'rotate-180' : 'rotate-0'
+                      }`}
+                    />
+                  </div>
+                </button>
+
+                {/* Accordion Content mit Schritt-für-Schritt Timeline wie in der Vorratskammer */}
+                <div
+                  id="ai-meal-plan-extra-section"
+                  className={`grid transition-all duration-250 ease-in-out ${
+                    isAiPreferencesOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="pt-3 pb-1">
+                      <div className="relative pl-1 sm:pl-3 space-y-6 sm:space-y-7 before:absolute before:left-[17px] sm:before:left-[23px] before:top-4 before:bottom-4 before:w-0.5 before:bg-[#ECEBE8]">
+                        {/* Schritt 4: Zubereitungszeit */}
+                        <div className="relative flex items-start gap-3.5 sm:gap-4.5 group">
+                          {/* Timeline indicator circle */}
+                          <div
+                            className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-white ${
+                              aiMaxMinutes < 50
+                                ? 'bg-[#4A7856] text-white shadow-2xs'
+                                : 'bg-white border-2 border-[#4A7856] text-[#4A7856]'
+                            }`}
+                          >
+                            {aiMaxMinutes < 50 ? <Check className="w-4 h-4 stroke-[3]" /> : '4'}
+                          </div>
+
+                          {/* Step Content */}
+                          <div className="flex-1 min-w-0 pt-0.5 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <h4 className="text-[16px] font-bold text-[#2D3E40]">
+                                Zubereitungszeit
+                              </h4>
+                              <AnimatePresence>
+                                {!isAiTimeSliderActive && (
+                                  <motion.span
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="px-2 py-0.5 rounded-full bg-[#F1F5F2] border border-[#ECEBE8] text-[#4A7856] font-bold text-xs tabular-nums"
+                                  >
+                                    {aiMaxMinutes} Min.
+                                  </motion.span>
+                                )}
+                              </AnimatePresence>
+                            </div>
+
+                            {/* Schieberegler für Zeit - identisch zur Vorratskammer mit iOS Pille */}
+                            <div className="relative py-2.5 flex items-center">
+                              <AnimatePresence>
+                                {isAiTimeSliderActive && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: 7, scale: 0.85 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 5, scale: 0.88 }}
+                                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                                    style={{
+                                      left: `calc(${((aiMaxMinutes - 15) / (50 - 15)) * 100}% + ${(0.5 - (aiMaxMinutes - 15) / (50 - 15)) * 24}px)`,
+                                    }}
+                                    className="absolute bottom-[calc(50%+26px)] -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center select-none"
+                                  >
+                                    <div className="px-4 py-1 rounded-full bg-white border border-[#D3DCD5] shadow-lg text-[#355F40] font-extrabold text-[17px] tabular-nums whitespace-nowrap">
+                                      {aiMaxMinutes} Min.
+                                    </div>
+                                    <div className="w-3 h-3 bg-white border-r border-b border-[#D3DCD5] rotate-45 -mt-1.5 shadow-xs" />
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+
+                              <input
+                                id="ai-time-slider"
+                                type="range"
+                                min="15"
+                                max="50"
+                                step="5"
+                                value={aiMaxMinutes}
+                                onPointerDown={() => setIsAiTimeSliderActive(true)}
+                                onPointerUp={() => setIsAiTimeSliderActive(false)}
+                                onPointerCancel={() => setIsAiTimeSliderActive(false)}
+                                onTouchStart={() => setIsAiTimeSliderActive(true)}
+                                onTouchEnd={() => setIsAiTimeSliderActive(false)}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  if (val !== aiMaxMinutes && typeof window !== 'undefined' && 'vibrate' in navigator) {
+                                    try { navigator.vibrate(8); } catch {}
+                                  }
+                                  setAiMaxMinutes(val);
+                                }}
+                                className="ios-slider"
+                                style={{
+                                  background: `linear-gradient(to right, #4A7856 ${((aiMaxMinutes - 15) / (50 - 15)) * 100}%, #E3E8E5 ${((aiMaxMinutes - 15) / (50 - 15)) * 100}%)`,
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-[13px] text-[#686E6A] font-medium tabular-nums px-0.5">
+                              <span>15 Min.</span>
+                              <span>50 Min.</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Schritt 5: Nährwerte & Ansprüche */}
+                        <div className="relative flex items-start gap-3.5 sm:gap-4.5 group">
+                          {/* Timeline indicator circle */}
+                          <div
+                            className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-white ${
+                              (aiCalorieFilter !== 'all' || aiProteinFilter !== 'all' || aiDifficultyFilter !== 'all')
+                                ? 'bg-[#4A7856] text-white shadow-2xs'
+                                : 'bg-white border-2 border-[#4A7856] text-[#4A7856]'
+                            }`}
+                          >
+                            {(aiCalorieFilter !== 'all' || aiProteinFilter !== 'all' || aiDifficultyFilter !== 'all') ? <Check className="w-4 h-4 stroke-[3]" /> : '5'}
+                          </div>
+
+                          {/* Step Content */}
+                          <div className="flex-1 min-w-0 pt-0.5 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <h4 className="text-[16px] font-bold text-[#2D3E40]">
+                                Nährwerte &amp; Ansprüche
+                              </h4>
+                              {(aiCalorieFilter !== 'all' || aiProteinFilter !== 'all' || aiDifficultyFilter !== 'all') && (
+                                <span className="text-[11px] font-semibold text-[#4A7856] bg-[#F1F5F2] px-2 py-0.5 rounded-full border border-[#ECEBE8]">
+                                  Aktiv
+                                </span>
+                              )}
+                            </div>
+
+                            {/* 3 Dropdowns in einer Reihe - Labels direkt in den Boxen in dunklem Grau #57534d */}
+                            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                              {/* Kalorien */}
+                              <div className="relative">
+                                <select
+                                  id="ai-filter-calories"
+                                  aria-label="Kalorien"
+                                  value={aiCalorieFilter}
+                                  onChange={(e) => setAiCalorieFilter(e.target.value)}
+                                  style={{ color: '#57534d' }}
+                                  className={`w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-[#57534d] ${
+                                    aiCalorieFilter === 'all' ? '' : 'font-semibold'
+                                  }`}
+                                >
+                                  <option value="all">Kalorien: Alle</option>
+                                  <option value="low">&lt; 500 kcal</option>
+                                  <option value="moderate">500–700 kcal</option>
+                                  <option value="high">750+ kcal</option>
+                                </select>
+                                <ChevronDown className="w-3.5 h-3.5 text-[#686E6A] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                              </div>
+
+                              {/* Proteine */}
+                              <div className="relative">
+                                <select
+                                  id="ai-filter-protein"
+                                  aria-label="Proteine"
+                                  value={aiProteinFilter}
+                                  onChange={(e) => setAiProteinFilter(e.target.value)}
+                                  style={{ color: '#57534d' }}
+                                  className={`w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-[#57534d] ${
+                                    aiProteinFilter === 'all' ? '' : 'font-semibold'
+                                  }`}
+                                >
+                                  <option value="all">Protein: Alle</option>
+                                  <option value="medium">20+ g</option>
+                                  <option value="high">30+ g</option>
+                                  <option value="very-high">40+ g</option>
+                                </select>
+                                <ChevronDown className="w-3.5 h-3.5 text-[#686E6A] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                              </div>
+
+                              {/* Schwierigkeit */}
+                              <div className="relative">
+                                <select
+                                  id="ai-filter-difficulty"
+                                  aria-label="Schwierigkeit"
+                                  value={aiDifficultyFilter}
+                                  onChange={(e) => setAiDifficultyFilter(e.target.value)}
+                                  style={{ color: '#57534d' }}
+                                  className={`w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-[#57534d] ${
+                                    aiDifficultyFilter === 'all' ? '' : 'font-semibold'
+                                  }`}
+                                >
+                                  <option value="all">Schwierigkeit: Alle</option>
+                                  <option value="Einfach">Einfach</option>
+                                  <option value="Mittel">Mittel</option>
+                                  <option value="Anspruchsvoll">Anspruchsvoll</option>
+                                </select>
+                                <ChevronDown className="w-3.5 h-3.5 text-[#686E6A] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Schritt 6: Wünsche */}
+                        <div className="relative flex items-start gap-3.5 sm:gap-4.5 group">
+                          {/* Timeline indicator circle */}
+                          <div
+                            className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-white ${
+                              aiWishes.trim()
+                                ? 'bg-[#4A7856] text-white shadow-2xs'
+                                : 'bg-white border-2 border-[#4A7856] text-[#4A7856]'
+                            }`}
+                          >
+                            {aiWishes.trim() ? <Check className="w-4 h-4 stroke-[3]" /> : '6'}
+                          </div>
+
+                          {/* Step Content */}
+                          <div className="flex-1 min-w-0 pt-0.5 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <h4 className="text-[16px] font-bold text-[#2D3E40]">
+                                Wünsche
+                              </h4>
+                              {aiWishes.trim() && (
+                                <span className="text-[11px] font-semibold text-[#4A7856] bg-[#F1F5F2] px-2 py-0.5 rounded-full border border-[#ECEBE8]">
+                                  Aktiv
+                                </span>
+                              )}
+                            </div>
+
+                            <input
+                              type="text"
+                              id="ai-meal-plan-wishes-input"
+                              value={aiWishes}
+                              onChange={(e) => setAiWishes(e.target.value)}
+                              placeholder="z. B. keine Pilze, asiatisch angehaucht, schnell gekocht..."
+                              className="w-full h-11 min-h-[44px] px-3.5 py-2 rounded-xl bg-[#FAF9F6] focus:bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-[16px] text-[#2D3E40] placeholder-[#A0A5A1] transition-all outline-none"
+                            />
+                            {aiWishes.trim() && (
+                              <p className="text-[11px] text-[#4A7856] font-medium">
+                                ✓ Wünsche werden bei der KI-Generierung berücksichtigt
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -264,8 +264,15 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Actions
   const toggleFavorite = (recipeId: string) => {
     const isFav = favorites.includes(recipeId);
-    setFavorites((prev) => (isFav ? prev.filter((id) => id !== recipeId) : [...prev, recipeId]));
-    showToast(isFav ? 'Aus Favoriten entfernt' : 'Zu Favoriten hinzugefügt! ❤️');
+    if (isFav) {
+      setFavorites((prev) => prev.filter((id) => id !== recipeId));
+      showToast('Aus Favoriten entfernt');
+    } else {
+      setFavorites((prev) => [...prev, recipeId]);
+      // Automatisch Dislike aufheben, damit das Gericht wieder öfter/normal angezeigt wird
+      setDislikedIds((prev) => prev.filter((id) => id !== recipeId));
+      showToast('Zu Favoriten hinzugefügt! ❤️');
+    }
   };
 
   const toggleDislike = (recipeId: string) => {
