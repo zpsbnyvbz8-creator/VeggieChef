@@ -31,7 +31,8 @@ import {
   UploadCloud,
   X,
   Eye,
-  EyeOff
+  EyeOff,
+  Share2
 } from 'lucide-react';
 import { Recipe, RecipeIngredient, RecipeStep } from '../types';
 import { formatIngredientAmount, generateRecipeIngredientsText, calculateMealSavings, safeCopyToClipboard, compressImageToDataUrl } from '../utils/helpers';
@@ -369,11 +370,25 @@ export const RecipeDetailPage: React.FC = () => {
     showToast('Foto erfolgreich gelöscht!');
   };
 
-  // Duplicate recipe
-  const handleDuplicate = () => {
-    const copy = duplicateRecipe(recipe);
+  // Share recipe
+  const handleShare = async () => {
     setIsOverflowMenuOpen(false);
-    navigate(`/recipes/${copy.id}`);
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: recipe?.title || 'VeggieChef Rezept',
+          text: `Schau dir dieses leckere Rezept auf VeggieChef an: ${recipe?.title}`,
+          url: window.location.href,
+        });
+        return;
+      } catch {
+        // User cancelled or unsupported
+      }
+    }
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(window.location.href);
+      showToast('Rezept-Link kopiert!');
+    }
   };
 
   // Delete recipe
@@ -664,9 +679,8 @@ export const RecipeDetailPage: React.FC = () => {
                 value=""
                 onChange={(e) => {
                   const val = e.target.value;
-                  if (val === 'copy') handleCopyIngredients();
+                  if (val === 'share') handleShare();
                   else if (val === 'edit') setIsEditModalOpen(true);
-                  else if (val === 'duplicate') handleDuplicate();
                   else if (val === 'cooked') setShowCookedDialog(true);
                   else if (val === 'dislike') toggleDislike(recipe.id);
                   else if (val === 'delete') setIsDeleteConfirmOpen(true);
@@ -675,11 +689,10 @@ export const RecipeDetailPage: React.FC = () => {
                 className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
               >
                 <option value="" disabled>Rezept-Optionen...</option>
-                <option value="copy">📋 Zutaten kopieren</option>
+                <option value="share">📤 Rezept teilen</option>
                 <option value="edit">✏️ Rezept bearbeiten</option>
-                <option value="duplicate">📑 Rezept duplizieren</option>
                 <option value="cooked">🍳 Als gekocht erfassen</option>
-                <option value="dislike">{isDisliked ? '👍 Nicht mehr disliken' : '👎 Seltener anzeigen'}</option>
+                <option value="dislike">{isDisliked ? '👍 Wieder öfter anzeigen' : '👎 Seltener anzeigen'}</option>
                 <option value="delete">🗑️ Rezept löschen</option>
               </select>
 
@@ -707,11 +720,11 @@ export const RecipeDetailPage: React.FC = () => {
                   <div className="hidden sm:block absolute right-0 top-14 z-50 w-64 bg-white rounded-2xl shadow-xl border border-[#ECEBE8] py-2 animate-in fade-in zoom-in-95 duration-150">
                     <button
                       type="button"
-                      onClick={handleCopyIngredients}
+                      onClick={handleShare}
                       className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
                     >
-                      <Copy className="w-5 h-5 text-[#4A7856]" />
-                      <span>Kopieren</span>
+                      <Share2 className="w-5 h-5 text-[#4A7856]" />
+                      <span>Rezept teilen</span>
                     </button>
 
                     <button
@@ -724,15 +737,6 @@ export const RecipeDetailPage: React.FC = () => {
                     >
                       <Pencil className="w-5 h-5 text-[#4A7856]" />
                       <span>Rezept bearbeiten</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleDuplicate}
-                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
-                    >
-                      <Copy className="w-5 h-5 text-[#4A7856]" />
-                      <span>Rezept duplizieren</span>
                     </button>
 
                     <button
@@ -756,7 +760,7 @@ export const RecipeDetailPage: React.FC = () => {
                       className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
                     >
                       <ThumbsDown className="w-5 h-5 text-[#686e6a]" />
-                      <span>{isDisliked ? 'Nicht mehr disliken' : 'Seltener anzeigen'}</span>
+                      <span>{isDisliked ? 'Wieder öfter anzeigen' : 'Seltener anzeigen'}</span>
                     </button>
 
                     <div className="my-1 border-t border-[#ECEBE8]" />
@@ -931,28 +935,30 @@ export const RecipeDetailPage: React.FC = () => {
         {/* 5. SERVINGS CARD & BALANCED 3-COLUMN ACTION ROW */}
         <section className="bg-white border border-[#ECEBE8] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
           <div className="flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 flex-wrap">
-            <div className="inline-flex items-center bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl p-1 shadow-2xs">
+            <div className="inline-flex items-center justify-between bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl p-1 shadow-2xs w-[210px] h-[54px]">
               <button
                 id="servings-step-decrease-btn"
                 type="button"
                 onClick={() => setServings(Math.max(1, servings - 1))}
                 disabled={servings <= 1}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 aria-label="Portion verringern"
               >
-                <Minus className="w-4 h-4" />
+                <Minus className="w-5 h-5" />
               </button>
-              <span className="px-3 sm:px-4 text-[16px] font-bold text-[#2D3E40] tabular-nums min-w-[85px] text-center select-none">
+              <div className="h-6 w-[1px] bg-[#ECEBE8] shrink-0" />
+              <span className="px-2 text-[16px] font-bold text-[#2D3E40] tabular-nums flex-1 text-center select-none whitespace-nowrap">
                 {servings} {servings === 1 ? 'Portion' : 'Portionen'}
               </span>
+              <div className="h-6 w-[1px] bg-[#ECEBE8] shrink-0" />
               <button
                 id="servings-step-increase-btn"
                 type="button"
                 onClick={() => setServings(Math.min(24, servings + 1))}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 aria-label="Portion erhöhen"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-5 h-5" />
               </button>
             </div>
 
@@ -1019,9 +1025,6 @@ export const RecipeDetailPage: React.FC = () => {
             <div>
               <h2 className="text-xl font-bold text-[#2D3E40] flex items-center gap-2">
                 <span>Zutaten</span>
-                <span className="text-xs font-normal text-[#686E6A]">
-                  ({activeIngredients.length} Positionen für {servings} {servings === 1 ? 'Portion' : 'Portionen'})
-                </span>
               </h2>
               <span className="text-xs text-[#686E6A] hidden sm:inline">
                 {isCustomizingIngredients ? 'Tippe auf Ersetzen für Alternativen' : 'Tippe zum Abhaken'}
@@ -1520,8 +1523,7 @@ export const RecipeDetailPage: React.FC = () => {
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
           {/* Quick portions stepper in sticky bar */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-[#686E6A] hidden sm:inline">Portionen:</span>
-            <div className="inline-flex items-center bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl p-1">
+            <div className="inline-flex items-center bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl p-1 h-11 min-h-[44px]">
               <button
                 id="sticky-servings-decrease-btn"
                 type="button"
@@ -1532,9 +1534,12 @@ export const RecipeDetailPage: React.FC = () => {
               >
                 <Minus className="w-4 h-4" />
               </button>
-              <span className="px-2.5 text-[16px] font-bold text-[#57534d] tabular-nums min-w-[65px] text-center select-none">
-                {servings} Port.
+              <div className="h-5 w-[1px] bg-[#ECEBE8] shrink-0" />
+              <span className="px-2.5 sm:px-3 text-[16px] font-bold text-[#57534d] tabular-nums min-w-[65px] sm:min-w-[95px] text-center select-none whitespace-nowrap">
+                <span className="inline sm:hidden">{servings} Port.</span>
+                <span className="hidden sm:inline">{servings} {servings === 1 ? 'Portion' : 'Portionen'}</span>
               </span>
+              <div className="h-5 w-[1px] bg-[#ECEBE8] shrink-0" />
               <button
                 id="sticky-servings-increase-btn"
                 type="button"
