@@ -53,9 +53,11 @@ export interface RecipeContextType {
   setSelectedRecipe: React.Dispatch<React.SetStateAction<Recipe | null>>;
   isAddRecipeOpen: boolean;
   setIsAddRecipeOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  discoverViewMode: 'grid' | 'swipe';
+  setDiscoverViewMode: (mode: 'grid' | 'swipe') => void;
   cookedLogs: CookedLog[];
   setCookedLogs: React.Dispatch<React.SetStateAction<CookedLog[]>>;
-  logCooked: (recipe: Recipe, servings: number, notes?: string) => void;
+  logCooked: (recipe: Recipe, servings: number, notes?: string, rating?: number, photoUrl?: string) => void;
   saveCustomRecipe: (newRecipe: Recipe) => void;
   addRecipe: (newRecipe: Recipe) => void;
   updateRecipe: (updatedRecipe: Recipe) => void;
@@ -124,6 +126,16 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [visibleRecipeCount, setVisibleRecipeCount] = useState<number>(() =>
     loadFromLocalStorage('veggiechef_visible_count', 8)
   );
+
+  // Discover View Mode ('grid' | 'swipe' - persistent across tabs)
+  const [discoverViewMode, setDiscoverViewModeState] = useState<'grid' | 'swipe'>(() =>
+    loadFromLocalStorage<'grid' | 'swipe'>('veggiechef_discover_view_mode', 'grid')
+  );
+
+  const setDiscoverViewMode = (mode: 'grid' | 'swipe') => {
+    setDiscoverViewModeState(mode);
+    saveToLocalStorage('veggiechef_discover_view_mode', mode);
+  };
 
   // Modal / Interactive Views State
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -291,7 +303,7 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setFilters(DEFAULT_FILTERS);
   };
 
-  const logCooked = (recipe: Recipe, servings: number, notes?: string) => {
+  const logCooked = (recipe: Recipe, servings: number, notes?: string, rating?: number, photoUrl?: string) => {
     const savings = calculateMealSavings(servings, recipe.isVegan);
     const newLog: CookedLog = {
       id: `cooked-${Date.now()}`,
@@ -300,6 +312,8 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       date: new Date().toISOString(),
       servingsCooked: servings,
       notes,
+      rating,
+      photoUrl,
       isVegan: recipe.isVegan,
       savedCO2Kg: savings.savedCO2Kg,
       savedWaterLiters: savings.savedWaterLiters,
@@ -393,6 +407,8 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setSelectedRecipe,
         isAddRecipeOpen,
         setIsAddRecipeOpen,
+        discoverViewMode,
+        setDiscoverViewMode,
         cookedLogs,
         setCookedLogs,
         logCooked,

@@ -3,9 +3,12 @@ import {
   ArrowUpDown, 
   Dumbbell, 
   Flame, 
-  ChefHat,
-  RotateCcw,
-  ChevronDown
+  ChefHat, 
+  RotateCcw, 
+  ChevronDown,
+  LayoutGrid,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 import { FilterState, RecipeCategory } from '../types';
 import { useRecipes } from '../context/RecipeContext';
@@ -15,6 +18,9 @@ interface FilterBarProps {
   setFilters?: React.Dispatch<React.SetStateAction<FilterState>>;
   totalCount?: number;
   filteredCount?: number;
+  onOpenSlotMachine?: () => void;
+  viewMode?: 'grid' | 'swipe';
+  onViewModeChange?: (mode: 'grid' | 'swipe') => void;
 }
 
 const CATEGORIES: ('all' | RecipeCategory)[] = [
@@ -66,6 +72,15 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
   const setFilters = props.setFilters ?? recipesCtx.setFilters;
   const totalCount = props.totalCount ?? recipesCtx.recipes.length;
   const filteredCount = props.filteredCount ?? recipesCtx.filteredRecipes.length;
+
+  const currentViewMode = props.viewMode ?? recipesCtx?.discoverViewMode ?? 'grid';
+  const handleViewModeChange = (mode: 'grid' | 'swipe') => {
+    if (typeof props.onViewModeChange === 'function') {
+      props.onViewModeChange(mode);
+    } else if (typeof recipesCtx?.setDiscoverViewMode === 'function') {
+      recipesCtx.setDiscoverViewMode(mode);
+    }
+  };
 
   const hasActiveFilters =
     filters.category !== 'all' ||
@@ -129,8 +144,9 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
         </button>
       </div>
 
-      {/* Filter by: Difficulty, Calories, Protein & Sort by: Speed, Protein */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-0.5">
+      {/* Filter by: Difficulty, Calories, Protein, View Switcher & Sort */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-0.5">
+        {/* Left: Dropdown Selects and Reset */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Filter nach Schwierigkeit */}
           <div className="relative">
@@ -200,12 +216,59 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
           )}
         </div>
 
-        {/* Sort Controls & Count */}
-        <div className="flex items-center gap-2.5">
-          <span className="text-xs text-[#686E6A] hidden md:inline">
-            <strong>{filteredCount}</strong> von {totalCount} Rezepten
-          </span>
+        {/* Right: View Switcher (Grid vs Swipe), Slot Machine Trigger & Sort */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          {/* 1. Überrasch mich Slot Machine Button */}
+          {props.onOpenSlotMachine && (
+            <button
+              type="button"
+              id="filterbar-slot-machine-btn"
+              onClick={props.onOpenSlotMachine}
+              className="h-11 min-h-[44px] px-3.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-[#C86D3B]/15 to-amber-500/15 hover:from-amber-500/25 hover:to-[#C86D3B]/25 border border-[#C86D3B]/30 text-[#C86D3B] hover:text-[#A85226] text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95"
+              title="Zufälliges Rezept mit dem Glücksspielautomaten auslosen"
+            >
+              <span className="text-base">🎰</span>
+              <span>Überrasch mich</span>
+            </button>
+          )}
 
+          {/* 2. Ansichtswechsler: Grid vs. Swipe (Direkt in der Filterleiste) */}
+          <div 
+            className="flex items-center p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl h-11 min-h-[44px] shadow-2xs"
+            role="group"
+            aria-label="Ansichtswechsler"
+          >
+            <button
+              type="button"
+              id="view-mode-grid-btn"
+              onClick={() => handleViewModeChange('grid')}
+              className={`h-9 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 ${
+                currentViewMode === 'grid'
+                  ? 'bg-white text-[#2D3E40] shadow-xs border border-[#ECEBE8]'
+                  : 'text-[#686E6A] hover:text-[#2D3E40]'
+              }`}
+              title="Klassisches Grid-Stöbern"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Stöbern</span>
+            </button>
+            <button
+              type="button"
+              id="view-mode-swipe-btn"
+              onClick={() => handleViewModeChange('swipe')}
+              className={`h-9 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 ${
+                currentViewMode === 'swipe'
+                  ? 'bg-[#4A7856] text-white shadow-xs'
+                  : 'text-[#686E6A] hover:text-[#4A7856]'
+              }`}
+              title="Swipe-Stapel (Wegwischen)"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Swipe</span>
+            </button>
+          </div>
+
+          {/* 3. Sort Dropdown */}
           <div className="relative">
             <select
               id="filter-sort-by"

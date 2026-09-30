@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { 
   ToastProvider, 
@@ -13,8 +13,11 @@ import {
 import { Header } from './components/Header';
 import { ScrollToTop } from './components/ScrollToTop';
 import { DishOfTheDay } from './components/DishOfTheDay';
+import { SeasonHighlights } from './components/SeasonHighlights';
 import { FilterBar } from './components/FilterBar';
 import { RecipeCard } from './components/RecipeCard';
+import { SwipeRecipeDeck } from './components/SwipeRecipeDeck';
+import { SlotMachineModal } from './components/SlotMachineModal';
 import { CookingTimerBar } from './components/CookingTimerBar';
 import { Search, Plus } from 'lucide-react';
 
@@ -51,6 +54,7 @@ interface RecipesExplorerViewProps {
 }
 
 function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
+  const [isSlotMachineOpen, setIsSlotMachineOpen] = useState(false);
   const {
     favorites,
     visibleRecipeCount,
@@ -61,6 +65,8 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
     filteredRecipes,
     dishOfTheDay,
     setIsAddRecipeOpen,
+    discoverViewMode,
+    setDiscoverViewMode,
   } = useRecipes();
 
   // Determine recipes to display depending on tab (Explore or Favorites)
@@ -75,7 +81,12 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
         <DishOfTheDay />
       )}
 
-      {/* View Header with Search Input */}
+      {/* Season Highlights Carousel (Goldener Herbst unter Gericht des Tages) */}
+      {!isFavorites && filters.searchQuery === '' && filters.category === 'all' && (
+        <SeasonHighlights />
+      )}
+
+      {/* View Header with Search Input & Slot Machine Trigger */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#2D3E40] leading-tight">
@@ -90,15 +101,29 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
 
         {/* Action Buttons & Live Search */}
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          {/* Überrasch mich Slot Machine Button */}
+          {!isFavorites && (
+            <button
+              id="explorer-slot-machine-btn"
+              type="button"
+              onClick={() => setIsSlotMachineOpen(true)}
+              className="flex items-center gap-2 h-12 min-h-[48px] px-3.5 sm:px-4 rounded-xl text-sm sm:text-base font-bold bg-gradient-to-r from-amber-500/15 via-[#C86D3B]/15 to-amber-500/15 hover:from-amber-500/25 hover:to-[#C86D3B]/25 border border-[#C86D3B]/30 text-[#C86D3B] hover:text-[#A85226] shadow-2xs transition-all active:scale-95 shrink-0 cursor-pointer"
+              title="Rezept-Glücksspielautomat öffnen"
+            >
+              <span className="text-lg">🎰</span>
+              <span className="hidden xs:inline">Überrasch mich</span>
+            </button>
+          )}
+
           <button
             id="explorer-add-recipe-btn"
             type="button"
             onClick={() => setIsAddRecipeOpen(true)}
-            className="flex items-center gap-2 h-12 min-h-[48px] px-5 rounded-xl text-base font-semibold bg-[#4A7856] hover:bg-[#3D6447] text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
+            className="flex items-center gap-2 h-12 min-h-[48px] px-4 sm:px-5 rounded-xl text-sm sm:text-base font-semibold bg-[#4A7856] hover:bg-[#3D6447] text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
             title="Neues Gericht per KI, Foto oder manuell hinzufügen"
           >
             <Plus className="w-5 h-5" />
-            <span>Neues Gericht</span>
+            <span className="hidden xs:inline">Neues Gericht</span>
           </button>
 
           {/* Live Search Bar */}
@@ -125,10 +150,14 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
         </div>
       </div>
 
-      {/* Filter Chips Bar */}
-      <FilterBar />
+      {/* Filter Chips Bar with View Switcher */}
+      <FilterBar 
+        onOpenSlotMachine={() => setIsSlotMachineOpen(true)}
+        viewMode={discoverViewMode}
+        onViewModeChange={setDiscoverViewMode}
+      />
 
-      {/* Empty State */}
+      {/* Empty State vs. Content (Grid or Swipe-Deck) */}
       {displayedFilteredRecipes.length === 0 ? (
         <div className="bg-white rounded-3xl p-8 sm:p-12 text-center border border-[#ECEBE8] shadow-2xs space-y-4">
           <div className="w-16 h-16 rounded-2xl bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center mx-auto text-2xl font-bold">
@@ -154,8 +183,14 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
             </button>
           )}
         </div>
+      ) : discoverViewMode === 'swipe' ? (
+        /* New Swipe-Deck Mode: Tinder-like card stack */
+        <SwipeRecipeDeck 
+          recipes={displayedFilteredRecipes} 
+          onSwitchToGrid={() => setDiscoverViewMode('grid')}
+        />
       ) : (
-        /* Recipes Grid with Progressive Pagination */
+        /* Classic Recipes Grid with Progressive Pagination */
         <div className="space-y-6 sm:space-y-8">
           {(() => {
             const visibleRecipes = displayedFilteredRecipes.slice(0, visibleRecipeCount);
@@ -206,6 +241,12 @@ function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
           })()}
         </div>
       )}
+
+      {/* Überrasch mich Slot Machine Modal */}
+      <SlotMachineModal
+        isOpen={isSlotMachineOpen}
+        onClose={() => setIsSlotMachineOpen(false)}
+      />
     </div>
   );
 }

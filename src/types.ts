@@ -96,6 +96,7 @@ export interface CookedLog {
   date: string; // ISO date
   rating?: number;
   notes?: string;
+  photoUrl?: string;
   servingsCooked: number;
   isVegan: boolean;
   savedCO2Kg: number;
