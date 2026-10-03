@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+@theme {
+  --color-accent: #4A7856;
+  --color-accent-hover: #3D6447;
+  --color-accent-tint: #F1F5F2;
+  --color-accent-border: #CCD5CF;
+  --color-surface: #FAF9F6;
+  --color-card: #FFFFFF;
+  --color-border: #ECEBE8;
+  --color-text-main: #2D3E40;
+  --color-text-muted: #686E6A;
+  --color-rose-50: #FFF1F2;
+  --color-rose-100: #FFE4E6;
+  --color-rose-200: #FECDD3;
+  --color-rose-300: #FDA4AF;
+  --color-rose-400: #C91C43;
+  --color-rose-500: #C91C43;
+  --color-rose-600: #B91C3C;
+  --color-rose-700: #991331;
+  --color-rose-800: #881334;
+  --color-rose-900: #4C0519;
+  --color-red-50: #FFF1F2;
+  --color-red-100: #FFE4E6;
+  --color-red-200: #FECDD3;
+  --color-red-400: #C91C43;
+  --color-red-500: #C91C43;
+  --color-red-600: #B91C3C;
+  --color-red-700: #991331;
+}
+
+:root {
+  --accent: #4A7856;
+  --accent-hover: #3D6447;
+  --accent-tint: #F1F5F2;
+  --accent-border: #CCD5CF;
+  --surface: #FAF9F6;
+  --card: #FFFFFF;
+  --border: #ECEBE8;
+  --text-main: #2D3E40;
+  --text-muted: #686E6A;
+}
+
+@layer base {
+  body {
+    background-color: #FAF9F6;
+    color: #2D3E40;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* Prevent iOS Safari automatic zoom on inputs (requires font size of at least 16px) */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  ::placeholder,
+  input::placeholder,
+  textarea::placeholder {
+    color: #686e6a;
+    opacity: 1;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-serif {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+    color: #2D3E40;
+  }
+}
+
+/* iOS-Style Range Slider */
+.ios-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pan-y;
+  transition: background 0.12s ease;
+}
+
+.ios-slider::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 9999px;
+  background: transparent;
+}
+
+.ios-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 32px;
+  margin-top: -12px;
+  border-radius: 9px;
+  background: linear-gradient(180deg, #538561 0%, #447150 100%);
+  border: 3.5px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(45, 62, 64, 0.15), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  cursor: grab;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform, box-shadow;
+}
+
+.ios-slider:hover::-webkit-slider-thumb {
+  transform: scale(1.08);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2), 0 6px 16px rgba(45, 62, 64, 0.2), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+
+.ios-slider:active::-webkit-slider-thumb {
+  transform: scale(1.22);
+  cursor: grabbing;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 8px 22px rgba(74, 120, 86, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+}
+
+/* Firefox */
+.ios-slider::-moz-range-track {
+  height: 8px;
+  border-radius: 9999px;
+  background: transparent;
+}
+
+.ios-slider::-moz-range-thumb {
+  width: 24px;
+  height: 32px;
+  border-radius: 9px;
+  background: linear-gradient(180deg, #538561 0%, #447150 100%);
+  border: 3.5px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(45, 62, 64, 0.15), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  cursor: grab;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform, box-shadow;
+  box-sizing: border-box;
+}
+
+.ios-slider:hover::-moz-range-thumb {
+  transform: scale(1.08);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2), 0 6px 16px rgba(45, 62, 64, 0.2), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+
+.ios-slider:active::-moz-range-thumb {
+  transform: scale(1.22);
+  cursor: grabbing;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 8px 22px rgba(74, 120, 86, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+}
+

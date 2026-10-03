@@ -1,0 +1,1796 @@
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { 
+  ShoppingCart, 
+  Copy, 
+  Check, 
+  Trash2, 
+  Plus, 
+  CheckCheck, 
+  RotateCcw, 
+  List, 
+  LayoutGrid, 
+  AlertTriangle, 
+  Pencil, 
+  Minus, 
+  X,
+  ChevronDown,
+  Sparkles,
+  Users,
+  Cloud,
+  GripVertical
+} from 'lucide-react';
+import { ShoppingItem, IngredientCategory } from '../types';
+import { 
+  generateShoppingListText, 
+  detectIngredientCategory, 
+  parseNaturalLanguageGroceryItem,
+  mergeOrAddShoppingItem,
+  areIngredientsEquivalent,
+  loadFromLocalStorage,
+  saveToLocalStorage,
+  formatRecipeSource,
+  safeCopyToClipboard,
+  formatDisplayGrocery,
+  normalizeAndScaleGroceryQuantity
+} from '../utils/helpers';
+import { SyncConfig } from '../lib/syncService';
+import { useLockBodyScroll } from '../utils/useLockBodyScroll';
+import { useShopping } from '../context/ShoppingContext';
+import { useSync } from '../context/SyncContext';
+import { useToast } from '../context/ToastContext';
+
+interface ShoppingListViewProps {
+  items?: ShoppingItem[];
+  setItems?: React.Dispatch<React.SetStateAction<ShoppingItem[]>>;
+  onCopyFeedback?: (msg: string) => void;
+  syncConfig?: SyncConfig;
+  onOpenSyncModal?: () => void;
+}
+
+const CATEGORY_META: Record<
+  IngredientCategory,
+  { label: string; icon: string }
+> = {
+  gemuese: { label: 'Frisches Gemüse & Kräuter', icon: '🥦' },
+  kuehlregal: { label: 'Kühlregal & Alternativen', icon: '🥛' },
+  huelsenfruechte: { label: 'Hülsenfrüchte & Tofu', icon: '🫘' },
+  trockenwaren: { label: 'Vorratskammer & Pasta', icon: '🌾' },
+  gewuerze: { label: 'Gewürze, Öle & Dips', icon: '🧂' },
+  sonstiges: { label: 'Sonstiges', icon: '📦' },
+};
+
+const DEFAULT_SHELF_ORDER: IngredientCategory[] = [
+  'gemuese',
+  'kuehlregal',
+  'huelsenfruechte',
+  'trockenwaren',
+  'gewuerze',
+  'sonstiges',
+];
+
+export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
+  const shoppingCtx = useShopping();
+  const syncCtx = useSync();
+  const toastCtx = useToast();
+
+  const items = props.items ?? shoppingCtx.items;
+  const setItems = props.setItems ?? shoppingCtx.setItems;
+  const onCopyFeedback = props.onCopyFeedback ?? toastCtx.showToast;
+  const syncConfig = props.syncConfig ?? syncCtx.syncConfig;
+  const onOpenSyncModal = props.onOpenSyncModal ?? syncCtx.openSyncModal;
+
+  const [copied, setCopied] = useState(false);
+  const [quickAddInput, setQuickAddInput] = useState('');
+  const [categoryChoice, setCategoryChoice] = useState<'auto' | IngredientCategory>('auto');
+  const [viewMode, setViewMode] = useState<'categorized' | 'flat'>('categorized');
+
+  // Shelf (Category) reorder state via drag and drop
+  const [shelfOrder, setShelfOrder] = useState<IngredientCategory[]>(() =>
+    loadFromLocalStorage('veggiechef_shelf_order', DEFAULT_SHELF_ORDER)
+  );
+  const [draggedShelf, setDraggedShelf] = useState<IngredientCategory | null>(null);
+  const [dragOverShelf, setDragOverShelf] = useState<IngredientCategory | null>(null);
+
+  // Item reorder state via drag and drop
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [dragOverItemId, setDragOverItemId] = useState<string | null>(null);
+  const [dragDropPosition, setDragDropPosition] = useState<'before' | 'after' | null>(null);
+  const [isDragOverDelete, setIsDragOverDelete] = useState(false);
+  
+  // Undo & bulk delete states
+  const [undoBackup, setUndoBackup] = useState<ShoppingItem[] | null>(null);
+  const [lastDeletedInfo, setLastDeletedInfo] = useState<{
+    type: 'all' | 'completed' | 'category' | 'single';
+    count: number;
+    name?: string;
+  } | null>(null);
+  const [showUndoBanner, setShowUndoBanner] = useState(false);
+
+  // Stepper & Item editing
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingAmountValue, setEditingAmountValue] = useState<string>('');
+  const editContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Swipe-to-action mobile state (iOS Full Swipe Delete & Reveal)
+  const [swipedItemId, setSwipedItemId] = useState<string | null>(null);
+  const swipedItemIdRef = useRef<string | null>(null);
+  swipedItemIdRef.current = swipedItemId;
+  const [activeTouchItemId, setActiveTouchItemId] = useState<string | null>(null);
+  const [touchCurrentOffset, setTouchCurrentOffset] = useState<number>(0);
+  const touchStartRef = useRef<{ startX: number; startY: number; baseOffset: number; itemWidth?: number } | null>(null);
+  const justClosedSwipeMenuRef = useRef<boolean>(false);
+  const swipeOpenAtTouchStartRef = useRef<boolean>(false);
+  const lastClosedSwipeMenuTimeRef = useRef<number>(0);
+  const didSwipeRef = useRef<boolean>(false);
+  const lastSwipedTimeRef = useRef<number>(0);
+  const lastTouchOffsetRef = useRef<number>(0);
+
+  const closeSwipeMenu = () => {
+    if (swipedItemIdRef.current !== null || swipedItemId !== null) {
+      setSwipedItemId(null);
+      justClosedSwipeMenuRef.current = true;
+      lastClosedSwipeMenuTimeRef.current = Date.now();
+      setActiveTouchItemId(null);
+      setTouchCurrentOffset(0);
+      setTimeout(() => {
+        justClosedSwipeMenuRef.current = false;
+      }, 500);
+    }
+  };
+
+  // Auto-close swiped menu when tapping anywhere outside on the screen
+  useEffect(() => {
+    if (!swipedItemId) return;
+
+    const handleGlobalTap = (e: MouseEvent | TouchEvent) => {
+      // Wenn das Menü erst vor kurzem (< 350ms) aufgeswipt wurde, nicht durch auslaufende Events schließen
+      if (Date.now() - lastSwipedTimeRef.current < 350) {
+        return;
+      }
+      const target = e.target as HTMLElement | null;
+      // Falls auf die Swipe-Aktionsbuttons (Stift, Mülleimer) geklickt wird, dieses Event zulassen
+      if (target?.closest('[data-swipe-action="true"]')) {
+        return;
+      }
+      // Ansonsten schließt jeder Klick/Tap außerhalb das Menü
+      closeSwipeMenu();
+    };
+
+    // Leichte Verzögerung damit nicht das Loslassen des Touches sofort schließt
+    const timer = setTimeout(() => {
+      window.addEventListener('pointerdown', handleGlobalTap, true);
+    }, 40);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('pointerdown', handleGlobalTap, true);
+    };
+  }, [swipedItemId]);
+
+  // Accordion states: completed section & categories
+  const [showCompletedSection, setShowCompletedSection] = useState(false);
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+
+  // Safety confirmation modal
+  const [confirmDeleteState, setConfirmDeleteState] = useState<{
+    type: 'all' | 'completed';
+  } | null>(null);
+
+  // Custom Category Dropdown in quick add form
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const categoryDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isCategoryDropdownOpen) return;
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target as Node)) {
+        setIsCategoryDropdownOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+  }, [isCategoryDropdownOpen]);
+
+  useLockBodyScroll(Boolean(confirmDeleteState));
+
+  // Live parsed preview of natural language quick-add
+  const parsedPreview = useMemo(() => {
+    return parseNaturalLanguageGroceryItem(quickAddInput);
+  }, [quickAddInput]);
+
+  // Detected category from input
+  const previewCategory: IngredientCategory = useMemo(() => {
+    if (categoryChoice !== 'auto') return categoryChoice;
+    return detectIngredientCategory(parsedPreview.name || quickAddInput);
+  }, [categoryChoice, parsedPreview.name, quickAddInput]);
+
+  // Auto-save & close inline stepper on click/tap outside
+  useEffect(() => {
+    if (!editingItemId) return;
+
+    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
+      if (editContainerRef.current && !editContainerRef.current.contains(e.target as Node)) {
+        saveEditedAmount(editingItemId);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [editingItemId, editingAmountValue]);
+
+  // Auto-dismiss undo banner after 10 seconds
+  useEffect(() => {
+    if (showUndoBanner) {
+      const timer = setTimeout(() => {
+        setShowUndoBanner(false);
+        setUndoBackup(null);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [showUndoBanner]);
+
+  // Group items by category
+  const grouped = useMemo(() => {
+    const map: Record<string, ShoppingItem[]> = {};
+    items.forEach((item) => {
+      const cat = item.category || 'sonstiges';
+      if (!map[cat]) map[cat] = [];
+      map[cat].push(item);
+    });
+    return map;
+  }, [items]);
+
+  const activeCount = items.filter((i) => !i.completed).length;
+  const completedCount = items.filter((i) => i.completed).length;
+
+  // Active categories: Categories that have AT LEAST ONE uncompleted item.
+  // When all items in a category are completed, it disappears completely from the shelves!
+  const activeCategories = useMemo(() => {
+    return shelfOrder.filter((catKey) => {
+      const catItems = grouped[catKey] || [];
+      return catItems.some((it) => !it.completed);
+    });
+  }, [shelfOrder, grouped]);
+
+  const toggleItem = (id: string) => {
+    setItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item))
+    );
+    if (swipedItemId === id) {
+      setSwipedItemId(null);
+    }
+  };
+
+  const deleteItem = (id: string) => {
+    const itemToDelete = items.find((i) => i.id === id);
+    if (!itemToDelete) return;
+    setUndoBackup([...items]);
+    setLastDeletedInfo({
+      type: 'single',
+      count: 1,
+      name: itemToDelete.name,
+    });
+    setShowUndoBanner(true);
+    setItems((prev) => prev.filter((item) => item.id !== id));
+    if (swipedItemId === id) {
+      setSwipedItemId(null);
+    }
+  };
+
+  const startEditingItem = (item: ShoppingItem) => {
+    setEditingItemId(item.id);
+    const combined = [item.amount, item.unit].filter(Boolean).join(' ').trim();
+    setEditingAmountValue(combined || '1');
+    setSwipedItemId(null);
+  };
+
+  const cancelEditing = () => {
+    setEditingItemId(null);
+    setEditingAmountValue('');
+  };
+
+  const saveEditedAmount = (itemId: string) => {
+    const val = editingAmountValue.trim();
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.id !== itemId) return it;
+        if (!val) {
+          return { ...it, amount: '', unit: '' };
+        }
+        const parsed = parseNaturalLanguageGroceryItem(val);
+        if (parsed.amount) {
+          const num = typeof parsed.amount === 'number' ? parsed.amount : parseFloat(String(parsed.amount).replace(',', '.'));
+          if (!isNaN(num)) {
+            const scaled = normalizeAndScaleGroceryQuantity(num, parsed.unit, it.name);
+            return { ...it, amount: scaled.amount, unit: scaled.unit };
+          }
+          return { ...it, amount: parsed.amount, unit: parsed.unit };
+        }
+        const match = val.match(/^([\d.,]+)\s*(.*)$/);
+        if (match && match[1]) {
+          const num = parseFloat(match[1].replace(',', '.'));
+          const unit = match[2] || '';
+          if (!isNaN(num)) {
+            const scaled = normalizeAndScaleGroceryQuantity(num, unit, it.name);
+            return { ...it, amount: scaled.amount, unit: scaled.unit };
+          }
+          return { ...it, amount: match[1], unit };
+        }
+        return { ...it, amount: val, unit: '' };
+      })
+    );
+    setEditingItemId(null);
+    setEditingAmountValue('');
+    onCopyFeedback('Menge aktualisiert!');
+  };
+
+  const stepEditedAmount = (delta: number) => {
+    const val = editingAmountValue.trim();
+    const match = val.match(/^([\d.,]+)\s*(.*)$/);
+    if (match && match[1]) {
+      const parsedNum = parseFloat(match[1].replace(',', '.'));
+      if (!isNaN(parsedNum)) {
+        let step = 1;
+        if (parsedNum >= 100) step = 50;
+        else if (parsedNum >= 20) step = 10;
+        else if (parsedNum >= 10) step = 5;
+        else if (parsedNum < 1 && parsedNum > 0) step = 0.5;
+
+        const next = Math.max(0, Math.round((parsedNum + delta * step) * 10) / 10);
+        const unit = match[2] || '';
+        setEditingAmountValue(unit ? `${next} ${unit}` : `${next}`);
+        return;
+      }
+    }
+    if (!val) {
+      setEditingAmountValue(delta > 0 ? '1' : '0');
+    } else {
+      setEditingAmountValue(delta > 0 ? `1 ${val}` : val);
+    }
+  };
+
+  const clearCompleted = () => {
+    const prevItems = [...items];
+    const compItems = prevItems.filter((item) => item.completed);
+    const count = compItems.length;
+    if (count === 0) return;
+
+    setUndoBackup(prevItems);
+    setLastDeletedInfo({ type: 'completed', count });
+    setItems((prev) => prev.filter((item) => !item.completed));
+    setShowUndoBanner(true);
+    onCopyFeedback(`${count} erledigte ${count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`);
+  };
+
+  // Leeren/Löschen der gesamten Einkaufsliste
+  const handleDeleteAll = () => {
+    if (items.length === 0) return;
+    const count = items.length;
+    setUndoBackup([...items]);
+    setLastDeletedInfo({ type: 'all', count });
+    setItems([]);
+    setShowUndoBanner(true);
+    onCopyFeedback(`Einkaufsliste (${count} ${count === 1 ? 'Zutat' : 'Zutaten'}) gelöscht.`);
+  };
+
+  const handleUndo = () => {
+    if (undoBackup && undoBackup.length > 0) {
+      setItems(undoBackup);
+      const count = lastDeletedInfo?.count || undoBackup.length;
+      setUndoBackup(null);
+      setLastDeletedInfo(null);
+      setShowUndoBanner(false);
+      onCopyFeedback(`${count} ${count === 1 ? 'Zutat' : 'Zutaten'} wiederhergestellt! 🛒`);
+    }
+  };
+
+  // Smart Quick-Add: Merges duplicates if same item name exists!
+  const handleAddItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    const raw = quickAddInput.trim();
+    if (!raw) return;
+
+    const parsed = parseNaturalLanguageGroceryItem(raw);
+    const finalName = parsed.name || raw;
+    const finalAmount = parsed.amount || '';
+    const finalUnit = parsed.unit || '';
+
+    const assignedCategory: IngredientCategory =
+      categoryChoice === 'auto'
+        ? detectIngredientCategory(finalName)
+        : categoryChoice;
+
+    const newItem: ShoppingItem = {
+      id: `custom-shop-${Date.now()}`,
+      name: finalName,
+      amount: finalAmount,
+      unit: finalUnit,
+      category: assignedCategory,
+      completed: false,
+    };
+
+    const existingMatch = items.find(
+      (it) => !it.completed && areIngredientsEquivalent(it.name, finalName)
+    );
+
+    setItems((prev) => mergeOrAddShoppingItem(prev, newItem));
+    setQuickAddInput('');
+    setCategoryChoice('auto');
+    const catLabel = CATEGORY_META[assignedCategory]?.label || 'Sonstiges';
+
+    if (existingMatch) {
+      onCopyFeedback(`Menge für "${finalName}" erhöht!`);
+    } else {
+      const amountStr = [finalAmount, finalUnit].filter(Boolean).join(' ');
+      onCopyFeedback(
+        amountStr
+          ? `"${finalName}" (${amountStr}) hinzugefügt (${catLabel})!`
+          : `"${finalName}" hinzugefügt (${catLabel})!`
+      );
+    }
+  };
+
+  const handleConfirmDeleteAction = () => {
+    if (!confirmDeleteState) return;
+    if (confirmDeleteState.type === 'all') {
+      handleDeleteAll();
+    } else if (confirmDeleteState.type === 'completed') {
+      clearCompleted();
+    }
+    setConfirmDeleteState(null);
+  };
+
+  const handleCopyFormattedList = async () => {
+    const text = generateShoppingListText(items);
+    await safeCopyToClipboard(text);
+    setCopied(true);
+    onCopyFeedback('Einkaufsliste in die Zwischenablage kopiert!');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const toggleCategoryCollapse = (catKey: string) => {
+    setCollapsedCategories((prev) => ({
+      ...prev,
+      [catKey]: !prev[catKey],
+    }));
+  };
+
+  // --- Drag and Drop: Regale (Kategorien) ---
+  const handleDragStartShelf = (e: React.DragEvent, catKey: IngredientCategory) => {
+    e.dataTransfer.setData('text/plain', catKey);
+    setDraggedShelf(catKey);
+  };
+
+  const handleDragOverShelf = (e: React.DragEvent, _catKey: IngredientCategory) => {
+    e.preventDefault();
+  };
+
+  const handleDropShelf = (e: React.DragEvent, targetCatKey: IngredientCategory) => {
+    e.preventDefault();
+
+    // 1. Wenn ein ARTIKEL auf ein Regal fallen gelassen wird:
+    if (draggedItemId) {
+      const item = items.find((i) => i.id === draggedItemId);
+      if (item) {
+        setItems((prev) =>
+          prev.map((it) => (it.id === draggedItemId ? { ...it, category: targetCatKey } : it))
+        );
+        onCopyFeedback(`"${item.name}" in Regal "${CATEGORY_META[targetCatKey].label}" verschoben!`);
+      }
+      setDraggedItemId(null);
+      setDragOverItemId(null);
+      return;
+    }
+
+    // 2. Wenn ein REGAL verschoben wird (alle dahinter rücken nach hinten):
+    if (!draggedShelf || draggedShelf === targetCatKey) {
+      setDraggedShelf(null);
+      setDragOverShelf(null);
+      return;
+    }
+
+    const remaining = shelfOrder.filter((k) => k !== draggedShelf);
+    const toIdx = remaining.indexOf(targetCatKey);
+    if (toIdx !== -1) {
+      remaining.splice(toIdx, 0, draggedShelf);
+      setShelfOrder(remaining);
+      saveToLocalStorage('veggiechef_shelf_order', remaining);
+      onCopyFeedback('Regale-Reihenfolge gespeichert!');
+    }
+    setDraggedShelf(null);
+    setDragOverShelf(null);
+  };
+
+  // --- Drag and Drop: Items (Artikel) - Geschmeidiges Verschieben & Nachrücken ---
+  const handleDragStartItem = (e: React.DragEvent, itemId: string) => {
+    // Ein Item mit geöffnetem Menü oder solange ein Menü offen ist, kann nicht verschoben werden
+    if (swipedItemId !== null) {
+      e.preventDefault();
+      return;
+    }
+    e.stopPropagation();
+    e.dataTransfer.setData('text/plain', itemId);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedItemId(itemId);
+  };
+
+  const handleDragOverItem = (e: React.DragEvent, itemId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const pos = e.clientY > midY ? 'after' : 'before';
+
+    if (dragOverItemId !== itemId || dragDropPosition !== pos) {
+      setDragOverItemId(itemId);
+      setDragDropPosition(pos);
+    }
+  };
+
+  const handleDropItem = (e: React.DragEvent, targetItemId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedItemId || draggedItemId === targetItemId) {
+      setDraggedItemId(null);
+      setDragOverItemId(null);
+      setDragDropPosition(null);
+      return;
+    }
+
+    const draggedItem = items.find((i) => i.id === draggedItemId);
+    const targetItem = items.find((i) => i.id === targetItemId);
+
+    if (!draggedItem || !targetItem) {
+      setDraggedItemId(null);
+      setDragOverItemId(null);
+      setDragDropPosition(null);
+      return;
+    }
+
+    // Falls auf ein Item einer anderen Kategorie gezogen, Kategorie übernehmen
+    const updatedDraggedItem: ShoppingItem = {
+      ...draggedItem,
+      category: targetItem.category || draggedItem.category,
+    };
+
+    // Gezogenen Artikel aus Array filtern
+    const remaining = items.filter((i) => i.id !== draggedItemId);
+    // Position des Ziel-Items ermitteln
+    const targetIndex = remaining.findIndex((i) => i.id === targetItemId);
+
+    if (targetIndex !== -1) {
+      // Vor oder nach dem Ziel-Item einfügen: sauberes Nachrücken aller Elemente
+      const insertIndex = dragDropPosition === 'after' ? targetIndex + 1 : targetIndex;
+      remaining.splice(insertIndex, 0, updatedDraggedItem);
+      setItems(remaining);
+      onCopyFeedback(`"${draggedItem.name}" verschoben!`);
+    }
+
+    setDraggedItemId(null);
+    setDragOverItemId(null);
+    setDragDropPosition(null);
+  };
+
+  // Helper für Apple iOS Swipe-to-Delete
+  const handleDeleteBySwipe = (item: ShoppingItem) => {
+    deleteItem(item.id);
+    onCopyFeedback(`"${item.name}" gelöscht.`);
+    setSwipedItemId(null);
+    setActiveTouchItemId(null);
+    setTouchCurrentOffset(0);
+  };
+
+  // --- Drag and Drop: Drop auf den "Löschen"-Button ---
+  const handleDropOnDelete = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOverDelete(false);
+
+    // A. Regal (Kategorie) löschen
+    if (draggedShelf) {
+      const catKey = draggedShelf;
+      const catMeta = CATEGORY_META[catKey];
+      const itemsInCat = items.filter((it) => (it.category || 'sonstiges') === catKey);
+
+      if (itemsInCat.length > 0) {
+        setUndoBackup([...items]);
+        setLastDeletedInfo({
+          type: 'category',
+          count: itemsInCat.length,
+          name: catMeta?.label || catKey,
+        });
+        setItems((prev) => prev.filter((it) => (it.category || 'sonstiges') !== catKey));
+        setShowUndoBanner(true);
+        onCopyFeedback(
+          `Regal "${catMeta?.label || catKey}" (${itemsInCat.length} ${
+            itemsInCat.length === 1 ? 'Artikel' : 'Artikel'
+          }) gelöscht.`
+        );
+      } else {
+        onCopyFeedback(`Regal "${catMeta?.label || catKey}" ist bereits leer.`);
+      }
+
+      setDraggedShelf(null);
+      setDragOverShelf(null);
+      setDragDropPosition(null);
+      return;
+    }
+
+    // B. Einzelnen Artikel löschen
+    if (draggedItemId) {
+      const item = items.find((it) => it.id === draggedItemId);
+      if (item) {
+        setUndoBackup([...items]);
+        setLastDeletedInfo({
+          type: 'single',
+          count: 1,
+          name: item.name,
+        });
+        setItems((prev) => prev.filter((it) => it.id !== draggedItemId));
+        setShowUndoBanner(true);
+        onCopyFeedback(`"${item.name}" gelöscht.`);
+      }
+      setDraggedItemId(null);
+      setDragOverItemId(null);
+      setDragDropPosition(null);
+      return;
+    }
+
+    setDraggedShelf(null);
+    setDragOverShelf(null);
+    setDraggedItemId(null);
+    setDragOverItemId(null);
+    setDragDropPosition(null);
+  };
+
+  // Active & completed item partition
+  const activeItems = useMemo(() => items.filter((i) => !i.completed), [items]);
+  const completedItems = useMemo(() => items.filter((i) => i.completed), [items]);
+
+  // Clean Item Row: Checkbox, Name, Desktop Actions LINKS von der Mengenangabe, Mengenangabe GANZ RECHTS, Drag Handle, iOS Full-Swipe
+  const renderItemRow = (item: ShoppingItem) => {
+    const isEditing = editingItemId === item.id;
+    const isSwiped = swipedItemId === item.id;
+    const isAnySwiped = swipedItemId !== null;
+    const isBeingDragged = draggedItemId === item.id;
+    const isDragOver = dragOverItemId === item.id;
+
+    // Mobile Touch & Swipe Offset
+    const isThisItemTouching = activeTouchItemId === item.id;
+    const MENU_SWIPE_OFFSET = 132; // Komfortabler Abstand für 48px Stift & Mülleimer
+    const currentOffset = isThisItemTouching
+      ? touchCurrentOffset
+      : isSwiped
+      ? -MENU_SWIPE_OFFSET
+      : 0;
+
+    // Mindestens 70% der Breite nach links ziehen, um direkt zu löschen
+    const itemWidth = touchStartRef.current?.itemWidth || 360;
+    const deleteThreshold = itemWidth * 0.7;
+    const pullDistance = Math.max(0, -currentOffset);
+    const isFullSwipeDelete = isThisItemTouching && pullDistance >= deleteThreshold;
+
+    // Wenn weiter links geswipt wird als das geöffnete Menü (pullDistance > 132px)
+    const isSwipingPastMenu = isThisItemTouching && pullDistance > MENU_SWIPE_OFFSET && !isFullSwipeDelete;
+    const extraPull = isSwipingPastMenu ? pullDistance - MENU_SWIPE_OFFSET : 0;
+
+    // Stift verblasst geschmeidig, sobald der Mülleimer sich verlängert
+    const pencilOpacity = isSwipingPastMenu
+      ? Math.max(0, 1 - extraPull / 24)
+      : isFullSwipeDelete
+      ? 0
+      : 1;
+
+    // Mülleimer wird dynamisch immer länger, bis er bei ~70% vollflächig wird
+    const expandingTrashWidth = isSwipingPastMenu
+      ? Math.min(itemWidth - 24, 48 + extraPull * 1.25)
+      : 48;
+
+    const recipeSourceText = formatRecipeSource(item.recipeSource);
+    const hasSecondaryText = Boolean(recipeSourceText);
+
+    return (
+      <div
+        key={item.id}
+        data-swipe-item={item.id}
+        draggable={!isEditing && !isSwiped && !isAnySwiped}
+        onDragStart={(e) => handleDragStartItem(e, item.id)}
+        onDragOver={(e) => handleDragOverItem(e, item.id)}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            if (dragOverItemId === item.id) {
+              setDragOverItemId(null);
+              setDragDropPosition(null);
+            }
+          }
+        }}
+        onDrop={(e) => handleDropItem(e, item.id)}
+        onDragEnd={() => {
+          setDraggedItemId(null);
+          setDragOverItemId(null);
+          setDragDropPosition(null);
+          setIsDragOverDelete(false);
+        }}
+        className={`relative overflow-hidden select-none group touch-pan-y transition-all ${
+          isBeingDragged
+            ? 'opacity-40 border-dashed border-[#4A7856]'
+            : 'opacity-100'
+        }`}
+      >
+        {/* Drop Insertion Line (Geschmeidige Vorschau ohne Layout-Shift) */}
+        {isDragOver && dragDropPosition === 'before' && (
+          <div className="absolute top-0 left-2 right-2 h-1 bg-[#4A7856] rounded-full z-30 pointer-events-none shadow-xs" />
+        )}
+        {isDragOver && dragDropPosition === 'after' && (
+          <div className="absolute bottom-0 left-2 right-2 h-1 bg-[#4A7856] rounded-full z-30 pointer-events-none shadow-xs" />
+        )}
+
+        {/* Background Action Tray: Für Mobile-Swipe (nicht durch sm:hidden verstecken) */}
+        <div
+          className={`absolute inset-0 z-0 overflow-hidden flex items-center justify-end transition-[background-color,border-color] duration-150 ease-out ${
+            isFullSwipeDelete
+              ? 'bg-[#C93B2B]'
+              : 'bg-[#FAF9F6] pr-2.5 pl-3'
+          }`}
+        >
+          {isFullSwipeDelete ? (
+            /* Apple Full-Swipe: Bei ~70% nimmt das dunklere Rot komplett den Background Space ein (Zeichen für Löschen) */
+            <div className="flex items-center justify-end w-full px-6 gap-2.5 text-white font-semibold text-sm animate-in fade-in zoom-in-95 duration-150">
+              <Trash2 className="w-5 h-5 stroke-[2.5] scale-110 transition-transform" />
+              <span>Löschen</span>
+            </div>
+          ) : (
+            /* Standard-Tray mit 48x48px Stift und dynamisch länger werdendem 48px Mülleimer */
+            <div className="flex items-center justify-end gap-2 h-full">
+              {/* Stift: Verblasst, wenn man über das Menü hinaus swipt */}
+              <button
+                data-swipe-action="true"
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSwipedItemId(null);
+                  startEditingItem(item);
+                }}
+                style={{
+                  opacity: pencilOpacity,
+                  transform: `scale(${0.85 + 0.15 * pencilOpacity})`,
+                  pointerEvents: pencilOpacity < 0.2 ? 'none' : 'auto',
+                  transition: isThisItemTouching ? 'none' : 'opacity 0.2s, transform 0.2s',
+                }}
+                className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl bg-white text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0"
+                title="Menge anpassen"
+                aria-label="Menge anpassen"
+              >
+                <Pencil className="w-5 h-5" />
+              </button>
+
+              {/* Mülleimer: Mindestens 48px, wird dynamisch länger, je weiter man nach links zieht */}
+              <button
+                data-swipe-action="true"
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteBySwipe(item);
+                }}
+                style={{
+                  width: isSwipingPastMenu ? `${expandingTrashWidth}px` : '48px',
+                  transition: isThisItemTouching ? 'none' : 'width 0.28s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s',
+                }}
+                className={`h-12 min-h-[48px] rounded-xl flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0 transition-colors ${
+                  isSwipingPastMenu
+                    ? 'bg-rose-100 text-rose-700 border border-rose-300 px-3.5'
+                    : 'w-12 min-w-[48px] bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
+                }`}
+                title="Artikel löschen"
+                aria-label="Artikel löschen"
+              >
+                <Trash2 className="w-5 h-5 shrink-0 stroke-[2.2]" />
+                {isSwipingPastMenu && expandingTrashWidth > 76 && (
+                  <span className="text-xs font-semibold whitespace-nowrap animate-in fade-in duration-100">
+                    Löschen
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Foreground Row */}
+        <div
+          onTouchStart={(e) => {
+            if (isEditing) return;
+            // Falls ein ANDERES Menü offen ist, dieses schließen und Klick für diese Zutat sperren
+            if (swipedItemIdRef.current !== null && swipedItemIdRef.current !== item.id) {
+              swipeOpenAtTouchStartRef.current = true;
+              closeSwipeMenu();
+              touchStartRef.current = null;
+              return;
+            }
+
+            // Falls dieses Item selbst das Menü offen hat:
+            // Wir merken uns, dass das Menü offen war, damit ein einfacher Tap das Menü nur schließt und nicht abcheckt
+            if (swipedItemIdRef.current === item.id) {
+              swipeOpenAtTouchStartRef.current = true;
+            } else {
+              swipeOpenAtTouchStartRef.current = false;
+            }
+
+            const touch = e.touches[0];
+            const targetEl = e.currentTarget as HTMLElement;
+            const width = targetEl.offsetWidth || window.innerWidth;
+            touchStartRef.current = {
+              startX: touch.clientX,
+              startY: touch.clientY,
+              baseOffset: swipedItemIdRef.current === item.id ? -MENU_SWIPE_OFFSET : 0,
+              itemWidth: width,
+            };
+            lastTouchOffsetRef.current = swipedItemIdRef.current === item.id ? -MENU_SWIPE_OFFSET : 0;
+            didSwipeRef.current = false;
+            setActiveTouchItemId(item.id);
+          }}
+          onTouchMove={(e) => {
+            if (!touchStartRef.current || isEditing) return;
+            const touch = e.touches[0];
+            const diffX = touch.clientX - touchStartRef.current.startX;
+            const diffY = touch.clientY - touchStartRef.current.startY;
+
+            // Vertikales Scrollen durchlassen, falls primär vertikal gescrollt wird
+            if (!didSwipeRef.current && Math.abs(diffY) > 10 && Math.abs(diffY) > Math.abs(diffX) * 1.3) {
+              return;
+            }
+
+            if (Math.abs(diffX) > 6) {
+              didSwipeRef.current = true;
+            }
+
+            if (!didSwipeRef.current) return;
+
+            const width = touchStartRef.current.itemWidth || 360;
+            const rawOffset = touchStartRef.current.baseOffset + diffX;
+            // Nach links swipen (bis zum linken Bildschirmrand: -width) und nach rechts mit Dämpfung (Rubber-Banding)
+            let clamped: number;
+            if (rawOffset > 0) {
+              // Elastisches Rubber-Banding beim Ziehen nach rechts
+              clamped = Math.min(15, rawOffset * 0.2);
+            } else {
+              clamped = Math.max(-width, rawOffset);
+            }
+            lastTouchOffsetRef.current = clamped;
+            setTouchCurrentOffset(clamped);
+          }}
+          onTouchEnd={() => {
+            if (!touchStartRef.current) {
+              setActiveTouchItemId(null);
+              setTouchCurrentOffset(0);
+              return;
+            }
+            const width = touchStartRef.current.itemWidth || 360;
+            const deleteThreshold = width * 0.7; // Exakt ~70% der Breite
+            const offset = lastTouchOffsetRef.current;
+            const didActuallySwipe = didSwipeRef.current;
+            touchStartRef.current = null;
+
+            if (isThisItemTouching) {
+              if (offset <= -deleteThreshold) {
+                // Erst wenn bis ca. 70% der Breite gezogen wurde: direkt löschen
+                handleDeleteBySwipe(item);
+              } else if (didActuallySwipe && offset < -35) {
+                // Menü öffnet sich geschmeidig (-132px)
+                setSwipedItemId(item.id);
+                lastSwipedTimeRef.current = Date.now();
+                setActiveTouchItemId(null);
+                setTouchCurrentOffset(0);
+              } else {
+                // Nicht weit genug geswipt, zurückgewischt oder reiner Tap: geschmeidig schließen
+                closeSwipeMenu();
+              }
+            }
+          }}
+          onTouchCancel={() => {
+            touchStartRef.current = null;
+            setActiveTouchItemId(null);
+            setTouchCurrentOffset(0);
+            didSwipeRef.current = false;
+          }}
+          onClick={(e) => {
+            // 1. Wenn gerade erst geswipt wurde (< 400ms) oder tatsächlich gewischt wurde: Klick ignorieren
+            if (Date.now() - lastSwipedTimeRef.current < 400 || didSwipeRef.current) {
+              didSwipeRef.current = false;
+              e.preventDefault();
+              e.stopPropagation();
+              return;
+            }
+
+            // 2. ABSOLUTER SCHUTZ: Wenn irgendein Swipe-Menü offen war, beim Touchstart offen war,
+            // oder gerade geschlossen wurde:
+            // Es darf schlicht NICHT möglich sein, irgendeine Zutat abzuhaken!
+            if (
+              swipedItemId !== null ||
+              swipedItemIdRef.current !== null ||
+              swipeOpenAtTouchStartRef.current ||
+              justClosedSwipeMenuRef.current ||
+              Date.now() - lastClosedSwipeMenuTimeRef.current < 500
+            ) {
+              e.preventDefault();
+              e.stopPropagation();
+              swipeOpenAtTouchStartRef.current = false;
+              justClosedSwipeMenuRef.current = false;
+              closeSwipeMenu();
+              return;
+            }
+
+            if (!isEditing) {
+              toggleItem(item.id);
+            }
+          }}
+          style={{
+            transform: `translate3d(${currentOffset}px, 0, 0)`,
+            transition: isThisItemTouching ? 'none' : 'transform 0.32s cubic-bezier(0.16, 1, 0.3, 1)',
+            willChange: isThisItemTouching ? 'transform' : 'auto',
+          }}
+          className={`relative z-10 w-full flex justify-between py-2.5 sm:py-2 px-3.5 sm:px-4 gap-2.5 sm:gap-3 min-h-[52px] sm:min-h-[52px] touch-pan-y transition-colors ${
+            isEditing
+              ? 'cursor-default bg-[#FAF9F6] items-stretch'
+              : hasSecondaryText
+              ? 'items-start'
+              : 'items-center'
+          } ${
+            isEditing
+              ? ''
+              : item.completed
+              ? 'cursor-pointer bg-white hover:bg-[#FAF9F6] text-[#686E6A]'
+              : 'cursor-pointer bg-white hover:bg-[#FAF9F6] active:bg-[#F5F4F0] text-[#2D3E40]'
+          }`}
+        >
+          {isEditing ? (
+            /* Smart, compact editing view with 44px touch targets and full-width text protection */
+            <div
+              ref={editContainerRef}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full flex flex-col gap-2.5 py-1 animate-in fade-in duration-150"
+            >
+              {/* Header row: Checkbox/Pencil icon, item name and status badge */}
+              <div className="flex items-center justify-between gap-2 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-5 h-5 rounded-md flex items-center justify-center border-2 border-[#4A7856] bg-white text-[#4A7856] shrink-0">
+                    <Pencil className="w-3 h-3 stroke-[2.5]" />
+                  </div>
+                  <div className="min-w-0 flex flex-col">
+                    <span className="text-base font-semibold text-[#2D3E40] truncate">
+                      {item.name}
+                    </span>
+                    {recipeSourceText && (
+                      <span className="text-[13px] text-[#686e6a] truncate">
+                        {recipeSourceText}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span className="text-xs font-semibold text-[#4A7856] bg-[#F1F5F2] px-2.5 py-0.5 rounded-full shrink-0 border border-[#D5DDD7]">
+                  Menge anpassen
+                </span>
+              </div>
+
+              {/* Controls row: Stepper (- / input / +) and actions (Cancel / Save) - all 44px buttons! */}
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#ECEBE8]">
+                {/* Stepper with 44px buttons and 44px input */}
+                <div className="flex items-center bg-white border border-[#D1D5D2] rounded-xl shadow-2xs overflow-hidden h-[44px]">
+                  <button
+                    type="button"
+                    onClick={() => stepEditedAmount(-1)}
+                    className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] flex items-center justify-center bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors cursor-pointer touch-manipulation active:scale-95 border-r border-[#ECEBE8]"
+                    title="Menge verringern (-1)"
+                    aria-label="Menge verringern"
+                  >
+                    <Minus className="w-4 h-4 stroke-[2.5]" />
+                  </button>
+
+                  <input
+                    type="text"
+                    value={editingAmountValue}
+                    onChange={(e) => setEditingAmountValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveEditedAmount(item.id);
+                      } else if (e.key === 'Escape') {
+                        cancelEditing();
+                      }
+                    }}
+                    autoFocus
+                    placeholder="1 Stk"
+                    className="w-20 sm:w-24 h-full px-2 text-center text-[16px] font-semibold text-[#2D3E40] bg-white focus:outline-hidden focus:bg-[#FAF9F6]"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => stepEditedAmount(1)}
+                    className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] flex items-center justify-center bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors cursor-pointer touch-manipulation active:scale-95 border-l border-[#ECEBE8]"
+                    title="Menge erhöhen (+1)"
+                    aria-label="Menge erhöhen"
+                  >
+                    <Plus className="w-4 h-4 stroke-[2.5]" />
+                  </button>
+                </div>
+
+                {/* Action buttons: Cancel (44x44px) & Save (44px min-h) */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={cancelEditing}
+                    className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#686e6a] hover:text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shadow-2xs"
+                    title="Abbrechen"
+                    aria-label="Abbrechen"
+                  >
+                    <X className="w-4 h-4 stroke-[2.2]" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => saveEditedAmount(item.id)}
+                    className="h-[44px] min-h-[44px] px-3.5 sm:px-4 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white flex items-center justify-center gap-1.5 font-semibold text-[14px] sm:text-[15px] shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
+                    title="Speichern"
+                    aria-label="Speichern"
+                  >
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                    <span>Fertig</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* LEFT SIDE: Checkbox -> Name & Quelle */}
+              <div className={`flex flex-1 min-w-0 gap-2.5 sm:gap-3 ${
+                hasSecondaryText ? 'items-start' : 'items-center'
+              }`}>
+                {/* Square Checkbox Indicator: mt-0.5 verankert ihn bei Sekundärtext exakt neben der ersten Zeile */}
+                <div
+                  className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors shrink-0 ${
+                    hasSecondaryText ? 'mt-0.5' : ''
+                  } ${
+                    item.completed
+                      ? 'bg-[#4A7856] border-[#4A7856] text-white'
+                      : 'border-[#D1D5D2] bg-white group-hover:border-[#4A7856]'
+                  }`}
+                >
+                  {item.completed && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+
+                {/* Name & Quelle */}
+                <div className={`flex-1 min-w-0 flex flex-col ${
+                  hasSecondaryText ? 'justify-start' : 'justify-center'
+                }`}>
+                  <span
+                    className={`text-base font-medium block break-words leading-tight ${
+                      item.completed ? 'line-through text-[#686e6a]' : 'text-[#2D3E40]'
+                    }`}
+                  >
+                    {item.name}
+                  </span>
+                  {recipeSourceText && (
+                    <span 
+                      className="text-[13px] font-normal text-[#686e6a] break-words leading-normal mt-0.5 line-clamp-2"
+                      title={item.recipeSource}
+                    >
+                      {recipeSourceText}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* RIGHT SIDE: [Desktop Actions: Pencil & Trash (LINKS)] -> [Menge (GANZ RECHTS)] -> [Drag Handle] */}
+              <div className={`flex items-center gap-2 shrink-0 ml-auto ${
+                hasSecondaryText ? 'self-start mt-0.5' : 'self-center'
+              }`} onClick={(e) => {
+                if (
+                  swipedItemIdRef.current !== null ||
+                  justClosedSwipeMenuRef.current ||
+                  Date.now() - lastClosedSwipeMenuTimeRef.current < 500
+                ) {
+                  e.stopPropagation();
+                  closeSwipeMenu();
+                  return;
+                }
+                e.stopPropagation();
+              }}>
+                {/* Desktop hover actions: LINKS von der Mengenangabe (44x44px Buttons) */}
+                <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    type="button"
+                    onClick={() => startEditingItem(item)}
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[#FAF9F6] text-[#4A7856] hover:bg-[#E8EFEA] hover:text-[#3D6447] border border-[#ECEBE8] transition-all cursor-pointer active:scale-95 shadow-2xs"
+                    title="Menge bearbeiten"
+                    aria-label="Menge bearbeiten"
+                  >
+                    <Pencil className="w-4 h-4 stroke-[2.2]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      deleteItem(item.id);
+                      onCopyFeedback(`"${item.name}" gelöscht.`);
+                    }}
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[#FAF9F6] text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer active:scale-95 shadow-2xs"
+                    title="Löschen"
+                    aria-label="Löschen"
+                  >
+                    <Trash2 className="w-4 h-4 stroke-[2.2]" />
+                  </button>
+                </div>
+
+                {item.amount ? (() => {
+                  const display = formatDisplayGrocery(item.amount, item.unit, item.name);
+                  return (
+                    /* Mengenangabe ganz rechts: Exakt wie in der Rezept-Detailansicht (font-semibold tabular-nums text-[#4A7856]) */
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (
+                          swipedItemIdRef.current !== null ||
+                          justClosedSwipeMenuRef.current ||
+                          Date.now() - lastClosedSwipeMenuTimeRef.current < 500
+                        ) {
+                          closeSwipeMenu();
+                          return;
+                        }
+                        startEditingItem(item);
+                      }}
+                      className={`text-base font-semibold tabular-nums select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline flex items-baseline gap-1.5 ${
+                        item.completed
+                          ? 'text-[#686e6a] line-through opacity-60'
+                          : 'text-[#4A7856] hover:text-[#3D6447]'
+                      }`}
+                      title="Menge anpassen (- / +)"
+                    >
+                      <span>
+                        {display.formattedAmount} {display.formattedUnit}
+                      </span>
+                      {display.hintBadge && (
+                        <span className="text-[12px] font-medium text-[#686e6a] bg-stone-100 px-1.5 py-0.2 rounded-md border border-[#ECEBE8] no-underline inline-block">
+                          {display.hintBadge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })() : null}
+
+                {/* Drag Handle am äußersten rechten Rand */}
+                <div
+                  className={`p-1 transition-colors hidden sm:flex items-center justify-center ${
+                    isAnySwiped
+                      ? 'text-[#686e6a] opacity-30 cursor-not-allowed pointer-events-none'
+                      : 'text-[#686e6a] hover:text-[#57534d] cursor-grab active:cursor-grabbing'
+                  }`}
+                  title={isAnySwiped ? 'Verschieben gesperrt' : 'Gedrückt halten zum Verschieben'}
+                >
+                  <GripVertical className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-300">
+      {/* Header & Controls */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 lg:p-6 border border-[#ECEBE8] shadow-xs space-y-4">
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Einheitliches Status-Badge: Zeigt aktive Artikel ohne Redundanz */}
+            <div className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] whitespace-nowrap">
+              <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
+              <span>{activeCount} offen</span>
+            </div>
+
+            {onOpenSyncModal && (
+              <button
+                type="button"
+                onClick={onOpenSyncModal}
+                className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                  syncConfig?.mode === 'family' && syncConfig?.groupId
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                    : 'bg-[#FAF9F6] text-[#686e6a] border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                }`}
+                title="Synchronisationseinstellungen öffnen"
+              >
+                {syncConfig?.mode === 'family' && syncConfig?.groupId ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                    <Users className="w-3 h-3 text-emerald-700" />
+                    <span>Familie: {syncConfig.groupName || syncConfig.groupId}</span>
+                  </>
+                ) : (
+                  <>
+                    <Cloud className="w-3 h-3 text-[#686e6a]" />
+                    <span style={{ color: '#686e6a' }}>Lokal • Teilen</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#2D3E40] leading-tight">
+            Einkaufsliste
+          </h1>
+          <p className="text-base text-[#686E6A] leading-relaxed mt-1">
+            Alles für deine Woche – geordnet nach Supermarkt-Regal.
+          </p>
+        </div>
+
+        {/* Unified Action Row: single horizontal row with consistent sizing and alignment */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#ECEBE8]">
+          {/* Left side: View switcher ([ Regale ] / [ Liste ]) styled as cohesive segmented control pill */}
+          <div className="relative flex items-center p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] select-none shadow-2xs h-[44px]">
+            <div
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#4A7856] rounded-lg shadow-xs transition-all duration-200 ease-out pointer-events-none ${
+                viewMode === 'categorized' ? 'left-1' : 'left-[calc(50%+2px)]'
+              }`}
+            />
+
+            <button
+              type="button"
+              onClick={() => setViewMode('categorized')}
+              className={`relative z-10 px-3.5 sm:px-4 h-full flex items-center justify-center gap-2 rounded-lg text-[16px] transition-colors cursor-pointer touch-manipulation select-none ${
+                viewMode === 'categorized'
+                  ? 'text-white font-bold'
+                  : 'text-[#57534d] hover:text-[#4A7856] font-semibold'
+              }`}
+              title="Nach Supermarkt-Regalen gruppiert"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span>Regale</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('flat')}
+              className={`relative z-10 px-3.5 sm:px-4 h-full flex items-center justify-center gap-2 rounded-lg text-[16px] transition-colors cursor-pointer touch-manipulation select-none ${
+                viewMode === 'flat'
+                  ? 'text-white font-bold'
+                  : 'text-[#57534d] hover:text-[#4A7856] font-semibold'
+              }`}
+              title="Alle Artikel in einer sortierbaren Liste"
+            >
+              <List className="w-4 h-4" />
+              <span>Liste</span>
+            </button>
+          </div>
+
+          {/* Right side: Unified matching neutral action buttons ([ Kopieren ] and [ Löschen ]) */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              id="copy-entire-shopping-list-btn"
+              type="button"
+              onClick={handleCopyFormattedList}
+              disabled={items.length === 0}
+              className="h-[44px] px-3.5 sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#57534d] hover:text-[#4A7856] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#FAF9F6] font-semibold text-[16px] shadow-2xs transition-all active:scale-95 touch-manipulation cursor-pointer group"
+              title="Kopiert die Liste formatiert für WhatsApp & Notizen"
+            >
+              {copied ? (
+                <Check className="w-4 h-4 text-[#4a7856]" />
+              ) : (
+                <Copy className="w-4 h-4 text-[#4a7856] transition-colors" />
+              )}
+              <span>{copied ? 'Kopiert!' : 'Kopieren'}</span>
+            </button>
+
+            <button
+              id="delete-entire-shopping-list-btn"
+              type="button"
+              onClick={() => {
+                if (items.length > 0) {
+                  setConfirmDeleteState({ type: 'all' });
+                }
+              }}
+              onDragOver={(e) => {
+                if (draggedShelf || draggedItemId) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.dataTransfer.dropEffect = 'move';
+                  if (!isDragOverDelete) setIsDragOverDelete(true);
+                }
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragOverDelete(false);
+              }}
+              onDrop={handleDropOnDelete}
+              disabled={items.length === 0 && !draggedShelf && !draggedItemId}
+              className={`h-[44px] px-3.5 sm:px-4 flex items-center justify-center gap-2 rounded-xl font-semibold text-[16px] border transition-all select-none touch-manipulation group shadow-2xs ${
+                isDragOverDelete
+                  ? 'bg-rose-600 text-white border-rose-600 shadow-md ring-2 ring-rose-400'
+                  : items.length > 0
+                  ? 'bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#57534d] hover:text-rose-700 border-[#ECEBE8] hover:border-rose-200 active:scale-95 cursor-pointer'
+                  : 'bg-[#FAF9F6] text-[#686e6a] border-[#ECEBE8] opacity-40 cursor-not-allowed'
+              }`}
+              title={
+                draggedShelf
+                  ? 'Regal hier ablegen zum Löschen'
+                  : draggedItemId
+                  ? 'Artikel hier ablegen zum Löschen'
+                  : 'Gesamte Einkaufsliste löschen'
+              }
+            >
+              <Trash2
+                className={`w-4 h-4 shrink-0 transition-colors ${
+                  isDragOverDelete
+                    ? 'text-white animate-bounce'
+                    : items.length > 0
+                    ? 'text-rose-600 group-hover:text-rose-700'
+                    : 'text-[#686e6a]'
+                }`}
+              />
+              <span>Löschen</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Compact 1-Row Quick Add Module */}
+      <form
+        onSubmit={handleAddItem}
+        className="bg-white p-1.5 sm:p-2 rounded-2xl border border-[#ECEBE8] shadow-xs flex items-center gap-1.5 sm:gap-2"
+      >
+        {/* Left/Flexible: Text input field */}
+        <div className="relative flex-1 min-w-0">
+          <input
+            type="text"
+            placeholder="Schnell hinzufügen (z. B. 400g Tofu)..."
+            value={quickAddInput}
+            onChange={(e) => setQuickAddInput(e.target.value)}
+            className="w-full bg-[#FAF9F6] hover:bg-[#F5F4F0] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] rounded-xl px-3 sm:px-3.5 py-2 text-base text-[#2D3E40] placeholder:text-[#686e6a] focus:outline-hidden transition-all h-12 sm:h-10"
+          />
+        </div>
+
+        {/* Middle: Truly dynamic compact button & custom dropdown */}
+        <div ref={categoryDropdownRef} className="relative shrink-0">
+          {/* Mobile Native iOS Dropdown Menu: Triggers native iOS picker wheel / action sheet on iPhone / iPad */}
+          <select
+            aria-label="Regal / Kategorie wählen"
+            value={categoryChoice}
+            onChange={(e) => setCategoryChoice(e.target.value as any)}
+            className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
+          >
+            <option value="auto">✨ Auto-Erkennung</option>
+            <option value="gemuese">🥦 Gemüse</option>
+            <option value="kuehlregal">🥛 Kühlregal</option>
+            <option value="huelsenfruechte">🫘 Hülsenfrüchte</option>
+            <option value="trockenwaren">🌾 Vorrat</option>
+            <option value="gewuerze">🧂 Gewürze</option>
+            <option value="sonstiges">📦 Sonstiges</option>
+          </select>
+
+          <button
+            type="button"
+            id="shopping-item-category-select"
+            onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+            className="inline-flex items-center gap-2 bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] rounded-xl px-3 sm:px-3.5 py-2 text-[16px] font-semibold text-[#2D3E40] cursor-pointer focus:border-[#4A7856] focus:outline-hidden h-12 sm:h-11 min-h-[44px] transition-colors select-none"
+            title="Regal / Kategorie wählen"
+            aria-label="Regal / Kategorie wählen"
+            aria-expanded={isCategoryDropdownOpen}
+          >
+            <span>
+              {categoryChoice === 'auto'
+                ? '✨ Auto'
+                : categoryChoice === 'gemuese'
+                ? '🥦 Gemüse'
+                : categoryChoice === 'kuehlregal'
+                ? '🥛 Kühlregal'
+                : categoryChoice === 'huelsenfruechte'
+                ? '🫘 Hülsenfrüchte'
+                : categoryChoice === 'trockenwaren'
+                ? '🌾 Vorrat'
+                : categoryChoice === 'gewuerze'
+                ? '🧂 Gewürze'
+                : '📦 Sonstiges'}
+            </span>
+            <ChevronDown
+              className={`w-4 h-4 text-[#686E6A] transition-transform duration-150 ${
+                isCategoryDropdownOpen ? 'rotate-180 text-[#4A7856]' : ''
+              }`}
+            />
+          </button>
+
+          {/* Desktop Popover Menu with categories */}
+          {isCategoryDropdownOpen && (
+            <div className="hidden sm:block absolute right-0 top-full mt-1.5 z-40 w-64 bg-white rounded-xl shadow-lg border border-[#ECEBE8] p-1.5 animate-in fade-in zoom-in-95 duration-150">
+              <button
+                type="button"
+                onClick={() => {
+                  setCategoryChoice('auto');
+                  setIsCategoryDropdownOpen(false);
+                }}
+                className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-lg text-[16px] font-medium transition-colors cursor-pointer text-left ${
+                  categoryChoice === 'auto'
+                    ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold'
+                    : 'text-[#2D3E40] hover:bg-[#FAF9F6]'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span>✨</span>
+                  <span>Auto-Erkennung</span>
+                </span>
+                {categoryChoice === 'auto' && <Check className="w-4 h-4 text-[#4A7856]" />}
+              </button>
+
+              <div className="my-1 border-t border-[#ECEBE8]" />
+
+              {(
+                [
+                  ['gemuese', '🥦 Gemüse', 'Frisches Gemüse'],
+                  ['kuehlregal', '🥛 Kühlregal', 'Kühlwaren & Milch/Tofu'],
+                  ['huelsenfruechte', '🫘 Hülsenfrüchte', 'Bohnen, Linsen & Tofu'],
+                  ['trockenwaren', '🌾 Vorrat', 'Nudeln, Reis & Konserven'],
+                  ['gewuerze', '🧂 Gewürze', 'Gewürze & Öle'],
+                  ['sonstiges', '📦 Sonstiges', 'Haushalt & Sonstiges'],
+                ] as const
+              ).map(([catKey, catLabel]) => {
+                const isSelected = categoryChoice === catKey;
+                return (
+                  <button
+                    key={catKey}
+                    type="button"
+                    onClick={() => {
+                      setCategoryChoice(catKey as IngredientCategory);
+                      setIsCategoryDropdownOpen(false);
+                    }}
+                    className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-lg text-[16px] transition-colors cursor-pointer text-left ${
+                      isSelected
+                        ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold'
+                        : 'text-[#2D3E40] hover:bg-[#FAF9F6] font-normal'
+                    }`}
+                  >
+                    <span>{catLabel}</span>
+                    {isSelected && <Check className="w-4 h-4 text-[#4A7856]" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Right: Square or compact icon button (+) */}
+        <button
+          type="submit"
+          disabled={!quickAddInput.trim()}
+          className="w-12 h-12 sm:w-10 sm:h-10 min-w-[48px] min-h-[48px] sm:min-w-0 sm:min-h-0 bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white rounded-xl flex items-center justify-center shadow-xs shrink-0 transition-all active:scale-95 touch-manipulation cursor-pointer"
+          title="Zutat hinzufügen"
+          aria-label="Zutat hinzufügen"
+        >
+          <Plus className="w-5 h-5 stroke-[2.5]" />
+        </button>
+      </form>
+
+      {/* Main Content Area */}
+      {items.length === 0 ? (
+        <div className="bg-white rounded-2xl p-12 text-center border border-[#ECEBE8] space-y-3 shadow-xs">
+          <div className="w-14 h-14 rounded-full bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center mx-auto text-2xl border border-[#ECEBE8]">
+            🛒
+          </div>
+          <h3 className="text-xl font-bold tracking-tight text-[#2D3E40]">Deine Liste ist leer</h3>
+          <p className="text-base text-[#686E6A] leading-relaxed max-w-sm mx-auto">
+            Füge Zutaten direkt aus Rezepten oder dem Wochenplan hinzu, oder tippe oben z.B. „400g Tofu“ ein.
+          </p>
+          {(() => {
+            const backup = loadFromLocalStorage<ShoppingItem[]>('veggiechef_shopping_backup', []);
+            if (backup && backup.length > 0) {
+              return (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setItems(backup);
+                      onCopyFeedback(`${backup.length} Zutaten wiederhergestellt! 🛒`);
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FAF9F6] hover:bg-[#E8EFEA] border border-[#ECEBE8] text-[#4A7856] text-sm font-semibold shadow-2xs transition-all cursor-pointer active:scale-95 min-h-[44px] touch-manipulation"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Gesicherte Liste wiederherstellen ({backup.length} {backup.length === 1 ? 'Zutat' : 'Zutaten'})</span>
+                  </button>
+                </div>
+              );
+            }
+            return null;
+          })()}
+        </div>
+      ) : viewMode === 'flat' ? (
+        /* Gesamtansicht (Liste mit Drag & Drop Sortierung) */
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-[#ECEBE8] shadow-xs overflow-hidden">
+            <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-[#ECEBE8] bg-[#F1F5F2]">
+              <div className="flex items-center gap-2 font-semibold text-[#2D3E40] text-base">
+                <List className="w-4 h-4 text-[#4A7856]" />
+                <span style={{ fontSize: '16px' }} className="text-[16px]">Offene Artikel</span>
+              </div>
+              <span className="text-xs font-semibold text-[#57534d] bg-white px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
+                {activeItems.length} offen
+              </span>
+            </div>
+
+            {activeItems.length > 0 ? (
+              <div className="divide-y divide-[#F0EFEB]">
+                {activeItems.map(renderItemRow)}
+              </div>
+            ) : (
+              <p className="text-xs text-[#686E6A] py-6 text-center italic">
+                Alle Artikel sind abgehakt! 🎉
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* Regale-Ansicht: Nur Kategorien anzeigen, die noch offene Artikel haben.
+           Kategorien können per Drag & Drop sortiert werden! */
+        activeCategories.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
+            {activeCategories.map((catKey) => {
+              const catItems = grouped[catKey] || [];
+              const activeInCat = catItems.filter((i) => !i.completed);
+              if (activeInCat.length === 0) return null;
+
+              const meta = CATEGORY_META[catKey];
+              const isCollapsed = Boolean(collapsedCategories[catKey]);
+              const isBeingDragged = draggedShelf === catKey;
+              const isDragOver = dragOverShelf === catKey;
+
+              return (
+                <div
+                  key={catKey}
+                  onDragOver={(e) => handleDragOverShelf(e, catKey)}
+                  onDrop={(e) => handleDropShelf(e, catKey)}
+                  className={`bg-white rounded-2xl border border-[#ECEBE8] shadow-xs overflow-hidden transition-opacity duration-150 ${
+                    isBeingDragged ? 'opacity-40' : 'opacity-100'
+                  }`}
+                >
+                  {/* Shelf Header (Entire header is draggable for shelf re-ordering) */}
+                  <div
+                    draggable
+                    onDragStart={(e) => handleDragStartShelf(e, catKey)}
+                    onDragEnd={() => {
+                      setDraggedShelf(null);
+                      setDragOverShelf(null);
+                      setIsDragOverDelete(false);
+                    }}
+                    className="flex items-center justify-between p-3.5 sm:p-4 bg-[#F1F5F2] hover:bg-[#E8EFEA] transition-colors border-b border-[#ECEBE8] cursor-grab active:cursor-grabbing select-none"
+                    title="Gedrückt halten und ziehen, um das Regal zu sortieren oder auf 'Löschen' zu ziehen"
+                  >
+                    {/* Category Title & Drag Handle */}
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div
+                        className="p-1 text-[#686e6a] shrink-0 pointer-events-none"
+                      >
+                        <GripVertical className="w-4 h-4" />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleCategoryCollapse(catKey);
+                        }}
+                        className="flex items-center gap-2 text-left cursor-pointer select-none flex-1 min-w-0"
+                      >
+                        <span className="text-xl shrink-0 pointer-events-none">{meta.icon}</span>
+                        <span className="font-semibold text-[#2D3E40] text-base truncate pointer-events-none">
+                          {meta.label}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Clean & minimal count pill + chevron */}
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCategoryCollapse(catKey);
+                      }}
+                      className="flex items-center gap-1.5 shrink-0 ml-2 cursor-pointer"
+                      title={isCollapsed ? 'Regal aufklappen' : 'Regal zuklappen'}
+                    >
+                      <span className="text-xs font-semibold text-[#57534d] bg-white px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
+                        {activeInCat.length} offen
+                      </span>
+
+                      <div className="p-1 text-[#4A7856] group-hover:text-[#3D6447] transition-colors">
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform duration-200 ${
+                            isCollapsed ? '-rotate-90' : 'rotate-0'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Shelf Content */}
+                  <div
+                    className={`grid transition-all duration-250 ease-in-out ${
+                      isCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
+                    }`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="divide-y divide-[#F0EFEB]">
+                        {activeInCat.map(renderItemRow)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl p-8 text-center border border-[#ECEBE8] shadow-xs space-y-2">
+            <span className="text-2xl">🎉</span>
+            <h3 className="text-base font-semibold text-[#2D3E40]">Alle Regale sind abgehakt!</h3>
+            <p className="text-xs text-[#686E6A]">
+              Alle Artikel wurden erledigt und befinden sich im erledigten Bereich unten.
+            </p>
+          </div>
+        )
+      )}
+
+      {/* 3. Erledigte Items: Einklappbarer Bereich am Ende („Erledigt (X)“) */}
+      {completedCount > 0 && (
+        <div className="bg-white rounded-2xl border border-[#ECEBE8] overflow-hidden shadow-xs mt-6">
+          <div
+            onClick={() => setShowCompletedSection(!showCompletedSection)}
+            className="w-full flex items-center justify-between p-4 sm:p-5 bg-[#F1F5F2] hover:bg-[#E3EBE5] text-left transition-colors cursor-pointer select-none"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setShowCompletedSection(!showCompletedSection);
+              }
+            }}
+          >
+            <div className="flex items-center gap-2 font-semibold text-[#2D3E40] text-base">
+              <CheckCheck className="w-4 h-4 text-[#4A7856]" />
+              <span>Erledigt ({completedCount})</span>
+            </div>
+
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteState({ type: 'completed' })}
+                className="text-sm font-semibold text-rose-600 hover:text-rose-700 px-3 py-1.5 rounded-lg hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer mr-1"
+                title="Erledigte Zutaten entfernen"
+              >
+                Entfernen
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowCompletedSection(!showCompletedSection)}
+                className="p-1 text-[#57534d] hover:text-[#4A7856] cursor-pointer"
+                title={showCompletedSection ? 'Zuklappen' : 'Aufklappen'}
+              >
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform duration-200 ${
+                    showCompletedSection ? 'rotate-180' : 'rotate-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          <div
+            className={`grid transition-all duration-250 ease-in-out ${
+              showCompletedSection ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+            }`}
+            style={{
+              gridTemplateRows: showCompletedSection ? '1fr' : '0fr',
+              opacity: showCompletedSection ? 1 : 0,
+            }}
+          >
+            <div className="overflow-hidden">
+              <div className="border-t border-[#ECEBE8] divide-y divide-[#F0EFEB] bg-white">
+                {completedItems.map(renderItemRow)}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Undo Notification Banner (Nach unten gerückt: hinter 'Erledigt', sowohl Mobile als auch PC) */}
+      {showUndoBanner && undoBackup && (
+        <div className="p-3.5 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8]/20 flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-bottom duration-200 mt-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-[#4A7856] shrink-0" />
+            <span className="text-[16px] font-medium text-white/95 truncate">
+              {lastDeletedInfo?.type === 'completed'
+                ? `${lastDeletedInfo.count} erledigte ${lastDeletedInfo.count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`
+                : lastDeletedInfo?.type === 'category'
+                ? `Regal "${lastDeletedInfo.name}" gelöscht (${lastDeletedInfo.count} ${lastDeletedInfo.count === 1 ? 'Artikel' : 'Artikel'}).`
+                : lastDeletedInfo?.type === 'single'
+                ? `"${lastDeletedInfo.name}" gelöscht.`
+                : `Einkaufsliste gelöscht (${lastDeletedInfo?.count || undoBackup.length} ${lastDeletedInfo?.count === 1 ? 'Zutat' : 'Zutaten'}).`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleUndo}
+              className="h-[44px] min-h-[44px] px-4 sm:px-5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[16px] font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center gap-2"
+            >
+              <RotateCcw className="w-4 h-4 sm:hidden" />
+              <span>Rückgängig</span>
+            </button>
+            <button
+              onClick={() => setShowUndoBanner(false)}
+              className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer touch-manipulation active:scale-95"
+              title="Schließen"
+              aria-label="Schließen"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Bulk Deletion */}
+      {confirmDeleteState && (
+        <div 
+          onClick={() => setConfirmDeleteState(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs touch-none overscroll-contain animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl p-5 sm:p-7 max-w-md w-full shadow-2xl border border-[#ECEBE8] space-y-4 animate-in zoom-in-95 duration-200 overscroll-contain"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">
+                  Sicherheitsabfrage
+                </span>
+                <h3 className="text-xl font-bold text-[#2D3E40] leading-snug">
+                  {confirmDeleteState.type === 'all'
+                    ? 'Liste wirklich löschen?'
+                    : 'Erledigte Zutaten entfernen?'}
+                </h3>
+              </div>
+            </div>
+
+            <p className="text-[16px] text-[#57534d] leading-relaxed">
+              {confirmDeleteState.type === 'all'
+                ? `Bist du sicher, dass du alle ${items.length} Zutaten von deiner Liste löschen möchtest?`
+                : `Bist du sicher, dass du alle ${completedCount} erledigten Zutaten löschen möchtest?`}
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 sm:gap-3 pt-2">
+              <button
+                id="cancel-delete-shopping-btn"
+                type="button"
+                onClick={() => setConfirmDeleteState(null)}
+                className="min-h-[44px] sm:min-h-[48px] px-5 py-2.5 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#57534d] font-semibold text-[16px] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+              >
+                Abbrechen
+              </button>
+              <button
+                id="confirm-delete-shopping-btn"
+                type="button"
+                onClick={handleConfirmDeleteAction}
+                className="min-h-[44px] sm:min-h-[48px] px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-[16px] shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
+              >
+                <Trash2 className="w-4 h-4 text-white" />
+                <span>Ja, wirklich löschen</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

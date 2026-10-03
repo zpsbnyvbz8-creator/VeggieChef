@@ -1,0 +1,76 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 8 && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Family Group Space - Authenticated access only, keyed by unguessable random groupId (no public enumeration)
+    match /family_groups/{groupId} {
+      allow get: if isSignedIn() && isValidId(groupId);
+      allow list: if false; // Cannot list or enumerate all families
+      allow create: if isSignedIn() && isValidId(groupId) &&
+        incoming().groupId == groupId &&
+        incoming().name is string && incoming().name.size() <= 64;
+      allow update: if isSignedIn() && isValidId(groupId) &&
+        incoming().groupId == groupId &&
+        incoming().name is string && incoming().name.size() <= 64;
+      allow delete: if false;
+
+      // Shopping Items in this family group
+      match /shopping_items/{itemId} {
+        allow get, list: if isSignedIn() && isValidId(groupId);
+        allow create: if isSignedIn() && isValidId(groupId) && isValidId(itemId) &&
+          incoming().id == itemId &&
+          incoming().groupId == groupId &&
+          incoming().name is string && incoming().name.size() <= 120 &&
+          incoming().completed is bool;
+        allow update: if isSignedIn() && isValidId(groupId) && isValidId(itemId) &&
+          incoming().id == itemId &&
+          incoming().groupId == groupId &&
+          incoming().name is string && incoming().name.size() <= 120 &&
+          incoming().completed is bool;
+        allow delete: if isSignedIn() && isValidId(groupId) && isValidId(itemId);
+      }
+
+      // Meal Plan days in this family group
+      match /meal_days/{dayKey} {
+        allow get, list: if isSignedIn() && isValidId(groupId);
+        allow create, update: if isSignedIn() && isValidId(groupId) && isValidId(dayKey) &&
+          incoming().dayKey == dayKey &&
+          incoming().groupId == groupId;
+        allow delete: if false;
+      }
+
+      // Custom Recipes shared in this family group
+      match /custom_recipes/{recipeId} {
+        allow get, list: if isSignedIn() && isValidId(groupId);
+        allow create, update: if isSignedIn() && isValidId(groupId) && isValidId(recipeId) &&
+          incoming().id == recipeId &&
+          incoming().groupId == groupId &&
+          incoming().title is string && incoming().title.size() <= 120;
+        allow delete: if isSignedIn() && isValidId(groupId) && isValidId(recipeId);
+      }
+    }
+  }
+}
+

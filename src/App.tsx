@@ -1,0 +1,370 @@
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { 
+  ToastProvider, 
+  SyncProvider, 
+  RecipeProvider, 
+  PlannerProvider, 
+  ShoppingProvider,
+  useRecipes,
+  useSync,
+  usePlanner,
+} from './context';
+import { Header } from './components/Header';
+import { ScrollToTop } from './components/ScrollToTop';
+import { DishOfTheDay } from './components/DishOfTheDay';
+import { SeasonHighlights } from './components/SeasonHighlights';
+import { FilterBar } from './components/FilterBar';
+import { RecipeCard } from './components/RecipeCard';
+import { SwipeRecipeDeck } from './components/SwipeRecipeDeck';
+import { SlotMachineModal } from './components/SlotMachineModal';
+import { CookingTimerBar } from './components/CookingTimerBar';
+import { Search, Plus } from 'lucide-react';
+
+// Lazy-loaded Views (Code Splitting)
+const RecipeDetailPage = lazy(() => import('./pages/RecipeDetailPage'));
+const FridgeCookView = lazy(() => import('./components/FridgeCookView').then((m) => ({ default: m.FridgeCookView })));
+const WeeklyPlannerView = lazy(() => import('./components/WeeklyPlannerView').then((m) => ({ default: m.WeeklyPlannerView })));
+const ShoppingListView = lazy(() => import('./components/ShoppingListView').then((m) => ({ default: m.ShoppingListView })));
+const StatsView = lazy(() => import('./components/StatsView').then((m) => ({ default: m.StatsView })));
+
+// Lazy-loaded Modals (On-demand Chunking)
+const CookingModeModal = lazy(() => import('./components/CookingModeModal').then((m) => ({ default: m.CookingModeModal })));
+const AddRecipeModal = lazy(() => import('./components/AddRecipeModal').then((m) => ({ default: m.AddRecipeModal })));
+const AddToMealPlanModal = lazy(() => import('./components/AddToMealPlanModal').then((m) => ({ default: m.AddToMealPlanModal })));
+const FamilySyncModal = lazy(() => import('./components/FamilySyncModal').then((m) => ({ default: m.FamilySyncModal })));
+
+/**
+ * Subtle, brand-consistent loading indicator during asynchronous route transitions
+ */
+function RouteLoadingFallback() {
+  return (
+    <div className="min-h-[45vh] flex flex-col items-center justify-center py-12 px-4 animate-in fade-in duration-150">
+      <div className="relative flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full border-2 border-[#ECEBE8] border-t-[#4A7856] animate-spin" />
+        <span className="absolute text-sm">🌱</span>
+      </div>
+      <p className="text-xs font-medium text-[#686E6A] mt-3 tracking-wide">Wird geladen...</p>
+    </div>
+  );
+}
+
+interface RecipesExplorerViewProps {
+  isFavorites: boolean;
+}
+
+function RecipesExplorerView({ isFavorites }: RecipesExplorerViewProps) {
+  const [isSlotMachineOpen, setIsSlotMachineOpen] = useState(false);
+  const {
+    favorites,
+    visibleRecipeCount,
+    setVisibleRecipeCount,
+    filters,
+    setFilters,
+    resetFilters,
+    filteredRecipes,
+    dishOfTheDay,
+    setIsAddRecipeOpen,
+    discoverViewMode,
+    setDiscoverViewMode,
+  } = useRecipes();
+
+  // Determine recipes to display depending on tab (Explore or Favorites)
+  const displayedFilteredRecipes = isFavorites
+    ? filteredRecipes.filter((r) => favorites.includes(r.id))
+    : filteredRecipes;
+
+  return (
+    <div className="space-y-4 sm:space-y-8 animate-in fade-in duration-200">
+      {/* Dish of the Day (Spotlight on top of explore tab) */}
+      {!isFavorites && filters.searchQuery === '' && filters.category === 'all' && dishOfTheDay && (
+        <DishOfTheDay />
+      )}
+
+      {/* Season Highlights Carousel (Goldener Herbst unter Gericht des Tages) */}
+      {!isFavorites && filters.searchQuery === '' && filters.category === 'all' && (
+        <SeasonHighlights />
+      )}
+
+      {/* View Header with Search Input & Slot Machine Trigger */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#2D3E40] leading-tight">
+            {isFavorites ? 'Deine Lieblingsrezepte ❤️' : 'Auswahl an Gerichten'}
+          </h1>
+          <p className="text-base text-[#686E6A] leading-relaxed mt-1">
+            {isFavorites
+              ? `${favorites.length} gespeicherte Favoriten`
+              : '100% vegetarisch & vegan – nährstoffreich & gelingsicher'}
+          </p>
+        </div>
+
+        {/* Action Buttons & Live Search */}
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          {/* Überrasch mich Slot Machine Button */}
+          {!isFavorites && (
+            <button
+              id="explorer-slot-machine-btn"
+              type="button"
+              onClick={() => setIsSlotMachineOpen(true)}
+              className="flex items-center gap-2 h-12 min-h-[48px] px-3.5 sm:px-4 rounded-xl text-sm sm:text-base font-bold bg-gradient-to-r from-amber-500/15 via-[#C86D3B]/15 to-amber-500/15 hover:from-amber-500/25 hover:to-[#C86D3B]/25 border border-[#C86D3B]/30 text-[#C86D3B] hover:text-[#A85226] shadow-2xs transition-all active:scale-95 shrink-0 cursor-pointer"
+              title="Rezept-Glücksspielautomat öffnen"
+            >
+              <span className="text-lg">🎰</span>
+              <span className="hidden xs:inline">Überrasch mich</span>
+            </button>
+          )}
+
+          <button
+            id="explorer-add-recipe-btn"
+            type="button"
+            onClick={() => setIsAddRecipeOpen(true)}
+            className="flex items-center gap-2 h-12 min-h-[48px] px-4 sm:px-5 rounded-xl text-sm sm:text-base font-semibold bg-[#4A7856] hover:bg-[#3D6447] text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
+            title="Neues Gericht per KI, Foto oder manuell hinzufügen"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="hidden xs:inline">Neues Gericht</span>
+          </button>
+
+          {/* Live Search Bar */}
+          <div className="relative flex-1 sm:w-80">
+            <input
+              id="recipe-search-input"
+              type="text"
+              placeholder="Rezept oder Zutat suchen..."
+              value={filters.searchQuery}
+              onChange={(e) => setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))}
+              className="w-full h-12 min-h-[48px] bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-xl pl-11 pr-10 py-2.5 text-base font-medium text-[#2D3E40] placeholder:text-[#686e6a] focus:outline-hidden focus:border-[#4A7856] shadow-2xs transition-all"
+            />
+            <Search className="w-5 h-5 text-[#686e6a] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            {filters.searchQuery && (
+              <button
+                type="button"
+                onClick={() => setFilters((prev) => ({ ...prev, searchQuery: '' }))}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#686E6A] hover:text-[#4A7856] w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Chips Bar with View Switcher */}
+      <FilterBar 
+        onOpenSlotMachine={() => setIsSlotMachineOpen(true)}
+        viewMode={discoverViewMode}
+        onViewModeChange={setDiscoverViewMode}
+      />
+
+      {/* Empty State vs. Content (Grid or Swipe-Deck) */}
+      {displayedFilteredRecipes.length === 0 ? (
+        <div className="bg-white rounded-3xl p-8 sm:p-12 text-center border border-[#ECEBE8] shadow-2xs space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center mx-auto text-2xl font-bold">
+            🌱
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-xl font-bold tracking-tight text-[#2D3E40]">
+              {isFavorites ? 'Noch keine Favoriten vorhanden' : 'Keine passenden Rezepte gefunden'}
+            </h3>
+            <p className="text-base text-[#686E6A] leading-relaxed max-w-md mx-auto">
+              {isFavorites
+                ? 'Klicke auf das Herz-Symbol bei einem Rezept, um es in deiner Favoritenliste zu speichern.'
+                : 'Passe deine Filterkriterien an oder suche nach einer anderen Zutat.'}
+            </p>
+          </div>
+          {Boolean(filters.searchQuery || filters.category !== 'all' || filters.difficulty !== 'all' || filters.maxTime > 0 || filters.minProtein > 0 || filters.selectedTags.length > 0) && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="min-h-[44px] px-5 py-2.5 rounded-xl bg-[#4A7856] text-white text-base font-semibold hover:bg-[#3D6447] transition-colors cursor-pointer"
+            >
+              Filter zurücksetzen
+            </button>
+          )}
+        </div>
+      ) : discoverViewMode === 'swipe' ? (
+        /* New Swipe-Deck Mode: Tinder-like card stack */
+        <SwipeRecipeDeck 
+          recipes={displayedFilteredRecipes} 
+          onSwitchToGrid={() => setDiscoverViewMode('grid')}
+        />
+      ) : (
+        /* Classic Recipes Grid with Progressive Pagination */
+        <div className="space-y-6 sm:space-y-8">
+          {(() => {
+            const visibleRecipes = displayedFilteredRecipes.slice(0, visibleRecipeCount);
+            const remainingCount = displayedFilteredRecipes.length - visibleRecipes.length;
+            const hasMore = remainingCount > 0;
+
+            return (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                  {visibleRecipes.map((recipe) => (
+                    <RecipeCard
+                      key={recipe.id}
+                      recipe={recipe}
+                    />
+                  ))}
+                </div>
+
+                {hasMore && (
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 sm:pt-6">
+                    <button
+                      id="load-more-recipes-btn"
+                      type="button"
+                      onClick={() => setVisibleRecipeCount((prev) => Math.min(prev + 8, displayedFilteredRecipes.length))}
+                      className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] text-base font-semibold shadow-2xs transition-all cursor-pointer active:scale-95"
+                    >
+                      Mehr anzeigen ({remainingCount} weitere {remainingCount === 1 ? 'Rezept' : 'Rezepte'})
+                    </button>
+                    <button
+                      id="load-all-recipes-btn"
+                      type="button"
+                      onClick={() => setVisibleRecipeCount(displayedFilteredRecipes.length)}
+                      className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl bg-[#F1F5F2] hover:bg-[#E3EBE5] text-[#4A7856] text-base font-semibold transition-all cursor-pointer active:scale-95"
+                    >
+                      Alle anzeigen ({displayedFilteredRecipes.length})
+                    </button>
+                  </div>
+                )}
+
+                {displayedFilteredRecipes.length > 0 && !hasMore && displayedFilteredRecipes.length > 8 && (
+                  <div className="text-center pt-2">
+                    <p className="text-xs text-[#686E6A]">
+                      ✓ Alle {displayedFilteredRecipes.length} Rezepte geladen
+                    </p>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Überrasch mich Slot Machine Modal */}
+      <SlotMachineModal
+        isOpen={isSlotMachineOpen}
+        onClose={() => setIsSlotMachineOpen(false)}
+      />
+    </div>
+  );
+}
+
+function MainApp() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  const isRecipeDetailPage = location.pathname.startsWith('/recipes/');
+
+  const {
+    cookingModeRecipe,
+    isCookingMinimized,
+    cookingTimer,
+    isAddRecipeOpen,
+  } = useRecipes();
+
+  const { isSyncModalOpen } = useSync();
+  const { recipeToAddToPlan } = usePlanner();
+
+  // Backward compatibility: If URL has legacy query param ?recipe=id, redirect cleanly to /recipes/:id
+  useEffect(() => {
+    const legacyRecipeId = searchParams.get('recipe');
+    if (legacyRecipeId) {
+      navigate(`/recipes/${legacyRecipeId}`, { replace: true });
+    }
+  }, [searchParams, navigate]);
+
+  const showBottomTimerBar = Boolean(cookingTimer || (cookingModeRecipe && isCookingMinimized));
+
+  return (
+    <div className="min-h-screen bg-[#FAF9F6] text-[#2D3E40] flex flex-col font-sans selection:bg-[#F1F5F2] selection:text-[#4A7856]">
+      {/* Scroll to Top on every route transition */}
+      <ScrollToTop />
+
+      {/* Top Main Navigation Header - only on non-detail pages */}
+      {!isRecipeDetailPage && <Header />}
+
+      {/* Main Content Area rendered via React Router Routes with Suspense code-splitting */}
+      <main className={`flex-1 w-full ${isRecipeDetailPage ? '' : 'max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-8'} ${showBottomTimerBar ? 'pb-20 sm:pb-24' : ''}`}>
+        <Suspense fallback={<RouteLoadingFallback />}>
+          <Routes>
+            <Route path="/" element={<RecipesExplorerView isFavorites={false} />} />
+            <Route path="/favorites" element={<RecipesExplorerView isFavorites={true} />} />
+            <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+            <Route path="/fridge" element={<FridgeCookView />} />
+            <Route path="/planner" element={<WeeklyPlannerView />} />
+            <Route path="/shopping" element={<ShoppingListView />} />
+            <Route path="/stats" element={<StatsView />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </main>
+
+      {/* Persistent Cooking Timer Bar at bottom (visible when minimized or timer running) */}
+      <CookingTimerBar />
+
+      {/* Fullscreen Interactive Cooking Mode (loaded on-demand when active and not minimized) */}
+      {cookingModeRecipe && !isCookingMinimized && (
+        <Suspense fallback={null}>
+          <CookingModeModal />
+        </Suspense>
+      )}
+
+      {/* Add Recipe Modal (Manual, AI Generator & Photo Scan - loaded on demand) */}
+      {isAddRecipeOpen && (
+        <Suspense fallback={null}>
+          <AddRecipeModal />
+        </Suspense>
+      )}
+
+      {/* Add To Meal Plan Modal (Day & Time selection - loaded on demand) */}
+      {recipeToAddToPlan && (
+        <Suspense fallback={null}>
+          <AddToMealPlanModal />
+        </Suspense>
+      )}
+
+      {/* Family Sync Modal (loaded on demand) */}
+      {isSyncModalOpen && (
+        <Suspense fallback={null}>
+          <FamilySyncModal />
+        </Suspense>
+      )}
+
+      {/* Footer - only on non-detail pages */}
+      {!isRecipeDetailPage && (
+        <footer className="mt-16 bg-white border-t border-[#ECEBE8] py-8 px-4 text-center text-xs text-[#686E6A]">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2 font-semibold text-[#2D3E40]">
+              <span className="p-1 rounded-md bg-[#4A7856] text-white text-xs">🌱</span>
+              <span>VeggieChef • 100% Vegetarische & Vegane Koch-App</span>
+            </div>
+            <div>
+              Mit Liebe zum Kochen, Gesundheit & Umwelt-Impact entwickelt.
+            </div>
+          </div>
+        </footer>
+      )}
+    </div>
+  );
+}
+
+export function App() {
+  return (
+    <ToastProvider>
+      <SyncProvider>
+        <RecipeProvider>
+          <PlannerProvider>
+            <ShoppingProvider>
+              <MainApp />
+            </ShoppingProvider>
+          </PlannerProvider>
+        </RecipeProvider>
+      </SyncProvider>
+    </ToastProvider>
+  );
+}
+
+export default App;

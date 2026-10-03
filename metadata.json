@@ -1,0 +1,6 @@
+{
+  "name": "VeggieChef",
+  "description": "Moderne vegetarische & vegane Koch-App mit Gericht des Tages, KI-Zutatentausch, Kühlschrank-Resteverwerter, Wochenplaner, Nährwert-Tracker und interaktivem Kochmodus.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
