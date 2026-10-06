@@ -1,4 +1,5 @@
 import { Recipe, RecipeIngredient, CookedLog, ShoppingItem, DayPlan, FilterState, IngredientCategory } from '../types';
+import { canonicalCategory, isHighProteinRecipe, HIGH_PROTEIN_CATEGORY } from './discover';
 
 // Helper function to format numbers into clean kitchen fractions or ranges
 export function formatFractionOrSmartQuantity(value: number, unit: string): string {
@@ -1394,15 +1395,11 @@ export function filterAndSortRecipes(
         }
       }
 
-      // Category filter (support 'all' and 'High Protein' flexibly)
+      // Category filter (support 'all' and 'High Protein' flexibly; aliases are canonicalized)
       if (filters.category && filters.category !== 'all') {
-        if (filters.category === 'High Protein') {
-          const isHighProt =
-            recipe.category === 'High Protein' ||
-            (Array.isArray(recipe.tags) && recipe.tags.some((t) => (t || '').toLowerCase().includes('high protein'))) ||
-            ((recipe.nutrients?.protein || 0) >= 25);
-          if (!isHighProt) return false;
-        } else if (recipe.category !== filters.category) {
+        if (filters.category === HIGH_PROTEIN_CATEGORY) {
+          if (!isHighProteinRecipe(recipe)) return false;
+        } else if (canonicalCategory(recipe.category) !== canonicalCategory(filters.category)) {
           return false;
         }
       }

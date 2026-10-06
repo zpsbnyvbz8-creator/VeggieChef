@@ -51,6 +51,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
   };
 
   const activeTab = getActiveTabFromLocation(location.pathname);
+  const isExplorerRoute = location.pathname === '/' || location.pathname === '/favorites';
 
   const handleNavigate = (path: string) => {
     if (location.pathname !== path) {
@@ -97,7 +98,10 @@ export const Header: React.FC<HeaderProps> = (props) => {
             </div>
           </div>
 
-          {/* Quick Search bar */}
+          {/* Quick Search bar (hidden on explorer routes where the page has its own prominent search) */}
+          {isExplorerRoute ? (
+            <div className="flex-1" aria-hidden="true" />
+          ) : (
           <div className="flex items-center relative flex-1 min-w-0 max-w-[150px] xs:max-w-[200px] sm:max-w-xs md:max-w-sm mx-1 sm:mx-4 md:mx-6">
             <Search className="w-4 h-4 text-[#686E6A] absolute left-2.5 sm:left-3 pointer-events-none" />
             <input
@@ -120,6 +124,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
               </button>
             )}
           </div>
+          )}
 
           {/* Action Icons (Sync, Favorites, Shopping) */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">

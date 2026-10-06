@@ -45,16 +45,12 @@ export interface RecipeContextType {
   filters: FilterState;
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   resetFilters: () => void;
-  visibleRecipeCount: number;
-  setVisibleRecipeCount: React.Dispatch<React.SetStateAction<number>>;
   filteredRecipes: Recipe[];
   dishOfTheDay: Recipe;
   selectedRecipe: Recipe | null;
   setSelectedRecipe: React.Dispatch<React.SetStateAction<Recipe | null>>;
   isAddRecipeOpen: boolean;
   setIsAddRecipeOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  discoverViewMode: 'grid' | 'swipe';
-  setDiscoverViewMode: (mode: 'grid' | 'swipe') => void;
   cookedLogs: CookedLog[];
   setCookedLogs: React.Dispatch<React.SetStateAction<CookedLog[]>>;
   logCooked: (recipe: Recipe, servings: number, notes?: string, rating?: number, photoUrl?: string) => void;
@@ -122,21 +118,6 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Filter & Search State
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 
-  // Recipe Explorer pagination (load more & load all - persistent across tabs)
-  const [visibleRecipeCount, setVisibleRecipeCount] = useState<number>(() =>
-    loadFromLocalStorage('veggiechef_visible_count', 8)
-  );
-
-  // Discover View Mode ('grid' | 'swipe' - persistent across tabs)
-  const [discoverViewMode, setDiscoverViewModeState] = useState<'grid' | 'swipe'>(() =>
-    loadFromLocalStorage<'grid' | 'swipe'>('veggiechef_discover_view_mode', 'grid')
-  );
-
-  const setDiscoverViewMode = (mode: 'grid' | 'swipe') => {
-    setDiscoverViewModeState(mode);
-    saveToLocalStorage('veggiechef_discover_view_mode', mode);
-  };
-
   // Modal / Interactive Views State
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isAddRecipeOpen, setIsAddRecipeOpen] = useState(false);
@@ -193,21 +174,12 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [dislikedIds]);
 
   useEffect(() => {
-    saveToLocalStorage('veggiechef_visible_count', visibleRecipeCount);
-  }, [visibleRecipeCount]);
-
-  useEffect(() => {
     saveToLocalStorage('veggiechef_cooked_logs', cookedLogs);
   }, [cookedLogs]);
 
   useEffect(() => {
     saveToLocalStorage('veggiechef_active_timer', cookingTimer);
   }, [cookingTimer]);
-
-  // Reset pagination count on search or filter change
-  useEffect(() => {
-    setVisibleRecipeCount(8);
-  }, [filters, onlyVegan]);
 
   // Register with SyncContext for non-destructive merge updates on join
   useEffect(() => {
@@ -399,16 +371,12 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         filters,
         setFilters,
         resetFilters,
-        visibleRecipeCount,
-        setVisibleRecipeCount,
         filteredRecipes,
         dishOfTheDay,
         selectedRecipe,
         setSelectedRecipe,
         isAddRecipeOpen,
         setIsAddRecipeOpen,
-        discoverViewMode,
-        setDiscoverViewMode,
         cookedLogs,
         setCookedLogs,
         logCooked,
