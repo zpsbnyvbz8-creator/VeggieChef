@@ -61,9 +61,13 @@ export const RecipeDetailPage: React.FC = () => {
     updateRecipe,
     deleteRecipe,
     duplicateRecipe,
+    cookingModeRecipe,
     setCookingModeRecipe,
+    isCookingMinimized,
     setIsCookingMinimized,
+    cookingCurrentStep,
     setCookingCurrentStep,
+    cookingTimer,
     logCooked
   } = useRecipes();
 
@@ -451,18 +455,7 @@ export const RecipeDetailPage: React.FC = () => {
 
     const stepNumTarget = targetStepForPhoto;
     const fileList = Array.from(files) as File[];
-    const readPromises = fileList.map((file) => {
-      return new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const dataUrl = event.target?.result as string;
-          if (dataUrl) resolve(dataUrl);
-          else resolve('');
-        };
-        reader.onerror = () => resolve('');
-        reader.readAsDataURL(file);
-      });
-    });
+    const readPromises = fileList.map((file) => compressImageToDataUrl(file, 800, 0.65));
 
     const newUrls = (await Promise.all(readPromises)).filter(Boolean);
     if (newUrls.length === 0) return;
@@ -575,9 +568,10 @@ export const RecipeDetailPage: React.FC = () => {
 
   const activeIngredients = (isVeganized && veganizedIngredients) ? veganizedIngredients : recipe.ingredients;
   const savings = calculateMealSavings(servings, recipe.isVegan || isVeganized);
+  const hasBottomTimer = Boolean(cookingTimer || (cookingModeRecipe && isCookingMinimized));
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] text-[#2D3E40] selection:bg-[#F1F5F2] selection:text-[#4A7856] pb-28">
+    <div className={`min-h-screen bg-[#FAF9F6] text-[#2D3E40] selection:bg-[#F1F5F2] selection:text-[#4A7856] ${hasBottomTimer ? 'pb-44 sm:pb-48' : 'pb-28'}`}>
       {/* Hidden file input for uploading user cover photos */}
       <input
         ref={fileInputRef}
@@ -1518,7 +1512,7 @@ export const RecipeDetailPage: React.FC = () => {
       {/* 10. EXCLUSIVE PRIMARY CTA IN PERSISTENT STICKY BOTTOM BAR */}
       <aside
         aria-label="Koch-Modus Schnellzugriff"
-        className="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-[#ECEBE8] px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
+        className={`fixed ${hasBottomTimer ? 'bottom-16 sm:bottom-18' : 'bottom-0'} inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-[#ECEBE8] px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] transition-all duration-200`}
       >
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
           {/* Quick portions stepper in sticky bar */}

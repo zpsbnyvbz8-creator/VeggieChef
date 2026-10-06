@@ -17,7 +17,7 @@ app.set("trust proxy", 1);
 // ---------------------------------------------------------------------------
 app.use(helmetMiddleware);
 app.use(corsMiddleware);
-app.use(express.json({ limit: "4.5mb" }));
+app.use(express.json({ limit: "10mb" }));
 
 // ---------------------------------------------------------------------------
 // 2. REST API Routes
@@ -63,7 +63,6 @@ async function startServer() {
     const vite = await createViteServer({
       server: {
         middlewareMode: true,
-        hmr: false,
       },
       appType: "spa",
     });

@@ -770,18 +770,20 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                   <button
                     type="button"
                     onClick={() => handleToggleTimer(timer.id)}
-                    className="p-1 rounded-full hover:bg-white/20 cursor-pointer active:scale-90"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-white/20 flex items-center justify-center cursor-pointer active:scale-90"
                     title={timer.isRunning ? 'Pause' : 'Start'}
+                    aria-label={timer.isRunning ? 'Timer pausieren' : 'Timer starten'}
                   >
-                    {timer.isRunning ? <Pause className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
+                    {timer.isRunning ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
                   </button>
 
                   {/* Adjust +1m */}
                   <button
                     type="button"
                     onClick={() => handleAdjustTimer(timer.id, 60)}
-                    className="text-[10px] font-bold px-1.5 py-0.5 rounded-md hover:bg-white/20 cursor-pointer"
+                    className="h-7 sm:h-8 px-2 rounded-lg text-[11px] font-bold hover:bg-white/20 flex items-center justify-center cursor-pointer active:scale-95"
                     title="1 Minute hinzufügen"
+                    aria-label="1 Minute hinzufügen"
                   >
                     +1m
                   </button>
@@ -790,10 +792,11 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                   <button
                     type="button"
                     onClick={() => handleDeleteTimer(timer.id)}
-                    className="p-1 rounded-full hover:bg-rose-500/30 text-white/60 hover:text-white cursor-pointer"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-rose-500/30 text-white/70 hover:text-white flex items-center justify-center cursor-pointer active:scale-90"
                     title="Timer schließen"
+                    aria-label="Timer schließen"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               );
@@ -1244,11 +1247,16 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
           }`}
         >
           <span>
-            {stepPhase === 'prep'
-              ? 'Kochen starten'
-              : stepPhase === 'steps' && currentStepIndex === totalStepsCount - 1
-              ? 'Rezept fertiggestellt 🎉'
-              : 'Weiter'}
+            {stepPhase === 'prep' ? (
+              'Kochen starten'
+            ) : stepPhase === 'steps' && currentStepIndex === totalStepsCount - 1 ? (
+              <>
+                <span className="hidden sm:inline">Rezept fertiggestellt 🎉</span>
+                <span className="sm:hidden">Fertig 🎉</span>
+              </>
+            ) : (
+              'Weiter'
+            )}
           </span>
           <ChevronRight className="w-6 h-6" />
         </button>

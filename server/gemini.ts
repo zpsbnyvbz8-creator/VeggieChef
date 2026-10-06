@@ -1,11 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 import { logAiEvent } from "./logger";
 
-// Verified Active Gemini Model Cascade - Prioritizing Gemini 3.8 Flash for culinary reasoning
+// Verified Active Gemini Model Cascade - Prioritizing Gemini 2.5 Flash for culinary reasoning
 export const ACTIVE_MODELS = [
-  "gemini-3.8-flash",
-  "gemini-flash-latest",
-  "gemini-3.1-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
 ] as const;
 
 let genAIClient: GoogleGenAI | null = null;
@@ -154,12 +154,12 @@ export async function callGeminiWithRetry(
 ): Promise<{ text: string }> {
   const maxTotalBudgetMs = options.timeoutMs || 45000;
   const startTime = Date.now();
-  const requestedModel = options.model || "gemini-3.8-flash";
-  const maxPreferredRetries = options.maxPreferredRetries ?? 2; // Up to 3 attempts total for 3.8 Flash
+  const requestedModel = options.model || "gemini-2.5-flash";
+  const maxPreferredRetries = options.maxPreferredRetries ?? 2; // Up to 3 attempts total for primary model
 
   let lastError: unknown = null;
 
-  // Phase 1: Dedicated retry loop for Gemini 3.8 Flash upon high-demand spikes
+  // Phase 1: Dedicated retry loop for Gemini 2.5 Flash upon high-demand spikes
   let preferredAttempt = 0;
   while (preferredAttempt <= maxPreferredRetries) {
     const elapsed = Date.now() - startTime;

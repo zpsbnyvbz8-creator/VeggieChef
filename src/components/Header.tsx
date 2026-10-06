@@ -51,6 +51,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
   };
 
   const activeTab = getActiveTabFromLocation(location.pathname);
+  const isExplorerRoute = location.pathname === '/' || location.pathname === '/favorites';
 
   const handleNavigate = (path: string) => {
     if (location.pathname !== path) {
@@ -97,7 +98,10 @@ export const Header: React.FC<HeaderProps> = (props) => {
             </div>
           </div>
 
-          {/* Quick Search bar */}
+          {/* Quick Search bar (hidden on explorer routes where the page has its own prominent search) */}
+          {isExplorerRoute ? (
+            <div className="flex-1" aria-hidden="true" />
+          ) : (
           <div className="flex items-center relative flex-1 min-w-0 max-w-[150px] xs:max-w-[200px] sm:max-w-xs md:max-w-sm mx-1 sm:mx-4 md:mx-6">
             <Search className="w-4 h-4 text-[#686E6A] absolute left-2.5 sm:left-3 pointer-events-none" />
             <input
@@ -106,19 +110,21 @@ export const Header: React.FC<HeaderProps> = (props) => {
               placeholder="Suchen..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-8 sm:pl-9 pr-7 text-[16px] bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-full text-[#2D3E40] placeholder-[#686E6A] focus:outline-hidden focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] shadow-2xs transition-all truncate"
+              className="w-full h-10 pl-8 sm:pl-9 pr-9 text-[16px] bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-full text-[#2D3E40] placeholder-[#686E6A] focus:outline-hidden focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] shadow-2xs transition-all truncate"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 text-xs text-[#686E6A] hover:text-[#4A7856] p-1 cursor-pointer"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 min-w-[32px] min-h-[32px] rounded-full flex items-center justify-center text-xs text-[#686E6A] hover:text-[#2D3E40] hover:bg-black/5 active:bg-black/10 cursor-pointer touch-manipulation active:scale-95"
                 title="Suche zurücksetzen"
+                aria-label="Suche zurücksetzen"
               >
                 ✕
               </button>
             )}
           </div>
+          )}
 
           {/* Action Icons (Sync, Favorites, Shopping) */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">

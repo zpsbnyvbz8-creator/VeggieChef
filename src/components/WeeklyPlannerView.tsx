@@ -706,11 +706,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 r.title.toLowerCase().includes(lunchTitle.toLowerCase().slice(0, 6)) ||
                 lunchTitle.toLowerCase().includes(r.title.toLowerCase().slice(0, 6))
               )
-            ) || recipePool[idx % recipePool.length];
+            ) || recipePool[idx % recipePool.length] || allRecipes[0];
 
             newDay.lunch = {
-              recipeId: matched?.id || `plan-lunch-${idx}`,
-              recipeTitle: lunchTitle,
+              recipeId: matched?.id || allRecipes[0]?.id || `recipe-${idx}`,
+              recipeTitle: matched?.title || lunchTitle,
               isVegan: aiIsVegan || Boolean(matched?.isVegan),
               prepTime: matched?.totalTimeMinutes || aiMaxMinutes || 20,
               calories: matched?.nutrients?.calories || 420,
@@ -732,11 +732,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 r.title.toLowerCase().includes(dinnerTitle.toLowerCase().slice(0, 6)) ||
                 dinnerTitle.toLowerCase().includes(r.title.toLowerCase().slice(0, 6))
               )
-            ) || recipePool[(idx + 2) % recipePool.length];
+            ) || recipePool[(idx + 2) % recipePool.length] || allRecipes[0];
 
             newDay.dinner = {
-              recipeId: matched?.id || `plan-dinner-${idx}`,
-              recipeTitle: dinnerTitle,
+              recipeId: matched?.id || allRecipes[0]?.id || `recipe-${idx + 1}`,
+              recipeTitle: matched?.title || dinnerTitle,
               isVegan: aiIsVegan || Boolean(matched?.isVegan),
               prepTime: matched?.totalTimeMinutes || aiMaxMinutes || 25,
               calories: matched?.nutrients?.calories || 520,
@@ -782,9 +782,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       const fallbackDays = mealPlan.map((day, idx) => {
         const newDay = { ...day };
         if (aiMealOption === 'lunch' || aiMealOption === 'both') {
-          const rec = filteredPool[idx % filteredPool.length];
+          const rec = filteredPool[idx % filteredPool.length] || recipePool[idx % recipePool.length] || allRecipes[0];
           newDay.lunch = {
-            recipeId: rec?.id || `fb-lunch-${idx}`,
+            recipeId: rec?.id || allRecipes[0]?.id || `recipe-${idx}`,
             recipeTitle: rec?.title || (aiIsVegan ? 'Kichererbsen-Avocado Bowl mit Zitronen-Tahini' : 'Mediterraner Hirten-Salat'),
             isVegan: aiIsVegan || Boolean(rec?.isVegan),
             prepTime: rec?.totalTimeMinutes || (aiMaxMinutes > 0 ? aiMaxMinutes : 20),
@@ -794,9 +794,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           };
         }
         if (aiMealOption === 'dinner' || aiMealOption === 'both') {
-          const rec = filteredPool[(idx + 3) % filteredPool.length];
+          const rec = filteredPool[(idx + 3) % filteredPool.length] || recipePool[(idx + 3) % recipePool.length] || allRecipes[0];
           newDay.dinner = {
-            recipeId: rec?.id || `fb-dinner-${idx}`,
+            recipeId: rec?.id || allRecipes[0]?.id || `recipe-${idx + 1}`,
             recipeTitle: rec?.title || (aiIsVegan ? 'Rote-Linsen Kokos-Curry mit Reis' : 'Ofen-Gnocchi mit Spinat'),
             isVegan: aiIsVegan || Boolean(rec?.isVegan),
             prepTime: rec?.totalTimeMinutes || (aiMaxMinutes > 0 ? aiMaxMinutes : 25),
@@ -822,7 +822,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   );
 
   const renderMealItem = (day: DayPlan, mealType: 'lunch' | 'dinner', slot: MealPlanSlot) => {
-    const recipe = allRecipes.find((r) => r.id === slot.recipeId);
+    const recipe = allRecipes.find((r) => r.id === slot.recipeId) ||
+      allRecipes.find((r) => r.title.toLowerCase() === slot.recipeTitle.toLowerCase()) ||
+      allRecipes.find((r) => r.title.toLowerCase().includes(slot.recipeTitle.toLowerCase().slice(0, 6)));
     const isDraggingThis = draggingItem?.dayId === day.dayId && draggingItem?.mealType === mealType;
     const isDragOverThis = dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === mealType;
     const isSwapTarget = isDragOverThis && draggingItem && (draggingItem.dayId !== day.dayId || draggingItem.mealType !== mealType);
@@ -945,7 +947,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           </div>
         </div>
 
-        {/* Right / Top-Right: Actions (Auf Mobile im Flow, auf PC platzsparend als Hover-Button oben rechts) */}
+        {/* Right / Top-Right: Actions (Auf Mobile im Flow mit barrierefreiem 40px Touch-Target, auf PC als Hover-Button) */}
         <button
           type="button"
           onClick={(e) => {
@@ -954,11 +956,12 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             onCopyFeedback(`"${slot.recipeTitle || 'Mahlzeit'}" entfernt.`);
           }}
           className="text-[#686e6a] hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center
-            opacity-60 hover:opacity-100 w-8 h-8 min-w-[32px] min-h-[32px] shrink-0
-            sm:absolute sm:top-2 sm:right-2 sm:w-7 sm:h-7 sm:min-w-0 sm:min-h-0 sm:opacity-0 sm:group-hover:opacity-100 sm:bg-white sm:border sm:border-[#ECEBE8] sm:shadow-2xs"
+            opacity-75 hover:opacity-100 w-10 h-10 min-w-[40px] min-h-[40px] shrink-0
+            sm:absolute sm:top-2 sm:right-2 sm:w-8 sm:h-8 sm:min-w-0 sm:min-h-0 sm:opacity-0 sm:group-hover:opacity-100 sm:bg-white sm:border sm:border-[#ECEBE8] sm:shadow-2xs"
           title="Mahlzeit entfernen"
+          aria-label="Mahlzeit entfernen"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
         </button>
       </div>
     );

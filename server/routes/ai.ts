@@ -85,7 +85,7 @@ Für jede Alternative:
 Gib deine Antwort als valides JSON zurück.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.8-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -209,7 +209,7 @@ ${additionalInstruction}
 Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.8-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -390,7 +390,7 @@ ${pantryInstruction}
 Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.8-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -491,7 +491,7 @@ Fokus: ${focus}
 Antworte als strukturiertes JSON.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.8-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -581,7 +581,7 @@ Original-Rezept: ${JSON.stringify(recipe)}
 Antworte als strukturiertes JSON.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.8-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -700,7 +700,7 @@ Zwinge das Rezept niemals künstlich in 4 Schritte!
 Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.8-flash",
+      model: "gemini-2.5-flash",
       contents: aiPrompt,
       config: {
         responseMimeType: "application/json",
@@ -827,7 +827,7 @@ WICHTIG ZUR ZUBEREITUNG: Wähle die Anzahl der Schritte (steps) völlig frei und
 Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-3.8-flash",
+      model: "gemini-2.5-flash",
       contents: [
         {
           inlineData: {

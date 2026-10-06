@@ -23,7 +23,7 @@ import { useRecipes } from '../context/RecipeContext';
 import { useToast } from '../context/ToastContext';
 import { FridgeIdeaModal } from './FridgeIdeaModal';
 import { RecipeImage } from './RecipeImage';
-import { safeStorage } from '../utils/helpers';
+import { safeStorage, detectIngredientCategory } from '../utils/helpers';
 
 interface FridgeCookViewProps {
   allRecipes?: Recipe[];
@@ -294,7 +294,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           name: ing.name,
           amount: ing.amount || 'nach Bedarf',
           unit: ing.unit || '',
-          category: 'gemuese',
+          category: detectIngredientCategory(ing.name),
           source: ing.origin || (ing.isExtra ? 'extra' : 'pantry'),
         })),
         steps: (raw.steps || []).map((step: any, index: number) => {

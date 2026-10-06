@@ -92,7 +92,7 @@ function playSlotSound(type: 'click' | 'stop' | 'win') {
 
 export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { filteredRecipes, recipes, favorites, toggleFavorite } = useRecipes();
+  const { filteredRecipes, recipes, favorites, toggleFavorite, dislikedIds } = useRecipes();
   useLockBodyScroll(isOpen);
 
   // Slot states
@@ -104,8 +104,10 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
 
   const animationFrameRef = useRef<number | null>(null);
 
-  // Pool of recipes
-  const candidateRecipes = filteredRecipes.length > 0 ? filteredRecipes : recipes;
+  // Pool of recipes: respects active filters, never suggests recipes the user disliked
+  const basePool = filteredRecipes.length > 0 ? filteredRecipes : recipes;
+  const notDisliked = basePool.filter((r) => !dislikedIds.includes(r.id));
+  const candidateRecipes = notDisliked.length > 0 ? notDisliked : basePool;
 
   // Spin the slot machine
   const handleSpin = () => {
@@ -115,9 +117,13 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
     setHasSpunAtLeastOnce(true);
     setSelectedRecipe(null);
 
-    // Pick winning recipe
-    const randomIndex = Math.floor(Math.random() * candidateRecipes.length);
-    const targetRecipe = candidateRecipes[randomIndex];
+    // Pick winning recipe (avoid repeating the previous pick when there are alternatives)
+    const pool =
+      candidateRecipes.length > 1 && selectedRecipe
+        ? candidateRecipes.filter((r) => r.id !== selectedRecipe.id)
+        : candidateRecipes;
+    const randomIndex = Math.floor(Math.random() * pool.length);
+    const targetRecipe = pool[randomIndex];
 
     // Pick corresponding reels based on target recipe
     const matchingCatIdx = CATEGORY_REEL.findIndex((c) => c.label.includes(targetRecipe.category) || targetRecipe.category.includes(c.label));
@@ -186,15 +192,28 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
     };
   }, [isOpen]);
 
+  // Close on Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
     <div 
-      className="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200"
+      className="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-5 animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-lg bg-[#FAF9F6] border border-[#ECEBE8] rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#2D3E40] animate-in zoom-in-95 duration-200"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Überrasch mich"
+        className="w-full max-w-lg bg-[#FAF9F6] border border-[#ECEBE8] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#2D3E40] animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-200 max-h-[92dvh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -319,7 +338,7 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
                 }}
                 className="w-full h-12 min-h-[48px] rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-bold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-98 cursor-pointer"
               >
-                <span>Rezept jetzt kochen</span>
+                <span>Rezept ansehen</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
             )}

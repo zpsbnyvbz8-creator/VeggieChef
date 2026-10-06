@@ -1,229 +1,107 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Clock, 
-  Flame, 
-  Dumbbell, 
-  Heart, 
-  Copy, 
-  Check, 
-  ShoppingCart, 
-  ChefHat,
-  Plus,
-  ThumbsDown,
-  CalendarPlus
-} from 'lucide-react';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Clock, Flame, Dumbbell, Heart, Star } from 'lucide-react';
 import { Recipe } from '../types';
 import { RecipeImage } from './RecipeImage';
-import { generateRecipeIngredientsText, safeCopyToClipboard } from '../utils/helpers';
+import { RecipeActionMenu } from './discover/RecipeActionMenu';
 import { useRecipes } from '../context/RecipeContext';
-import { useShopping } from '../context/ShoppingContext';
-import { usePlanner } from '../context/PlannerContext';
-import { useToast } from '../context/ToastContext';
 
 interface RecipeCardProps {
   recipe: Recipe;
-  onSelect?: (recipe: Recipe) => void;
-  isFavorite?: boolean;
-  onToggleFavorite?: (recipeId: string) => void;
-  isDisliked?: boolean;
-  onToggleDislike?: (recipeId: string) => void;
-  onQuickAddShopping?: (recipe: Recipe) => void;
-  onAddToMealPlan?: (recipe: Recipe) => void;
-  onCopyFeedback?: (msg: string) => void;
 }
 
-const RecipeCardComponent: React.FC<RecipeCardProps> = (props) => {
-  const navigate = useNavigate();
-  const recipesCtx = useRecipes();
-  const shoppingCtx = useShopping();
-  const plannerCtx = usePlanner();
-  const toastCtx = useToast();
-
-  const recipe = props.recipe;
-  const onSelect = props.onSelect || ((r: Recipe) => navigate(`/recipes/${r.id}`));
-  const isFavorite = props.isFavorite !== undefined ? props.isFavorite : recipesCtx.favorites.includes(recipe.id);
-  const onToggleFavorite = props.onToggleFavorite || recipesCtx.toggleFavorite;
-  const isDisliked = props.isDisliked !== undefined ? props.isDisliked : recipesCtx.dislikedIds.includes(recipe.id);
-  const onToggleDislike = props.onToggleDislike || recipesCtx.toggleDislike;
-  const onQuickAddShopping = props.onQuickAddShopping || ((r: Recipe) => shoppingCtx.addToShoppingList(r, r.servings));
-  const onAddToMealPlan = props.onAddToMealPlan || plannerCtx.addToMealPlan;
-  const onCopyFeedback = props.onCopyFeedback || toastCtx.showToast;
-  const [copied, setCopied] = useState(false);
-  const [addedShopping, setAddedShopping] = useState(false);
-  const [addedMealPlan, setAddedMealPlan] = useState(false);
-
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const text = generateRecipeIngredientsText(recipe, recipe.servings);
-    await safeCopyToClipboard(text);
-    setCopied(true);
-    onCopyFeedback(`Zutaten für "${recipe.title}" kopiert!`);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleShopping = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onQuickAddShopping(recipe);
-    setAddedShopping(true);
-    onCopyFeedback(`Zutaten für "${recipe.title}" zur Einkaufsliste hinzugefügt!`);
-    setTimeout(() => setAddedShopping(false), 2000);
-  };
+/**
+ * Discovery card. One primary tap target (open recipe), one quick action (favorite),
+ * everything else lives in the overflow menu. Whole card is a real link via a stretched
+ * anchor so it is keyboard- and screen-reader-accessible.
+ */
+const RecipeCardComponent: React.FC<RecipeCardProps> = ({ recipe }) => {
+  const { favorites, toggleFavorite, dislikedIds } = useRecipes();
+  const isFavorite = favorites.includes(recipe.id);
+  const isDisliked = dislikedIds.includes(recipe.id);
 
   return (
-    <div
+    <article
       id={`recipe-card-${recipe.id}`}
-      onClick={() => onSelect(recipe)}
-      className={`group relative flex flex-col bg-white rounded-2xl border transition-all duration-300 overflow-hidden cursor-pointer ${
+      className={`group relative flex flex-col w-full bg-white rounded-2xl border overflow-hidden transition-all duration-300 ${
         isDisliked
-          ? 'border-rose-200/80 opacity-75 hover:opacity-100 shadow-2xs hover:shadow-sm'
+          ? 'border-[#ECEBE8] opacity-70 hover:opacity-100'
           : 'border-[#ECEBE8] shadow-xs hover:border-[#4A7856]/40 hover:shadow-md'
       }`}
     >
-      {/* Image Container */}
-      <div className="relative aspect-4/3 overflow-hidden bg-[#FAF9F6]">
+      {/* Image */}
+      <div className="relative aspect-[16/10] sm:aspect-[4/3] overflow-hidden bg-[#FAF9F6]">
         <RecipeImage
           recipe={recipe}
-          imgClassName="w-full h-full object-cover group-hover:scale-104 transition-transform duration-500"
-          alt={recipe.title}
+          imgClassName="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          alt=""
         />
-        
-        {/* Top Badges Overlay */}
-        <div className="absolute top-2 sm:top-3 left-2 sm:left-3 right-2 sm:right-3 flex items-center justify-between gap-2 pointer-events-none">
-          <div className="flex flex-wrap gap-1 sm:gap-1.5 pointer-events-auto">
-            {isDisliked ? (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-600/85 backdrop-blur-md text-white text-xs font-semibold border border-white/20 shadow-xs">
-                <ThumbsDown className="w-2.5 h-2.5" /> Seltener anzeigen
-              </span>
-            ) : recipe.isVegan ? (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/35 backdrop-blur-md text-white text-xs font-semibold border border-white/20 shadow-xs">
-                🌱 Vegan
-              </span>
-            ) : null}
-          </div>
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/45 to-transparent pointer-events-none" />
 
-          {/* Action buttons: Dislike & Favorite (Liquid Glass, 48x48px touch target) */}
-          <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
-            {onToggleDislike && (
-              <button
-                id={`dislike-btn-${recipe.id}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleDislike(recipe.id);
-                }}
-                className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full backdrop-blur-md shadow-md flex items-center justify-center transition-all hover:scale-105 active:scale-95 touch-manipulation cursor-pointer border border-white/10 ${
-                  isDisliked
-                    ? 'bg-rose-500/90 text-white'
-                    : 'bg-black/35 hover:bg-black/55 text-white'
-                }`}
-                title={isDisliked ? 'Dislike entfernen' : 'Seltener anzeigen (Dislike)'}
-              >
-                <ThumbsDown className={`w-5 h-5 ${isDisliked ? 'fill-white' : ''}`} />
-              </button>
-            )}
+        {recipe.isVegan && (
+          <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 h-7 rounded-full bg-white/95 backdrop-blur-xs text-[#4A7856] text-xs font-bold shadow-2xs">
+            🌱 Vegan
+          </span>
+        )}
 
-            {/* Favorite heart button (48x48px Liquid Glass Effect) */}
-            <button
-              id={`fav-btn-${recipe.id}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleFavorite(recipe.id);
-              }}
-              className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-full bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md flex items-center justify-center transition-all hover:scale-105 active:scale-95 touch-manipulation cursor-pointer border border-white/10"
-              title="Favorit umschalten"
-              aria-label={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
-            >
-              <Heart className={`w-5 h-5 transition-colors ${isFavorite ? 'fill-[#E74C3C] text-[#E74C3C]' : 'text-white'}`} />
-            </button>
-          </div>
-        </div>
+        <button
+          id={`fav-btn-${recipe.id}`}
+          type="button"
+          onClick={() => toggleFavorite(recipe.id)}
+          aria-pressed={isFavorite}
+          aria-label={isFavorite ? `${recipe.title} aus Favoriten entfernen` : `${recipe.title} zu Favoriten hinzufügen`}
+          className="absolute top-2 right-2 z-10 w-11 h-11 rounded-full bg-black/35 hover:bg-black/55 backdrop-blur-md border border-white/10 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90"
+        >
+          <Heart className={`w-5 h-5 transition-colors ${isFavorite ? 'fill-[#E74C3C] text-[#E74C3C]' : 'text-white'}`} />
+        </button>
 
-        {/* Cooking Time Overlay Badge */}
-        <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/65 backdrop-blur-md text-white text-xs font-semibold">
-          <Clock className="w-4 h-4 text-[#4A7856]" />
-          <span>{recipe.totalTimeMinutes} Min.</span>
-          <span className="text-white/60">•</span>
-          <span>{recipe.difficulty}</span>
-        </div>
+        <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-black/55 backdrop-blur-md text-white text-xs font-semibold">
+          <Clock className="w-3.5 h-3.5" />
+          {recipe.totalTimeMinutes} Min.
+        </span>
       </div>
 
-      {/* Content Body */}
-      <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between gap-3">
-        <div>
-          <div className="flex items-center justify-between text-xs text-[#686e6a] mb-2">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
-              {recipe.category}
+      {/* Body */}
+      <div className="flex flex-col flex-1 p-3.5 sm:p-4">
+        <div className="flex items-center justify-between gap-2 text-xs">
+          <span className="font-bold uppercase tracking-wide text-[#4A7856] truncate">{recipe.category}</span>
+          {recipe.rating > 0 && (
+            <span className="inline-flex items-center gap-1 font-semibold text-[#686E6A] shrink-0">
+              <Star className="w-3.5 h-3.5 fill-[#E67E22] text-[#E67E22]" />
+              {recipe.rating.toFixed(1)}
             </span>
-          </div>
-
-          <h3 className="font-bold text-[#2D3E40] text-base leading-snug line-clamp-2 group-hover:text-[#4A7856] transition-colors">
-            {recipe.title}
-          </h3>
-
-          <p className="text-sm text-[#686E6A] line-clamp-2 mt-1 leading-relaxed">
-            {recipe.subtitle}
-          </p>
-        </div>
-
-        {/* Nutritional Highlights Grid */}
-        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#ECEBE8] text-xs">
-          <div className="flex items-center gap-1.5 text-[#2D3E40] bg-[#FAF9F6] border border-[#ECEBE8] px-2.5 py-1.5 rounded-lg font-medium">
-            <Flame className="w-4 h-4 text-[#E67E22] shrink-0" />
-            <span className="truncate"><strong>{recipe.nutrients.calories}</strong> kcal</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[#4A7856] bg-[#F1F5F2] border border-[#ECEBE8] px-2.5 py-1.5 rounded-lg font-semibold">
-            <Dumbbell className="w-4 h-4 text-[#4A7856] shrink-0" />
-            <span className="truncate"><strong>{recipe.nutrients.protein}g</strong> Protein</span>
-          </div>
-        </div>
-
-        {/* Quick Card Action Buttons (Min height 44px for reliable touch targets) */}
-        <div className="grid grid-cols-3 gap-2 pt-1">
-          {/* Wochenplan button */}
-          {onAddToMealPlan && (
-            <button
-              id={`card-plan-btn-${recipe.id}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddToMealPlan(recipe);
-                setAddedMealPlan(true);
-                onCopyFeedback(`"${recipe.title}" in Wochenplaner eingetragen!`);
-                setTimeout(() => setAddedMealPlan(false), 2000);
-              }}
-              className="flex items-center justify-center gap-1.5 min-h-[44px] py-2 px-2 rounded-xl text-xs font-semibold text-[#57534d] bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors active:scale-95 touch-manipulation cursor-pointer"
-              title="In Wochenplaner eintragen"
-            >
-              {addedMealPlan ? <Check className="w-4 h-4 text-[#4A7856]" /> : <CalendarPlus className="w-4 h-4 text-[#4A7856]" />}
-              <span className="truncate">{addedMealPlan ? 'Geplant' : 'Planer'}</span>
-            </button>
           )}
+        </div>
 
-          {/* Copy ingredients button */}
-          <button
-            id={`card-copy-btn-${recipe.id}`}
-            onClick={handleCopy}
-            className={`flex items-center justify-center gap-1.5 min-h-[44px] py-2 px-2 rounded-xl text-xs font-semibold text-[#57534d] bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors active:scale-95 touch-manipulation cursor-pointer ${
-              !onAddToMealPlan ? 'col-span-2' : ''
-            }`}
-            title="Kopieren"
+        <h3 className="mt-1.5 font-bold text-[#2D3E40] text-base leading-snug line-clamp-2 group-hover:text-[#4A7856] transition-colors">
+          <Link
+            to={`/recipes/${recipe.id}`}
+            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-[#4A7856] focus-visible:outline-offset-[-2px] rounded-sm"
           >
-            {copied ? <Check className="w-4 h-4 text-[#4A7856]" /> : <Copy className="w-4 h-4 text-[#686e6a]" />}
-            <span className="truncate">{copied ? 'Kopiert' : 'Kopieren'}</span>
-          </button>
+            {recipe.title}
+          </Link>
+        </h3>
+        <p className="mt-1 text-sm text-[#686E6A] line-clamp-1">{recipe.subtitle}</p>
 
-          {/* Shopping list button */}
-          <button
-            id={`card-shop-btn-${recipe.id}`}
-            onClick={handleShopping}
-            className="flex items-center justify-center gap-1.5 min-h-[44px] py-2 px-2 rounded-xl text-xs font-semibold text-[#4A7856] bg-[#F1F5F2] border border-[#ECEBE8] hover:bg-[#4A7856] hover:text-white transition-colors active:scale-95 touch-manipulation cursor-pointer"
-            title="Zur Liste"
-          >
-            {addedShopping ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
-            <span className="truncate">{addedShopping ? 'Hinzugefügt' : '+ Liste'}</span>
-          </button>
+        <div className="mt-auto pt-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 text-xs font-semibold text-[#686E6A] min-w-0">
+            <span className="inline-flex items-center gap-1 shrink-0">
+              <Flame className="w-3.5 h-3.5 text-[#E67E22]" />
+              {recipe.nutrients.calories}
+              <span className="font-medium"> kcal</span>
+            </span>
+            <span className="inline-flex items-center gap-1 text-[#4A7856] shrink-0">
+              <Dumbbell className="w-3.5 h-3.5" />
+              {recipe.nutrients.protein} g
+            </span>
+            <span className="hidden min-[400px]:inline truncate">{recipe.difficulty}</span>
+          </div>
+          <div className="relative z-10 -mr-2 -mb-1">
+            <RecipeActionMenu recipe={recipe} />
+          </div>
         </div>
       </div>
-    </div>
+    </article>
   );
 };
 

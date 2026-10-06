@@ -765,13 +765,13 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   {/* Quick Inspirations */}
                   <div className="space-y-1.5">
                     <span className="text-xs text-[#686E6A] font-medium">Inspirationen:</span>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {QUICK_INSPIRATIONS.map((dish) => (
                         <button
                           key={dish}
                           type="button"
                           onClick={() => setAiTitle(dish)}
-                          className="px-2.5 py-1 text-xs rounded-lg bg-[#FAF9F6] hover:bg-[#F1F5F2] hover:text-[#4A7856] border border-[#ECEBE8] text-[#57534d] transition-colors"
+                          className="px-3 py-1.5 min-h-[36px] text-xs sm:text-sm font-medium rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] active:bg-[#E8F1EC] hover:text-[#4A7856] border border-[#ECEBE8] text-[#57534d] transition-colors touch-manipulation cursor-pointer flex items-center"
                         >
                           {dish}
                         </button>
