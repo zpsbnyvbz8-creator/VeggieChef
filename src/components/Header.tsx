@@ -77,7 +77,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
   const useTopTabs = props.useTopTabs ?? false;
 
   return (
-    <header className="bg-white/85 backdrop-blur-md border-b border-[#E3DFD5] shadow-2xs">
+    <header className="bg-card/85 backdrop-blur-md border-b border-[#E3DFD5] shadow-2xs">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-18 gap-1.5 sm:gap-4">
           {/* Brand Logo & Name */}
@@ -86,17 +86,17 @@ export const Header: React.FC<HeaderProps> = (props) => {
             onClick={() => handleNavigate('/')}
             className="flex items-center gap-2 sm:gap-3 cursor-pointer group select-none shrink-0"
           >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#4A7856] flex items-center justify-center text-white font-bold shadow-xs group-hover:scale-105 transition-transform shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-accent flex items-center justify-center text-on-accent font-bold shadow-xs group-hover:scale-105 transition-transform shrink-0">
               <Leaf className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xl font-bold tracking-tight text-[#2D3E40]">VeggieChef</span>
-                <span className="hidden sm:inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full bg-[#F1F5F2]/80 text-[#4A7856] border border-[#ECEBE8]/70">
+                <span className="text-xl font-bold tracking-tight text-text-main">VeggieChef</span>
+                <span className="hidden sm:inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full bg-accent-tint/80 text-accent border border-border/70">
                   Vegan & vegetarisch
                 </span>
               </div>
-              <p className="text-xs text-[#686E6A] hidden md:block">Smarte vegetarische Küche & Essensplanung</p>
+              <p className="text-xs text-text-muted hidden md:block">Smarte vegetarische Küche & Essensplanung</p>
             </div>
           </div>
 
@@ -105,20 +105,20 @@ export const Header: React.FC<HeaderProps> = (props) => {
             <div className="flex-1" aria-hidden="true" />
           ) : (
           <div className="flex items-center relative flex-1 min-w-0 max-w-[150px] xs:max-w-[200px] sm:max-w-xs md:max-w-sm mx-1 sm:mx-4 md:mx-6">
-            <Search className="w-4 h-4 text-[#686E6A] absolute left-2.5 sm:left-3 pointer-events-none" />
+            <Search className="w-4 h-4 text-text-muted absolute left-2.5 sm:left-3 pointer-events-none" />
             <input
               id="header-search-input"
               type="text"
               placeholder="Suchen..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-8 sm:pl-9 pr-9 text-[16px] bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-full text-[#2D3E40] placeholder-[#686E6A] focus:outline-hidden focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] shadow-2xs transition-all truncate"
+              className="w-full h-10 pl-8 sm:pl-9 pr-9 text-[16px] bg-card border border-border hover:border-accent/50 rounded-full text-text-main placeholder-[#686E6A] focus:outline-hidden focus:border-accent focus:ring-1 focus:ring-accent shadow-2xs transition-all truncate"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 min-w-[32px] min-h-[32px] rounded-full flex items-center justify-center text-xs text-[#686E6A] hover:text-[#2D3E40] hover:bg-black/5 active:bg-black/10 cursor-pointer touch-manipulation active:scale-95"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 min-w-[32px] min-h-[32px] rounded-full flex items-center justify-center text-xs text-text-muted hover:text-text-main hover:bg-black/5 active:bg-black/10 cursor-pointer touch-manipulation active:scale-95"
                 title="Suche zurücksetzen"
                 aria-label="Suche zurücksetzen"
               >
@@ -138,8 +138,8 @@ export const Header: React.FC<HeaderProps> = (props) => {
                 onClick={onOpenSyncModal}
                 className={`flex items-center gap-1 sm:gap-1.5 min-h-[44px] px-3 rounded-xl text-xs font-semibold transition-all border cursor-pointer touch-manipulation active:scale-95 ${
                   syncConfig?.mode === 'family' && syncConfig?.groupId
-                    ? 'bg-[#F1F5F2] text-[#4A7856] border-[#4A7856]/40 shadow-2xs hover:bg-[#e4ede6]'
-                    : 'bg-white text-[#2D3E40] border-[#ECEBE8] hover:bg-[#FAF9F6] hover:text-[#2D3E40]'
+                    ? 'bg-accent-tint text-accent border-accent/40 shadow-2xs hover:bg-[#e4ede6]'
+                    : 'bg-card text-text-main border-border hover:bg-surface hover:text-text-main'
                 }`}
                 title={
                   syncConfig?.mode === 'family' && syncConfig?.groupId
@@ -149,15 +149,15 @@ export const Header: React.FC<HeaderProps> = (props) => {
               >
                 {syncConfig?.mode === 'family' && syncConfig?.groupId ? (
                   <>
-                    <span className="w-2 h-2 rounded-full bg-[#4A7856] animate-pulse shrink-0" />
-                    <Users className="w-5 h-5 text-[#4A7856]" />
+                    <span className="w-2 h-2 rounded-full bg-accent animate-pulse shrink-0" />
+                    <Users className="w-5 h-5 text-accent" />
                     <span className="hidden sm:inline font-medium truncate max-w-[80px]">
                       {syncConfig.groupName || syncConfig.groupId}
                     </span>
                   </>
                 ) : (
                   <>
-                    <Cloud className="w-5 h-5 text-[#686E6A]" />
+                    <Cloud className="w-5 h-5 text-text-muted" />
                     <span className="hidden sm:inline font-normal">Sync</span>
                   </>
                 )}
@@ -169,8 +169,8 @@ export const Header: React.FC<HeaderProps> = (props) => {
               id="nav-tab-stats-icon"
               type="button"
               onClick={() => handleNavigate('/stats')}
-              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-[#686E6A] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
-                activeTab === 'stats' ? 'bg-[#F1F5F2] text-[#4A7856] border-[#4A7856]/30' : 'bg-white sm:bg-transparent border-[#ECEBE8] sm:border-transparent'
+              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-text-muted hover:bg-accent-tint hover:text-accent transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
+                activeTab === 'stats' ? 'bg-accent-tint text-accent border-accent/30' : 'bg-card sm:bg-transparent border-border sm:border-transparent'
               }`}
               title="Statistiken"
               aria-label="Statistiken"
@@ -183,15 +183,15 @@ export const Header: React.FC<HeaderProps> = (props) => {
               id="nav-tab-favorites"
               type="button"
               onClick={() => handleNavigate('/favorites')}
-              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-[#686E6A] hover:bg-[#F1F5F2] hover:text-[#D35400] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
-                activeTab === 'favorites' ? 'bg-[#FDF6F0] text-[#D35400] border-[#F5EADF]' : 'bg-white sm:bg-transparent border-[#ECEBE8] sm:border-transparent'
+              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-text-muted hover:bg-accent-tint hover:text-[#D35400] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
+                activeTab === 'favorites' ? 'bg-[#FDF6F0] text-[#D35400] border-[#F5EADF]' : 'bg-card sm:bg-transparent border-border sm:border-transparent'
               }`}
               title="Gespeicherte Favoriten"
               aria-label={favoritesCount > 0 ? `Favoriten, ${favoritesCount} gespeichert` : 'Favoriten'}
             >
               <Heart className={`w-5 h-5 ${favoritesCount > 0 && activeTab === 'favorites' ? 'fill-[#D35400] text-[#D35400]' : ''}`} aria-hidden="true" />
               {favoritesCount > 0 && (
-                <span className="absolute top-0 right-0 min-w-[20px] h-[20px] px-1 bg-[#D35400] text-white rounded-full text-[11px] font-bold flex items-center justify-center leading-none">
+                <span className="absolute top-0 right-0 min-w-[20px] h-[20px] px-1 bg-[#D35400] text-on-accent rounded-full text-[11px] font-bold flex items-center justify-center leading-none">
                   {favoritesCount > 99 ? '99+' : favoritesCount}
                 </span>
               )}
@@ -202,15 +202,15 @@ export const Header: React.FC<HeaderProps> = (props) => {
               id="nav-tab-shopping-badge"
               type="button"
               onClick={() => handleNavigate('/shopping')}
-              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-[#686E6A] hover:bg-[#F1F5F2] hover:text-[#4A7856] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
-                activeTab === 'shopping' ? 'bg-[#F1F5F2] text-[#4A7856] border-[#4A7856]/30' : 'bg-white sm:bg-transparent border-[#ECEBE8] sm:border-transparent'
+              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-text-muted hover:bg-accent-tint hover:text-accent transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
+                activeTab === 'shopping' ? 'bg-accent-tint text-accent border-accent/30' : 'bg-card sm:bg-transparent border-border sm:border-transparent'
               }`}
               title="Liste"
               aria-label={shoppingCount > 0 ? `Einkaufsliste, ${shoppingCount} offen` : 'Einkaufsliste'}
             >
               <ShoppingCart className="w-5 h-5" aria-hidden="true" />
               {shoppingCount > 0 && (
-                <span className="absolute top-0 right-0 min-w-[20px] h-[20px] px-1 bg-[#4A7856] text-white rounded-full text-[11px] font-bold flex items-center justify-center leading-none">
+                <span className="absolute top-0 right-0 min-w-[20px] h-[20px] px-1 bg-accent text-on-accent rounded-full text-[11px] font-bold flex items-center justify-center leading-none">
                   {shoppingCount > 99 ? '99+' : shoppingCount}
                 </span>
               )}
@@ -221,7 +221,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
         {/* Navigation Tabs Bar (mobile uses BottomNav unless the top-tabs fallback is enabled) */}
         <nav
           aria-label="Hauptbereiche"
-          className={`${useTopTabs ? 'flex' : 'hidden md:flex'} items-center space-x-1.5 sm:space-x-2 py-2 sm:py-2 overflow-x-auto scrollbar-none border-t border-[#ECEBE8] -mx-1 px-1`}
+          className={`${useTopTabs ? 'flex' : 'hidden md:flex'} items-center space-x-1.5 sm:space-x-2 py-2 sm:py-2 overflow-x-auto scrollbar-none border-t border-border -mx-1 px-1`}
         >
           <button
             id="nav-tab-recipes"
@@ -229,8 +229,8 @@ export const Header: React.FC<HeaderProps> = (props) => {
             onClick={() => handleNavigate('/')}
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm sm:text-[15px] font-semibold whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'recipes'
-                ? 'bg-[#F1F5F2] text-[#4A7856] shadow-2xs'
-                : 'text-[#686E6A] hover:bg-[#FAF9F6] hover:text-[#2D3E40]'
+                ? 'bg-accent-tint text-accent shadow-2xs'
+                : 'text-text-muted hover:bg-surface hover:text-text-main'
             }`}
           >
             <Utensils className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
@@ -243,8 +243,8 @@ export const Header: React.FC<HeaderProps> = (props) => {
             onClick={() => handleNavigate('/fridge')}
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm sm:text-[15px] font-semibold whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'fridge'
-                ? 'bg-[#F1F5F2] text-[#4A7856] shadow-2xs'
-                : 'text-[#686E6A] hover:bg-[#FAF9F6] hover:text-[#2D3E40]'
+                ? 'bg-accent-tint text-accent shadow-2xs'
+                : 'text-text-muted hover:bg-surface hover:text-text-main'
             }`}
           >
             <Sparkles className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
@@ -257,8 +257,8 @@ export const Header: React.FC<HeaderProps> = (props) => {
             onClick={() => handleNavigate('/planner')}
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm sm:text-[15px] font-semibold whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'planner'
-                ? 'bg-[#F1F5F2] text-[#4A7856] shadow-2xs'
-                : 'text-[#686E6A] hover:bg-[#FAF9F6] hover:text-[#2D3E40]'
+                ? 'bg-accent-tint text-accent shadow-2xs'
+                : 'text-text-muted hover:bg-surface hover:text-text-main'
             }`}
           >
             <Calendar className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
@@ -271,8 +271,8 @@ export const Header: React.FC<HeaderProps> = (props) => {
             onClick={() => handleNavigate('/stats')}
             className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm sm:text-[15px] font-semibold whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
               activeTab === 'stats'
-                ? 'bg-[#F1F5F2] text-[#4A7856] shadow-2xs'
-                : 'text-[#686E6A] hover:bg-[#FAF9F6] hover:text-[#2D3E40]'
+                ? 'bg-accent-tint text-accent shadow-2xs'
+                : 'text-text-muted hover:bg-surface hover:text-text-main'
             }`}
           >
             <BarChart3 className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />

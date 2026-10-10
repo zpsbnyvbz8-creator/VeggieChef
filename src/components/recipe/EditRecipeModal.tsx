@@ -157,21 +157,21 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-6 border border-[#ECEBE8] shadow-2xl animate-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col"
+        className="bg-card rounded-3xl max-w-2xl w-full p-6 space-y-6 border border-border shadow-2xl animate-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#ECEBE8] shrink-0">
+        <div className="flex items-center justify-between pb-3 border-b border-border shrink-0">
           <div>
-            <h3 id="edit-recipe-title" className="text-xl font-bold text-[#2D3E40]">
+            <h3 id="edit-recipe-title" className="text-xl font-bold text-text-main">
               Rezept bearbeiten
             </h3>
-            <p className="text-xs text-[#686E6A]">Passe Zutaten, Zubereitung oder Metadaten an</p>
+            <p className="text-xs text-text-muted">Passe Zutaten, Zubereitung oder Metadaten an</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-10 h-10 rounded-full hover:bg-[#FAF9F6] text-[#57534d] hover:text-[#57534d] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-10 h-10 rounded-full hover:bg-surface text-[#57534d] hover:text-[#57534d] flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Schließen"
           >
             <X className="w-5 h-5" />
@@ -183,37 +183,37 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
           {/* General info */}
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-bold text-[#2D3E40] mb-1">
+              <label className="block text-xs font-bold text-text-main mb-1">
                 Titel des Rezepts
               </label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full h-11 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] font-semibold text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden"
+                className="w-full h-11 px-3 bg-surface border border-border rounded-xl text-[16px] font-semibold text-text-main focus:border-accent focus:outline-hidden"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#2D3E40] mb-1">
+              <label className="block text-xs font-bold text-text-main mb-1">
                 Untertitel / Kurzbeschreibung
               </label>
               <input
                 type="text"
                 value={subtitle}
                 onChange={(e) => setSubtitle(e.target.value)}
-                className="w-full h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden"
+                className="w-full h-10 px-3 bg-surface border border-border rounded-xl text-[16px] text-text-main focus:border-accent focus:outline-hidden"
               />
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-[#2D3E40] mb-1">Kategorie</label>
+                <label className="block text-[11px] font-bold text-text-main mb-1">Kategorie</label>
                 <div className="relative">
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as RecipeCategory)}
-                    className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-8 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] font-medium text-[#2D3E40] cursor-pointer focus:outline-none focus:border-[#4A7856]"
+                    className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-8 bg-surface border border-border rounded-xl text-[16px] font-medium text-text-main cursor-pointer focus:outline-none focus:border-accent"
                   >
                     {CATEGORIES.map((cat) => (
                       <option key={cat} value={cat}>
@@ -221,46 +221,46 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-4 h-4 text-text-muted absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#2D3E40] mb-1">Schwierigkeit</label>
+                <label className="block text-[11px] font-bold text-text-main mb-1">Schwierigkeit</label>
                 <div className="relative">
                   <select
                     value={difficulty}
                     onChange={(e) => setDifficulty(e.target.value as any)}
-                    className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-8 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] font-medium text-[#2D3E40] cursor-pointer focus:outline-none focus:border-[#4A7856]"
+                    className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-8 bg-surface border border-border rounded-xl text-[16px] font-medium text-text-main cursor-pointer focus:outline-none focus:border-accent"
                   >
                     <option value="Einfach">Einfach</option>
                     <option value="Mittel">Mittel</option>
                     <option value="Anspruchsvoll">Anspruchsvoll</option>
                   </select>
-                  <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-4 h-4 text-text-muted absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#2D3E40] mb-1">Portionen</label>
+                <label className="block text-[11px] font-bold text-text-main mb-1">Portionen</label>
                 <input
                   type="number"
                   min="1"
                   max="24"
                   value={servings}
                   onChange={(e) => setServings(parseInt(e.target.value) || 1)}
-                  className="w-full h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] text-[#2D3E40]"
+                  className="w-full h-10 px-3 bg-surface border border-border rounded-xl text-[16px] text-text-main"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#2D3E40] mb-1">Kochzeit (Min.)</label>
+                <label className="block text-[11px] font-bold text-text-main mb-1">Kochzeit (Min.)</label>
                 <input
                   type="number"
                   min="5"
                   value={cookTime}
                   onChange={(e) => setCookTime(parseInt(e.target.value) || 0)}
-                  className="w-full h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] text-[#2D3E40]"
+                  className="w-full h-10 px-3 bg-surface border border-border rounded-xl text-[16px] text-text-main"
                 />
               </div>
             </div>
@@ -271,7 +271,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                   type="checkbox"
                   checked={isVegan}
                   onChange={(e) => setIsVegan(e.target.checked)}
-                  className="w-4 h-4 rounded text-[#4A7856] focus:ring-[#4A7856]"
+                  className="w-4 h-4 rounded text-accent focus:ring-accent"
                 />
                 <span>🌱 Rezept ist 100% vegan</span>
               </label>
@@ -279,10 +279,10 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
           </div>
 
           {/* Photos & Cover Management Section */}
-          <div className="space-y-2.5 pt-3 border-t border-[#ECEBE8]">
+          <div className="space-y-2.5 pt-3 border-t border-border">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-[#57534d] uppercase tracking-wider flex items-center gap-1.5">
-                <Camera className="w-3.5 h-3.5 text-[#4A7856]" />
+                <Camera className="w-3.5 h-3.5 text-accent" />
                 <span>Fotos & Titelbild ({(() => {
                   const list: string[] = [];
                   if (activeCoverImage && activeCoverImage !== 'veggiechef-placeholder') list.push(activeCoverImage);
@@ -291,7 +291,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                   return list.length;
                 })()})</span>
               </label>
-              <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#4A7856] hover:text-[#3D6447] cursor-pointer">
+              <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent-hover cursor-pointer">
                 <Plus className="w-3.5 h-3.5" />
                 <span>Neues Foto hinzufügen</span>
                 <input
@@ -335,7 +335,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
 
               if (list.length === 0) {
                 return (
-                  <div className="p-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-xs text-[#686E6A] italic">
+                  <div className="p-3 bg-surface border border-border rounded-xl text-xs text-text-muted italic">
                     Keine Fotos vorhanden. Lade oben ein Foto hoch, um ein Titelbild festzulegen.
                   </div>
                 );
@@ -349,7 +349,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                       <div
                         key={idx}
                         className={`relative rounded-xl overflow-hidden border-2 aspect-4/3 group bg-stone-100 ${
-                          isCover ? 'border-[#4A7856] ring-2 ring-[#4A7856]/20' : 'border-[#ECEBE8]'
+                          isCover ? 'border-accent ring-2 ring-accent/20' : 'border-border'
                         }`}
                       >
                         <img
@@ -359,7 +359,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                           className="w-full h-full object-cover"
                         />
                         {isCover && (
-                          <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full bg-[#4A7856] text-white text-[10px] font-bold shadow-xs">
+                          <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full bg-accent text-on-accent text-[10px] font-bold shadow-xs">
                             Titelbild
                           </span>
                         )}
@@ -368,7 +368,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                             <button
                               type="button"
                               onClick={() => setActiveCoverImage(imgUrl)}
-                              className="px-2 py-1 rounded-lg bg-white text-[#4A7856] text-xs font-semibold shadow-xs hover:bg-[#F1F5F2] cursor-pointer"
+                              className="px-2 py-1 rounded-lg bg-card text-accent text-xs font-semibold shadow-xs hover:bg-accent-tint cursor-pointer"
                               title="Als Titelbild wählen"
                             >
                               Titelbild
@@ -389,7 +389,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                                 setActiveCoverImage(newUserImages[0] || (isDeletingBase ? undefined : image) || undefined);
                               }
                             }}
-                            className="p-1.5 rounded-lg bg-rose-600 text-white hover:bg-rose-700 shadow-xs cursor-pointer"
+                            className="p-1.5 rounded-lg bg-rose-600 text-on-accent hover:bg-rose-700 shadow-xs cursor-pointer"
                             title="Foto löschen"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -404,7 +404,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
           </div>
 
           {/* Ingredients list editor */}
-          <div className="space-y-2 pt-3 border-t border-[#ECEBE8]">
+          <div className="space-y-2 pt-3 border-t border-border">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-[#57534d] uppercase tracking-wider">
                 Zutaten ({ingredients.length})
@@ -412,7 +412,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
               <button
                 type="button"
                 onClick={handleAddIngredient}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-[#4A7856] hover:text-[#3D6447] cursor-pointer"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-hover cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Zutat hinzufügen</span>
@@ -427,26 +427,26 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                     value={ing.name}
                     placeholder="Zutat (z.B. Kichererbsen)"
                     onChange={(e) => handleUpdateIngredient(idx, 'name', e.target.value)}
-                    className="flex-2 h-9 px-2.5 bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg text-[16px] text-[#2D3E40]"
+                    className="flex-2 h-9 px-2.5 bg-surface border border-border rounded-lg text-[16px] text-text-main"
                   />
                   <input
                     type="text"
                     value={ing.amount}
                     placeholder="Menge"
                     onChange={(e) => handleUpdateIngredient(idx, 'amount', e.target.value)}
-                    className="w-16 h-9 px-2 bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg text-[16px] text-[#57534d] text-center"
+                    className="w-16 h-9 px-2 bg-surface border border-border rounded-lg text-[16px] text-[#57534d] text-center"
                   />
                   <input
                     type="text"
                     value={ing.unit}
                     placeholder="Einheit"
                     onChange={(e) => handleUpdateIngredient(idx, 'unit', e.target.value)}
-                    className="w-20 h-9 px-2 bg-[#FAF9F6] border border-[#ECEBE8] rounded-lg text-[16px] text-[#2D3E40]"
+                    className="w-20 h-9 px-2 bg-surface border border-border rounded-lg text-[16px] text-text-main"
                   />
                   <button
                     type="button"
                     onClick={() => handleRemoveIngredient(idx)}
-                    className="w-9 h-9 flex items-center justify-center text-[#686e6a] hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                    className="w-9 h-9 flex items-center justify-center text-text-muted hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -456,7 +456,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
           </div>
 
           {/* Steps editor */}
-          <div className="space-y-2 pt-3 border-t border-[#ECEBE8]">
+          <div className="space-y-2 pt-3 border-t border-border">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-[#57534d] uppercase tracking-wider">
                 Zubereitungsschritte ({steps.length})
@@ -464,7 +464,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
               <button
                 type="button"
                 onClick={handleAddStep}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-[#4A7856] hover:text-[#3D6447] cursor-pointer"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-hover cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Schritt hinzufügen</span>
@@ -474,7 +474,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
             <div className="space-y-2">
               {steps.map((step, idx) => (
                 <div key={idx} className="flex items-start gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#FAF9F6] border border-[#ECEBE8] flex items-center justify-center text-xs font-bold text-[#686E6A] shrink-0 mt-1.5">
+                  <span className="w-6 h-6 rounded-full bg-surface border border-border flex items-center justify-center text-xs font-bold text-text-muted shrink-0 mt-1.5">
                     {idx + 1}
                   </span>
                   <textarea
@@ -482,12 +482,12 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
                     value={step.text}
                     placeholder={`Schritt ${idx + 1} beschreiben...`}
                     onChange={(e) => handleUpdateStep(idx, e.target.value)}
-                    className="flex-1 p-2 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] text-[#2D3E40] focus:border-[#4A7856]"
+                    className="flex-1 p-2 bg-surface border border-border rounded-xl text-[16px] text-text-main focus:border-accent"
                   />
                   <button
                     type="button"
                     onClick={() => handleRemoveStep(idx)}
-                    className="w-8 h-8 flex items-center justify-center text-[#686e6a] hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer mt-1"
+                    className="w-8 h-8 flex items-center justify-center text-text-muted hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer mt-1"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -497,8 +497,8 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
           </div>
 
           {/* Chef Tip */}
-          <div className="space-y-1 pt-3 border-t border-[#ECEBE8]">
-            <label className="block text-xs font-bold text-[#2D3E40] flex items-center gap-1.5">
+          <div className="space-y-1 pt-3 border-t border-border">
+            <label className="block text-xs font-bold text-text-main flex items-center gap-1.5">
               <ChefHat className="w-3.5 h-3.5 text-[#D35400]" />
               <span>Chef-Tipp (optional)</span>
             </label>
@@ -507,24 +507,24 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
               value={chefTip}
               placeholder="Besonderer Küchen-Kniff oder Serviervorschlag..."
               onChange={(e) => setChefTip(e.target.value)}
-              className="w-full p-2.5 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] text-[#2D3E40] focus:border-[#4A7856]"
+              className="w-full p-2.5 bg-surface border border-border rounded-xl text-[16px] text-text-main focus:border-accent"
             />
           </div>
         </div>
 
         {/* Footer actions */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#ECEBE8] shrink-0">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-border shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-[#ECEBE8] text-xs font-semibold text-[#57534d] hover:bg-[#FAF9F6] cursor-pointer"
+            className="px-4 py-2.5 rounded-xl border border-border text-xs font-semibold text-[#57534d] hover:bg-surface cursor-pointer"
           >
             Abbrechen
           </button>
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs font-bold shadow-xs cursor-pointer active:scale-95 transition-all"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-xs font-bold shadow-xs cursor-pointer active:scale-95 transition-all"
           >
             <Save className="w-4 h-4" />
             <span>Änderungen speichern</span>

@@ -45,13 +45,13 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
   return (
     <article
       id={`recipe-card-${recipe.id}`}
-      className={`group relative flex flex-col w-full h-full bg-white rounded-2xl border overflow-hidden transition-all duration-300 ${
+      className={`group relative flex flex-col w-full h-full bg-card rounded-2xl border overflow-hidden transition-all duration-300 ${
         isDisliked
-          ? 'border-[#ECEBE8] opacity-70 hover:opacity-100'
-          : 'border-[#ECEBE8] shadow-xs hover:border-[#4A7856]/40 hover:shadow-md'
+          ? 'border-border opacity-70 hover:opacity-100'
+          : 'border-border shadow-xs hover:border-accent/40 hover:shadow-md'
       } ${className}`}
     >
-      <div className={`relative overflow-hidden bg-[#FAF9F6] ${isCompact ? 'aspect-[3/2]' : 'aspect-[4/3]'}`}>
+      <div className={`relative overflow-hidden bg-surface ${isCompact ? 'aspect-[3/2]' : 'aspect-[4/3]'}`}>
         <RecipeImage
           recipe={recipe}
           imgClassName="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -70,9 +70,9 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
           aria-label={isFavorite ? `${recipe.title} aus Favoriten entfernen` : `${recipe.title} zu Favoriten hinzufügen`}
           className="absolute top-2 right-2 z-10 w-12 h-12 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90"
         >
-          <span className="w-10 h-10 rounded-full bg-black/35 hover:bg-black/55 backdrop-blur-md border border-white/10 flex items-center justify-center transition-colors">
+          <span className="w-10 h-10 rounded-full bg-black/35 hover:bg-black/55 backdrop-blur-md border border-on-accent/10 flex items-center justify-center transition-colors">
             <Heart
-              className={`w-[22px] h-[22px] transition-colors ${isFavorite ? 'fill-[#E74C3C] text-[#E74C3C]' : 'text-white'}`}
+              className={`w-[22px] h-[22px] transition-colors ${isFavorite ? 'fill-[#E74C3C] text-[#E74C3C]' : 'text-on-accent'}`}
               aria-hidden="true"
             />
           </span>
@@ -81,21 +81,21 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
 
       <div className={`flex flex-col flex-1 ${isCompact ? 'p-3' : 'p-3.5 sm:p-4'}`}>
         <h3
-          className={`font-bold text-[#2D3E40] leading-snug line-clamp-2 text-card-title group-hover:text-[#4A7856] transition-colors`}
+          className={`font-bold text-text-main leading-snug line-clamp-2 text-card-title group-hover:text-accent transition-colors`}
         >
           <Link
             to={`/recipes/${recipe.id}`}
-            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-[#4A7856] focus-visible:outline-offset-[-2px] rounded-sm"
+            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[-2px] rounded-sm"
           >
             {recipe.title}
           </Link>
         </h3>
 
         {/* Infozeile: bricht bei wenig Platz in 2 Zeilen um, Mindesthöhe hält alle Karten gleich hoch */}
-        <div className="mt-auto pt-2.5 flex flex-wrap content-start items-start gap-x-2.5 gap-y-1 text-card-info font-medium leading-snug min-h-[2.65rem] text-[#686E6A]">
+        <div className="mt-auto pt-2.5 flex flex-wrap content-start items-start gap-x-2.5 gap-y-1 text-card-info font-medium leading-snug min-h-[2.65rem] text-text-muted">
           {diet === 'vegetarisch' && <span>Vegetarisch</span>}
           <span className="inline-flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-[#4A7856]" aria-hidden="true" />
+            <Clock className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
             {recipe.totalTimeMinutes} Min
           </span>
           {ratingText && (
@@ -106,7 +106,7 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
           )}
           {showDifficulty && (
             <span className="inline-flex items-center gap-1">
-              <ChefHat className="w-3.5 h-3.5 text-[#686E6A]" aria-hidden="true" />
+              <ChefHat className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
               {DIFFICULTY_LABEL[recipe.difficulty]}
             </span>
           )}

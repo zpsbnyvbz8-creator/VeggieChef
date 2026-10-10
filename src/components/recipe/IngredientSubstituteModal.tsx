@@ -186,35 +186,35 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 border border-[#ECEBE8] shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+        className="bg-card rounded-3xl max-w-lg w-full p-6 space-y-5 border border-border shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#ECEBE8]">
+        <div className="flex items-center justify-between pb-3 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#EBF5EE] text-[#4A7856] flex items-center justify-center font-bold shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-[#EBF5EE] text-accent flex items-center justify-center font-bold shadow-2xs">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 id="substitute-modal-title" className="text-lg font-bold text-[#2D3E40]">
+                <h3 id="substitute-modal-title" className="text-lg font-bold text-text-main">
                   Zutat tauschen
                 </h3>
                 {isAiPowered && (
-                  <span className="px-2 py-0.5 rounded-full bg-[#EBF5EE] text-[#4A7856] text-[10px] font-bold tracking-wide">
+                  <span className="px-2 py-0.5 rounded-full bg-[#EBF5EE] text-accent text-[10px] font-bold tracking-wide">
                     KI-Aktiv
                   </span>
                 )}
               </div>
-              <p className="text-xs text-[#686E6A]">
-                Alternative für: <strong className="text-[#2D3E40]">{ingredient.name}</strong>
+              <p className="text-xs text-text-muted">
+                Alternative für: <strong className="text-text-main">{ingredient.name}</strong>
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-10 h-10 rounded-full hover:bg-[#FAF9F6] text-[#57534d] hover:text-[#57534d] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-10 h-10 rounded-full hover:bg-surface text-[#57534d] hover:text-[#57534d] flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Schließen"
           >
             <X className="w-5 h-5" />
@@ -223,7 +223,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
 
         {/* AI Vorräte-Abfrage & Custom Wish */}
         <form onSubmit={handleCustomWishSubmit} className="space-y-2">
-          <label className="block text-xs font-semibold text-[#2D3E40]">
+          <label className="block text-xs font-semibold text-text-main">
             Bestimmte Vorräte vorhanden oder spezielle Wünsche?
           </label>
           <div className="flex items-center gap-2">
@@ -232,12 +232,12 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
               placeholder="z.B. habe nur Hafermilch da / nussfrei / proteinreich..."
               value={userWish}
               onChange={(e) => setUserWish(e.target.value)}
-              className="flex-1 h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden"
+              className="flex-1 h-10 px-3 bg-surface border border-border rounded-xl text-[16px] text-text-main focus:border-accent focus:outline-hidden"
             />
             <button
               type="submit"
               disabled={isLoading || !userWish.trim()}
-              className="h-10 min-h-[40px] px-3.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white text-sm font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5"
+              className="h-10 min-h-[40px] px-3.5 rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-40 text-on-accent text-sm font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5"
             >
               {isLoading ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -251,15 +251,15 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
 
         {/* Loading State */}
         {isLoading && (
-          <div className="p-6 rounded-2xl bg-[#FAF9F6] border border-[#ECEBE8] flex flex-col items-center justify-center gap-3 text-center animate-pulse">
-            <div className="w-10 h-10 rounded-full bg-[#EBF5EE] text-[#4A7856] flex items-center justify-center">
-              <RefreshCw className="w-5 h-5 animate-spin text-[#4A7856]" />
+          <div className="p-6 rounded-2xl bg-surface border border-border flex flex-col items-center justify-center gap-3 text-center animate-pulse">
+            <div className="w-10 h-10 rounded-full bg-[#EBF5EE] text-accent flex items-center justify-center">
+              <RefreshCw className="w-5 h-5 animate-spin text-accent" />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#2D3E40]">
+              <p className="text-sm font-bold text-text-main">
                 KI-Küchenchef ermittelt Alternativen...
               </p>
-              <p className="text-xs text-[#686E6A] mt-0.5">
+              <p className="text-xs text-text-muted mt-0.5">
                 Passend abgestimmt auf Textur, Geschmack und Nährwerte in &bdquo;{recipeTitle}&ldquo;
               </p>
             </div>
@@ -286,14 +286,14 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
         {/* List of recommended substitutes */}
         {!isLoading && aiSubstitutes.length > 0 && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between text-xs text-[#686E6A]">
-              <span className="font-semibold text-[#2D3E40]">
+            <div className="flex items-center justify-between text-xs text-text-muted">
+              <span className="font-semibold text-text-main">
                 {isAiPowered ? 'Empfohlene KI-Tauschoptionen:' : 'Kulinarische Alternativen:'}
               </span>
               <button
                 type="button"
                 onClick={() => fetchSubstitutes(userWish)}
-                className="hover:text-[#4A7856] flex items-center gap-1 cursor-pointer transition-colors"
+                className="hover:text-accent flex items-center gap-1 cursor-pointer transition-colors"
                 title="Neu laden"
               >
                 <RefreshCw className="w-3 h-3" />
@@ -305,22 +305,22 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
               {aiSubstitutes.map((opt, idx) => (
                 <div
                   key={idx}
-                  className="p-3.5 rounded-2xl bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/40 transition-all flex flex-col justify-between gap-2.5"
+                  className="p-3.5 rounded-2xl bg-surface border border-border hover:border-accent/40 transition-all flex flex-col justify-between gap-2.5"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1 flex-1">
-                      <div className="text-sm font-bold text-[#2D3E40] flex items-center gap-2">
+                      <div className="text-sm font-bold text-text-main flex items-center gap-2">
                         <span>{opt.name}</span>
                         {opt.isVegan && (
-                          <span className="text-[10px] bg-[#EBF5EE] text-[#4A7856] px-1.5 py-0.5 rounded-md font-semibold">
+                          <span className="text-[10px] bg-[#EBF5EE] text-accent px-1.5 py-0.5 rounded-md font-semibold">
                             Pflanzlich
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-[#686E6A] leading-relaxed">
+                      <div className="text-xs text-text-muted leading-relaxed">
                         {opt.reason}
                       </div>
-                      <div className="text-[11px] text-[#4A7856] font-semibold flex items-center gap-1">
+                      <div className="text-[11px] text-accent font-semibold flex items-center gap-1">
                         <span>Verhältnis: {opt.ratio}</span>
                       </div>
                       {opt.tip && (
@@ -336,7 +336,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
                         onApplySubstitute(ingredient.name, opt.name);
                         onClose();
                       }}
-                      className="px-4 py-2 min-h-[40px] rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#4A7856] hover:text-white hover:border-[#4A7856] text-sm font-bold text-[#57534d] shadow-2xs transition-all shrink-0 cursor-pointer active:scale-95"
+                      className="px-4 py-2 min-h-[40px] rounded-xl bg-card border border-border hover:bg-accent hover:text-on-accent hover:border-accent text-sm font-bold text-[#57534d] shadow-2xs transition-all shrink-0 cursor-pointer active:scale-95"
                     >
                       Übernehmen
                     </button>
@@ -350,17 +350,17 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
         {/* AI Chef's Culinary Advice Note */}
         {!isLoading && aiAdvice && (
           <div className="p-3.5 rounded-2xl bg-[#F0F7F2] border border-[#D5E8DA] flex items-start gap-2.5">
-            <ChefHat className="w-4 h-4 text-[#4A7856] shrink-0 mt-0.5" />
+            <ChefHat className="w-4 h-4 text-accent shrink-0 mt-0.5" />
             <div className="text-xs text-[#57534d] leading-relaxed">
-              <strong className="text-[#4A7856] block mb-0.5">Tipp vom Chefkoch:</strong>
+              <strong className="text-accent block mb-0.5">Tipp vom Chefkoch:</strong>
               {aiAdvice}
             </div>
           </div>
         )}
 
         {/* Custom manual substitution option */}
-        <div className="pt-2 border-t border-[#ECEBE8] space-y-2">
-          <label className="block text-xs font-semibold text-[#2D3E40]">
+        <div className="pt-2 border-t border-border space-y-2">
+          <label className="block text-xs font-semibold text-text-main">
             Oder eigene Alternative manuell eintragen:
           </label>
           <div className="flex items-center gap-2">
@@ -369,7 +369,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
               placeholder="z.B. Cashewmus, Räuchertofu, Kokosjoghurt..."
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
-              className="flex-1 h-10 px-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] text-[#2D3E40] focus:border-[#4A7856] focus:outline-hidden"
+              className="flex-1 h-10 px-3 bg-surface border border-border rounded-xl text-[16px] text-text-main focus:border-accent focus:outline-hidden"
             />
             <button
               type="button"
@@ -380,7 +380,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
                   onClose();
                 }
               }}
-              className="h-10 min-h-[40px] px-4 rounded-xl bg-[#2D3E40] hover:bg-[#1F2C2D] disabled:opacity-40 text-white text-sm font-bold transition-all cursor-pointer shrink-0"
+              className="h-10 min-h-[40px] px-4 rounded-xl bg-text-main hover:bg-[#1F2C2D] disabled:opacity-40 text-on-accent text-sm font-bold transition-all cursor-pointer shrink-0"
             >
               Setzen
             </button>

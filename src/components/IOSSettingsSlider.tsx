@@ -184,7 +184,7 @@ export const IOSSettingsSlider: React.FC<IOSSettingsSliderProps> = ({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
-        className="relative flex-1 flex items-center h-11 min-h-[44px] cursor-pointer touch-none outline-none focus-visible:ring-2 focus-visible:ring-[#4A7856]/40 rounded-full"
+        className="relative flex-1 flex items-center h-11 min-h-[44px] cursor-pointer touch-none outline-none focus-visible:ring-2 focus-visible:ring-accent/40 rounded-full"
       >
         {/* 4px Horizontal Track Line */}
         <div

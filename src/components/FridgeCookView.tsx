@@ -387,34 +387,34 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   return (
     <div className="space-y-5 sm:space-y-8 animate-in fade-in duration-300">
       {/* Intro Banner - clean neutral card matching app theme */}
-      <div className="bg-white rounded-2xl p-4 sm:p-6 text-[#2D3E40] shadow-xs border border-[#ECEBE8]">
+      <div className="bg-card rounded-2xl p-4 sm:p-6 text-text-main shadow-xs border border-border">
         <div className="space-y-1.5 max-w-2xl">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5 text-[#4A7856]" />
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent-tint text-accent border border-border text-xs font-semibold">
+            <Sparkles className="w-3.5 h-3.5 text-accent" />
             Vorratskammer &amp; KI-Rezeptsuche
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#2D3E40] leading-tight">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-main leading-tight">
             Was hast du im Kühlschrank?
           </h1>
-          <p className="text-base text-[#686E6A] leading-relaxed">
+          <p className="text-base text-text-muted leading-relaxed">
             Zutaten wählen und passende Rezepte finden.
           </p>
         </div>
       </div>
 
       {/* Main Ingredient Selector Section - 2 Ebenen: Äußere weiße Karte → Eingabeelemente */}
-      <div className="bg-white rounded-2xl p-4 sm:p-8 border border-[#ECEBE8] shadow-xs space-y-5 sm:space-y-6">
+      <div className="bg-card rounded-2xl p-4 sm:p-8 border border-border shadow-xs space-y-5 sm:space-y-6">
         {/* Selected Items Tags */}
         <div>
           <div className="flex items-center justify-between mb-2.5">
-            <h2 className="text-[12px] font-bold uppercase tracking-wider text-[#686E6A]">
+            <h2 className="text-[12px] font-bold uppercase tracking-wider text-text-muted">
               Deine ausgewählten Zutaten
             </h2>
             {selectedIngredients.length > 0 && (
               <button
                 type="button"
                 onClick={() => setSelectedIngredients([])}
-                className="text-xs text-[#686E6A] hover:text-[#D35400] font-medium cursor-pointer"
+                className="text-xs text-text-muted hover:text-[#D35400] font-medium cursor-pointer"
               >
                 Alle entfernen
               </button>
@@ -427,7 +427,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             className="flex flex-wrap gap-2.5 min-h-[44px] items-center relative py-1"
           >
             {selectedIngredients.length === 0 ? (
-              <div className="w-full py-3 px-4 rounded-xl border border-dashed border-[#ECEBE8] bg-[#FAF9F6] flex items-center justify-center text-xs text-[#686E6A] font-medium text-center">
+              <div className="w-full py-3 px-4 rounded-xl border border-dashed border-border bg-surface flex items-center justify-center text-xs text-text-muted font-medium text-center">
                 Noch keine Zutaten gewählt. Tippe unten auf Vorräte oder gib eigene ein.
               </div>
             ) : (
@@ -454,11 +454,11 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                       mass: 0.6,
                     },
                   }}
-                  className="inline-flex items-center gap-2 h-11 min-h-[44px] px-3.5 py-2 rounded-xl bg-[#F1F5F2] text-[#4A7856] text-sm font-semibold border border-[#4A7856]/40 hover:border-[#4A7856] cursor-pointer touch-manipulation transition-colors select-none group"
+                  className="inline-flex items-center gap-2 h-11 min-h-[44px] px-3.5 py-2 rounded-xl bg-accent-tint text-accent text-sm font-semibold border border-accent/40 hover:border-accent cursor-pointer touch-manipulation transition-colors select-none group"
                   title={`${item} wieder zurücklegen / entfernen`}
                 >
                   <span>{item}</span>
-                  <X className="w-4 h-4 text-[#4A7856]/80 group-hover:text-[#D35400] transition-colors" />
+                  <X className="w-4 h-4 text-accent/80 group-hover:text-[#D35400] transition-colors" />
                 </motion.button>
               ))
             )}
@@ -473,11 +473,11 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             placeholder="Zutat eingeben (z.B. Champignons, Cashewkerne)..."
             value={customInput}
             onChange={(e) => setCustomInput(e.target.value)}
-            className="flex-1 h-12 min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] rounded-xl px-4 py-2.5 text-base font-medium text-[#2D3E40] focus:outline-hidden transition-all placeholder:text-[#686E6A]"
+            className="flex-1 h-12 min-h-[48px] bg-surface border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent rounded-xl px-4 py-2.5 text-base font-medium text-text-main focus:outline-hidden transition-all placeholder:text-text-muted"
           />
           <button
             type="submit"
-            className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white flex items-center justify-center shrink-0 cursor-pointer touch-manipulation active:scale-95 transition-colors shadow-2xs"
+            className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl bg-accent hover:bg-accent-hover text-on-accent flex items-center justify-center shrink-0 cursor-pointer touch-manipulation active:scale-95 transition-colors shadow-2xs"
             title="Zutat hinzufügen"
             aria-label="Zutat hinzufügen"
           >
@@ -487,7 +487,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
 
         {/* Quick Pantry Item Pills - leicht getönter Hintergrund, linksbündiges 'Mehr anzeigen' */}
         <div className="space-y-2">
-          <label className="block text-[16px] font-bold text-[#2D3E40]">
+          <label className="block text-[16px] font-bold text-text-main">
             Häufige Vorräte &amp; Frischezutaten
           </label>
           <motion.div
@@ -518,9 +518,9 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                     mass: 0.6,
                   },
                 }}
-                className="h-11 min-h-[44px] px-3.5 py-2 rounded-xl text-sm font-medium transition-colors select-none cursor-pointer touch-manipulation flex items-center gap-1.5 bg-[#FAF9F6] text-[#686E6A] hover:border-[#4A7856]/50 hover:text-[#2D3E40] border border-[#ECEBE8] group"
+                className="h-11 min-h-[44px] px-3.5 py-2 rounded-xl text-sm font-medium transition-colors select-none cursor-pointer touch-manipulation flex items-center gap-1.5 bg-surface text-text-muted hover:border-accent/50 hover:text-text-main border border-border group"
               >
-                <span className="text-[#686E6A] group-hover:text-[#4A7856] font-bold">+</span>
+                <span className="text-text-muted group-hover:text-accent font-bold">+</span>
                 <span>{item}</span>
               </motion.button>
             ))}
@@ -530,34 +530,34 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
               <button
                 type="button"
                 onClick={() => setShowAllPantryItems((prev) => !prev)}
-                className="text-xs font-semibold text-[#686E6A] hover:text-[#2D3E40] flex items-center gap-1.5 py-1 px-0 rounded-lg transition-colors cursor-pointer touch-manipulation min-h-[36px]"
+                className="text-xs font-semibold text-text-muted hover:text-text-main flex items-center gap-1.5 py-1 px-0 rounded-lg transition-colors cursor-pointer touch-manipulation min-h-[36px]"
               >
                 <span>{showAllPantryItems ? 'Weniger anzeigen' : 'Mehr anzeigen'}</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-[#686E6A] transition-transform duration-200 ${showAllPantryItems ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3.5 h-3.5 text-text-muted transition-transform duration-200 ${showAllPantryItems ? 'rotate-180' : ''}`} />
               </button>
             </div>
           )}
         </div>
 
         {/* Dünne Trennlinie */}
-        <div className="border-t border-[#ECEBE8]" />
+        <div className="border-t border-border" />
 
         {/* Zeile 1: Ernährungsweise als Segmented Control (links) & Schieberegler für Zeit (rechts) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-8 items-start">
           {/* Ernährungsweise Segmented Control */}
           <div>
-            <label className="block text-[16px] font-bold text-[#2D3E40] mb-2">
+            <label className="block text-[16px] font-bold text-text-main mb-2">
               Ernährungsweise
             </label>
-            <div className="bg-[#FAF9F6] p-1 rounded-xl grid grid-cols-2 gap-1.5 h-12 min-h-[48px] items-center border border-[#ECEBE8]">
+            <div className="bg-surface p-1 rounded-xl grid grid-cols-2 gap-1.5 h-12 min-h-[48px] items-center border border-border">
               <button
                 type="button"
                 id="fridge-diet-veggie-btn"
                 onClick={() => setIsVegan(false)}
                 className={`h-10 min-h-[40px] px-3 text-[16px] rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none ${
                   !isVegan
-                    ? 'bg-[#4A7856] text-white shadow-2xs font-semibold'
-                    : 'text-[#57534d] hover:text-[#2D3E40] border-0 bg-transparent font-medium'
+                    ? 'bg-accent text-on-accent shadow-2xs font-semibold'
+                    : 'text-[#57534d] hover:text-text-main border-0 bg-transparent font-medium'
                 }`}
               >
                 <span style={{ color: !isVegan ? '#ffffff' : '#57534d', fontSize: '16px' }}>Veggie</span>
@@ -568,8 +568,8 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 onClick={() => setIsVegan(true)}
                 className={`h-10 min-h-[40px] px-3 text-[16px] rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none ${
                   isVegan
-                    ? 'bg-[#4A7856] text-white shadow-2xs font-semibold'
-                    : 'text-[#57534d] hover:text-[#2D3E40] border-0 bg-transparent font-medium'
+                    ? 'bg-accent text-on-accent shadow-2xs font-semibold'
+                    : 'text-[#57534d] hover:text-text-main border-0 bg-transparent font-medium'
                 }`}
               >
                 <Leaf className="w-4 h-4 shrink-0" />
@@ -581,7 +581,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           {/* Schieberegler für Zeit - ohne Icon im Label, 22px Thumb & Track-Füllung */}
           <div className="flex flex-col justify-center min-h-[48px]">
             <div className="flex items-center justify-between mb-2 min-h-[26px]">
-              <label htmlFor="fridge-time-slider" className="text-[16px] font-bold text-[#2D3E40]">
+              <label htmlFor="fridge-time-slider" className="text-[16px] font-bold text-text-main">
                 Max. Zeit:
               </label>
               <AnimatePresence>
@@ -591,7 +591,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.2 }}
-                    className="px-2 py-0.5 rounded-full bg-[#F1F5F2] border border-[#ECEBE8] text-[#4A7856] font-bold text-xs tabular-nums"
+                    className="px-2 py-0.5 rounded-full bg-accent-tint border border-border text-accent font-bold text-xs tabular-nums"
                   >
                     {maxTime} Min.
                   </motion.span>
@@ -612,10 +612,10 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                     }}
                     className="absolute bottom-[calc(50%+26px)] -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center select-none"
                   >
-                    <div className="px-4 py-1 rounded-full bg-white border border-[#D3DCD5] shadow-lg text-[#355F40] font-extrabold text-[17px] tabular-nums whitespace-nowrap">
+                    <div className="px-4 py-1 rounded-full bg-card border border-[#D3DCD5] shadow-lg text-[#355F40] font-extrabold text-[17px] tabular-nums whitespace-nowrap">
                       {maxTime} Min.
                     </div>
-                    <div className="w-3 h-3 bg-white border-r border-b border-[#D3DCD5] rotate-45 -mt-1.5 shadow-xs" />
+                    <div className="w-3 h-3 bg-card border-r border-b border-[#D3DCD5] rotate-45 -mt-1.5 shadow-xs" />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -645,7 +645,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 }}
               />
             </div>
-            <div className="flex justify-between text-[13px] text-[#686E6A] font-medium tabular-nums px-0.5">
+            <div className="flex justify-between text-[13px] text-text-muted font-medium tabular-nums px-0.5">
               <span>15 Min.</span>
               <span>50 Min.</span>
             </div>
@@ -653,7 +653,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
         </div>
 
         {/* Dünne Trennlinie vor Wünsche & Feineinstellungen */}
-        <div className="border-t border-[#ECEBE8]" />
+        <div className="border-t border-border" />
 
         {/* Wünsche & Feineinstellungen - Gestaltete Kopfzeile mit App-Tint & 2px Linie links */}
         <div className="space-y-3">
@@ -664,20 +664,20 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             onClick={() => setIsPreferencesOpenOnMobile((prev) => !prev)}
             aria-expanded={isPreferencesOpenOnMobile}
             aria-controls="fridge-extra-wishes-section"
-            className="w-full min-h-[48px] p-3 sm:p-4 rounded-xl bg-[#F1F5F2] hover:bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/40 flex items-center justify-between text-left cursor-pointer select-none touch-manipulation transition-all group"
+            className="w-full min-h-[48px] p-3 sm:p-4 rounded-xl bg-accent-tint hover:bg-surface border border-border hover:border-accent/40 flex items-center justify-between text-left cursor-pointer select-none touch-manipulation transition-all group"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="flex items-center justify-center text-[#4A7856] shrink-0">
-                <Sliders className="w-5 h-5 text-[#4A7856]" />
+              <div className="flex items-center justify-center text-accent shrink-0">
+                <Sliders className="w-5 h-5 text-accent" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-bold text-[#2D3E40]">
+                  <span className="text-base font-bold text-text-main">
                     Wünsche &amp; Feineinstellungen
                   </span>
                 </div>
                 {/* Untertitel / Zusammenfassung */}
-                <p className="text-xs text-[#686E6A] truncate mt-0.5">
+                <p className="text-xs text-text-muted truncate mt-0.5">
                   {extraWishes.trim()
                     ? extraWishes.trim().length > 20
                       ? `"${extraWishes.trim().slice(0, 18)}..."`
@@ -692,9 +692,9 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
               </div>
             </div>
 
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[#686E6A] group-hover:text-[#4A7856] transition-colors shrink-0 ml-2">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted group-hover:text-accent transition-colors shrink-0 ml-2">
               <ChevronDown
-                className={`w-5 h-5 text-[#4A7856] transition-transform duration-200 shrink-0 ${
+                className={`w-5 h-5 text-accent transition-transform duration-200 shrink-0 ${
                   isPreferencesOpenOnMobile ? 'rotate-180' : 'rotate-0'
                 }`}
               />
@@ -710,15 +710,15 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           >
             <div className="overflow-hidden">
               <div className="pt-3 pb-1">
-                <div className="relative pl-1 sm:pl-3 space-y-6 sm:space-y-7 before:absolute before:left-[17px] sm:before:left-[23px] before:top-4 before:bottom-4 before:w-0.5 before:bg-[#ECEBE8]">
+                <div className="relative pl-1 sm:pl-3 space-y-6 sm:space-y-7 before:absolute before:left-[17px] sm:before:left-[23px] before:top-4 before:bottom-4 before:w-0.5 before:bg-border">
                   {/* Schritt 1: Wünsche */}
                   <div className="relative flex items-start gap-3.5 sm:gap-4.5 group">
                     {/* Timeline indicator circle */}
                     <div
-                      className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-white ${
+                      className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-on-accent ${
                         extraWishes.trim()
-                          ? 'bg-[#4A7856] text-white shadow-2xs'
-                          : 'bg-white border-2 border-[#4A7856] text-[#4A7856]'
+                          ? 'bg-accent text-on-accent shadow-2xs'
+                          : 'bg-card border-2 border-accent text-accent'
                       }`}
                     >
                       {extraWishes.trim() ? <Check className="w-4 h-4 stroke-[3]" /> : '1'}
@@ -727,11 +727,11 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                     {/* Step Content */}
                     <div className="flex-1 min-w-0 pt-0.5 space-y-2">
                       <div className="flex items-center justify-between gap-2">
-                        <h4 className="text-[16px] font-bold text-[#2D3E40]">
+                        <h4 className="text-[16px] font-bold text-text-main">
                           Wünsche
                         </h4>
                         {extraWishes.trim() && (
-                          <span className="text-[11px] font-semibold text-[#4A7856] bg-[#F1F5F2] px-2 py-0.5 rounded-full border border-[#ECEBE8]">
+                          <span className="text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded-full border border-border">
                             Aktiv
                           </span>
                         )}
@@ -757,7 +757,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                             el.style.height = `${Math.max(48, el.scrollHeight)}px`;
                           }
                         }}
-                        className="w-full min-h-[48px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] rounded-xl px-4 py-3 text-base font-medium text-[#2D3E40] focus:outline-hidden transition-colors placeholder:text-[#686E6A] resize-none overflow-hidden leading-normal"
+                        className="w-full min-h-[48px] bg-surface border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent rounded-xl px-4 py-3 text-base font-medium text-text-main focus:outline-hidden transition-colors placeholder:text-text-muted resize-none overflow-hidden leading-normal"
                       />
                     </div>
                   </div>
@@ -766,10 +766,10 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                   <div className="relative flex items-start gap-3.5 sm:gap-4.5 group">
                     {/* Timeline indicator circle */}
                     <div
-                      className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-white ${
+                      className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-on-accent ${
                         maxExtraIngredients !== 2
-                          ? 'bg-[#4A7856] text-white shadow-2xs'
-                          : 'bg-white border-2 border-[#4A7856] text-[#4A7856]'
+                          ? 'bg-accent text-on-accent shadow-2xs'
+                          : 'bg-card border-2 border-accent text-accent'
                       }`}
                     >
                       {maxExtraIngredients !== 2 ? <Check className="w-4 h-4 stroke-[3]" /> : '2'}
@@ -778,7 +778,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                     {/* Step Content */}
                     <div className="flex-1 min-w-0 pt-0.5 space-y-2">
                       <div className="flex items-center justify-between gap-2 min-h-[26px]">
-                        <h4 className="text-[16px] font-bold text-[#2D3E40]">
+                        <h4 className="text-[16px] font-bold text-text-main">
                           Zusätzliche Zutaten
                         </h4>
                         <AnimatePresence>
@@ -788,7 +788,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                               animate={{ opacity: 1, scale: 1 }}
                               exit={{ opacity: 0, scale: 0.9 }}
                               transition={{ duration: 0.2 }}
-                              className="px-2.5 py-0.5 rounded-full bg-[#F1F5F2] border border-[#ECEBE8] text-[#4A7856] font-bold text-xs tabular-nums shrink-0"
+                              className="px-2.5 py-0.5 rounded-full bg-accent-tint border border-border text-accent font-bold text-xs tabular-nums shrink-0"
                             >
                               {maxExtraIngredients === 0 ? 'Nur Vorräte' : `Max. ${maxExtraIngredients}`}
                             </motion.span>
@@ -811,10 +811,10 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                                 }}
                                 className="absolute bottom-[calc(50%+26px)] -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center select-none"
                               >
-                                <div className="px-4 py-1 rounded-full bg-white border border-[#D3DCD5] shadow-lg text-[#355F40] font-extrabold text-[17px] tabular-nums whitespace-nowrap">
+                                <div className="px-4 py-1 rounded-full bg-card border border-[#D3DCD5] shadow-lg text-[#355F40] font-extrabold text-[17px] tabular-nums whitespace-nowrap">
                                   {maxExtraIngredients === 0 ? 'Nur Vorräte' : `Max. ${maxExtraIngredients}`}
                                 </div>
-                                <div className="w-3 h-3 bg-white border-r border-b border-[#D3DCD5] rotate-45 -mt-1.5 shadow-xs" />
+                                <div className="w-3 h-3 bg-card border-r border-b border-[#D3DCD5] rotate-45 -mt-1.5 shadow-xs" />
                               </motion.div>
                             )}
                           </AnimatePresence>
@@ -845,7 +845,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                           />
                         </div>
                         {/* Mobile: gerade Zahlen (0, 2, 4, 6) auf der X-Achse */}
-                        <div className="sm:hidden flex justify-between text-[13px] text-[#686E6A] mt-1.5 font-semibold tabular-nums px-1 select-none">
+                        <div className="sm:hidden flex justify-between text-[13px] text-text-muted mt-1.5 font-semibold tabular-nums px-1 select-none">
                           <span>0</span>
                           <span aria-hidden="true" className="invisible">1</span>
                           <span>2</span>
@@ -855,7 +855,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                           <span>6</span>
                         </div>
                         {/* Desktop: Bezeichner */}
-                        <div className="hidden sm:flex justify-between text-[13px] text-[#686E6A] mt-1.5 font-medium tabular-nums px-0.5">
+                        <div className="hidden sm:flex justify-between text-[13px] text-text-muted mt-1.5 font-medium tabular-nums px-0.5">
                           <span>Keine Zukäufe</span>
                           <span>1–2 Zutaten</span>
                           <span>3 Zutaten</span>
@@ -869,10 +869,10 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                   <div className="relative flex items-start gap-3.5 sm:gap-4.5 group">
                     {/* Timeline indicator circle */}
                     <div
-                      className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-white ${
+                      className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-on-accent ${
                         calorieFilter !== 'all' || proteinFilter !== 'all' || difficulty !== 'all'
-                          ? 'bg-[#4A7856] text-white shadow-2xs'
-                          : 'bg-white border-2 border-[#4A7856] text-[#4A7856]'
+                          ? 'bg-accent text-on-accent shadow-2xs'
+                          : 'bg-card border-2 border-accent text-accent'
                       }`}
                     >
                       {calorieFilter !== 'all' || proteinFilter !== 'all' || difficulty !== 'all' ? (
@@ -884,7 +884,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
 
                     {/* Step Content */}
                     <div className="flex-1 min-w-0 pt-0.5 space-y-2.5">
-                      <h4 className="text-[16px] font-bold text-[#2D3E40]">
+                      <h4 className="text-[16px] font-bold text-text-main">
                         Nährwerte &amp; Anspruch
                       </h4>
 
@@ -898,7 +898,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                             value={calorieFilter}
                             onChange={(e) => setCalorieFilter(e.target.value)}
                             style={{ color: '#57534d' }}
-                            className={`w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-[#57534d] ${
+                            className={`w-full appearance-none h-11 min-h-[44px] bg-surface border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-[#57534d] ${
                               calorieFilter === 'all' ? '' : 'font-semibold'
                             }`}
                           >
@@ -907,7 +907,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                             <option value="moderate">500–700 kcal</option>
                             <option value="high">750+ kcal</option>
                           </select>
-                          <ChevronDown className="w-3.5 h-3.5 text-[#686E6A] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <ChevronDown className="w-3.5 h-3.5 text-text-muted absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
 
                         {/* Proteine */}
@@ -918,7 +918,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                             value={proteinFilter}
                             onChange={(e) => setProteinFilter(e.target.value)}
                             style={{ color: '#57534d' }}
-                            className={`w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-[#57534d] ${
+                            className={`w-full appearance-none h-11 min-h-[44px] bg-surface border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-[#57534d] ${
                               proteinFilter === 'all' ? '' : 'font-semibold'
                             }`}
                           >
@@ -927,7 +927,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                             <option value="high">30+ g</option>
                             <option value="very-high">40+ g</option>
                           </select>
-                          <ChevronDown className="w-3.5 h-3.5 text-[#686E6A] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <ChevronDown className="w-3.5 h-3.5 text-text-muted absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
 
                         {/* Schwierigkeit */}
@@ -938,7 +938,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                             value={difficulty}
                             onChange={(e) => setDifficulty(e.target.value)}
                             style={{ color: '#57534d' }}
-                            className={`w-full appearance-none h-11 min-h-[44px] bg-[#FAF9F6] border border-[#ECEBE8] hover:border-[#4A7856]/50 focus:border-[#4A7856] focus:ring-1 focus:ring-[#4A7856] text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-[#57534d] ${
+                            className={`w-full appearance-none h-11 min-h-[44px] bg-surface border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-[#57534d] ${
                               difficulty === 'all' ? '' : 'font-semibold'
                             }`}
                           >
@@ -947,7 +947,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                             <option value="Mittel">Mittel</option>
                             <option value="Anspruchsvoll">Anspruchsvoll</option>
                           </select>
-                          <ChevronDown className="w-3.5 h-3.5 text-[#686E6A] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <ChevronDown className="w-3.5 h-3.5 text-text-muted absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
                       </div>
                     </div>
@@ -959,7 +959,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
         </div>
 
         {/* Dünne Trennlinie vor dem Generate Button */}
-        <div className="border-t border-[#ECEBE8]" />
+        <div className="border-t border-border" />
 
         {/* Error notification if AI failed */}
         {errorMessage && (
@@ -986,16 +986,16 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             id="generate-fridge-recipe-btn"
             disabled={isGenerating || selectedIngredients.length === 0}
             onClick={handleStartIdeaGeneration}
-            className="w-full h-12 min-h-[48px] rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-50 text-white font-semibold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
+            className="w-full h-12 min-h-[48px] rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-50 text-on-accent font-semibold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
           >
             {isGenerating ? (
               <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-on-accent border-t-transparent rounded-full animate-spin" />
                 <span>Kombiniere Vorräte zu einer Rezeptidee...</span>
               </>
             ) : (
               <>
-                <Sparkles className="w-5 h-5 text-white" />
+                <Sparkles className="w-5 h-5 text-on-accent" />
                 <span>
                   {selectedIngredients.length === 0
                     ? 'Wähle mindestens 1 Zutat aus'
@@ -1015,26 +1015,26 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
 
       {/* Generated AI Recipe Result Card */}
       {generatedRecipe && (
-        <div className="bg-white rounded-2xl p-4 sm:p-8 border border-[#ECEBE8] shadow-md space-y-4 sm:space-y-6 animate-in zoom-in-95 duration-300">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-[#ECEBE8] pb-3 sm:pb-4">
+        <div className="bg-card rounded-2xl p-4 sm:p-8 border border-border shadow-md space-y-4 sm:space-y-6 animate-in zoom-in-95 duration-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border pb-3 sm:pb-4">
             <div>
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FDF6F0] text-[#D35400] border border-[#ECEBE8] text-xs font-semibold">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FDF6F0] text-[#D35400] border border-border text-xs font-semibold">
                   ✨ KI-Rezept
                 </span>
                 {generatedRecipe.isVegan && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-accent-tint text-accent border border-border text-xs font-semibold">
                     🌱 Vegan
                   </span>
                 )}
                 {(proteinFilter === 'high' || proteinFilter === 'very-high') && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-accent-tint text-accent border border-border text-xs font-semibold">
                     <Dumbbell className="w-3 h-3" />
                     {proteinFilter === 'very-high' ? '40+ g Protein' : '30+ g Protein'}
                   </span>
                 )}
                 {proteinFilter === 'medium' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-accent-tint text-accent border border-border text-xs font-semibold">
                     <Dumbbell className="w-3 h-3" />
                     20+ g Protein
                   </span>
@@ -1052,15 +1052,15 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                   </span>
                 )}
                 {calorieFilter === 'moderate' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#57534d] border border-[#ECEBE8] text-xs font-semibold">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface text-[#57534d] border border-border text-xs font-semibold">
                     500–700 kcal
                   </span>
                 )}
               </div>
-              <h3 className="text-3xl sm:text-4xl font-bold text-[#2D3E40] tracking-tight leading-tight">
+              <h3 className="text-3xl sm:text-4xl font-bold text-text-main tracking-tight leading-tight">
                 {generatedRecipe.title}
               </h3>
-              <p className="text-base text-[#686E6A] leading-relaxed mt-1">
+              <p className="text-base text-text-muted leading-relaxed mt-1">
                 {generatedRecipe.subtitle}
               </p>
             </div>
@@ -1072,8 +1072,8 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 disabled={hasSaved}
                 className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-semibold shadow-xs transition-all ${
                   hasSaved
-                    ? 'bg-[#4A7856] text-white'
-                    : 'bg-[#2D3E40] hover:bg-[#1F2C2D] text-white'
+                    ? 'bg-accent text-on-accent'
+                    : 'bg-text-main hover:bg-[#1F2C2D] text-on-accent'
                 }`}
               >
                 {hasSaved ? <Check className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
@@ -1082,31 +1082,31 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
 
               <button
                 onClick={() => onSelectRecipe(generatedRecipe)}
-                className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-semibold bg-[#FAF9F6] border border-[#ECEBE8] text-[#57534d] hover:bg-[#F1F5F2] shadow-xs"
+                className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-semibold bg-surface border border-border text-[#57534d] hover:bg-accent-tint shadow-xs"
               >
                 <span>Details</span>
-                <ArrowRight className="w-3.5 h-3.5 text-[#4A7856]" />
+                <ArrowRight className="w-3.5 h-3.5 text-accent" />
               </button>
             </div>
           </div>
 
           {/* Quick Metrics */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#FAF9F6] p-4 rounded-xl border border-[#ECEBE8]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-surface p-4 rounded-xl border border-border">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-[#4A7856]" />
-              <span className="text-xs text-[#2D3E40]"><strong>{generatedRecipe.totalTimeMinutes} Min.</strong> Zeit</span>
+              <Clock className="w-4 h-4 text-accent" />
+              <span className="text-xs text-text-main"><strong>{generatedRecipe.totalTimeMinutes} Min.</strong> Zeit</span>
             </div>
             <div className="flex items-center gap-2">
               <Flame className="w-4 h-4 text-[#E67E22]" />
-              <span className="text-xs text-[#2D3E40]"><strong>{generatedRecipe.nutrients.calories}</strong> kcal</span>
+              <span className="text-xs text-text-main"><strong>{generatedRecipe.nutrients.calories}</strong> kcal</span>
             </div>
             <div className="flex items-center gap-2">
-              <Dumbbell className="w-4 h-4 text-[#4A7856]" />
-              <span className="text-xs text-[#2D3E40]"><strong>{generatedRecipe.nutrients.protein}g</strong> Protein</span>
+              <Dumbbell className="w-4 h-4 text-accent" />
+              <span className="text-xs text-text-main"><strong>{generatedRecipe.nutrients.protein}g</strong> Protein</span>
             </div>
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-[#57534d]" />
-              <span className="text-xs text-[#2D3E40]"><strong>{generatedRecipe.nutrients.fiber}g</strong> Ballaststoffe</span>
+              <span className="text-xs text-text-main"><strong>{generatedRecipe.nutrients.fiber}g</strong> Ballaststoffe</span>
             </div>
           </div>
 
@@ -1121,36 +1121,36 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 {(() => {
                   const extraCount = generatedRecipe.ingredients.filter((i) => (i as any).source === 'extra').length;
                   return (
-                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#FAF9F6] border border-[#ECEBE8] text-[#4A7856] font-semibold">
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-surface border border-border text-accent font-semibold">
                       {extraCount === 0 ? '0 Extras' : `${extraCount} Zusatz-Zutat${extraCount > 1 ? 'en' : ''}`}
                     </span>
                   );
                 })()}
               </div>
-              <div className="bg-[#FAF9F6] p-3.5 rounded-xl border border-[#ECEBE8] space-y-1.5">
+              <div className="bg-surface p-3.5 rounded-xl border border-border space-y-1.5">
                 {generatedRecipe.ingredients.map((ing, idx) => {
                   const src = (ing as any).source;
                   return (
-                    <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-[#ECEBE8] last:border-0 gap-2">
+                    <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-border last:border-0 gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="font-medium text-[#2D3E40] truncate">{ing.name}</span>
+                        <span className="font-medium text-text-main truncate">{ing.name}</span>
                         {src === 'extra' && (
                           <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-[#FDF6F0] text-[#D35400] border border-[#F5EADF] shrink-0 font-medium">
                             Zusatz
                           </span>
                         )}
                         {src === 'basic' && (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-white text-[#686E6A] border border-[#ECEBE8] shrink-0 font-medium">
+                          <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-card text-text-muted border border-border shrink-0 font-medium">
                             Basic
                           </span>
                         )}
                         {src === 'pantry' && (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] shrink-0 font-medium">
+                          <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-accent-tint text-accent border border-border shrink-0 font-medium">
                             Vorrat
                           </span>
                         )}
                       </div>
-                      <span className="text-[#686E6A] font-semibold shrink-0">{ing.amount} {ing.unit}</span>
+                      <span className="text-text-muted font-semibold shrink-0">{ing.amount} {ing.unit}</span>
                     </div>
                   );
                 })}
@@ -1164,21 +1164,21 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
               </h4>
               <div className="space-y-2.5">
                 {generatedRecipe.steps.map((step) => (
-                  <div key={step.stepNumber} className="flex items-start gap-3 p-3 bg-[#FAF9F6] rounded-xl border border-[#ECEBE8]">
-                    <div className="w-6 h-6 rounded-md bg-[#2D3E40] text-white flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5">
+                  <div key={step.stepNumber} className="flex items-start gap-3 p-3 bg-surface rounded-xl border border-border">
+                    <div className="w-6 h-6 rounded-md bg-text-main text-on-accent flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5">
                       {step.stepNumber}
                     </div>
                     <div className="flex-1 min-w-0">
                       {step.title && (
-                        <h5 className="font-semibold text-xs text-[#2D3E40] mb-0.5">
+                        <h5 className="font-semibold text-xs text-text-main mb-0.5">
                           {step.title}
                         </h5>
                       )}
-                      <p className="text-sm text-[#2D3E40] leading-relaxed">
+                      <p className="text-sm text-text-main leading-relaxed">
                         {step.text}
                       </p>
                       {step.timerMinutes && (
-                        <div className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-white border border-[#ECEBE8] text-[#4A7856] text-xs font-semibold">
+                        <div className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-card border border-border text-accent text-xs font-semibold">
                           <Clock className="w-3 h-3" />
                           Timer: {step.timerMinutes} Min.
                         </div>
@@ -1192,7 +1192,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
 
           {/* Chef Tip */}
           {generatedRecipe.chefTip && (
-            <div className="p-4 bg-[#FDF6F0] rounded-xl border border-[#F5EADF] text-xs text-[#2D3E40]">
+            <div className="p-4 bg-[#FDF6F0] rounded-xl border border-[#F5EADF] text-xs text-text-main">
               <strong className="text-[#D35400]">💡 Chefkoch-Tipp:</strong> {generatedRecipe.chefTip}
             </div>
           )}
@@ -1204,17 +1204,17 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
         <div className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-[#2D3E40]">
+              <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-text-main">
                 Oder entdecke passende Rezepte aus unserer Sammlung:
               </h3>
               {(proteinFilter === 'high' || proteinFilter === 'very-high') && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-accent-tint text-accent text-xs font-semibold border border-border">
                   <Dumbbell className="w-3 h-3" />
                   Nach Protein sortiert
                 </span>
               )}
               {calorieFilter === 'high' && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#57534d] text-xs font-semibold border border-[#ECEBE8]">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface text-[#57534d] text-xs font-semibold border border-border">
                   <Flame className="w-3 h-3 text-amber-500" />
                   Nach Kalorien sortiert
                 </span>
@@ -1226,7 +1226,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 </span>
               )}
             </div>
-            <span className="text-xs text-[#686E6A]">{matchedExistingRecipes.length} Treffer</span>
+            <span className="text-xs text-text-muted">{matchedExistingRecipes.length} Treffer</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1234,7 +1234,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
               <div
                 key={recipe.id}
                 onClick={() => onSelectRecipe(recipe)}
-                className="flex gap-3.5 bg-white p-3.5 rounded-2xl border border-[#ECEBE8] hover:border-[#4A7856]/40 hover:shadow-xs transition-all cursor-pointer group"
+                className="flex gap-3.5 bg-card p-3.5 rounded-2xl border border-border hover:border-accent/40 hover:shadow-xs transition-all cursor-pointer group"
               >
                 <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-xl overflow-hidden shrink-0">
                   <RecipeImage
@@ -1246,14 +1246,14 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                 </div>
                 <div className="flex flex-col justify-between flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1.5 mb-1">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8]">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-accent-tint text-accent text-xs font-semibold border border-border">
                       {recipe.category}
                     </span>
                   </div>
-                  <h4 className="font-bold text-[16px] text-[#2D3E40] truncate group-hover:text-[#4A7856] transition-colors leading-snug">
+                  <h4 className="font-bold text-[16px] text-text-main truncate group-hover:text-accent transition-colors leading-snug">
                     {recipe.title}
                   </h4>
-                  <div className="flex items-center flex-wrap gap-x-2.5 gap-y-0.5 text-[13px] text-[#686E6A] font-medium mt-1">
+                  <div className="flex items-center flex-wrap gap-x-2.5 gap-y-0.5 text-[13px] text-text-muted font-medium mt-1">
                     <span className="inline-flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5 text-[#8A918D]" />
                       <span>{recipe.totalTimeMinutes} Min.</span>
@@ -1262,8 +1262,8 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
                       <Flame className="w-3.5 h-3.5 text-amber-600/80" />
                       <span>{recipe.nutrients.calories} kcal</span>
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[#4A7856] font-bold">
-                      <Dumbbell className="w-3.5 h-3.5 text-[#4A7856]" />
+                    <span className="inline-flex items-center gap-1 text-accent font-bold">
+                      <Dumbbell className="w-3.5 h-3.5 text-accent" />
                       <span>{recipe.nutrients.protein}g</span>
                     </span>
                   </div>
@@ -1277,11 +1277,11 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
               <button
                 type="button"
                 onClick={() => setShowAllMatchedRecipes((prev) => !prev)}
-                className="text-xs sm:text-sm font-semibold text-[#686E6A] hover:text-[#2D3E40] flex items-center gap-1.5 py-2 px-1 bg-transparent border-0 transition-colors cursor-pointer touch-manipulation min-h-[44px]"
+                className="text-xs sm:text-sm font-semibold text-text-muted hover:text-text-main flex items-center gap-1.5 py-2 px-1 bg-transparent border-0 transition-colors cursor-pointer touch-manipulation min-h-[44px]"
               >
                 <span>{showAllMatchedRecipes ? 'Weniger anzeigen' : 'Mehr anzeigen'}</span>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 text-[#686E6A] transition-transform duration-200 ${
+                  className={`w-3.5 h-3.5 text-text-muted transition-transform duration-200 ${
                     showAllMatchedRecipes ? 'rotate-180' : ''
                   }`}
                 />

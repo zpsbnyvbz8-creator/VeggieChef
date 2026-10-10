@@ -28,7 +28,7 @@ export const SeasonHighlights: React.FC = () => {
     <section aria-labelledby="season-title" className="space-y-3">
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <h2 id="season-title" className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#2D3E40] flex items-center gap-2">
+          <h2 id="season-title" className="text-xl sm:text-2xl font-extrabold tracking-tight text-text-main flex items-center gap-2">
             <span aria-hidden="true">{season.emoji}</span>
             <span className="truncate">{season.headline}</span>
           </h2>
@@ -38,7 +38,7 @@ export const SeasonHighlights: React.FC = () => {
             type="button"
             onClick={() => scrollBy(-1)}
             aria-label="Vorherige Saison-Rezepte"
-            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white border border-[#ECEBE8] hover:border-[#4A7856]/40 hover:bg-[#F1F5F2] text-[#2D3E40] flex items-center justify-center transition-all cursor-pointer active:scale-95"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-card border border-border hover:border-accent/40 hover:bg-accent-tint text-text-main flex items-center justify-center transition-all cursor-pointer active:scale-95"
           >
             <ChevronLeft className="w-5 h-5" aria-hidden="true" />
           </button>
@@ -46,7 +46,7 @@ export const SeasonHighlights: React.FC = () => {
             type="button"
             onClick={() => scrollBy(1)}
             aria-label="Nächste Saison-Rezepte"
-            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white border border-[#ECEBE8] hover:border-[#4A7856]/40 hover:bg-[#F1F5F2] text-[#2D3E40] flex items-center justify-center transition-all cursor-pointer active:scale-95"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-card border border-border hover:border-accent/40 hover:bg-accent-tint text-text-main flex items-center justify-center transition-all cursor-pointer active:scale-95"
           >
             <ChevronRight className="w-5 h-5" aria-hidden="true" />
           </button>

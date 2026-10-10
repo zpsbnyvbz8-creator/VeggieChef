@@ -64,7 +64,7 @@ export const StepImageSwiper: React.FC<StepImageSwiperProps> = ({
   return (
     <div className="relative pt-2">
       <div
-        className="relative w-full h-48 sm:h-56 md:h-64 rounded-2xl overflow-hidden bg-stone-900 border border-[#ECEBE8] shadow-xs cursor-pointer group select-none touch-pan-y"
+        className="relative w-full h-48 sm:h-56 md:h-64 rounded-2xl overflow-hidden bg-stone-900 border border-border shadow-xs cursor-pointer group select-none touch-pan-y"
         onClick={() => onOpenLightbox(images, safeIndex)}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -86,7 +86,7 @@ export const StepImageSwiper: React.FC<StepImageSwiperProps> = ({
           <button
             type="button"
             onClick={handleDelete}
-            className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-black/60 hover:bg-rose-600 text-white flex items-center justify-center backdrop-blur-md transition-all shadow-md cursor-pointer z-20 active:scale-95"
+            className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-black/60 hover:bg-rose-600 text-on-accent flex items-center justify-center backdrop-blur-md transition-all shadow-md cursor-pointer z-20 active:scale-95"
             title="Dieses Schritt-Foto löschen"
             aria-label="Foto löschen"
           >
@@ -109,7 +109,7 @@ export const StepImageSwiper: React.FC<StepImageSwiperProps> = ({
                   setCurrentIndex(idx);
                 }}
                 className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                  safeIndex === idx ? 'w-4 bg-white shadow-xs' : 'w-1.5 bg-white/45 hover:bg-white/80'
+                  safeIndex === idx ? 'w-4 bg-card shadow-xs' : 'w-1.5 bg-card/45 hover:bg-card/80'
                 }`}
                 aria-label={`Schritt-Foto ${idx + 1}`}
               />

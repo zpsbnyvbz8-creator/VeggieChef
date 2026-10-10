@@ -37,10 +37,10 @@ export const RecipeImage: React.FC<RecipeImageProps> = ({
 
     return (
       <div
-        className={`w-full h-full flex flex-col items-center justify-center bg-[#FAF9F6] select-none border border-[#ECEBE8]/50 ${className}`}
+        className={`w-full h-full flex flex-col items-center justify-center bg-surface select-none border border-border/50 ${className}`}
       >
         <div
-          className={`rounded-2xl bg-[#ECEBE8] flex items-center justify-center text-[#686E6A] shadow-2xs ${
+          className={`rounded-2xl bg-border flex items-center justify-center text-text-muted shadow-2xs ${
             isSm
               ? 'w-7 h-7 sm:w-8 sm:h-8'
               : isHero
@@ -55,12 +55,12 @@ export const RecipeImage: React.FC<RecipeImageProps> = ({
                 : isHero
                 ? 'w-7 h-7 sm:w-8 sm:h-8'
                 : 'w-5 h-5 sm:w-6 sm:h-6'
-            } text-[#686E6A]`}
+            } text-text-muted`}
           />
         </div>
         <div className="flex items-center gap-1 mt-1.5 sm:mt-2">
           <span
-            className={`font-bold tracking-tight text-[#686E6A] ${
+            className={`font-bold tracking-tight text-text-muted ${
               isSm ? 'text-[11px]' : isHero ? 'text-base' : 'text-xs'
             }`}
           >
@@ -68,7 +68,7 @@ export const RecipeImage: React.FC<RecipeImageProps> = ({
           </span>
         </div>
         {!isSm && (
-          <span className="text-[10px] text-[#686e6a] font-medium mt-0.5">
+          <span className="text-[10px] text-text-muted font-medium mt-0.5">
             {recipe.isCustomAi ? 'KI-Rezept' : 'Pflanzliche Küche'}
           </span>
         )}

@@ -102,16 +102,16 @@ export const FullscreenImageViewer: React.FC<FullscreenImageViewerProps> = ({
         }`}
       >
         <div
-          className="max-w-4xl mx-auto flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 text-white shadow-2xl pointer-events-auto"
+          className="max-w-4xl mx-auto flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl bg-black/40 backdrop-blur-xl border border-on-accent/10 text-on-accent shadow-2xl pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Title & Index */}
           <div className="min-w-0 pr-2">
-            <h4 className="text-sm font-semibold truncate text-white/90">
+            <h4 className="text-sm font-semibold truncate text-on-accent/90">
               {recipeTitle}
             </h4>
             {hasMultiple && (
-              <p className="text-[11px] text-white/60">
+              <p className="text-[11px] text-on-accent/60">
                 {currentIndex + 1} von {images.length}
               </p>
             )}
@@ -126,8 +126,8 @@ export const FullscreenImageViewer: React.FC<FullscreenImageViewerProps> = ({
                 disabled={isCurrentCover}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md transition-all cursor-pointer touch-manipulation active:scale-95 ${
                   isCurrentCover
-                    ? 'bg-[#4A7856]/40 text-emerald-200 border border-[#4A7856]/50 cursor-default'
-                    : 'bg-white/15 hover:bg-white/25 text-white border border-white/10'
+                    ? 'bg-accent/40 text-emerald-200 border border-accent/50 cursor-default'
+                    : 'bg-card/15 hover:bg-card/25 text-on-accent border border-on-accent/10'
                 }`}
                 title={isCurrentCover ? 'Bereits als Titelbild aktiv' : 'Als Titelbild setzen'}
               >
@@ -151,7 +151,7 @@ export const FullscreenImageViewer: React.FC<FullscreenImageViewerProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center backdrop-blur-md border border-white/10 transition-all cursor-pointer touch-manipulation active:scale-95"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-card/15 hover:bg-card/25 text-on-accent flex items-center justify-center backdrop-blur-md border border-on-accent/10 transition-all cursor-pointer touch-manipulation active:scale-95"
               aria-label="Detailansicht schließen"
             >
               <X className="w-5 h-5" />
@@ -168,7 +168,7 @@ export const FullscreenImageViewer: React.FC<FullscreenImageViewerProps> = ({
             <button
               type="button"
               onClick={handlePrev}
-              className={`hidden md:flex absolute left-4 z-20 w-12 h-12 rounded-full bg-black/40 hover:bg-black/70 text-white items-center justify-center backdrop-blur-md border border-white/10 transition-all cursor-pointer shadow-lg active:scale-95 ${
+              className={`hidden md:flex absolute left-4 z-20 w-12 h-12 rounded-full bg-black/40 hover:bg-black/70 text-on-accent items-center justify-center backdrop-blur-md border border-on-accent/10 transition-all cursor-pointer shadow-lg active:scale-95 ${
                 showControls ? 'opacity-90' : 'opacity-0 pointer-events-none'
               }`}
               aria-label="Vorheriges Bild"
@@ -179,7 +179,7 @@ export const FullscreenImageViewer: React.FC<FullscreenImageViewerProps> = ({
             <button
               type="button"
               onClick={handleNext}
-              className={`hidden md:flex absolute right-4 z-20 w-12 h-12 rounded-full bg-black/40 hover:bg-black/70 text-white items-center justify-center backdrop-blur-md border border-white/10 transition-all cursor-pointer shadow-lg active:scale-95 ${
+              className={`hidden md:flex absolute right-4 z-20 w-12 h-12 rounded-full bg-black/40 hover:bg-black/70 text-on-accent items-center justify-center backdrop-blur-md border border-on-accent/10 transition-all cursor-pointer shadow-lg active:scale-95 ${
                 showControls ? 'opacity-90' : 'opacity-0 pointer-events-none'
               }`}
               aria-label="Nächstes Bild"
@@ -205,7 +205,7 @@ export const FullscreenImageViewer: React.FC<FullscreenImageViewerProps> = ({
           }`}
         >
           <div
-            className="flex items-center gap-2 p-2 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 text-white shadow-2xl pointer-events-auto max-w-sm sm:max-w-md overflow-x-auto scrollbar-none"
+            className="flex items-center gap-2 p-2 rounded-2xl bg-black/40 backdrop-blur-xl border border-on-accent/10 text-on-accent shadow-2xl pointer-events-auto max-w-sm sm:max-w-md overflow-x-auto scrollbar-none"
             onClick={(e) => e.stopPropagation()}
           >
             {images.map((img, idx) => (
@@ -215,8 +215,8 @@ export const FullscreenImageViewer: React.FC<FullscreenImageViewerProps> = ({
                 onClick={() => onSelectIndex(idx)}
                 className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
                   idx === currentIndex
-                    ? 'border-[#4A7856] ring-2 ring-[#4A7856]/40 scale-105'
-                    : 'border-white/20 opacity-50 hover:opacity-90'
+                    ? 'border-accent ring-2 ring-accent/40 scale-105'
+                    : 'border-on-accent/20 opacity-50 hover:opacity-90'
                 }`}
                 aria-label={`Foto ${idx + 1} ansehen`}
               >

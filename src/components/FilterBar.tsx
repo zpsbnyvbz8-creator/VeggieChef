@@ -35,7 +35,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ resultCount, searchPlaceho
       {/* Search + filter button */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1 min-w-0">
-          <Search className="w-5 h-5 text-[#686E6A] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+          <Search className="w-5 h-5 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
           <input
             id="recipe-search-input"
             type="search"
@@ -45,14 +45,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({ resultCount, searchPlaceho
             placeholder={searchPlaceholder}
             value={filters.searchQuery}
             onChange={(e) => setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))}
-            className="w-full h-12 bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-xl pl-11 pr-12 text-[#2D3E40] placeholder:text-[#686E6A] focus:outline-hidden focus:border-[#4A7856] focus:ring-2 focus:ring-[#4A7856]/15 shadow-2xs transition-all [&::-webkit-search-cancel-button]:hidden"
+            className="w-full h-12 bg-card border border-border hover:border-accent/50 rounded-xl pl-11 pr-12 text-text-main placeholder:text-text-muted focus:outline-hidden focus:border-accent focus:ring-2 focus:ring-accent/15 shadow-2xs transition-all [&::-webkit-search-cancel-button]:hidden"
           />
           {filters.searchQuery && (
             <button
               type="button"
               onClick={() => setFilters((prev) => ({ ...prev, searchQuery: '' }))}
               aria-label="Suche leeren"
-              className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-[#686E6A] hover:text-[#2D3E40] hover:bg-[#F1F5F2] cursor-pointer"
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-text-muted hover:text-text-main hover:bg-accent-tint cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -67,14 +67,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({ resultCount, searchPlaceho
           aria-label={activeFilters.length > 0 ? `Filter öffnen, ${activeFilters.length} aktiv` : 'Filter öffnen'}
           className={`relative h-12 min-w-12 px-3.5 sm:px-4 rounded-xl border flex items-center justify-center gap-2 text-sm font-bold transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs ${
             activeFilters.length > 0
-              ? 'bg-[#F1F5F2] border-[#4A7856]/50 text-[#4A7856]'
-              : 'bg-white border-[#ECEBE8] text-[#2D3E40] hover:border-[#4A7856]/50'
+              ? 'bg-accent-tint border-accent/50 text-accent'
+              : 'bg-card border-border text-text-main hover:border-accent/50'
           }`}
         >
           <SlidersHorizontal className="w-5 h-5" />
           <span className="hidden sm:inline">Filter</span>
           {activeFilters.length > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-[#4A7856] text-white text-[11px] font-bold flex items-center justify-center shadow-xs">
+            <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-accent text-on-accent text-[11px] font-bold flex items-center justify-center shadow-xs">
               {activeFilters.length}
             </span>
           )}
@@ -99,8 +99,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({ resultCount, searchPlaceho
                 onClick={() => setFilters((prev) => ({ ...prev, category: cat.value }))}
                 className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 ${
                   selected
-                    ? 'bg-[#4A7856] border-[#4A7856] text-white shadow-2xs'
-                    : 'bg-white border-[#ECEBE8] text-[#2D3E40] hover:border-[#4A7856]/50 hover:bg-[#F1F5F2]'
+                    ? 'bg-accent border-accent text-on-accent shadow-2xs'
+                    : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
                 }`}
               >
                 {cat.emoji && <span aria-hidden="true">{cat.emoji}</span>}
@@ -120,7 +120,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ resultCount, searchPlaceho
               type="button"
               onClick={() => removeFilter(chip.key)}
               aria-label={`Filter entfernen: ${chip.label}`}
-              className="h-9 pl-3 pr-2 rounded-full bg-[#F1F5F2] border border-[#4A7856]/25 text-[#4A7856] text-xs font-bold flex items-center gap-1.5 hover:bg-[#E3EBE5] transition-colors cursor-pointer"
+              className="h-9 pl-3 pr-2 rounded-full bg-accent-tint border border-accent/25 text-accent text-xs font-bold flex items-center gap-1.5 hover:bg-[#E3EBE5] transition-colors cursor-pointer"
             >
               {chip.label}
               <X className="w-3.5 h-3.5" />
@@ -130,7 +130,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ resultCount, searchPlaceho
             id="reset-filters-btn"
             type="button"
             onClick={() => setFilters((prev) => ({ ...prev, ...SHEET_FILTER_DEFAULTS }))}
-            className="h-9 px-2 text-xs font-bold text-[#686E6A] hover:text-[#2D3E40] underline-offset-2 hover:underline cursor-pointer"
+            className="h-9 px-2 text-xs font-bold text-text-muted hover:text-text-main underline-offset-2 hover:underline cursor-pointer"
           >
             Alle zurücksetzen
           </button>

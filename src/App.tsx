@@ -44,10 +44,10 @@ function RouteLoadingFallback() {
   return (
     <div className="min-h-[45vh] flex flex-col items-center justify-center py-12 px-4 animate-in fade-in duration-150">
       <div className="relative flex items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-2 border-[#ECEBE8] border-t-[#4A7856] animate-spin" />
+        <div className="w-10 h-10 rounded-full border-2 border-border border-t-accent animate-spin" />
         <span className="absolute text-sm">🌱</span>
       </div>
-      <p className="text-xs font-medium text-[#686E6A] mt-3 tracking-wide">Wird geladen...</p>
+      <p className="text-xs font-medium text-text-muted mt-3 tracking-wide">Wird geladen...</p>
     </div>
   );
 }
@@ -82,7 +82,7 @@ function MainApp() {
   const isExplorerRoute = location.pathname === '/' || location.pathname === '/favorites';
 
   return (
-    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-main)] flex flex-col font-sans selection:bg-[#F1F5F2] selection:text-[#4A7856]">
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-main)] flex flex-col font-sans selection:bg-accent-tint selection:text-accent">
       {/* Scroll to Top on every route transition */}
       <ScrollToTop />
 
@@ -141,10 +141,10 @@ function MainApp() {
 
       {/* Footer - only on non-detail pages */}
       {!isRecipeDetailPage && (
-        <footer className="mt-16 bg-white border-t border-[#ECEBE8] py-8 px-4 text-center text-xs text-[#686E6A]">
+        <footer className="mt-16 bg-card border-t border-border py-8 px-4 text-center text-xs text-text-muted">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 font-semibold text-[#2D3E40]">
-              <span className="p-1 rounded-md bg-[#4A7856] text-white text-xs">🌱</span>
+            <div className="flex items-center gap-2 font-semibold text-text-main">
+              <span className="p-1 rounded-md bg-accent text-on-accent text-xs">🌱</span>
               <span>VeggieChef • 100% Vegetarische & Vegane Koch-App</span>
             </div>
             <div>

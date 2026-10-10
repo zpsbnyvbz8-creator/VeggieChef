@@ -77,7 +77,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ visible = true }) => {
     >
       <nav
         aria-label="Hauptnavigation"
-        className="flex items-center rounded-full bg-white/95 backdrop-blur-md border border-[#E3DFD5] shadow-lg shadow-black/10 px-1.5 py-1.5"
+        className="flex items-center rounded-full bg-card/95 backdrop-blur-md border border-[#E3DFD5] shadow-lg shadow-black/10 px-1.5 py-1.5"
       >
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -96,12 +96,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ visible = true }) => {
               title={tab.ariaLabel}
               className={`flex items-center gap-2 min-h-[48px] min-w-[44px] rounded-full px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-all cursor-pointer touch-manipulation active:scale-95 ${
                 isActive
-                  ? 'bg-[#4A7856] text-white shadow-sm'
-                  : 'text-[#686E6A] hover:bg-[#F1F5F2] hover:text-[#2D3E40]'
+                  ? 'bg-accent text-on-accent shadow-sm'
+                  : 'text-text-muted hover:bg-accent-tint hover:text-text-main'
               }`}
             >
               <Icon
-                className={`h-5 w-5 shrink-0 ${isActive ? 'text-white' : 'text-[#686E6A]'}`}
+                className={`h-5 w-5 shrink-0 ${isActive ? 'text-on-accent' : 'text-text-muted'}`}
                 aria-hidden="true"
               />
               <span className="hidden min-[370px]:inline truncate">{tab.label}</span>

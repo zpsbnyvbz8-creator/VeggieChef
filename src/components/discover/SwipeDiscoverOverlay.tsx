@@ -56,36 +56,36 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ recipe, direction, onSwipe, onOpe
       onDragEnd={handleDragEnd}
       onTap={() => onOpen(recipe)}
       aria-label={`${recipe.title}. Tippen für Details, nach rechts wischen zum Merken, nach links zum Überspringen.`}
-      className="absolute inset-0 rounded-3xl bg-white border border-[#ECEBE8] shadow-lg overflow-hidden flex flex-col cursor-grab active:cursor-grabbing select-none touch-pan-y"
+      className="absolute inset-0 rounded-3xl bg-card border border-border shadow-lg overflow-hidden flex flex-col cursor-grab active:cursor-grabbing select-none touch-pan-y"
     >
       {/* Stamps */}
       <motion.div
         style={{ opacity: likeOpacity }}
-        className="absolute top-5 left-5 z-20 pointer-events-none -rotate-12 flex items-center gap-2 px-3.5 py-1.5 rounded-xl border-[3px] border-[#4A7856] bg-white/90 text-[#4A7856] font-black text-xl"
+        className="absolute top-5 left-5 z-20 pointer-events-none -rotate-12 flex items-center gap-2 px-3.5 py-1.5 rounded-xl border-[3px] border-accent bg-card/90 text-accent font-black text-xl"
       >
         <Heart className="w-5 h-5 fill-current" /> MERKEN
       </motion.div>
       <motion.div
         style={{ opacity: skipOpacity }}
-        className="absolute top-5 right-5 z-20 pointer-events-none rotate-12 flex items-center gap-2 px-3.5 py-1.5 rounded-xl border-[3px] border-[#C91C43] bg-white/90 text-[#C91C43] font-black text-xl"
+        className="absolute top-5 right-5 z-20 pointer-events-none rotate-12 flex items-center gap-2 px-3.5 py-1.5 rounded-xl border-[3px] border-rose-500 bg-card/90 text-rose-500 font-black text-xl"
       >
         <X className="w-5 h-5 stroke-[3]" /> WEITER
       </motion.div>
 
-      <div className="relative flex-1 min-h-0 basis-3/5 bg-[#FAF9F6]">
+      <div className="relative flex-1 min-h-0 basis-3/5 bg-surface">
         <RecipeImage recipe={recipe} size="hero" imgClassName="w-full h-full object-cover pointer-events-none" alt="" />
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
         <div className="absolute top-4 left-4 flex gap-2">
-          <span className="h-7 px-3 inline-flex items-center rounded-full bg-white/95 text-[#2D3E40] text-xs font-bold">
+          <span className="h-7 px-3 inline-flex items-center rounded-full bg-card/95 text-text-main text-xs font-bold">
             {recipe.category}
           </span>
           {recipe.isVegan && (
-            <span className="h-7 px-3 inline-flex items-center rounded-full bg-black/50 backdrop-blur-xs text-white text-xs font-bold">
+            <span className="h-7 px-3 inline-flex items-center rounded-full bg-black/50 backdrop-blur-xs text-on-accent text-xs font-bold">
               🌱 Vegan
             </span>
           )}
         </div>
-        <div className="absolute bottom-3 left-4 right-4 flex flex-wrap gap-2 text-xs font-semibold text-white">
+        <div className="absolute bottom-3 left-4 right-4 flex flex-wrap gap-2 text-xs font-semibold text-on-accent">
           <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-black/50 backdrop-blur-xs">
             <Clock className="w-3.5 h-3.5 text-amber-300" /> {recipe.totalTimeMinutes} Min.
           </span>
@@ -99,16 +99,16 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ recipe, direction, onSwipe, onOpe
       </div>
 
       <div className="basis-2/5 shrink-0 p-4 sm:p-5 flex flex-col gap-2 min-h-0 overflow-hidden">
-        <h2 className="text-xl font-extrabold tracking-tight text-[#2D3E40] leading-snug line-clamp-2">{recipe.title}</h2>
-        <p className="text-sm text-[#686E6A] line-clamp-2">{recipe.subtitle}</p>
+        <h2 className="text-xl font-extrabold tracking-tight text-text-main leading-snug line-clamp-2">{recipe.title}</h2>
+        <p className="text-sm text-text-muted line-clamp-2">{recipe.subtitle}</p>
         <div className="mt-auto flex flex-wrap gap-1.5">
           {recipe.ingredients.slice(0, 4).map((ing, idx) => (
-            <span key={idx} className="px-2.5 py-1 rounded-lg bg-[#FAF9F6] border border-[#ECEBE8] text-xs font-medium text-[#2D3E40]">
+            <span key={idx} className="px-2.5 py-1 rounded-lg bg-surface border border-border text-xs font-medium text-text-main">
               {ing.name}
             </span>
           ))}
           {recipe.ingredients.length > 4 && (
-            <span className="px-2 py-1 text-xs font-medium text-[#686E6A]">+{recipe.ingredients.length - 4}</span>
+            <span className="px-2 py-1 text-xs font-medium text-text-muted">+{recipe.ingredients.length - 4}</span>
           )}
         </div>
       </div>
@@ -192,16 +192,16 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
       aria-label="Rezepte entdecken"
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className="fixed inset-0 z-[60] bg-[#FAF9F6] flex flex-col outline-hidden animate-in fade-in duration-200"
+      className="fixed inset-0 z-[60] bg-surface flex flex-col outline-hidden animate-in fade-in duration-200"
     >
       {/* Top bar */}
       <div className="flex items-center justify-between gap-3 px-3 sm:px-6 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
         <div className="min-w-0">
-          <h2 className="text-lg font-extrabold tracking-tight text-[#2D3E40] flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#4A7856]" /> Entdecken
+          <h2 className="text-lg font-extrabold tracking-tight text-text-main flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-accent" /> Entdecken
           </h2>
           {!finished && (
-            <p className="text-xs font-semibold text-[#686E6A]">
+            <p className="text-xs font-semibold text-text-muted">
               {index + 1} von {deck.length}
             </p>
           )}
@@ -211,7 +211,7 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
           type="button"
           onClick={onClose}
           aria-label="Entdecken beenden"
-          className="w-11 h-11 rounded-full bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer active:scale-95"
+          className="w-11 h-11 rounded-full bg-card border border-border hover:bg-accent-tint text-text-main flex items-center justify-center transition-colors cursor-pointer active:scale-95"
         >
           <X className="w-5 h-5" />
         </button>
@@ -220,9 +220,9 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
       {/* Progress */}
       {!finished && (
         <div className="px-3 sm:px-6" aria-hidden="true">
-          <div className="max-w-md mx-auto h-1 rounded-full bg-[#ECEBE8] overflow-hidden">
+          <div className="max-w-md mx-auto h-1 rounded-full bg-border overflow-hidden">
             <div
-              className="h-full bg-[#4A7856] transition-all duration-300"
+              className="h-full bg-accent transition-all duration-300"
               style={{ width: `${(index / Math.max(deck.length, 1)) * 100}%` }}
             />
           </div>
@@ -233,12 +233,12 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
       <div className="flex-1 min-h-0 w-full max-w-md mx-auto px-4 py-4 flex flex-col">
         {finished ? (
           <div className="m-auto text-center space-y-5 max-w-xs">
-            <div className="w-20 h-20 mx-auto rounded-3xl bg-[#F1F5F2] text-4xl flex items-center justify-center">🎉</div>
+            <div className="w-20 h-20 mx-auto rounded-3xl bg-accent-tint text-4xl flex items-center justify-center">🎉</div>
             <div className="space-y-1.5">
-              <h3 className="text-2xl font-extrabold text-[#2D3E40]">
+              <h3 className="text-2xl font-extrabold text-text-main">
                 {deck.length === 0 ? 'Keine Rezepte zum Entdecken' : 'Alles durchgeschaut!'}
               </h3>
-              <p className="text-sm text-[#686E6A] leading-relaxed">
+              <p className="text-sm text-text-muted leading-relaxed">
                 {deck.length === 0
                   ? 'Passe deine Filter an, um neue Vorschläge zu erhalten.'
                   : `Du hast ${history.filter((h) => h.liked).length} Rezepte gemerkt. Ab damit in die Favoriten oder noch eine Runde?`}
@@ -249,7 +249,7 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
                 <button
                   type="button"
                   onClick={restart}
-                  className="h-12 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-bold flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+                  className="h-12 rounded-xl bg-accent hover:bg-accent-hover text-on-accent font-bold flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
                 >
                   <RotateCcw className="w-4 h-4" /> Neue Runde
                 </button>
@@ -260,7 +260,7 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
                   onClose();
                   navigate('/favorites');
                 }}
-                className="h-12 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] text-[#2D3E40] font-bold transition-all active:scale-95 cursor-pointer"
+                className="h-12 rounded-xl bg-card border border-border hover:bg-accent-tint text-text-main font-bold transition-all active:scale-95 cursor-pointer"
               >
                 Zu meinen Favoriten
               </button>
@@ -272,9 +272,9 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
               {next && (
                 <div
                   aria-hidden="true"
-                  className="absolute inset-0 rounded-3xl bg-white border border-[#ECEBE8] shadow-md scale-[0.95] translate-y-3 overflow-hidden"
+                  className="absolute inset-0 rounded-3xl bg-card border border-border shadow-md scale-[0.95] translate-y-3 overflow-hidden"
                 >
-                  <div className="h-3/5 w-full bg-[#F1F5F2]">
+                  <div className="h-3/5 w-full bg-accent-tint">
                     <RecipeImage recipe={next} size="hero" imgClassName="w-full h-full object-cover opacity-70" alt="" />
                   </div>
                 </div>
@@ -293,7 +293,7 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
                 onClick={undo}
                 disabled={history.length === 0}
                 aria-label="Letzte Aktion rückgängig machen"
-                className="w-12 h-12 rounded-full bg-white border border-[#ECEBE8] text-[#686E6A] hover:text-[#2D3E40] disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center shadow-xs transition-all active:scale-90 cursor-pointer"
+                className="w-12 h-12 rounded-full bg-card border border-border text-text-muted hover:text-text-main disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center shadow-xs transition-all active:scale-90 cursor-pointer"
               >
                 <RotateCcw className="w-5 h-5" />
               </button>
@@ -302,7 +302,7 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
                 type="button"
                 onClick={() => swipe(-1)}
                 aria-label="Überspringen"
-                className="w-16 h-16 rounded-full bg-white border-2 border-[#FECDD3] text-[#C91C43] hover:bg-[#FFF1F2] flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-90 cursor-pointer"
+                className="w-16 h-16 rounded-full bg-card border-2 border-rose-200 text-rose-500 hover:bg-rose-50 flex items-center justify-center shadow-sm transition-all hover:scale-105 active:scale-90 cursor-pointer"
               >
                 <X className="w-8 h-8 stroke-[2.5]" />
               </button>
@@ -311,9 +311,9 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
                 type="button"
                 onClick={() => swipe(1)}
                 aria-label="Merken"
-                className="w-16 h-16 rounded-full bg-[#4A7856] hover:bg-[#3D6447] text-white flex items-center justify-center shadow-md transition-all hover:scale-105 active:scale-90 cursor-pointer"
+                className="w-16 h-16 rounded-full bg-accent hover:bg-accent-hover text-on-accent flex items-center justify-center shadow-md transition-all hover:scale-105 active:scale-90 cursor-pointer"
               >
-                <Heart className="w-8 h-8 fill-white" />
+                <Heart className="w-8 h-8 fill-on-accent" />
               </button>
               <button
                 type="button"
@@ -325,12 +325,12 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
                   setCookingModeRecipe({ recipe: active, servings: active.servings || 2 });
                 }}
                 aria-label="Kochmodus starten"
-                className="w-12 h-12 rounded-full bg-white border border-[#ECEBE8] text-[#C86D3B] hover:bg-[#FDF6F0] flex items-center justify-center shadow-xs transition-all active:scale-90 cursor-pointer"
+                className="w-12 h-12 rounded-full bg-card border border-border text-season-autumn hover:bg-[#FDF6F0] flex items-center justify-center shadow-xs transition-all active:scale-90 cursor-pointer"
               >
                 <ChefHat className="w-5 h-5" />
               </button>
             </div>
-            <p className="hidden sm:block text-center text-xs text-[#686E6A] pb-1">
+            <p className="hidden sm:block text-center text-xs text-text-muted pb-1">
               ← überspringen · → merken · Enter für Details · Z rückgängig
             </p>
           </>

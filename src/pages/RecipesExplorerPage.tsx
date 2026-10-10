@@ -115,11 +115,11 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           {isFavorites && (
-            <p className="text-xs sm:text-sm font-medium text-[#686E6A]">
+            <p className="text-xs sm:text-sm font-medium text-text-muted">
               {favorites.length} gespeichert
             </p>
           )}
-          <h1 className={`${isFavorites ? 'mt-0.5 ' : ''}text-xl sm:text-3xl font-extrabold tracking-tight text-[#2D3E40] leading-tight text-balance`}>
+          <h1 className={`${isFavorites ? 'mt-0.5 ' : ''}text-xl sm:text-3xl font-extrabold tracking-tight text-text-main leading-tight text-balance`}>
             {isFavorites ? 'Deine Favoriten' : 'Was kochen wir heute?'}
           </h1>
         </div>
@@ -129,7 +129,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
           onClick={() => setIsAddRecipeOpen(true)}
           aria-label="Neues Gericht hinzufügen"
           title="Neues Gericht per KI, Foto oder manuell hinzufügen"
-          className="shrink-0 h-12 min-w-12 sm:px-5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-bold text-sm shadow-xs flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+          className="shrink-0 h-12 min-w-12 sm:px-5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent font-bold text-sm shadow-xs flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
         >
           <Plus className="w-5 h-5" />
           <span className="hidden sm:inline">Neues Gericht</span>
@@ -150,21 +150,21 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
               id="explorer-slot-machine-btn"
               type="button"
               onClick={() => setIsSlotOpen(true)}
-              className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-[#C86D3B]/25 bg-[#FFF8F0] hover:border-[#C86D3B]/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+              className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-season-autumn/25 bg-[#FFF8F0] hover:border-season-autumn/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
             >
               <span className="text-3xl sm:text-4xl leading-none group-hover:rotate-12 transition-transform" aria-hidden="true">
                 🎲
               </span>
-              <span className="text-base sm:text-lg font-bold text-[#2D3E40] leading-tight">Überrasch mich</span>
+              <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Überrasch mich</span>
             </button>
             <button
               id="explorer-swipe-btn"
               type="button"
               onClick={() => setIsSwipeOpen(true)}
-              className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-[#4A7856]/25 bg-[#F6F9F6] hover:border-[#4A7856]/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+              className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-accent/25 bg-[#F6F9F6] hover:border-accent/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
             >
-              <Layers className="w-7 h-7 sm:w-8 sm:h-8 text-[#4A7856] group-hover:scale-110 transition-transform" aria-hidden="true" />
-              <span className="text-base sm:text-lg font-bold text-[#2D3E40] leading-tight">Entdecken</span>
+              <Layers className="w-7 h-7 sm:w-8 sm:h-8 text-accent group-hover:scale-110 transition-transform" aria-hidden="true" />
+              <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Entdecken</span>
             </button>
           </div>
 
@@ -173,18 +173,18 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
             id="explorer-fridge-cta"
             type="button"
             onClick={() => navigate('/fridge')}
-            className="group flex w-full items-center gap-4 rounded-2xl bg-[#4A7856] px-4 py-4 text-left text-white shadow-sm hover:bg-[#3D6447] transition-all active:scale-[0.99] cursor-pointer"
+            className="group flex w-full items-center gap-4 rounded-2xl bg-accent px-4 py-4 text-left text-on-accent shadow-sm hover:bg-accent-hover transition-all active:scale-[0.99] cursor-pointer"
           >
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/15" aria-hidden="true">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-card/15" aria-hidden="true">
               <Sparkles className="h-6 w-6" />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-lg font-bold leading-tight">Was hast du im Haus?</span>
-              <span className="mt-0.5 block text-sm text-white/80">
+              <span className="mt-0.5 block text-sm text-on-accent/80">
                 Vorratskammer & KI – daraus wird ein Rezept.
               </span>
             </span>
-            <ChevronDown className="h-5 w-5 -rotate-90 text-white/80 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+            <ChevronDown className="h-5 w-5 -rotate-90 text-on-accent/80 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
           </button>
         </>
       )}
@@ -197,10 +197,10 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
       <section aria-labelledby="results-title" className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h2 id="results-title" className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#2D3E40] truncate">
+            <h2 id="results-title" className="text-xl sm:text-2xl font-extrabold tracking-tight text-text-main truncate">
               {isFavorites ? 'Gespeicherte Rezepte' : isNarrowed ? 'Ergebnisse' : 'Alle Rezepte'}
             </h2>
-            <p className="text-sm text-[#686E6A]" aria-live="polite">
+            <p className="text-sm text-text-muted" aria-live="polite">
               {recipes.length} {recipes.length === 1 ? 'Rezept' : 'Rezepte'}
             </p>
           </div>
@@ -210,12 +210,12 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
               <label htmlFor="filter-sort-by" className="sr-only">
                 Sortierung
               </label>
-              <ArrowUpDown className="w-4 h-4 text-[#686E6A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+              <ArrowUpDown className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
               <select
                 id="filter-sort-by"
                 value={filters.sortBy}
                 onChange={(e) => setFilters((prev) => ({ ...prev, sortBy: e.target.value as FilterState['sortBy'] }))}
-                className="appearance-none h-11 max-w-[10rem] sm:max-w-none bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-xl pl-9 pr-9 text-sm font-semibold text-[#2D3E40] cursor-pointer focus:outline-hidden focus:border-[#4A7856] focus:ring-2 focus:ring-[#4A7856]/15 transition-all"
+                className="appearance-none h-11 max-w-[10rem] sm:max-w-none bg-card border border-border hover:border-accent/50 rounded-xl pl-9 pr-9 text-sm font-semibold text-text-main cursor-pointer focus:outline-hidden focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all"
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -223,14 +223,14 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+              <ChevronDown className="w-4 h-4 text-text-muted absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
             </div>
 
             {/* Layout-Toggle: Raster / Liste */}
             <div
               role="group"
               aria-label="Darstellung"
-              className="flex items-center rounded-xl border border-[#ECEBE8] bg-white overflow-hidden shrink-0"
+              className="flex items-center rounded-xl border border-border bg-card overflow-hidden shrink-0"
             >
               <button
                 type="button"
@@ -239,7 +239,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
                 aria-label="Rasteransicht"
                 title="Raster"
                 className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors cursor-pointer ${
-                  viewMode === 'grid' ? 'bg-[#F1F5F2] text-[#4A7856]' : 'text-[#686E6A] hover:bg-[#FAF9F6]'
+                  viewMode === 'grid' ? 'bg-accent-tint text-accent' : 'text-text-muted hover:bg-surface'
                 }`}
               >
                 <LayoutGrid className="w-4 h-4" aria-hidden="true" />
@@ -250,8 +250,8 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
                 aria-pressed={viewMode === 'list'}
                 aria-label="Listenansicht"
                 title="Liste"
-                className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center border-l border-[#ECEBE8] transition-colors cursor-pointer ${
-                  viewMode === 'list' ? 'bg-[#F1F5F2] text-[#4A7856]' : 'text-[#686E6A] hover:bg-[#FAF9F6]'
+                className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center border-l border-border transition-colors cursor-pointer ${
+                  viewMode === 'list' ? 'bg-accent-tint text-accent' : 'text-text-muted hover:bg-surface'
                 }`}
               >
                 <List className="w-4 h-4" aria-hidden="true" />
@@ -295,14 +295,14 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
                   id="load-more-recipes-btn"
                   type="button"
                   onClick={() => setVisibleCount((c) => c + RECIPES_PAGE_SIZE)}
-                  className="h-12 px-6 rounded-xl bg-white border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#2D3E40] font-bold text-sm shadow-2xs transition-all active:scale-95 cursor-pointer"
+                  className="h-12 px-6 rounded-xl bg-card border border-border hover:bg-accent-tint hover:border-accent/40 text-text-main font-bold text-sm shadow-2xs transition-all active:scale-95 cursor-pointer"
                 >
                   Mehr laden ({recipes.length - visibleCount} weitere)
                 </button>
               </div>
             ) : (
               recipes.length > RECIPES_PAGE_SIZE && (
-                <p className="text-center text-xs font-medium text-[#686E6A] pt-2">Das waren alle {recipes.length} Rezepte</p>
+                <p className="text-center text-xs font-medium text-text-muted pt-2">Das waren alle {recipes.length} Rezepte</p>
               )
             )}
           </>

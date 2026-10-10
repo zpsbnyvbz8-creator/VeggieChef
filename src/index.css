@@ -1,65 +1,129 @@
 @import "tailwindcss";
 
-@theme {
-  --color-accent: #4A7856;
-  --color-accent-hover: #3D6447;
-  --color-accent-tint: #F1F5F2;
-  --color-accent-border: #CCD5CF;
-  --color-surface: #FAF9F6;
-  --color-card: #FFFFFF;
-  --color-border: #ECEBE8;
-  --color-text-main: #2D3E40;
-  --color-text-muted: #686E6A;
-  --color-rose-50: #FFF1F2;
-  --color-rose-100: #FFE4E6;
-  --color-rose-200: #FECDD3;
-  --color-rose-300: #FDA4AF;
-  --color-rose-400: #C91C43;
-  --color-rose-500: #C91C43;
-  --color-rose-600: #B91C3C;
-  --color-rose-700: #991331;
-  --color-rose-800: #881334;
-  --color-rose-900: #4C0519;
-  --color-red-50: #FFF1F2;
-  --color-red-100: #FFE4E6;
-  --color-red-200: #FECDD3;
-  --color-red-400: #C91C43;
-  --color-red-500: #C91C43;
-  --color-red-600: #B91C3C;
-  --color-red-700: #991331;
-}
-
+/* =====================================================================
+   FARB-TOKENS – EINZIGE Quelle der Rohwerte (:root).
+   Dark-Mode-vorbereitet: Komponenten nutzen Utilities, die über
+   @theme inline auf diese Laufzeit-Variablen zeigen. Ein späterer
+   [data-theme="dark"] muss nur Variablenwerte überschreiben.
+   ===================================================================== */
 :root {
+  color-scheme: light;
+
+  /* Flächen */
+  --page: #F4F1EA;
+  --surface: #FAF9F6;
+  --card: #FFFFFF;
+  --sheet: #FFFFFF;
+  --border: #ECEBE8;
+
+  /* Text */
+  --text-main: #2D3E40;
+  --text-muted: #686E6A;
+  --on-accent: #FFFFFF;
+
+  /* Akzent */
   --accent: #4A7856;
   --accent-hover: #3D6447;
   --accent-tint: #F1F5F2;
   --accent-border: #CCD5CF;
-  --surface: #FAF9F6;
-  --card: #FFFFFF;
-  --border: #ECEBE8;
-  --text-main: #2D3E40;
-  --text-muted: #686E6A;
+  --accent-thumb-top: #538561;
+  --accent-thumb-bottom: #447150;
+
+  /* Favorit / Fehler (bestehende rose/red-Werte, unverändert) */
+  --favorite: #C91C43;
+  --rose-50: #FFF1F2;
+  --rose-100: #FFE4E6;
+  --rose-200: #FECDD3;
+  --rose-300: #FDA4AF;
+  --rose-400: #C91C43;
+  --rose-500: #C91C43;
+  --rose-600: #B91C3C;
+  --rose-700: #991331;
+  --rose-800: #881334;
+  --rose-900: #4C0519;
+  --red-50: #FFF1F2;
+  --red-100: #FFE4E6;
+  --red-200: #FECDD3;
+  --red-400: #C91C43;
+  --red-500: #C91C43;
+  --red-600: #B91C3C;
+  --red-700: #991331;
+
+  /* Fokus */
+  --focus-ring: var(--accent);
+
+  /* Herbst-Saison: kräftiges Orange nur für große Schrift, Icons & Rahmen
+     (#C86D3B ≈ 3,5:1 auf Apricot); kleine Texte/Buttons nutzen das dunklere
+     --season-autumn-text (#A9552B ≈ 5:1). */
+  --season-autumn: #C86D3B;
+  --season-autumn-bg: #FFF9F3;
+  --season-autumn-text: #A9552B;
+
+  /* Kanal-Tokens für Schatten & Scrim: rgb(var(--shadow-rgb) / 0.22) */
+  --shadow-rgb: 45 62 64;   /* #2D3E40 */
+  --scrim-rgb: 30 41 43;    /* rgba(30,41,43,…) */
+  --black-rgb: 0 0 0;
+  --accent-rgb: 74 120 86;  /* #4A7856 */
+
+  /* Rückwärtskompatible Aliase (Bestand; siehe Phase-1-Bericht) */
+  --bg-page: var(--page);
+  --bg-surface: var(--surface);
+  --bg-card: var(--card);
+}
+
+/* Dark Mode: noch nicht ausgeliefert – nichts überschreiben.
+[data-theme="dark"] {
+  TODO: nur Variablenwerte überschreiben (z. B. --page, --surface, --card,
+  --text-main, --text-muted, --border, --accent-…). Keine Farben in
+  Komponenten hartkodieren.
+} */
+
+/* Tailwind-Utilities zeigen per @theme inline auf die Laufzeit-Variablen,
+   damit hell/dunkel ohne Rebuild wechseln kann. Alle bisherigen
+   Utility-Namen bleiben identisch erreichbar. */
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-sheet: var(--sheet);
+  --color-border: var(--border);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-on-accent: var(--on-accent);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-tint: var(--accent-tint);
+  --color-accent-border: var(--accent-border);
+  --color-favorite: var(--favorite);
+  --color-season-autumn: var(--season-autumn);
+  --color-season-autumn-bg: var(--season-autumn-bg);
+  --color-season-autumn-text: var(--season-autumn-text);
+  --color-rose-50: var(--rose-50);
+  --color-rose-100: var(--rose-100);
+  --color-rose-200: var(--rose-200);
+  --color-rose-300: var(--rose-300);
+  --color-rose-400: var(--rose-400);
+  --color-rose-500: var(--rose-500);
+  --color-rose-600: var(--rose-600);
+  --color-rose-700: var(--rose-700);
+  --color-rose-800: var(--rose-800);
+  --color-rose-900: var(--rose-900);
+  --color-red-50: var(--red-50);
+  --color-red-100: var(--red-100);
+  --color-red-200: var(--red-200);
+  --color-red-400: var(--red-400);
+  --color-red-500: var(--red-500);
+  --color-red-600: var(--red-600);
+  --color-red-700: var(--red-700);
 }
 
 @layer base {
-  :root {
-    --bg-page: #F4F1EA;
-    --bg-surface: #FAF9F6;
-    --bg-card: #FFFFFF;
-    --border: #ECEBE8;
-    --text-main: #2D3E40;
-    --text-muted: #686E6A;
-    --accent: #4A7856;
-    --accent-hover: #3D6447;
-    --accent-tint: #F1F5F2;
-  }
-
   html {
     height: 100%;
   }
 
   body {
-    background-color: var(--bg-page);
+    background-color: var(--page);
     color: var(--text-main);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     min-height: 100%;
@@ -76,19 +140,19 @@
   ::placeholder,
   input::placeholder,
   textarea::placeholder {
-    color: #686e6a;
+    color: var(--text-muted);
     opacity: 1;
   }
 
   h1, h2, h3, h4, h5, h6, .font-serif {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     letter-spacing: -0.02em;
-    color: #2D3E40;
+    color: var(--text-main);
   }
 
   /* Visible keyboard focus everywhere */
   :focus-visible {
-    outline: 2px solid #4A7856;
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -142,11 +206,11 @@ dialog.vc-sheet {
   width: 100%;
   max-width: 560px;
   max-height: 88dvh;
-  background: #ffffff;
-  color: #2d3e40;
+  background: var(--sheet);
+  color: var(--text-main);
   border-radius: 24px 24px 0 0;
   overflow: hidden;
-  box-shadow: 0 -12px 48px rgba(45, 62, 64, 0.22);
+  box-shadow: 0 -12px 48px rgb(var(--shadow-rgb) / 0.22);
   opacity: 0;
   transform: translateY(32px);
   transition:
@@ -166,7 +230,7 @@ dialog.vc-sheet[open] {
 }
 
 dialog.vc-sheet::backdrop {
-  background: rgba(30, 41, 43, 0);
+  background: rgb(var(--scrim-rgb) / 0);
   backdrop-filter: blur(0px);
   transition:
     background-color 0.25s ease-out,
@@ -176,10 +240,10 @@ dialog.vc-sheet::backdrop {
 }
 
 dialog.vc-sheet[open]::backdrop {
-  background: rgba(30, 41, 43, 0.45);
+  background: rgb(var(--scrim-rgb) / 0.45);
   backdrop-filter: blur(3px);
   @starting-style {
-    background: rgba(30, 41, 43, 0);
+    background: rgb(var(--scrim-rgb) / 0);
     backdrop-filter: blur(0px);
   }
 }
@@ -188,7 +252,7 @@ dialog.vc-sheet[open]::backdrop {
   dialog.vc-sheet {
     margin: auto;
     border-radius: 24px;
-    box-shadow: 0 24px 64px rgba(45, 62, 64, 0.28);
+    box-shadow: 0 24px 64px rgb(var(--shadow-rgb) / 0.28);
     transform: translateY(12px) scale(0.98);
   }
   dialog.vc-sheet[open] {
@@ -255,9 +319,9 @@ dialog.vc-sheet[open]::backdrop {
   height: 32px;
   margin-top: -12px;
   border-radius: 9px;
-  background: linear-gradient(180deg, #538561 0%, #447150 100%);
-  border: 3.5px solid #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(45, 62, 64, 0.15), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(180deg, var(--accent-thumb-top) 0%, var(--accent-thumb-bottom) 100%);
+  border: 3.5px solid var(--card);
+  box-shadow: 0 2px 6px rgb(var(--black-rgb) / 0.18), 0 4px 12px rgb(var(--shadow-rgb) / 0.15), 0 0 0 0.5px rgb(var(--black-rgb) / 0.08);
   cursor: grab;
   transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
   will-change: transform, box-shadow;
@@ -265,13 +329,13 @@ dialog.vc-sheet[open]::backdrop {
 
 .ios-slider:hover::-webkit-slider-thumb {
   transform: scale(1.08);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2), 0 6px 16px rgba(45, 62, 64, 0.2), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 3px 8px rgb(var(--black-rgb) / 0.2), 0 6px 16px rgb(var(--shadow-rgb) / 0.2), 0 0 0 0.5px rgb(var(--black-rgb) / 0.08);
 }
 
 .ios-slider:active::-webkit-slider-thumb {
   transform: scale(1.22);
   cursor: grabbing;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 8px 22px rgba(74, 120, 86, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgb(var(--black-rgb) / 0.25), 0 8px 22px rgb(var(--accent-rgb) / 0.3), 0 0 0 0.5px rgb(var(--black-rgb) / 0.1);
 }
 
 /* Firefox */
@@ -285,9 +349,9 @@ dialog.vc-sheet[open]::backdrop {
   width: 24px;
   height: 32px;
   border-radius: 9px;
-  background: linear-gradient(180deg, #538561 0%, #447150 100%);
-  border: 3.5px solid #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(45, 62, 64, 0.15), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(180deg, var(--accent-thumb-top) 0%, var(--accent-thumb-bottom) 100%);
+  border: 3.5px solid var(--card);
+  box-shadow: 0 2px 6px rgb(var(--black-rgb) / 0.18), 0 4px 12px rgb(var(--shadow-rgb) / 0.15), 0 0 0 0.5px rgb(var(--black-rgb) / 0.08);
   cursor: grab;
   transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
   will-change: transform, box-shadow;
@@ -296,12 +360,12 @@ dialog.vc-sheet[open]::backdrop {
 
 .ios-slider:hover::-moz-range-thumb {
   transform: scale(1.08);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2), 0 6px 16px rgba(45, 62, 64, 0.2), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 3px 8px rgb(var(--black-rgb) / 0.2), 0 6px 16px rgb(var(--shadow-rgb) / 0.2), 0 0 0 0.5px rgb(var(--black-rgb) / 0.08);
 }
 
 .ios-slider:active::-moz-range-thumb {
   transform: scale(1.22);
   cursor: grabbing;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 8px 22px rgba(74, 120, 86, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgb(var(--black-rgb) / 0.25), 0 8px 22px rgb(var(--accent-rgb) / 0.3), 0 0 0 0.5px rgb(var(--black-rgb) / 0.1);
 }
 
