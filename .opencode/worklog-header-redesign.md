@@ -3,7 +3,7 @@
 Prompt: „Farbgrundlage aufräumen (Dark-Mode-Vorbereitung), Header komplett neu,
 Entdecker-Feinschliff." Arbeit phasenweise, ein Commit pro Phase.
 
-Stand: Nach Phase 1 (Farb-Tokens). Teilweise uncommittete Folgeschritte.
+Stand: Nach Phase 2 (Header komplett neu). Phase 3 (Entdecker) als Nächstes.
 
 ---
 
@@ -87,9 +87,91 @@ begrenzt (keine style-Objekte, keine Strings, kein CSS).
 
 ### Commit
 - `git commit -m "Phase 1: Farb-Tokens zentralisiert & Dark-Mode-vorbereitet, Herbst-Kleinsttext-Kontrast"`
+- Commit `1a65a2d` auf Branch `neues-feature`.
 
 ---
 
-## Phase 2: Header komplett neu (offen)
-## Phase 3: Entdecker (offen)
-## Phase 4: Abschluss (offen)
+## Phase 2: Header komplett neu – UMGESETZT
+
+### b) Header-Tokens & CSS (`src/index.css`)
+- Neue Tokens in `:root`: `--header-top #F3DDBC`, `--header-panel #F8EAD3`,
+  `--header-line #E6CFA8`, `--header-fg var(--text-main)`,
+  `--header-icon var(--accent)`; `@theme inline`-Mapping
+  `--color-header-top/-panel/-line/-fg/-icon`.
+- `.vc-header-fade`: 28 px, `--header-panel → transparent`, pointer-events none,
+  backdrop-filter blur(8px) (+ `@supports`-Fallback) – unter der mobilen
+  Tab-Zeile UND bei 768–1023 unter der Ein-Zeilen-Headern.
+- `.vc-leaf-pattern`: feines Blatt-/Kräuter-Linienmotiv als Inline-SVG-
+  data-URI-Maske (150×48, repeat), sichtbare Farbe `var(--accent)`, Element
+  `opacity-10` → dezentes Muster, nie hinter Icons verdichtet.
+- `dialog.vc-topsheet`: natives `<dialog>` (showModal) mit `@starting-style`-
+  Animation von oben, max-h `60dvh`, Scrim `--scrim-rgb/0.45` + blur(3px),
+  Schatten `--shadow-rgb`. <640 volle Breite (rund 0/0/24/24), ≥640 oben rechts
+  `380px` (12px Rand), ≥768 `top: calc(env(safe-area-inset-top) + 78px)`
+  (unterhalb Header). X 44×44, Esc/Scrim/Swipe-up schließen.
+- `@keyframes vc-search-down` (Fade+slight translate, 220 ms) für Suchpanel.
+- PWA-Streifen `@media (display-mode: standalone)`: `.vc-status-strip` bleibt
+  beim Scroll-Ausblenden sichtbar, `.vc-header-root { padding-top: safe-area+8 }`.
+
+### c) `Header.tsx` – komplette Neuimplementierung
+- Zeile 1 (bg `--header-top`): Wortmarke (bei <380 px nur Icon), Desktop-Tabs
+  (ab 768 px inline), Lupe/Herz/Einkaufswagen/Menü je 44×44, Badges mit
+  2 px Ring in `--header-top`, `--header-icon` (≈3,86:1).
+- Zeile 2 (mobil, `--header-panel`): Tabs Entdecker/Vorratskammer/Wochenplaner
+  (reiner Text, 15 px/600, aktiv 3 px-Unterstreichung in `--accent`).
+- Suche: animiertes Panel unter der Tab-Zeile, Autofokus, Löschen-Button,
+  Schließen (X 44×44), Escape, Blur-Close (nicht beim Klick in Panel), teilt
+  Kontext-Zustand `filters.searchQuery` mit der FilterBar; von anderen Seiten
+  → Navigation zu `/` mit Begriff.
+- Menü (`dialog.vc-topsheet`, aria-haspopup/expanded, useLockBodyScroll):
+  Hauptbereiche 20 px fett (Einkaufswagen mit Badge, Vorratskammer,
+  Wochenplaner, Statistiken), Trennlinie, Mehr: Synchronisation (funktional,
+  Status „Lokal"/Gruppenname + Puls-Punkt), Profil/Einstellungen/Präferenzen
+  als Placeholder `aria-disabled` + „Bald verfügbar".
+- `onPinnedChange` → Header bleibt bei offener Suche/Menü sichtbar.
+
+### d) `HeaderWithScroll.tsx` – Scroll-Hide & theme-color
+- Scroll-Ausblenden nur <1024 px (matchMedia), 8 px-Schwelle, rAF/passive
+  (Hook `useScrollDirection`), `translateY(-100%) + opacity + visibility`,
+  200 ms; ≥1024 immer sichtbar mit Trennlinie; „gepinnt" bei offener Suche/Menü.
+- Dynamische theme-color: `#F3DDBC` sichtbar / `#F4F1EA` versteckt;
+  `index.html` Default-Meta auf `#F3DDBC`.
+
+### e) Bottom-Pille & App
+- `BottomNav.tsx` gelöscht (nur App.tsx referenzierte es), `USE_TOP_TABS_FALLBACK`
+  entfernt. App: `min-h-dvh`, Paddings
+  `pt-[calc(148px_+_env(safe-area-inset-top))] md:…(116px) lg:…(96px)`,
+  `pb-[calc(env(safe-area-inset-bottom)_+_1rem)]`; `CookingTimerBar` ohne
+  `offsetForBottomNav` (Default `bottom-0`; der Prop bleibt ungenutzt bestehen).
+
+### f) Abnahme (Automation)
+- `phase2-check.cjs`: **48/48 PASS** (Struktur/Farben/Tap-Ziele 44 px, Suche
+  inkl. Navigation von /shopping→/, Menü inkl. Platzhalter/Statistik//Sync,
+  Scroll-Hide beide Richtungen, theme-color, 320-Name, 768/1024/1280,
+  Querformat-Overflow).
+  - Hinweis: Tailwind v4 nutzt native `translate`-Eigenschaft → Assertion auf
+    `transform` war falsch (zeigt `none` bei ausgeblendetem Header), prüft
+    jetzt `translate`/`visibility`.
+- `phase2-extra.cjs`: **15/15 PASS** (Blattmotiv-Maske, Fade-Gradient+Blur,
+  Kontraste FG 8,47/9,44:1 · Icons 3,86:1 · Badges ≥4,2:1, Fokus-Ring,
+  aktiver Tab + aria-current, Tab-Navigation, Escape).
+- Layout-Abstand Header↔Inhalt auf allen 6 Routen bei 390/1024: 20/31 px. ✓
+- `npx tsc --noEmit` ✓ · `npx vite build` ✓ (Warnung „>500 kB chunk" vorbestehend).
+- Screenshots: `phase2-shots/` (390-top/search/menu, 320-top, 768-top, 1024-top,
+  1280-top/menu, 844-landscape, + je Route 390/1024).
+
+### g) Bericht: Abweichungen/Annahmen
+- PWA-Streifen & Standalone-Offset (display-mode) können im normalen Browser
+  nicht gerendert/geprüft werden → Umsetzung nach Spec, Verifikation nur als
+  CSS-Existenz (manueller Check im installierten Zustand nötig).
+- 768–1023-Fade startet ab `--header-panel` (nicht `--header-top`), da dort
+  keine Panel-Zeile mehr existiert – visuell kaum unterscheidbar, dokumentiert.
+- Tabs: „pure Text-Tabs" auch auf Desktop (konsistent zur mobilen Zeile;
+  Spezifikation nannte Icons nur für die Aktionsreihe).
+- Badge-Zahl „99+" ab 100; Herz-Badge behält bestehendes Orange `#D35400`
+  (Bestandsvisualisierung), Ring in `--header-top`.
+
+### Commit
+- Phase-2-Commitsteht unmittelbar an (Working Tree = Phase 2, HEAD = 1a65a2d).
+
+---

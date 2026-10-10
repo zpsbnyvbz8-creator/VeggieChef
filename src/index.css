@@ -59,6 +59,13 @@
   --season-autumn-bg: #FFF9F3;
   --season-autumn-text: #A9552B;
 
+  /* Header (Aprikose) – Phase 2 */
+  --header-top: #F3DDBC;
+  --header-panel: #F8EAD3;
+  --header-line: #E6CFA8;
+  --header-fg: var(--text-main);
+  --header-icon: var(--accent);
+
   /* Kanal-Tokens für Schatten & Scrim: rgb(var(--shadow-rgb) / 0.22) */
   --shadow-rgb: 45 62 64;   /* #2D3E40 */
   --scrim-rgb: 30 41 43;    /* rgba(30,41,43,…) */
@@ -98,6 +105,11 @@
   --color-season-autumn: var(--season-autumn);
   --color-season-autumn-bg: var(--season-autumn-bg);
   --color-season-autumn-text: var(--season-autumn-text);
+  --color-header-top: var(--header-top);
+  --color-header-panel: var(--header-panel);
+  --color-header-line: var(--header-line);
+  --color-header-fg: var(--header-fg);
+  --color-header-icon: var(--header-icon);
   --color-rose-50: var(--rose-50);
   --color-rose-100: var(--rose-100);
   --color-rose-200: var(--rose-200);
@@ -367,5 +379,163 @@ dialog.vc-sheet[open]::backdrop {
   transform: scale(1.22);
   cursor: grabbing;
   box-shadow: 0 4px 12px rgb(var(--black-rgb) / 0.25), 0 8px 22px rgb(var(--accent-rgb) / 0.3), 0 0 0 0.5px rgb(var(--black-rgb) / 0.1);
+}
+
+/* =====================================================================
+   HEADER (Phase 2)
+   ===================================================================== */
+
+/* Weicher Übergang vom Header zum Seiteninhalt:
+   --header-panel → transparent (24–32 px), pointer-events none. */
+.vc-header-fade {
+  height: 28px;
+  background: linear-gradient(to bottom, var(--header-panel), transparent);
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000, transparent);
+  mask-image: linear-gradient(to bottom, #000, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+/* Fallback ohne backdrop-filter: Gradient allein (siehe @supports unten) */
+@supports not ((backdrop-filter: blur(8px)) or (-webkit-backdrop-filter: blur(8px))) {
+  .vc-header-fade {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Feines Blatt-/Kräuter-Linienmotiv in der Zeile 1 – als CSS-Maske mit
+   currentColor-Ersatz: sichtbare Farbe = var(--accent), gedeckt über opacity. */
+.vc-leaf-pattern {
+  background-color: var(--accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='48' viewBox='0 0 150 48'%3E%3Cpath d='M16 34c0-10 8-18 20-17-1 12-9 18-20 17z' fill='none' stroke='black' stroke-width='1.2'/%3E%3Cpath d='M25 29c2-5 7-9 11-10' fill='none' stroke='black' stroke-width='0.9'/%3E%3Cpath d='M120 14c0-8 6-13 14-12-1 9-5 13-14 12z' fill='none' stroke='black' stroke-width='1.2'/%3E%3Cpath d='M127 11c1.5-3.5 4-6 7-7' fill='none' stroke='black' stroke-width='0.9'/%3E%3Cpath d='M84 6c0-4 3-7 8-6-.5 4-3 6-8 6z' fill='none' stroke='black' stroke-width='1'/%3E%3Cpath d='M88 4.5c1-2 2.5-3.5 4.5-4' fill='none' stroke='black' stroke-width='0.8'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='48' viewBox='0 0 150 48'%3E%3Cpath d='M16 34c0-10 8-18 20-17-1 12-9 18-20 17z' fill='none' stroke='black' stroke-width='1.2'/%3E%3Cpath d='M25 29c2-5 7-9 11-10' fill='none' stroke='black' stroke-width='0.9'/%3E%3Cpath d='M120 14c0-8 6-13 14-12-1 9-5 13-14 12z' fill='none' stroke='black' stroke-width='1.2'/%3E%3Cpath d='M127 11c1.5-3.5 4-6 7-7' fill='none' stroke='black' stroke-width='0.9'/%3E%3Cpath d='M84 6c0-4 3-7 8-6-.5 4-3 6-8 6z' fill='none' stroke='black' stroke-width='1'/%3E%3Cpath d='M88 4.5c1-2 2.5-3.5 4.5-4' fill='none' stroke='black' stroke-width='0.8'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='48' viewBox='0 0 150 48'%3E%3Cpath d='M16 34c0-10 8-18 20-17-1 12-9 18-20 17z' fill='none' stroke='black' stroke-width='1.2'/%3E%3Cpath d='M25 29c2-5 7-9 11-10' fill='none' stroke='black' stroke-width='0.9'/%3E%3Cpath d='M120 14c0-8 6-13 14-12-1 9-5 13-14 12z' fill='none' stroke='black' stroke-width='1.2'/%3E%3Cpath d='M127 11c1.5-3.5 4-6 7-7' fill='none' stroke='black' stroke-width='0.9'/%3E%3Cpath d='M84 6c0-4 3-7 8-6-.5 4-3 6-8 6z' fill='none' stroke='black' stroke-width='1'/%3E%3Cpath d='M88 4.5c1-2 2.5-3.5 4.5-4' fill='none' stroke='black' stroke-width='0.8'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 150px 48px;
+  mask-size: 150px 48px;
+}
+
+/* Nativer <dialog> als Top-Sheet (Menü): von oben, max 60dvh, Scrim.
+   < 640 px volle Breite; ≥ 640 px oben rechts verankert (380 px); ≥ 768 px
+   unterhalb des Headers. */
+dialog.vc-topsheet {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: auto;
+  margin: max(env(safe-area-inset-top), 8px) 0 0 0;
+  padding: 0;
+  border: 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 60dvh;
+  background: var(--header-panel);
+  color: var(--header-fg);
+  border-radius: 0 0 24px 24px;
+  overflow: hidden;
+  box-shadow: 0 24px 48px rgb(var(--shadow-rgb) / 0.22);
+  opacity: 0;
+  transform: translateY(-100%);
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    display 0.3s allow-discrete,
+    overlay 0.3s allow-discrete;
+}
+
+dialog.vc-topsheet[open] {
+  opacity: 1;
+  transform: translateY(0);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
+dialog.vc-topsheet::backdrop {
+  background: rgb(var(--scrim-rgb) / 0);
+  backdrop-filter: blur(0px);
+  transition:
+    background-color 0.22s ease-out,
+    backdrop-filter 0.22s ease-out,
+    display 0.22s allow-discrete,
+    overlay 0.22s allow-discrete;
+}
+
+dialog.vc-topsheet[open]::backdrop {
+  background: rgb(var(--scrim-rgb) / 0.45);
+  backdrop-filter: blur(3px);
+  @starting-style {
+    background: rgb(var(--scrim-rgb) / 0);
+    backdrop-filter: blur(0px);
+  }
+}
+
+@media (min-width: 640px) {
+  dialog.vc-topsheet {
+    top: max(env(safe-area-inset-top), 12px);
+    left: auto;
+    right: 12px;
+    margin: 0;
+    width: 380px;
+    max-width: calc(100vw - 24px);
+    border-radius: 24px;
+    box-shadow: 0 24px 64px rgb(var(--shadow-rgb) / 0.28);
+  }
+}
+
+@media (min-width: 768px) {
+  dialog.vc-topsheet {
+    top: calc(env(safe-area-inset-top) + 78px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.vc-topsheet,
+  dialog.vc-topsheet[open] {
+    transform: none;
+    transition-duration: 0.01s;
+  }
+}
+
+/* Animierte Suchleiste unter der Tab-Zeile */
+@keyframes vc-search-down {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.vc-search-panel {
+  animation: vc-search-down 0.22s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vc-search-panel {
+    animation: none;
+  }
+}
+
+/* PWA-Statusstreifen (display-mode: standalone): bleibt sichtbar, auch wenn
+   der Header beim Scrollen ausblendet. Die Zeile 1 beginnt unterhalb. */
+@media (display-mode: standalone) {
+  .vc-status-strip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(env(safe-area-inset-top) + 8px);
+    background: linear-gradient(to bottom, var(--header-top), transparent);
+    pointer-events: none;
+    z-index: 60;
+  }
+  .vc-header-root {
+    padding-top: calc(env(safe-area-inset-top) + 8px);
+  }
 }
 

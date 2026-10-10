@@ -1,285 +1,443 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Utensils, 
-  Sparkles, 
-  Calendar, 
-  ShoppingCart, 
-  BarChart3, 
-  Leaf, 
+import {
+  Leaf,
   Heart,
+  ShoppingCart,
+  Menu,
   Search,
-  Users,
-  Cloud
+  X,
+  Utensils,
+  Refrigerator,
+  Calendar,
+  BarChart3,
+  User,
+  Cloud,
+  Settings,
+  SlidersHorizontal,
 } from 'lucide-react';
-import { SyncConfig } from '../lib/syncService';
+import type { LucideIcon } from 'lucide-react';
 import { useRecipes } from '../context/RecipeContext';
 import { useShopping } from '../context/ShoppingContext';
 import { useSync } from '../context/SyncContext';
+import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 
-export type NavTab = 'recipes' | 'fridge' | 'planner' | 'shopping' | 'stats' | 'favorites';
+export type NavTab = 'recipes' | 'fridge' | 'planner';
 
 export interface HeaderProps {
-  favoritesCount?: number;
-  shoppingCount?: number;
-  shoppingListCount?: number;
-  cookedCount?: number;
-  searchQuery?: string;
-  setSearchQuery?: (q: string) => void;
-  syncConfig?: SyncConfig;
-  onOpenSyncModal?: () => void;
-  // Optional backwards compatibility if passed anywhere
-  activeTab?: NavTab;
-  setActiveTab?: (tab: NavTab) => void;
-  useTopTabs?: boolean;
+  /** Wird true, sobald Suche oder Menü offen sind (verhindert das Ausblenden beim Scrollen). */
+  onPinnedChange?: (pinned: boolean) => void;
 }
 
-export const Header: React.FC<HeaderProps> = (props) => {
+interface HeaderTab {
+  id: NavTab;
+  label: string;
+  path: string;
+}
+
+const HEADER_TABS: HeaderTab[] = [
+  { id: 'recipes', label: 'Entdecker', path: '/' },
+  { id: 'fridge', label: 'Vorratskammer', path: '/fridge' },
+  { id: 'planner', label: 'Wochenplaner', path: '/planner' },
+];
+
+interface MenuRowProps {
+  icon: LucideIcon;
+  label: string;
+  big?: boolean;
+  onClick?: () => void;
+  badge?: number;
+  status?: string;
+  connected?: boolean;
+  placeholder?: boolean;
+}
+
+/** Menü-Zeile: groß & fett für Hauptbereiche (20–22 px), normal für „Mehr" (16–17 px). */
+const MenuRow: React.FC<MenuRowProps> = ({
+  icon: Icon,
+  label,
+  big,
+  onClick,
+  badge,
+  status,
+  connected,
+  placeholder,
+}) => (
+  <button
+    type="button"
+    onClick={placeholder ? undefined : onClick}
+    aria-disabled={placeholder || undefined}
+    tabIndex={placeholder ? -1 : undefined}
+    className={`flex items-center gap-3 w-full text-left rounded-xl transition-colors ${
+      big ? 'min-h-[52px] px-3 text-[20px] font-bold' : 'min-h-[48px] px-3 text-[17px] font-medium'
+    } ${
+      placeholder
+        ? 'opacity-55 cursor-not-allowed text-header-fg'
+        : 'cursor-pointer text-header-fg hover:bg-card/40 hover:text-accent-hover'
+    }`}
+  >
+    <Icon className={`${big ? 'w-[22px] h-[22px]' : 'w-5 h-5'} shrink-0 text-header-icon`} aria-hidden="true" />
+    <span className="flex-1 truncate">{label}</span>
+    {typeof badge === 'number' && badge > 0 && (
+      <span className="min-w-[20px] h-[20px] px-1.5 rounded-full bg-accent text-on-accent text-[11px] font-bold flex items-center justify-center leading-none">
+        {badge > 99 ? '99+' : badge}
+      </span>
+    )}
+    {status !== undefined && (
+      <span className="flex items-center gap-1.5 text-xs font-semibold">
+        {connected && <span className="w-2 h-2 rounded-full bg-accent animate-pulse" aria-hidden="true" />}
+        <span className={connected ? 'text-accent' : 'text-text-muted'}>{status}</span>
+      </span>
+    )}
+    {placeholder && <span className="text-xs text-text-muted whitespace-nowrap">Bald verfügbar</span>}
+  </button>
+);
+
+export const Header: React.FC<HeaderProps> = ({ onPinnedChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const recipesCtx = useRecipes();
   const shoppingCtx = useShopping();
   const syncCtx = useSync();
 
-  // Directly determine active view via useLocation().pathname
-  const getActiveTabFromLocation = (pathname: string): NavTab => {
-    if (pathname === '/favorites') return 'favorites';
-    if (pathname.startsWith('/fridge')) return 'fridge';
-    if (pathname.startsWith('/planner')) return 'planner';
-    if (pathname.startsWith('/shopping')) return 'shopping';
-    if (pathname.startsWith('/stats')) return 'stats';
-    return 'recipes';
-  };
-
-  const activeTab = getActiveTabFromLocation(location.pathname);
   const isExplorerRoute = location.pathname === '/' || location.pathname === '/favorites';
+  const activeTab: NavTab = location.pathname.startsWith('/fridge')
+    ? 'fridge'
+    : location.pathname.startsWith('/planner')
+      ? 'planner'
+      : 'recipes';
 
-  const handleNavigate = (path: string) => {
-    if (location.pathname !== path) {
-      navigate(path);
+  const handleNavigate = useCallback(
+    (path: string) => {
+      if (location.pathname !== path) navigate(path);
+    },
+    [location.pathname, navigate]
+  );
+
+  const favoritesCount = recipesCtx.favorites.length;
+  const shoppingCount = shoppingCtx.uncompletedCount;
+  const searchQuery = recipesCtx.filters.searchQuery;
+
+  const setSearchQuery = useCallback(
+    (q: string) => {
+      recipesCtx.setFilters((prev) => ({ ...prev, searchQuery: q }));
+      // Von anderen Seiten führt die Suche zur Entdecker-Seite mit dem Begriff.
+      if (location.pathname !== '/' && location.pathname !== '/favorites') {
+        navigate('/');
+      }
+    },
+    [recipesCtx, location.pathname, navigate]
+  );
+
+  /* ----------------------------- Suche ----------------------------- */
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchPanelRef = useRef<HTMLDivElement>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  const openSearch = useCallback(() => setIsSearchOpen(true), []);
+  const closeSearch = useCallback(() => setIsSearchOpen(false), []);
+
+  useEffect(() => {
+    if (!isSearchOpen) return;
+    const raf = requestAnimationFrame(() => searchInputRef.current?.focus());
+    return () => cancelAnimationFrame(raf);
+  }, [isSearchOpen]);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      closeSearch();
     }
   };
 
-  const favoritesCount = props.favoritesCount ?? recipesCtx.favorites.length;
-  const shoppingCount = props.shoppingCount ?? props.shoppingListCount ?? shoppingCtx.uncompletedCount;
-  const cookedCount = props.cookedCount ?? recipesCtx.cookedLogs.length;
-  const searchQuery = props.searchQuery !== undefined ? props.searchQuery : recipesCtx.filters.searchQuery;
-  
-  const setSearchQuery = props.setSearchQuery ?? ((q: string) => {
-    recipesCtx.setFilters((prev) => ({ ...prev, searchQuery: q }));
-    if (location.pathname !== '/' && location.pathname !== '/favorites') {
-      navigate('/');
+  // Schließen, sobald der Fokus das Suchpanel verlässt (nicht beim Klick in der Leiste/auf Funk).
+  const handleSearchBlur = (e: React.FocusEvent) => {
+    const next = e.relatedTarget as Node | null;
+    if (searchPanelRef.current && !searchPanelRef.current.contains(next)) {
+      closeSearch();
     }
-  });
+  };
 
-  const syncConfig = props.syncConfig ?? syncCtx.syncConfig;
-  const onOpenSyncModal = props.onOpenSyncModal ?? syncCtx.openSyncModal;
-  const useTopTabs = props.useTopTabs ?? false;
+  /* ----------------------------- Menü ----------------------------- */
+  const menuRef = useRef<HTMLDialogElement>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const touchStartY = useRef(0);
 
+  useLockBodyScroll(isMenuOpen);
+
+  const openMenu = useCallback(() => {
+    setIsMenuOpen(true);
+    menuRef.current?.showModal();
+  }, []);
+  const closeMenu = useCallback(() => menuRef.current?.close(), []);
+
+  // Zustand synchron halten (Esc / Scrim / X → natives close-Event).
+  useEffect(() => {
+    const dialog = menuRef.current;
+    const onClose = () => setIsMenuOpen(false);
+    dialog?.addEventListener('close', onClose);
+    return () => dialog?.removeEventListener('close', onClose);
+  }, []);
+
+  const go = useCallback(
+    (path: string) => {
+      closeMenu();
+      handleNavigate(path);
+    },
+    [closeMenu, handleNavigate]
+  );
+
+  const openSyncFromMenu = useCallback(() => {
+    closeMenu();
+    syncCtx.openSyncModal();
+  }, [closeMenu, syncCtx]);
+
+  // Suche/Menü offen → Header ist „gepinnt" und wird beim Scrollen nicht ausgeblendet.
+  useEffect(() => {
+    onPinnedChange?.(isSearchOpen || isMenuOpen);
+  }, [isSearchOpen, isMenuOpen, onPinnedChange]);
+
+  const syncConfig = syncCtx.syncConfig;
+  const isFamilyConnected = syncConfig?.mode === 'family' && Boolean(syncConfig.groupId);
+
+  /* ------------------------------ UI ------------------------------ */
   return (
-    <header className="bg-card/85 backdrop-blur-md border-b border-[#E3DFD5] shadow-2xs">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14 sm:h-18 gap-1.5 sm:gap-4">
-          {/* Brand Logo & Name */}
-          <div 
-            id="brand-logo" 
+    <header className="vc-header-root relative z-40">
+      {/* Zeile 1: Logo + Tabs (ab md) + Aktionen – Zitronen-/Aprikosenfläche mit Blattmotiv */}
+      <div className="relative bg-header-top">
+        <div
+          aria-hidden="true"
+          className="vc-leaf-pattern absolute inset-0 opacity-10 pointer-events-none"
+        />
+        <div className="relative mx-auto w-full max-w-[1280px] flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 lg:px-8 h-14 md:h-16">
+          {/* Wortmarke */}
+          <button
+            id="brand-logo"
+            type="button"
             onClick={() => handleNavigate('/')}
-            className="flex items-center gap-2 sm:gap-3 cursor-pointer group select-none shrink-0"
+            aria-label="VeggieChef – zur Startseite"
+            className="flex items-center gap-2 shrink-0 cursor-pointer touch-manipulation active:scale-95 transition-transform"
           >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-accent flex items-center justify-center text-on-accent font-bold shadow-xs group-hover:scale-105 transition-transform shrink-0">
-              <Leaf className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl font-bold tracking-tight text-text-main">VeggieChef</span>
-                <span className="hidden sm:inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full bg-accent-tint/80 text-accent border border-border/70">
-                  Vegan & vegetarisch
-                </span>
-              </div>
-              <p className="text-xs text-text-muted hidden md:block">Smarte vegetarische Küche & Essensplanung</p>
-            </div>
-          </div>
+            <span className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-accent text-on-accent flex items-center justify-center shadow-xs shrink-0">
+              <Leaf className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
+            </span>
+            <span className="hidden min-[380px]:inline text-xl md:text-2xl font-extrabold tracking-tight text-header-icon leading-none">
+              VeggieChef
+            </span>
+          </button>
 
-          {/* Quick Search bar (hidden on explorer routes where the page has its own prominent search) */}
-          {isExplorerRoute ? (
-            <div className="flex-1" aria-hidden="true" />
-          ) : (
-          <div className="flex items-center relative flex-1 min-w-0 max-w-[150px] xs:max-w-[200px] sm:max-w-xs md:max-w-sm mx-1 sm:mx-4 md:mx-6">
-            <Search className="w-4 h-4 text-text-muted absolute left-2.5 sm:left-3 pointer-events-none" />
-            <input
-              id="header-search-input"
-              type="text"
-              placeholder="Suchen..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-8 sm:pl-9 pr-9 text-[16px] bg-card border border-border hover:border-accent/50 rounded-full text-text-main placeholder-[#686E6A] focus:outline-hidden focus:border-accent focus:ring-1 focus:ring-accent shadow-2xs transition-all truncate"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 min-w-[32px] min-h-[32px] rounded-full flex items-center justify-center text-xs text-text-muted hover:text-text-main hover:bg-black/5 active:bg-black/10 cursor-pointer touch-manipulation active:scale-95"
-                title="Suche zurücksetzen"
-                aria-label="Suche zurücksetzen"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-          )}
+          {/* Desktop-Tabs (eine Zeile ab 768 px) */}
+          <nav aria-label="Hauptbereiche" className="hidden md:flex items-center gap-0.5 ml-2">
+            {HEADER_TABS.map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  id={`nav-tab-${tab.id}`}
+                  type="button"
+                  onClick={() => handleNavigate(tab.path)}
+                  aria-current={active ? 'page' : undefined}
+                  className={`relative flex items-center h-10 px-3 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer touch-manipulation active:scale-[0.98] ${
+                    active ? 'text-accent-hover' : 'text-header-fg hover:text-accent-hover'
+                  }`}
+                >
+                  {tab.label}
+                  {active && (
+                    <span aria-hidden="true" className="absolute inset-x-2 bottom-0 h-[3px] rounded-t-full bg-accent" />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
 
-          {/* Action Icons (Sync, Favorites, Shopping) */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Family Sync Status Button */}
-            {onOpenSyncModal && (
-              <button
-                id="header-sync-modal-btn"
-                type="button"
-                onClick={onOpenSyncModal}
-                className={`flex items-center gap-1 sm:gap-1.5 min-h-[44px] px-3 rounded-xl text-xs font-semibold transition-all border cursor-pointer touch-manipulation active:scale-95 ${
-                  syncConfig?.mode === 'family' && syncConfig?.groupId
-                    ? 'bg-accent-tint text-accent border-accent/40 shadow-2xs hover:bg-[#e4ede6]'
-                    : 'bg-card text-text-main border-border hover:bg-surface hover:text-text-main'
-                }`}
-                title={
-                  syncConfig?.mode === 'family' && syncConfig?.groupId
-                    ? `Live synchronisiert mit ${syncConfig.groupName || syncConfig.groupId}`
-                    : 'Familien-Synchronisation einrichten oder lokalen Modus verwalten'
-                }
-              >
-                {syncConfig?.mode === 'family' && syncConfig?.groupId ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-accent animate-pulse shrink-0" />
-                    <Users className="w-5 h-5 text-accent" />
-                    <span className="hidden sm:inline font-medium truncate max-w-[80px]">
-                      {syncConfig.groupName || syncConfig.groupId}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Cloud className="w-5 h-5 text-text-muted" />
-                    <span className="hidden sm:inline font-normal">Sync</span>
-                  </>
-                )}
-              </button>
-            )}
+          <div className="flex-1" aria-hidden="true" />
 
-            {/* Stats Icon Button - compact access (kept reachable when the top tab bar is hidden on mobile) */}
+          {/* Aktionen: Lupe · Herz · Einkaufswagen · Menü (je ≥ 44×44) */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             <button
-              id="nav-tab-stats-icon"
+              id="header-search-btn"
               type="button"
-              onClick={() => handleNavigate('/stats')}
-              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-text-muted hover:bg-accent-tint hover:text-accent transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
-                activeTab === 'stats' ? 'bg-accent-tint text-accent border-accent/30' : 'bg-card sm:bg-transparent border-border sm:border-transparent'
-              }`}
-              title="Statistiken"
-              aria-label="Statistiken"
+              onClick={openSearch}
+              aria-label="Suche öffnen"
+              title="Suchen"
+              className="w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
             >
-              <BarChart3 className="w-5 h-5" aria-hidden="true" />
+              <Search className="w-5 h-5" aria-hidden="true" />
             </button>
 
-            {/* Favorites Icon Button - 44x44px touch target (w-11 h-11), 20px icon (w-5 h-5) */}
             <button
               id="nav-tab-favorites"
               type="button"
               onClick={() => handleNavigate('/favorites')}
-              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-text-muted hover:bg-accent-tint hover:text-[#D35400] transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
-                activeTab === 'favorites' ? 'bg-[#FDF6F0] text-[#D35400] border-[#F5EADF]' : 'bg-card sm:bg-transparent border-border sm:border-transparent'
-              }`}
-              title="Gespeicherte Favoriten"
               aria-label={favoritesCount > 0 ? `Favoriten, ${favoritesCount} gespeichert` : 'Favoriten'}
+              title="Favoriten"
+              className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
             >
-              <Heart className={`w-5 h-5 ${favoritesCount > 0 && activeTab === 'favorites' ? 'fill-[#D35400] text-[#D35400]' : ''}`} aria-hidden="true" />
+              <Heart className="w-5 h-5" aria-hidden="true" />
               {favoritesCount > 0 && (
-                <span className="absolute top-0 right-0 min-w-[20px] h-[20px] px-1 bg-[#D35400] text-on-accent rounded-full text-[11px] font-bold flex items-center justify-center leading-none">
+                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#D35400] text-on-accent text-[10px] font-bold flex items-center justify-center leading-none ring-2 ring-header-top">
                   {favoritesCount > 99 ? '99+' : favoritesCount}
                 </span>
               )}
             </button>
 
-            {/* Shopping List Quick Icon Button - 44x44px touch target (w-11 h-11), 20px icon (w-5 h-5) */}
             <button
               id="nav-tab-shopping-badge"
               type="button"
               onClick={() => handleNavigate('/shopping')}
-              className={`relative w-11 h-11 rounded-xl flex items-center justify-center text-text-muted hover:bg-accent-tint hover:text-accent transition-colors border cursor-pointer touch-manipulation active:scale-95 ${
-                activeTab === 'shopping' ? 'bg-accent-tint text-accent border-accent/30' : 'bg-card sm:bg-transparent border-border sm:border-transparent'
-              }`}
-              title="Liste"
               aria-label={shoppingCount > 0 ? `Einkaufsliste, ${shoppingCount} offen` : 'Einkaufsliste'}
+              title="Einkaufsliste"
+              className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
             >
               <ShoppingCart className="w-5 h-5" aria-hidden="true" />
               {shoppingCount > 0 && (
-                <span className="absolute top-0 right-0 min-w-[20px] h-[20px] px-1 bg-accent text-on-accent rounded-full text-[11px] font-bold flex items-center justify-center leading-none">
+                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-on-accent text-[10px] font-bold flex items-center justify-center leading-none ring-2 ring-header-top">
                   {shoppingCount > 99 ? '99+' : shoppingCount}
                 </span>
               )}
             </button>
+
+            <button
+              id="header-menu-btn"
+              type="button"
+              onClick={isMenuOpen ? closeMenu : openMenu}
+              aria-haspopup="dialog"
+              aria-expanded={isMenuOpen}
+              aria-label="Menü öffnen"
+              title="Menü"
+              className="w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
+            >
+              <Menu className="w-5 h-5" aria-hidden="true" />
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Navigation Tabs Bar (mobile uses BottomNav unless the top-tabs fallback is enabled) */}
-        <nav
-          aria-label="Hauptbereiche"
-          className={`${useTopTabs ? 'flex' : 'hidden md:flex'} items-center space-x-1.5 sm:space-x-2 py-2 sm:py-2 overflow-x-auto scrollbar-none border-t border-border -mx-1 px-1`}
-        >
-          <button
-            id="nav-tab-recipes"
-            type="button"
-            onClick={() => handleNavigate('/')}
-            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm sm:text-[15px] font-semibold whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
-              activeTab === 'recipes'
-                ? 'bg-accent-tint text-accent shadow-2xs'
-                : 'text-text-muted hover:bg-surface hover:text-text-main'
-            }`}
-          >
-            <Utensils className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
-            <span>Rezept-Entdecker</span>
-          </button>
-
-          <button
-            id="nav-tab-fridge"
-            type="button"
-            onClick={() => handleNavigate('/fridge')}
-            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm sm:text-[15px] font-semibold whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
-              activeTab === 'fridge'
-                ? 'bg-accent-tint text-accent shadow-2xs'
-                : 'text-text-muted hover:bg-surface hover:text-text-main'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
-            <span>Vorratskammer & KI</span>
-          </button>
-
-          <button
-            id="nav-tab-planner"
-            type="button"
-            onClick={() => handleNavigate('/planner')}
-            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm sm:text-[15px] font-semibold whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
-              activeTab === 'planner'
-                ? 'bg-accent-tint text-accent shadow-2xs'
-                : 'text-text-muted hover:bg-surface hover:text-text-main'
-            }`}
-          >
-            <Calendar className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
-            <span>Wochenplaner</span>
-          </button>
-
-          <button
-            id="nav-tab-stats"
-            type="button"
-            onClick={() => handleNavigate('/stats')}
-            className={`flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 sm:px-3.5 sm:py-1.5 rounded-xl text-sm sm:text-[15px] font-semibold whitespace-nowrap transition-all touch-manipulation cursor-pointer active:scale-95 ${
-              activeTab === 'stats'
-                ? 'bg-accent-tint text-accent shadow-2xs'
-                : 'text-text-muted hover:bg-surface hover:text-text-main'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4 sm:w-4 sm:h-4 shrink-0" />
-            <span>Statistiken</span>
-          </button>
+      {/* Zeile 2: drei Text-Tabs (nur mobil) */}
+      <div className="md:hidden bg-header-panel">
+        <nav aria-label="Hauptbereiche" className="max-w-[1280px] mx-auto flex px-3 sm:px-6">
+          {HEADER_TABS.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                id={`nav-tab-mobile-${tab.id}`}
+                type="button"
+                onClick={() => handleNavigate(tab.path)}
+                aria-current={active ? 'page' : undefined}
+                className={`relative flex-1 min-w-0 min-h-[44px] flex items-center justify-center px-1 text-[15px] max-[380px]:text-[14px] font-semibold whitespace-nowrap transition-colors cursor-pointer touch-manipulation active:scale-[0.98] ${
+                  active ? 'text-accent-hover' : 'text-header-fg hover:text-accent-hover'
+                }`}
+              >
+                {tab.label}
+                {active && (
+                  <span aria-hidden="true" className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-12 rounded-t-full bg-accent" />
+                )}
+              </button>
+            );
+          })}
         </nav>
       </div>
+
+      {/* Übergang zum Inhalt: Fade (mobil & 768–1023) bzw. Trennlinie (≥ 1024) */}
+      <div className="vc-header-fade md:hidden" aria-hidden="true" />
+      <div className="vc-header-fade hidden md:block lg:hidden" aria-hidden="true" />
+      <div className="hidden lg:block h-px bg-header-line" aria-hidden="true" />
+
+      {/* Suchleiste: fährt unter der Tab-Zeile herunter (Tesla-Stil) */}
+      {isSearchOpen && (
+        <div
+          ref={searchPanelRef}
+          onBlur={handleSearchBlur}
+          className="vc-search-panel absolute inset-x-0 top-full z-50"
+        >
+          <div className="bg-header-panel px-3 sm:px-6 lg:px-8 py-3 pb-4">
+            <div className="max-w-[1280px] mx-auto flex items-center gap-2">
+              <div className="relative flex-1 min-w-0">
+                <Search className="w-5 h-5 text-header-icon absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+                <input
+                  id="header-search-input"
+                  ref={searchInputRef}
+                  type="search"
+                  enterKeyHint="search"
+                  autoComplete="off"
+                  aria-label="Rezepte durchsuchen"
+                  placeholder={isExplorerRoute ? 'Rezept oder Zutat suchen …' : 'Suche nach Rezepten…'}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  className="w-full h-12 pl-11 pr-12 rounded-2xl bg-card text-text-main placeholder:text-text-muted border border-header-line focus:outline-none focus:ring-2 focus:ring-accent/40 shadow-xs transition-shadow [&::-webkit-search-cancel-button]:hidden"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    aria-label="Suche leeren"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center text-text-muted hover:text-text-main hover:bg-accent-tint cursor-pointer touch-manipulation"
+                  >
+                    <X className="w-4 h-4" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={closeSearch}
+                aria-label="Suche schließen"
+                title="Schließen"
+                className="shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
+              >
+                <X className="w-5 h-5" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Menü als natives Top-Sheet */}
+      <dialog
+        ref={menuRef}
+        aria-label="Hauptmenü"
+        className="vc-topsheet"
+        onTouchStart={(e) => {
+          touchStartY.current = e.touches[0].clientY;
+        }}
+        onTouchEnd={(e) => {
+          if (e.changedTouches[0].clientY - touchStartY.current < -40) closeMenu();
+        }}
+      >
+        <div className="flex items-center justify-between h-14 sm:h-16 pr-2 pl-5 border-b border-header-line">
+          <span className="text-lg font-extrabold tracking-tight text-header-fg">Menü</span>
+          <button
+            type="button"
+            onClick={closeMenu}
+            aria-label="Menü schließen"
+            className="w-11 h-11 rounded-full flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
+          >
+            <X className="w-5 h-5" aria-hidden="true" />
+          </button>
+        </div>
+        <div className="p-2.5 sm:p-3 space-y-1">
+          <nav aria-label="Hauptbereiche">
+            <MenuRow icon={ShoppingCart} label="Einkaufswagen" big onClick={() => go('/shopping')} badge={shoppingCount} />
+            <MenuRow icon={Refrigerator} label="Vorratskammer" big onClick={() => go('/fridge')} />
+            <MenuRow icon={Calendar} label="Wochenplaner" big onClick={() => go('/planner')} />
+            <MenuRow icon={BarChart3} label="Statistiken" big onClick={() => go('/stats')} />
+          </nav>
+          <div className="h-px bg-header-line my-2" role="separator" />
+          <nav aria-label="Mehr">
+            <MenuRow icon={User} label="Profil" placeholder />
+            <MenuRow
+              icon={Cloud}
+              label="Synchronisation"
+              onClick={openSyncFromMenu}
+              status={isFamilyConnected ? syncConfig.groupName || 'Verbunden' : 'Lokal'}
+              connected={isFamilyConnected}
+            />
+            <MenuRow icon={Settings} label="Einstellungen" placeholder />
+            <MenuRow icon={SlidersHorizontal} label="Präferenzen" placeholder />
+          </nav>
+        </div>
+      </dialog>
     </header>
   );
 };
