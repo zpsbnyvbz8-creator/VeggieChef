@@ -3,7 +3,7 @@
 Prompt: „Farbgrundlage aufräumen (Dark-Mode-Vorbereitung), Header komplett neu,
 Entdecker-Feinschliff." Arbeit phasenweise, ein Commit pro Phase.
 
-Stand: Nach Phase 2 (Header komplett neu). Phase 3 (Entdecker) als Nächstes.
+Stand: Nach Phase 3 (Entdecker-Feinschliff). Phase 4 (Screenshots & Abschluss) als Nächstes.
 
 ---
 
@@ -173,5 +173,33 @@ begrenzt (keine style-Objekte, keine Strings, kein CSS).
 
 ### Commit
 - Phase-2-Commitsteht unmittelbar an (Working Tree = Phase 2, HEAD = 1a65a2d).
+
+---
+
+## Phase 3: Entdecker-Feinschliff – UMGESETZT
+
+### Änderungen (`RecipesExplorerPage.tsx`, `RecipeCardListRow.tsx`)
+- **Überschrift:** h1 „Was kochen wir heute?" (und „Deine Favoriten") auf den
+  Stil der anderen Bereichsüberschriften umgestellt
+  (`text-3xl sm:text-4xl font-bold tracking-tight leading-tight`); Header-Zeile
+  `flex items-center` → „+"-Button exakt mittig zur Überschrift (Delta 0,0 px).
+- **Banner entfernt:** „Was hast du im Haus?"‑CTA (`#explorer-fridge-cta`)
+  komplett gelöscht; `Sparkles`-Import aufgeräumt. Die zwei Discovery-Karten
+  (Überrasch mich / Entdecken) bleiben.
+- **Raster:** `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5`
+  (statt `auto-fill minmax(148px)`): mobil exakt 2, ≥640 3, ≥1024 4, ≥1280 5.
+- **Listenkarte:** Beschreibungszeile (`recipe.subtitle`) entfernt – Row zeigt
+  Titel, Infozeile, kcal/Protein; Herz-Layout unverändert.
+
+### Abnahme (Automation)
+- `phase3-check.cjs`: **18/18 PASS** – Überschrift-Text/Stil, Button-Mittigkeit,
+  Banner weg, Raster-Spalten 2 (360/390/430), 3 (640/767), 4 (1024/1100),
+  5 (1280/1440), Liste ohne `<p>`/subtitle (Meta kcal/Protein bleibt),
+  Favoriten-Überschrift gleicher Stil.
+- `npx tsc --noEmit` ✓ · `npx vite build` ✓.
+- Screenshots: `phase3-shots/` (390-explorer, 640/1024/1280-grid, 390-list).
+
+### Commit
+- Phase-3-Commit als Nächstes.
 
 ---

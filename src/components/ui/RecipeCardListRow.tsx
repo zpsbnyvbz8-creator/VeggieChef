@@ -25,8 +25,9 @@ interface RecipeCardListRowProps {
 
 /**
  * Zeilen-Karte für die Listenansicht des Entdeckers: Bild links (ca. 110 px),
- * rechts Titel (max. 2 Zeilen), Infozeile, 2-zeilige Beschreibung sowie
- * Kalorien & Protein. Herz-Button identisch zur Einheitskarte (48/40/22/8px).
+ * rechts Titel (max. 2 Zeilen), Infozeile sowie Kalorien & Protein
+ * (bewusst ohne Beschreibung). Herz-Button identisch zur Einheitskarte
+ * (48/40/22/8px).
  */
 export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe }) => {
   const { favorites, toggleFavorite, dislikedIds } = useRecipes();
@@ -83,10 +84,6 @@ export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe }) 
             {DIFFICULTY_LABEL[recipe.difficulty]}
           </span>
         </div>
-
-        {recipe.subtitle && (
-          <p className="line-clamp-2 text-sm text-text-muted leading-snug mt-0.5">{recipe.subtitle}</p>
-        )}
 
         <div className="mt-auto pt-1.5 flex items-center gap-3.5 text-xs font-semibold text-text-main">
           <span className="inline-flex items-center gap-1">

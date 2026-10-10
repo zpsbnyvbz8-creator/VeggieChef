@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useNavigationType } from 'react-router-dom';
-import { ArrowUpDown, ChevronDown, Layers, LayoutGrid, List, Plus, Sparkles } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, Layers, LayoutGrid, List, Plus } from 'lucide-react';
 import { useRecipes } from '../context/RecipeContext';
 import { DishOfTheDay } from '../components/DishOfTheDay';
 import { SeasonHighlights } from '../components/SeasonHighlights';
@@ -112,14 +112,14 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
   return (
     <div className="space-y-5 sm:space-y-7 animate-in fade-in duration-200">
       {/* Page header */}
-      <header className="flex items-start justify-between gap-3">
+      <header className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           {isFavorites && (
             <p className="text-xs sm:text-sm font-medium text-text-muted">
               {favorites.length} gespeichert
             </p>
           )}
-          <h1 className={`${isFavorites ? 'mt-0.5 ' : ''}text-xl sm:text-3xl font-extrabold tracking-tight text-text-main leading-tight text-balance`}>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-main leading-tight">
             {isFavorites ? 'Deine Favoriten' : 'Was kochen wir heute?'}
           </h1>
         </div>
@@ -167,25 +167,6 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
               <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Entdecken</span>
             </button>
           </div>
-
-          {/* Primary feature: Vorratskammer & KI */}
-          <button
-            id="explorer-fridge-cta"
-            type="button"
-            onClick={() => navigate('/fridge')}
-            className="group flex w-full items-center gap-4 rounded-2xl bg-accent px-4 py-4 text-left text-on-accent shadow-sm hover:bg-accent-hover transition-all active:scale-[0.99] cursor-pointer"
-          >
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-card/15" aria-hidden="true">
-              <Sparkles className="h-6 w-6" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-lg font-bold leading-tight">Was hast du im Haus?</span>
-              <span className="mt-0.5 block text-sm text-on-accent/80">
-                Vorratskammer & KI – daraus wird ein Rezept.
-              </span>
-            </span>
-            <ChevronDown className="h-5 w-5 -rotate-90 text-on-accent/80 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-          </button>
         </>
       )}
 
@@ -275,7 +256,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
               className={
                 viewMode === 'list'
                   ? 'space-y-3 sm:space-y-4 list-none'
-                  : 'grid grid-cols-[repeat(auto-fill,minmax(148px,1fr))] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 list-none'
+                  : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 list-none'
               }
             >
               {visible.map((recipe) => (
