@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useNavigationType } from 'react-router-dom';
-import { ArrowUpDown, ChevronDown, Heart, Layers, Plus, SearchX } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, Layers, LayoutGrid, Plus, Sparkles } from 'lucide-react';
 import { useRecipes } from '../context/RecipeContext';
 import { DishOfTheDay } from '../components/DishOfTheDay';
 import { SeasonHighlights } from '../components/SeasonHighlights';
 import { FilterBar } from '../components/FilterBar';
-import { RecipeCard } from '../components/RecipeCard';
+import { RecipeCardUnified } from '../components/ui/RecipeCardUnified';
+import { EmptyState } from '../components/ui/EmptyState';
 import { SlotMachineModal } from '../components/SlotMachineModal';
 import { SwipeDiscoverOverlay } from '../components/discover/SwipeDiscoverOverlay';
 import { FilterState } from '../types';
@@ -38,6 +39,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
   const [visibleCount, setVisibleCount] = useState(restore?.count ?? RECIPES_PAGE_SIZE);
   const [isSlotOpen, setIsSlotOpen] = useState(false);
   const [isSwipeOpen, setIsSwipeOpen] = useState(false);
+  const [gridColumns, setGridColumns] = useState<1 | 2>(2);
 
   /* ---- data ---- */
   const recipes = useMemo(
@@ -109,10 +111,10 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
       {/* Page header */}
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs sm:text-sm font-semibold text-[#4A7856]">
+          <p className="text-xs sm:text-sm font-medium text-[#686E6A]">
             {isFavorites ? `${favorites.length} gespeichert` : `${greeting} · ${todayLabel}`}
           </p>
-          <h1 className="mt-0.5 text-2xl sm:text-4xl font-extrabold tracking-tight text-[#2D3E40] leading-tight text-balance">
+          <h1 className="mt-0.5 text-xl sm:text-3xl font-extrabold tracking-tight text-[#2D3E40] leading-tight text-balance">
             {isFavorites ? 'Deine Favoriten' : 'Was kochen wir heute?'}
           </h1>
         </div>
@@ -137,36 +139,49 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
 
       {/* Discovery entry points (browse mode only) */}
       {!isFavorites && isBrowsing && (
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        <>
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+            <button
+              id="explorer-slot-machine-btn"
+              type="button"
+              onClick={() => setIsSlotOpen(true)}
+              className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-[#C86D3B]/25 bg-[#FFF8F0] hover:border-[#C86D3B]/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+            >
+              <span className="text-3xl sm:text-4xl leading-none group-hover:rotate-12 transition-transform" aria-hidden="true">
+                🎲
+              </span>
+              <span className="text-base sm:text-lg font-bold text-[#2D3E40] leading-tight">Überrasch mich</span>
+            </button>
+            <button
+              id="explorer-swipe-btn"
+              type="button"
+              onClick={() => setIsSwipeOpen(true)}
+              className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-[#4A7856]/25 bg-[#F6F9F6] hover:border-[#4A7856]/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+            >
+              <Layers className="w-7 h-7 sm:w-8 sm:h-8 text-[#4A7856] group-hover:scale-110 transition-transform" aria-hidden="true" />
+              <span className="text-base sm:text-lg font-bold text-[#2D3E40] leading-tight">Entdecken</span>
+            </button>
+          </div>
+
+          {/* Primary feature: Vorratskammer & KI */}
           <button
-            id="explorer-slot-machine-btn"
+            id="explorer-fridge-cta"
             type="button"
-            onClick={() => setIsSlotOpen(true)}
-            className="group flex items-center gap-2.5 sm:gap-3 min-h-16 px-2.5 sm:px-4 py-2.5 rounded-2xl border border-[#C86D3B]/25 bg-gradient-to-br from-[#FFF8F0] to-[#FBEBDA] hover:border-[#C86D3B]/50 hover:shadow-sm text-left transition-all active:scale-[0.98] cursor-pointer"
+            onClick={() => navigate('/fridge')}
+            className="group flex w-full items-center gap-4 rounded-2xl bg-[#4A7856] px-4 py-4 text-left text-white shadow-sm hover:bg-[#3D6447] transition-all active:scale-[0.99] cursor-pointer"
           >
-            <span className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-white/85 shadow-2xs flex items-center justify-center text-lg sm:text-xl group-hover:rotate-12 transition-transform" aria-hidden="true">
-              🎲
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/15" aria-hidden="true">
+              <Sparkles className="h-6 w-6" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-xs sm:text-sm font-bold text-[#2D3E40] truncate leading-tight">Überrasch mich</span>
-              <span className="block text-[11px] sm:text-xs text-[#8C5A3C] truncate mt-0.5">Zufallsgericht</span>
+              <span className="block text-lg font-bold leading-tight">Was hast du im Haus?</span>
+              <span className="mt-0.5 block text-sm text-white/80">
+                Vorratskammer & KI – daraus wird ein Rezept.
+              </span>
             </span>
+            <ChevronDown className="h-5 w-5 -rotate-90 text-white/80 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
           </button>
-          <button
-            id="explorer-swipe-btn"
-            type="button"
-            onClick={() => setIsSwipeOpen(true)}
-            className="group flex items-center gap-2.5 sm:gap-3 min-h-16 px-2.5 sm:px-4 py-2.5 rounded-2xl border border-[#4A7856]/25 bg-gradient-to-br from-[#F6F9F6] to-[#E3EBE5] hover:border-[#4A7856]/50 hover:shadow-sm text-left transition-all active:scale-[0.98] cursor-pointer"
-          >
-            <span className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-white/85 shadow-2xs flex items-center justify-center text-[#4A7856]" aria-hidden="true">
-              <Layers className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-xs sm:text-sm font-bold text-[#2D3E40] truncate leading-tight">Entdecken</span>
-              <span className="block text-[11px] sm:text-xs text-[#4A7856] truncate mt-0.5">Rezepte swipen</span>
-            </span>
-          </button>
-        </div>
+        </>
       )}
 
       {/* Editorial blocks (browse mode only) */}
@@ -185,68 +200,80 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
             </p>
           </div>
 
-          <div className="relative shrink-0">
-            <label htmlFor="filter-sort-by" className="sr-only">
-              Sortierung
-            </label>
-            <ArrowUpDown className="w-4 h-4 text-[#686E6A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
-            <select
-              id="filter-sort-by"
-              value={filters.sortBy}
-              onChange={(e) => setFilters((prev) => ({ ...prev, sortBy: e.target.value as FilterState['sortBy'] }))}
-              className="appearance-none h-11 max-w-[11.5rem] sm:max-w-none bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-xl pl-9 pr-9 text-sm font-semibold text-[#2D3E40] cursor-pointer focus:outline-hidden focus:border-[#4A7856] focus:ring-2 focus:ring-[#4A7856]/15 transition-all"
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="relative">
+              <label htmlFor="filter-sort-by" className="sr-only">
+                Sortierung
+              </label>
+              <ArrowUpDown className="w-4 h-4 text-[#686E6A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+              <select
+                id="filter-sort-by"
+                value={filters.sortBy}
+                onChange={(e) => setFilters((prev) => ({ ...prev, sortBy: e.target.value as FilterState['sortBy'] }))}
+                className="appearance-none h-11 max-w-[10rem] sm:max-w-none bg-white border border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-xl pl-9 pr-9 text-sm font-semibold text-[#2D3E40] cursor-pointer focus:outline-hidden focus:border-[#4A7856] focus:ring-2 focus:ring-[#4A7856]/15 transition-all"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+            </div>
+
+            {/* Layout toggle: 2 columns / 1 column */}
+            <div
+              role="group"
+              aria-label="Layout"
+              className="flex items-center rounded-xl border border-[#ECEBE8] bg-white overflow-hidden shrink-0"
             >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+              <button
+                type="button"
+                onClick={() => setGridColumns(2)}
+                aria-pressed={gridColumns === 2}
+                aria-label="Zwei Spalten"
+                title="Zwei Spalten"
+                className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors cursor-pointer ${
+                  gridColumns === 2 ? 'bg-[#F1F5F2] text-[#4A7856]' : 'text-[#686E6A] hover:bg-[#FAF9F6]'
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setGridColumns(1)}
+                aria-pressed={gridColumns === 1}
+                aria-label="Eine große Spalte"
+                title="Eine große Spalte"
+                className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center border-l border-[#ECEBE8] transition-colors cursor-pointer ${
+                  gridColumns === 1 ? 'bg-[#F1F5F2] text-[#4A7856]' : 'text-[#686E6A] hover:bg-[#FAF9F6]'
+                }`}
+              >
+                <Layers className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </div>
 
         {recipes.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-[#ECEBE8] shadow-2xs px-6 py-12 text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center mx-auto">
-              {isFavorites && !isNarrowed ? <Heart className="w-8 h-8" /> : <SearchX className="w-8 h-8" />}
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-lg font-bold text-[#2D3E40]">
-                {isFavorites && !isNarrowed ? 'Noch keine Favoriten' : 'Keine passenden Rezepte'}
-              </h3>
-              <p className="text-sm text-[#686E6A] max-w-sm mx-auto leading-relaxed">
-                {isFavorites && !isNarrowed
-                  ? 'Tippe auf das Herz bei einem Rezept, um es hier zu speichern.'
-                  : 'Versuche es mit weniger Filtern oder einem anderen Suchbegriff.'}
-              </p>
-            </div>
-            {isNarrowed ? (
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="h-12 px-6 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-bold transition-all active:scale-95 cursor-pointer"
-              >
-                Filter zurücksetzen
-              </button>
-            ) : (
-              isFavorites && (
-                <button
-                  type="button"
-                  onClick={() => navigate('/')}
-                  className="h-12 px-6 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-bold transition-all active:scale-95 cursor-pointer"
-                >
-                  Rezepte entdecken
-                </button>
-              )
-            )}
-          </div>
+          <EmptyState
+            isFavorites={isFavorites}
+            isNarrowed={isNarrowed}
+            onReset={resetFilters}
+            onBrowse={() => navigate('/')}
+          />
         ) : (
           <>
-            <ul className="grid grid-cols-1 min-[520px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 list-none">
+            <ul
+              className={
+                gridColumns === 1
+                  ? 'grid grid-cols-1 gap-4 sm:gap-5 list-none'
+                  : 'grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 list-none'
+              }
+            >
               {visible.map((recipe) => (
                 <li key={recipe.id} className="vc-fade-up flex">
-                  <RecipeCard recipe={recipe} />
+                  <RecipeCardUnified recipe={recipe} variant="regular" />
                 </li>
               ))}
             </ul>

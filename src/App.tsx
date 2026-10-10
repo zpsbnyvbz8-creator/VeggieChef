@@ -10,9 +10,18 @@ import {
   useSync,
   usePlanner,
 } from './context';
-import { Header } from './components/Header';
+import { HeaderWithScroll } from './components/navigation/HeaderWithScroll';
+import { BottomNav } from './components/navigation/BottomNav';
 import { ScrollToTop } from './components/ScrollToTop';
 import { CookingTimerBar } from './components/CookingTimerBar';
+import { ExplorerLoadingSkeleton } from './components/ui/ExplorerLoadingSkeleton';
+
+/**
+ * Opt-in fallback: if the bottom navigation feels too cramped in the Safari
+ * browser, set this to `true` to render the compact tab row on top instead
+ * (at the top of the header) and hide the bottom nav.
+ */
+const USE_TOP_TABS_FALLBACK = false;
 import RecipesExplorerPage from './pages/RecipesExplorerPage';
 
 // Lazy-loaded Views (Code Splitting)
@@ -70,18 +79,19 @@ function MainApp() {
   }, [searchParams, navigate]);
 
   const showBottomTimerBar = Boolean(cookingTimer || (cookingModeRecipe && isCookingMinimized));
+  const isExplorerRoute = location.pathname === '/' || location.pathname === '/favorites';
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] text-[#2D3E40] flex flex-col font-sans selection:bg-[#F1F5F2] selection:text-[#4A7856]">
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-main)] flex flex-col font-sans selection:bg-[#F1F5F2] selection:text-[#4A7856]">
       {/* Scroll to Top on every route transition */}
       <ScrollToTop />
 
       {/* Top Main Navigation Header - only on non-detail pages */}
-      {!isRecipeDetailPage && <Header />}
+      {!isRecipeDetailPage && <HeaderWithScroll useTopTabs={USE_TOP_TABS_FALLBACK} />}
 
       {/* Main Content Area rendered via React Router Routes with Suspense code-splitting */}
-      <main className={`flex-1 w-full ${isRecipeDetailPage ? '' : 'max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-8'} ${showBottomTimerBar ? 'pb-20 sm:pb-24' : ''}`}>
-        <Suspense fallback={<RouteLoadingFallback />}>
+      <main className={`flex-1 w-full ${isRecipeDetailPage ? '' : 'max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-20 md:pt-36 pb-28 sm:pb-32 space-y-5 sm:space-y-8'} ${showBottomTimerBar ? 'pb-32 sm:pb-36' : ''}`}>
+        <Suspense fallback={isExplorerRoute ? <ExplorerLoadingSkeleton /> : <RouteLoadingFallback />}>
           <Routes>
             <Route path="/" element={<RecipesExplorerPage isFavorites={false} />} />
             <Route path="/favorites" element={<RecipesExplorerPage isFavorites={true} />} />
@@ -95,8 +105,11 @@ function MainApp() {
         </Suspense>
       </main>
 
+      {/* Bottom Navigation (non-detail pages; hidden on desktop where the header tabs show) */}
+      {!isRecipeDetailPage && <BottomNav visible={!USE_TOP_TABS_FALLBACK} />}
+
       {/* Persistent Cooking Timer Bar at bottom (visible when minimized or timer running) */}
-      <CookingTimerBar />
+      <CookingTimerBar offsetForBottomNav={!isRecipeDetailPage} />
 
       {/* Fullscreen Interactive Cooking Mode (loaded on-demand when active and not minimized) */}
       {cookingModeRecipe && !isCookingMinimized && (
