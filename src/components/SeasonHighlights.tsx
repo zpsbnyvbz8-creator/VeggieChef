@@ -59,7 +59,7 @@ export const SeasonHighlights: React.FC = () => {
         aria-label={`${season.headline} – Rezepte`}
       >
         {seasonal.map((recipe) => (
-          <li key={recipe.id} className="snap-start shrink-0 w-[72%] sm:w-[280px] flex">
+          <li key={recipe.id} className="snap-start shrink-0 w-[68%] sm:w-[280px] md:w-[300px] lg:w-[320px] flex">
             <RecipeCardUnified recipe={recipe} variant="compact" />
           </li>
         ))}

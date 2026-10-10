@@ -125,6 +125,15 @@
   }
 }
 
+/* Fließend skalierbare Kartentypografie: Titel 16–17 px, Infozeile 13–14 px */
+@utility text-card-title {
+  font-size: clamp(16px, 0.4vw + 15.4px, 17px);
+}
+
+@utility text-card-info {
+  font-size: clamp(13px, 0.3vw + 12.6px, 14px);
+}
+
 /* ---------- Native <dialog> bottom sheet (mobile) / centered panel (desktop) ---------- */
 dialog.vc-sheet {
   margin: auto auto 0 auto;

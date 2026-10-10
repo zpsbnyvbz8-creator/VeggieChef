@@ -90,7 +90,7 @@ function MainApp() {
       {!isRecipeDetailPage && <HeaderWithScroll useTopTabs={USE_TOP_TABS_FALLBACK} />}
 
       {/* Main Content Area rendered via React Router Routes with Suspense code-splitting */}
-      <main className={`flex-1 w-full ${isRecipeDetailPage ? '' : 'max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-20 md:pt-36 pb-28 sm:pb-32 space-y-5 sm:space-y-8'} ${showBottomTimerBar ? 'pb-32 sm:pb-36' : ''}`}>
+      <main className={`flex-1 w-full ${isRecipeDetailPage ? '' : 'max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-20 md:pt-36 pb-32 sm:pb-36 space-y-5 sm:space-y-8'} ${showBottomTimerBar ? 'pb-40 sm:pb-44' : ''}`}>
         <Suspense fallback={isExplorerRoute ? <ExplorerLoadingSkeleton /> : <RouteLoadingFallback />}>
           <Routes>
             <Route path="/" element={<RecipesExplorerPage isFavorites={false} />} />

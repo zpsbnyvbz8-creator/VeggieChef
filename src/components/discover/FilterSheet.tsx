@@ -3,6 +3,7 @@ import { X, Clock, ChefHat, Flame, Dumbbell, Leaf } from 'lucide-react';
 import { FilterState } from '../../types';
 import {
   CALORIE_OPTIONS,
+  DIET_OPTIONS,
   DIFFICULTY_OPTIONS,
   PROTEIN_OPTIONS,
   TIME_OPTIONS,
@@ -114,35 +115,13 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({ open, onClose, filters
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-5 space-y-6">
-          {/* Vegan switch */}
-          <button
-            id="filter-vegan-switch"
-            type="button"
-            role="switch"
-            aria-checked={filters.onlyVegan}
-            onClick={() => patch({ onlyVegan: !filters.onlyVegan })}
-            className="w-full min-h-14 flex items-center justify-between gap-4 rounded-2xl border border-[#ECEBE8] bg-[#FAF9F6] px-4 py-3 text-left cursor-pointer hover:border-[#4A7856]/40 transition-colors"
-          >
-            <span className="flex items-center gap-3">
-              <span className="w-9 h-9 rounded-xl bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center">
-                <Leaf className="w-5 h-5" />
-              </span>
-              <span>
-                <span className="block text-sm font-bold text-[#2D3E40]">Nur vegane Rezepte</span>
-                <span className="block text-xs text-[#686E6A]">Ohne Milch, Eier & Honig</span>
-              </span>
-            </span>
-            <span
-              aria-hidden="true"
-              className={`relative w-12 h-7 rounded-full shrink-0 transition-colors ${filters.onlyVegan ? 'bg-[#4A7856]' : 'bg-[#CCD5CF]'}`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow-xs transition-transform ${
-                  filters.onlyVegan ? 'translate-x-5' : ''
-                }`}
-              />
-            </span>
-          </button>
+          <OptionGroup
+            label="Ernährungsform"
+            icon={<Leaf className="w-4 h-4" />}
+            options={DIET_OPTIONS}
+            value={filters.diet}
+            onChange={(diet) => patch({ diet })}
+          />
 
           <OptionGroup
             label="Zubereitungszeit"

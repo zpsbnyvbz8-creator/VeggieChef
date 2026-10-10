@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BookOpen, Refrigerator, Calendar } from 'lucide-react';
+import { useScrollDirection } from '../../utils/hooks/useScrollDirection';
 
 export type BottomNavTab = 'recipes' | 'fridge' | 'planner';
 
@@ -24,28 +25,43 @@ const tabs: Array<{
   },
   {
     id: 'fridge',
-    label: 'Vorratskammer & KI',
+    label: 'Vorrat & KI',
     path: '/fridge',
     icon: Refrigerator,
     ariaLabel: 'Vorratskammer & KI',
   },
   {
     id: 'planner',
-    label: 'Wochenplaner',
+    label: 'Planer',
     path: '/planner',
     icon: Calendar,
     ariaLabel: 'Wochenplaner',
   },
 ];
 
+/**
+ * Schwebende, abgerundete Pill-Hauptnavigation (nur Mobile < md).
+ * Fährt beim Runterscrollen nach unten weg, beim Hochscrollen wieder ein
+ * (gleiche Logik wie der Header). Respektiert env(safe-area-inset-bottom).
+ */
 export const BottomNav: React.FC<BottomNavProps> = ({ visible = true }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const direction = useScrollDirection({ threshold: 8 });
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    if (direction === 'down') {
+      setIsVisible(false);
+    } else if (direction === 'up') {
+      setIsVisible(true);
+    }
+  }, [direction]);
+
   const getActiveTab = (pathname: string): BottomNavTab => {
     if (pathname.startsWith('/fridge')) return 'fridge';
     if (pathname.startsWith('/planner')) return 'planner';
-    if (pathname === '/' || pathname.startsWith('/recipes/') || pathname === '/favorites') return 'recipes';
     return 'recipes';
   };
 
@@ -54,39 +70,46 @@ export const BottomNav: React.FC<BottomNavProps> = ({ visible = true }) => {
   if (!visible) return null;
 
   return (
-    <nav
-      aria-label="Hauptnavigation"
-      className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 backdrop-blur-md border-t border-[#E3DFD5]"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    <div
+      className={`fixed bottom-0 inset-x-0 z-40 md:hidden flex justify-center px-4 pt-2 pb-[max(env(safe-area-inset-bottom),0.875rem)] transition-transform duration-300 ease-out will-change-transform ${
+        isVisible ? 'translate-y-0' : 'translate-y-[calc(100%+1rem)]'
+      }`}
     >
-      <ul className="mx-auto flex max-w-md items-stretch justify-between px-4 py-1">
+      <nav
+        aria-label="Hauptnavigation"
+        className="flex items-center rounded-full bg-white/95 backdrop-blur-md border border-[#E3DFD5] shadow-lg shadow-black/10 px-1.5 py-1.5"
+      >
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
-            <li key={tab.id} className="flex-1">
-              <button
-                type="button"
-                onClick={() => {
-                  if (location.pathname !== tab.path) {
-                    navigate(tab.path);
-                  }
-                }}
-                aria-current={isActive ? 'page' : undefined}
-                aria-label={tab.ariaLabel}
-                className="flex w-full min-h-[48px] flex-col items-center justify-center gap-1 rounded-xl px-2 py-1 text-[11px] font-semibold transition-all active:scale-95"
-              >
-                <Icon
-                  className={`h-5 w-5 ${isActive ? 'text-[#4A7856]' : 'text-[#686E6A]'}`}
-                  aria-hidden="true"
-                />
-                <span className={`${isActive ? 'text-[#4A7856]' : 'text-[#686E6A]'}`}>{tab.label}</span>
-              </button>
-            </li>
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                if (location.pathname !== tab.path) {
+                  navigate(tab.path);
+                }
+              }}
+              aria-current={isActive ? 'page' : undefined}
+              aria-label={tab.ariaLabel}
+              title={tab.ariaLabel}
+              className={`flex items-center gap-2 min-h-[48px] min-w-[44px] rounded-full px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                isActive
+                  ? 'bg-[#4A7856] text-white shadow-sm'
+                  : 'text-[#686E6A] hover:bg-[#F1F5F2] hover:text-[#2D3E40]'
+              }`}
+            >
+              <Icon
+                className={`h-5 w-5 shrink-0 ${isActive ? 'text-white' : 'text-[#686E6A]'}`}
+                aria-hidden="true"
+              />
+              <span className="hidden min-[370px]:inline truncate">{tab.label}</span>
+            </button>
           );
         })}
-      </ul>
-    </nav>
+      </nav>
+    </div>
   );
 };
 

@@ -1,20 +1,20 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useNavigationType } from 'react-router-dom';
-import { ArrowUpDown, ChevronDown, Layers, LayoutGrid, Plus, Sparkles } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, Layers, LayoutGrid, List, Plus, Sparkles } from 'lucide-react';
 import { useRecipes } from '../context/RecipeContext';
 import { DishOfTheDay } from '../components/DishOfTheDay';
 import { SeasonHighlights } from '../components/SeasonHighlights';
 import { FilterBar } from '../components/FilterBar';
 import { RecipeCardUnified } from '../components/ui/RecipeCardUnified';
+import { RecipeCardListRow } from '../components/ui/RecipeCardListRow';
 import { EmptyState } from '../components/ui/EmptyState';
 import { SlotMachineModal } from '../components/SlotMachineModal';
 import { SwipeDiscoverOverlay } from '../components/discover/SwipeDiscoverOverlay';
 import { FilterState } from '../types';
+import { loadFromLocalStorage, saveToLocalStorage } from '../utils/helpers';
 import {
   RECIPES_PAGE_SIZE,
   SORT_OPTIONS,
-  formatTodayLabel,
-  getGreeting,
   hasAnyNarrowingFilter,
 } from '../utils/discover';
 
@@ -39,7 +39,13 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
   const [visibleCount, setVisibleCount] = useState(restore?.count ?? RECIPES_PAGE_SIZE);
   const [isSlotOpen, setIsSlotOpen] = useState(false);
   const [isSwipeOpen, setIsSwipeOpen] = useState(false);
-  const [gridColumns, setGridColumns] = useState<1 | 2>(2);
+
+  /* ---- Layout-Toggle Raster/Liste: Auswahl wird gemerkt (SSR-sicher, try/catch in helpers) ---- */
+  const VIEW_MODE_KEY = 'veggiechef_explorer_view';
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => loadFromLocalStorage<'grid' | 'list'>(VIEW_MODE_KEY, 'grid'));
+  useEffect(() => {
+    saveToLocalStorage(VIEW_MODE_KEY, viewMode);
+  }, [viewMode]);
 
   /* ---- data ---- */
   const recipes = useMemo(
@@ -103,18 +109,17 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
   const closeSlot = useCallback(() => setIsSlotOpen(false), []);
   const closeSwipe = useCallback(() => setIsSwipeOpen(false), []);
 
-  const greeting = useMemo(() => getGreeting(), []);
-  const todayLabel = useMemo(() => formatTodayLabel(), []);
-
   return (
     <div className="space-y-5 sm:space-y-7 animate-in fade-in duration-200">
       {/* Page header */}
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs sm:text-sm font-medium text-[#686E6A]">
-            {isFavorites ? `${favorites.length} gespeichert` : `${greeting} · ${todayLabel}`}
-          </p>
-          <h1 className="mt-0.5 text-xl sm:text-3xl font-extrabold tracking-tight text-[#2D3E40] leading-tight text-balance">
+          {isFavorites && (
+            <p className="text-xs sm:text-sm font-medium text-[#686E6A]">
+              {favorites.length} gespeichert
+            </p>
+          )}
+          <h1 className={`${isFavorites ? 'mt-0.5 ' : ''}text-xl sm:text-3xl font-extrabold tracking-tight text-[#2D3E40] leading-tight text-balance`}>
             {isFavorites ? 'Deine Favoriten' : 'Was kochen wir heute?'}
           </h1>
         </div>
@@ -221,35 +226,35 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
               <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
             </div>
 
-            {/* Layout toggle: 2 columns / 1 column */}
+            {/* Layout-Toggle: Raster / Liste */}
             <div
               role="group"
-              aria-label="Layout"
+              aria-label="Darstellung"
               className="flex items-center rounded-xl border border-[#ECEBE8] bg-white overflow-hidden shrink-0"
             >
               <button
                 type="button"
-                onClick={() => setGridColumns(2)}
-                aria-pressed={gridColumns === 2}
-                aria-label="Zwei Spalten"
-                title="Zwei Spalten"
+                onClick={() => setViewMode('grid')}
+                aria-pressed={viewMode === 'grid'}
+                aria-label="Rasteransicht"
+                title="Raster"
                 className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors cursor-pointer ${
-                  gridColumns === 2 ? 'bg-[#F1F5F2] text-[#4A7856]' : 'text-[#686E6A] hover:bg-[#FAF9F6]'
+                  viewMode === 'grid' ? 'bg-[#F1F5F2] text-[#4A7856]' : 'text-[#686E6A] hover:bg-[#FAF9F6]'
                 }`}
               >
                 <LayoutGrid className="w-4 h-4" aria-hidden="true" />
               </button>
               <button
                 type="button"
-                onClick={() => setGridColumns(1)}
-                aria-pressed={gridColumns === 1}
-                aria-label="Eine große Spalte"
-                title="Eine große Spalte"
+                onClick={() => setViewMode('list')}
+                aria-pressed={viewMode === 'list'}
+                aria-label="Listenansicht"
+                title="Liste"
                 className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center border-l border-[#ECEBE8] transition-colors cursor-pointer ${
-                  gridColumns === 1 ? 'bg-[#F1F5F2] text-[#4A7856]' : 'text-[#686E6A] hover:bg-[#FAF9F6]'
+                  viewMode === 'list' ? 'bg-[#F1F5F2] text-[#4A7856]' : 'text-[#686E6A] hover:bg-[#FAF9F6]'
                 }`}
               >
-                <Layers className="w-4 h-4" aria-hidden="true" />
+                <List className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -265,15 +270,21 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
         ) : (
           <>
             <ul
+              id="results-list"
+              aria-label={viewMode === 'list' ? 'Rezepte als Liste' : 'Rezepte als Karten'}
               className={
-                gridColumns === 1
-                  ? 'grid grid-cols-1 gap-4 sm:gap-5 list-none'
-                  : 'grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 list-none'
+                viewMode === 'list'
+                  ? 'space-y-3 sm:space-y-4 list-none'
+                  : 'grid grid-cols-[repeat(auto-fill,minmax(148px,1fr))] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 list-none'
               }
             >
               {visible.map((recipe) => (
-                <li key={recipe.id} className="vc-fade-up flex">
-                  <RecipeCardUnified recipe={recipe} variant="regular" />
+                <li key={recipe.id} className="vc-fade-up flex min-w-0">
+                  {viewMode === 'list' ? (
+                    <RecipeCardListRow recipe={recipe} />
+                  ) : (
+                    <RecipeCardUnified recipe={recipe} variant="regular" />
+                  )}
                 </li>
               ))}
             </ul>

@@ -1,6 +1,7 @@
 ---
 description: UI/UX-Designer & Reviewer für VeggieChef – objektive Bewertung, kommerziell-professioneller Look ohne AI-Slop/Marketing-Fluff
 mode: subagent
+model: google/gemini-3.8-flash
 permissions:
   - action: read
     resource: "**/*"

@@ -52,6 +52,12 @@ export interface RecipeNutrients {
   magnesium?: number; // mg
 }
 
+/** Ernährungsform eines Rezepts: vegan oder vegetarisch (mit Milch/Ei/Honig). */
+export type RecipeDiet = 'vegan' | 'vegetarisch';
+
+/** Filterwert für die Ernährungsform im Entdecker (Alle = keine Einschränkung). */
+export type RecipeDietFilter = 'all' | RecipeDiet;
+
 export interface Recipe {
   id: string;
   title: string;
@@ -60,6 +66,8 @@ export interface Recipe {
   category: RecipeCategory;
   isVegan: boolean;
   isVegetarian: boolean; // all are true
+  /** Kanonisches Datenfeld für die Ernährungsform. Fehlt es (z. B. alte/importierte Rezepte), wird es aus `isVegan` abgeleitet. */
+  diet?: RecipeDiet;
   prepTimeMinutes: number;
   cookTimeMinutes: number;
   totalTimeMinutes: number;
@@ -136,7 +144,7 @@ export type ViewMode = 'recipes' | 'fridge' | 'planner' | 'shopping' | 'stats' |
 export interface FilterState {
   searchQuery: string;
   category: string;
-  onlyVegan: boolean;
+  diet: RecipeDietFilter;
   maxTime: number; // 0 = unlimited, 15, 30, 45
   minProtein: number; // 0, 15, 25, 35
   maxCalories: number; // 0 = unlimited, 450, 600, 800

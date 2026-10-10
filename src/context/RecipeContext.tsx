@@ -21,7 +21,7 @@ import { useSync } from './SyncContext';
 const DEFAULT_FILTERS: FilterState = {
   category: 'all',
   searchQuery: '',
-  onlyVegan: false,
+  diet: 'all',
   maxTime: 0,
   minProtein: 0,
   maxCalories: 0,

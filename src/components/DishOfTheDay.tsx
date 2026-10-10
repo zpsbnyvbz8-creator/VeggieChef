@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Clock, Star, ChefHat, ArrowRight, Heart } from 'lucide-react';
 import { RecipeImage } from './RecipeImage';
 import { useRecipes } from '../context/RecipeContext';
+import { getRecipeDiet } from '../utils/discover';
 
 const DIFFICULTY_LABEL: Record<string, string> = {
   Einfach: 'Einfach',
@@ -21,6 +22,7 @@ const DishOfTheDayComponent: React.FC = () => {
   const isFavorite = favorites.includes(recipe.id);
   const detailPath = `/recipes/${recipe.id}`;
   const hasRating = recipe.rating > 0 && recipe.reviewCount > 0;
+  const diet = getRecipeDiet(recipe);
 
   return (
     <section aria-labelledby="dish-of-the-day-title" id="dish-of-the-day-card">
@@ -51,12 +53,14 @@ const DishOfTheDayComponent: React.FC = () => {
             onClick={() => toggleFavorite(recipe.id)}
             aria-pressed={isFavorite}
             aria-label={isFavorite ? 'Tagesrezept aus Favoriten entfernen' : 'Tagesrezept zu Favoriten hinzufügen'}
-            className="pointer-events-auto w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-black/35 hover:bg-black/55 backdrop-blur-md border border-white/10 flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90"
+            className="pointer-events-auto w-12 h-12 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90"
           >
-            <Heart
-              className={`w-5 h-5 ${isFavorite ? 'fill-[#E74C3C] text-[#E74C3C]' : 'text-white'}`}
-              aria-hidden="true"
-            />
+            <span className="w-10 h-10 rounded-full bg-black/35 hover:bg-black/55 backdrop-blur-md border border-white/10 flex items-center justify-center transition-colors">
+              <Heart
+                className={`w-[22px] h-[22px] ${isFavorite ? 'fill-[#E74C3C] text-[#E74C3C]' : 'text-white'}`}
+                aria-hidden="true"
+              />
+            </span>
           </button>
         </div>
 
@@ -64,13 +68,18 @@ const DishOfTheDayComponent: React.FC = () => {
         <div className="relative z-20 p-4 sm:p-8 lg:p-10 max-w-2xl">
           <h2
             id="dish-of-the-day-title"
-            className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight text-balance line-clamp-2"
+            className="text-[clamp(1.5rem,1vw+1.25rem,2.5rem)] font-extrabold tracking-tight text-white leading-tight text-balance line-clamp-2"
             style={{ color: '#ffffff' }}
           >
             {recipe.title}
           </h2>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-semibold text-white/95">
+            {diet === 'vegetarisch' && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 border border-white/20 px-2.5 py-0.5 text-xs font-semibold text-white/95">
+                Vegetarisch
+              </span>
+            )}
             <span className="inline-flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-white/80" aria-hidden="true" />
               {recipe.totalTimeMinutes} Min.

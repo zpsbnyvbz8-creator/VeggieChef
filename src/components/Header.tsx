@@ -77,7 +77,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
   const useTopTabs = props.useTopTabs ?? false;
 
   return (
-    <header className="bg-[#F4F1EA]/85 backdrop-blur-md border-b border-[#E3DFD5]">
+    <header className="bg-white/85 backdrop-blur-md border-b border-[#E3DFD5] shadow-2xs">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-18 gap-1.5 sm:gap-4">
           {/* Brand Logo & Name */}
@@ -93,7 +93,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
               <div className="flex items-center gap-1.5">
                 <span className="text-xl font-bold tracking-tight text-[#2D3E40]">VeggieChef</span>
                 <span className="hidden sm:inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full bg-[#F1F5F2]/80 text-[#4A7856] border border-[#ECEBE8]/70">
-                  100 % vegan
+                  Vegan & vegetarisch
                 </span>
               </div>
               <p className="text-xs text-[#686E6A] hidden md:block">Smarte vegetarische Küche & Essensplanung</p>
@@ -191,7 +191,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             >
               <Heart className={`w-5 h-5 ${favoritesCount > 0 && activeTab === 'favorites' ? 'fill-[#D35400] text-[#D35400]' : ''}`} aria-hidden="true" />
               {favoritesCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[20px] h-[20px] px-1 bg-[#D35400] text-white rounded-full text-[11px] font-bold flex items-center justify-center leading-none">
+                <span className="absolute top-0 right-0 min-w-[20px] h-[20px] px-1 bg-[#D35400] text-white rounded-full text-[11px] font-bold flex items-center justify-center leading-none">
                   {favoritesCount > 99 ? '99+' : favoritesCount}
                 </span>
               )}
@@ -210,7 +210,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             >
               <ShoppingCart className="w-5 h-5" aria-hidden="true" />
               {shoppingCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[20px] h-[20px] px-1 bg-[#4A7856] text-white rounded-full text-[11px] font-bold flex items-center justify-center leading-none">
+                <span className="absolute top-0 right-0 min-w-[20px] h-[20px] px-1 bg-[#4A7856] text-white rounded-full text-[11px] font-bold flex items-center justify-center leading-none">
                   {shoppingCount > 99 ? '99+' : shoppingCount}
                 </span>
               )}

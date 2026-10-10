@@ -1363,8 +1363,14 @@ export function filterAndSortRecipes(
     .filter((recipe) => {
       if (!recipe || typeof recipe !== 'object') return false;
 
-      // Global Vegan switch or filter
-      if ((onlyVeganGlobal || filters.onlyVegan) && !recipe.isVegan) {
+      // Global Vegan switch (Vorratskammer/Planer) or diet filter from the Entdecker
+      if (onlyVeganGlobal && !recipe.isVegan) {
+        return false;
+      }
+      if (filters.diet === 'vegan' && !recipe.isVegan) {
+        return false;
+      }
+      if (filters.diet === 'vegetarisch' && recipe.isVegan) {
         return false;
       }
 
