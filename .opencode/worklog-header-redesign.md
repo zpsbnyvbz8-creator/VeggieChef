@@ -3,7 +3,7 @@
 Prompt: „Farbgrundlage aufräumen (Dark-Mode-Vorbereitung), Header komplett neu,
 Entdecker-Feinschliff." Arbeit phasenweise, ein Commit pro Phase.
 
-Stand: Nach Phase 3 (Entdecker-Feinschliff). Phase 4 (Screenshots & Abschluss) als Nächstes.
+Stand: Alle 4 Phasen umgesetzt und committet (1a65a2d, ff766e0, 5409209, Phase 4).
 
 ---
 
@@ -203,3 +203,40 @@ begrenzt (keine style-Objekte, keine Strings, kein CSS).
 - Phase-3-Commit als Nächstes.
 
 ---
+
+## Phase 4: Screenshots & Abschluss – UMGESETZT
+
+### Screenshot-Sweep (`phase4-shots/`, 29 Dateien)
+- Breiten 320/360/390/430/600/768/1024/1280/1440: jeweils `{w}-top.png`
+  (Header + mobil 2-Zeilen-Tab-Zeile) und `{w}-grid.png` (Raster mit festen
+  Spalten 2/3/4/5). Suche (`390/768/1280-search`) und Menü
+  (`390/768/1280-menu`) offen; Listenansicht (`390-list`). Querformat
+  `844x390` & `932x430` (`-landscape` + `-landscape-grid`).
+- Sanity: ImageMagick mean/stddev aller Schlüssel-Shots > 0,14 → keine
+  leeren/monochromen Screenshots.
+
+### Finale Verifikation
+- Regression auf COMMITTED stand: `phase2-check.cjs` 48/48 · `phase2-extra.cjs`
+  15/15 · `phase3-check.cjs` 18/18 · `npx tsc --noEmit` ✓ · `npx vite build` ✓.
+- Kontraste (berechnet): Header-FG auf Apricot 8,47…9,44:1 · Header-Icons
+  3,86:1 · Badges weiß auf Akzent 5,11:1 bzw. Favorit-Orange 4,17:1.
+- Fokus-Ring (focus-visible 2 px accent) an allen Header-Buttons nachweisbar;
+  Tastatur: Tabs per Enter, Menü schließt per Esc, Suchfeld Autofokus.
+
+### Bericht: umgesetzt / abweichend / offen
+- **Umgesetzt:** Phase 1 (Tokens, Dark-bereit, einzige sichtbare Änderung
+  Herbst-Kleinsttext), Phase 2 (Header komplett neu inkl. Menü/Suche/Scroll-
+  Hide/PWA-Ansatz/Pille raus), Phase 3 (Entdecker: Überschrift, Banner raus,
+  feste Raster, Liste ohne Beschreibung) – siehe Abschnitte oben.
+- **Abweichende Details (bewusst, dokumentiert):** 768–1023-Fade startet von
+  `--header-panel`; Desktop-Tabs ebenfalls reine Text-Tabs; PWA-Streifen nur
+  als CSS (im normalen Browser nicht prüfbar); `offsetForBottomNav` bleibt
+  als ungenutzter optionaler Prop in `CookingTimerBar` bestehen.
+- **Offen/Bekannt (Bestand, nicht Teil der Spezifikation):** ~135× `#57534D`
+  im Kochmodus u. a. hartkodierte Farben (Phase-1-Liste) – bewusst NICHT
+  getauscht; `>500 kB chunk`-Build-Warnung vorbestehend; inneres
+  Duplikat-Verzeichnis `veggiechef (9)\veggiechef (9)\` kann gelöscht werden.
+
+### Commits
+- Phase 1: `1a65a2d` · Phase 2: `ff766e0` · Phase 3: `5409209` · Phase 4: folgt
+  gleich (Screenshots + Worklog).
