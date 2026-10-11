@@ -9,6 +9,9 @@
 :root {
   color-scheme: light;
 
+  /* Abstände */
+  --inset-card: 16px;
+
   /* Motion-Tokens */
   --dur-fast: 120ms;
   --dur-base: 220ms;

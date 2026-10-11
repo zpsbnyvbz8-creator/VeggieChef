@@ -48,7 +48,9 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
       className={`group relative flex flex-col w-full h-full bg-card rounded-2xl border overflow-hidden transition-all duration-300 ${
         isDisliked
           ? 'border-border opacity-70 hover:opacity-100'
-          : 'border-border shadow-xs hover:border-accent/40 hover:shadow-md'
+          : isCompact
+            ? 'shadow-none border-border/80 hover:border-accent/30 hover:shadow-2xs'
+            : 'border-border shadow-xs hover:border-accent/40 hover:shadow-md'
       } ${className}`}
     >
       <div className={`relative overflow-hidden bg-surface ${isCompact ? 'aspect-[3/2]' : 'aspect-[4/3]'}`}>

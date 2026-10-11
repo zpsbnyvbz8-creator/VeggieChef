@@ -29,19 +29,11 @@ export const SeasonHighlights: React.FC = () => {
     <section aria-labelledby="season-title" className="space-y-3">
       {/* Karte: Radius 24px, Saison-Hintergrund, 1px Rand, Karussell bis zum
           Rand (neg. Margin innerhalb von overflow-hidden). */}
-      <div className="relative overflow-hidden rounded-3xl border border-season-autumn/30 bg-season-autumn-bg p-4">
-        <Leaf
-          className="absolute right-4 top-4 w-8 h-8 text-season-autumn shrink-0"
-          strokeWidth={2}
-          aria-hidden="true"
-          style={{ transform: 'rotate(24deg)' }}
-        />
-        <div className="flex items-end justify-between gap-3">
-          <div className="min-w-0">
-            <h2 id="season-title" className="text-xl sm:text-2xl font-extrabold tracking-tight text-text-main flex items-center gap-2">
-              <span aria-hidden="true">{season.emoji}</span>
-              <span className="truncate">{season.headline}</span>
-            </h2>
+      <div className="p-[var(--inset-card,16px)] rounded-3xl border border-season-autumn/30 bg-season-autumn-bg overflow-hidden relative">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Leaf className="w-5 h-5 sm:w-6 sm:h-6 text-season-autumn shrink-0" strokeWidth={2.2} aria-hidden="true" />
+            <h2 id="season-title" className="text-xl sm:text-2xl font-extrabold tracking-tight text-text-main truncate">{season.headline}</h2>
           </div>
           <div className="hidden md:flex items-center gap-2 shrink-0">
             <button
@@ -65,7 +57,7 @@ export const SeasonHighlights: React.FC = () => {
 
         <ul
           ref={scrollRef}
-          className="flex gap-3 sm:gap-4 overflow-x-auto -mx-4 px-4 pb-1 snap-x snap-mandatory scrollbar-none overscroll-x-contain list-none mt-3"
+          className="flex gap-3 sm:gap-4 overflow-x-auto -mx-4 px-4 scroll-px-4 m-0 mt-3.5 pb-0 snap-x snap-mandatory scrollbar-none overscroll-x-contain list-none"
           aria-label={`${season.headline} – Rezepte`}
         >
           {seasonal.map((recipe) => (
