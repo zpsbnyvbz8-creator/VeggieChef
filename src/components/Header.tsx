@@ -1,9 +1,12 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Leaf,
+  Compass,
   Heart,
   ShoppingCart,
+  Bookmark,
   Search,
   X,
   Refrigerator,
@@ -20,6 +23,8 @@ import { useShopping } from '../context/ShoppingContext';
 import { useSync } from '../context/SyncContext';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 import { getActiveSheetFilters } from '../utils/discover';
+
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 export type NavTab = 'recipes' | 'fridge' | 'planner';
 
@@ -46,38 +51,56 @@ interface MenuRowProps {
   icon: LucideIcon;
   label: string;
   big?: boolean;
+  isActive?: boolean;
   onClick?: () => void;
   badge?: number;
   status?: string;
   connected?: boolean;
   placeholder?: boolean;
+  tabIndex?: number;
 }
 
-/** Menü-Zeile: groß & fett für Hauptbereiche (20–22 px), normal für „Mehr" (16–17 px). */
+/** Menü-Zeile: groß & fett für Hauptbereiche (20–22 px, 700), normal für Gruppe 2 (16–17 px, 500). */
 const MenuRow: React.FC<MenuRowProps> = ({
   icon: Icon,
   label,
   big,
+  isActive,
   onClick,
   badge,
   status,
   connected,
   placeholder,
+  tabIndex,
 }) => (
   <button
     type="button"
     onClick={placeholder ? undefined : onClick}
     aria-disabled={placeholder || undefined}
-    tabIndex={placeholder ? -1 : undefined}
+    aria-current={isActive ? 'page' : undefined}
+    tabIndex={placeholder ? -1 : tabIndex}
+    style={
+      isActive
+        ? { backgroundColor: 'color-mix(in oklab, var(--accent) 10%, transparent)' }
+        : undefined
+    }
     className={`flex items-center gap-3 w-full text-left rounded-xl transition-colors ${
-      big ? 'min-h-[52px] px-3 text-[20px] font-bold' : 'min-h-[48px] px-3 text-[17px] font-medium'
+      big
+        ? 'min-h-[52px] px-3.5 text-[20px] sm:text-[21px] font-bold'
+        : 'min-h-[46px] px-3.5 text-[16px] sm:text-[17px] font-medium'
     } ${
       placeholder
         ? 'opacity-55 cursor-not-allowed text-header-fg'
-        : 'cursor-pointer text-header-fg hover:bg-card/40 hover:text-accent-hover'
+        : isActive
+          ? 'text-header-active cursor-pointer'
+          : 'cursor-pointer text-header-fg hover:bg-card/40 hover:text-accent-hover'
     }`}
   >
-    <Icon className={`${big ? 'w-[22px] h-[22px]' : 'w-5 h-5'} shrink-0 text-header-icon`} aria-hidden="true" />
+    <Icon
+      className={`${big ? 'w-6 h-6' : 'w-5 h-5'} shrink-0 text-header-icon stroke-[1.8]`}
+      strokeWidth={1.8}
+      aria-hidden="true"
+    />
     <span className="flex-1 truncate">{label}</span>
     {typeof badge === 'number' && badge > 0 && (
       <span className="min-w-[20px] h-[20px] px-1.5 rounded-full bg-accent text-on-accent text-[11px] font-bold flex items-center justify-center leading-none">
@@ -90,7 +113,6 @@ const MenuRow: React.FC<MenuRowProps> = ({
         <span className={connected ? 'text-accent' : 'text-text-muted'}>{status}</span>
       </span>
     )}
-    {placeholder && <span className="text-xs text-text-muted whitespace-nowrap">Bald verfügbar</span>}
   </button>
 );
 
@@ -120,7 +142,7 @@ const SearchField: React.FC<SearchFieldProps> = ({
   onFilterOpen,
   onClose,
 }) => (
-  <div className="flex items-center gap-2 w-full">
+  <div className="flex items-center gap-2 w-full h-[52px]">
     <div className="relative flex-1 min-w-0">
       <Search
         className="w-[18px] h-[18px] text-header-icon absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -190,7 +212,7 @@ interface TabNavProps {
   idPrefix: string;
   /** true → mobil (Zeile 2), false → Desktop (Zeile 1) */
   mobile?: boolean;
-  /** Suche offen → Nav ausgeblendet (Crossfade 200 ms) */
+  /** Suche oder Menü offen → Nav ausgeblendet (Crossfade 180–200 ms) */
   hidden?: boolean;
 }
 
@@ -210,7 +232,7 @@ const TabNav: React.FC<TabNavProps> = ({ tabs, active, onNavigate, idPrefix, mob
     setInd({ left, width });
   }, [tabs, active]);
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     measure();
   }, [measure]);
 
@@ -239,9 +261,10 @@ const TabNav: React.FC<TabNavProps> = ({ tabs, active, onNavigate, idPrefix, mob
             type="button"
             onClick={() => onNavigate(tab.path)}
             aria-current={isActive ? 'page' : undefined}
+            tabIndex={hidden ? -1 : undefined}
             className={`vc-press ${
               mobile
-                ? 'flex-1 min-w-0 min-h-[44px] flex items-center justify-center px-1 text-[15px] max-[380px]:text-[14px]'
+                ? 'flex-1 min-w-0 min-h-[52px] flex items-center justify-center px-1 text-[15px] max-[380px]:text-[14px]'
                 : 'flex items-center h-10 px-3 text-sm'
             } font-semibold whitespace-nowrap rounded-lg cursor-pointer touch-manipulation ${
               isActive ? 'text-header-active' : 'text-header-fg hover:text-header-active'
@@ -293,6 +316,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
   );
 
   const favoritesCount = recipesCtx.favorites.length;
+  const bookmarksCount = recipesCtx.bookmarksCount;
   const shoppingCount = shoppingCtx.uncompletedCount;
   const searchQuery = recipesCtx.filters.searchQuery;
   const activeFilterCount = useMemo(() => getActiveSheetFilters(recipesCtx.filters).length, [recipesCtx.filters]);
@@ -335,20 +359,81 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
     }
   }, [recipesCtx]);
 
-  const openSearch = useCallback(() => {
-    setIsMenuOpen(false);
-    menuRef.current?.close();
-    setIsSearchOpen(true);
+  /* ----------------------------- Menü ----------------------------- */
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [menuContentHeight, setMenuContentHeight] = useState<number>(0);
+  const headerRootRef = useRef<HTMLElement>(null);
+  const stageMenuRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef(0);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 768px)');
+    setIsDesktop(mq.matches);
+    const onChange = () => setIsDesktop(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
   }, []);
 
-  // Beim Wechsel der Unterroute Suche zuklappen (Suchbegriff bleibt erhalten).
+  useIsomorphicLayoutEffect(() => {
+    const el = stageMenuRef.current;
+    if (!el) return;
+    const updateHeight = () => {
+      if (el) {
+        setMenuContentHeight(el.offsetHeight);
+      }
+    };
+    updateHeight();
+    const ro = new ResizeObserver(updateHeight);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useLockBodyScroll(isMenuOpen);
+
+  const closeMenu = useCallback((returnFocus = true) => {
+    setIsMenuOpen(false);
+    if (returnFocus) {
+      requestAnimationFrame(() => {
+        document.getElementById('header-menu-btn')?.focus();
+      });
+    }
+  }, []);
+
+  const openMenu = useCallback(() => {
+    // Ist die Suche offen und das Menü wird getippt, schließt die Suche zuerst (ohne Query zu leeren).
+    if (isSearchOpen) {
+      closeSearch(false);
+    }
+    setIsMenuOpen(true);
+  }, [isSearchOpen, closeSearch]);
+
+  const handleMenuToggle = useCallback(() => {
+    if (isMenuOpen) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  }, [isMenuOpen, closeMenu, openMenu]);
+
+  const openSearch = useCallback(() => {
+    if (isMenuOpen) {
+      closeMenu(false);
+    }
+    setIsSearchOpen(true);
+  }, [isMenuOpen, closeMenu]);
+
+  // Beim Wechsel der Unterroute Suche zuklappen (Suchbegriff bleibt erhalten) & Menü schließen
   useEffect(() => {
     setIsSearchOpen(false);
+    if (isMenuOpen) {
+      closeMenu(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
-  // Esc schließt die Suche auch, wenn das Feld nicht fokussiert ist (Enter blur'd
-  // es, um die Tastatur auszublenden). Doppeltes Schließen ist idempotent.
+  // Esc schließt die Suche auch, wenn das Feld nicht fokussiert ist.
   useEffect(() => {
     if (!isSearchOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -361,8 +446,8 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
   useEffect(() => {
     if (!isSearchOpen) return;
     const raf = requestAnimationFrame(() => {
-      const isDesktop = window.matchMedia('(min-width: 768px)').matches;
-      const el = isDesktop ? searchDesktopRef.current : searchMobileRef.current;
+      const isDesktopMatch = window.matchMedia('(min-width: 768px)').matches;
+      const el = isDesktopMatch ? searchDesktopRef.current : searchMobileRef.current;
       el?.focus();
       el?.select();
     });
@@ -376,9 +461,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
       closeSearch(true);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      // Tastatur ausblenden, Feld bleibt offen.
       e.currentTarget.blur();
-      // Von Vorratskammer/Wochenplaner führt Enter zur Entdecker-Seite.
       if (!isExplorerRoute) navigate('/');
     }
   };
@@ -388,75 +471,84 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
     recipesCtx.openFilterSheet();
   }, [isExplorerRoute, navigate, recipesCtx]);
 
-  /* ----------------------------- Menü ----------------------------- */
-  const menuRef = useRef<HTMLDialogElement>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const touchStartY = useRef(0);
-
-  useLockBodyScroll(isMenuOpen);
-
-  const openMenu = useCallback(() => {
-    // Suche schließen OHNE Query zu leeren (wie bei Route-Change); User-Eingabe bleibt erhalten.
-    closeSearch(false);
-    setIsMenuOpen(true);
-    menuRef.current?.show();
-    // Nicht-modales <dialog> übernimmt keinen Fokus von selbst → Fokus ins Panel,
-    // damit Esc/Tab sofort greifen (Punkt 5/9, a11y).
-    menuRef.current?.focus();
-  }, [closeSearch]);
-  const closeMenu = useCallback(() => menuRef.current?.close(), []);
-
-  // Zustand synchron halten + Fokus zurück zum Burger (nicht-modales Dialog:
-  // Esc wird NICHT vom Browser behandelt – siehe handleMenuKeyDown).
+  // Fokusfalle im Header + Panel & Esc-Taste beim geöffneten Menü
   useEffect(() => {
-    const dialog = menuRef.current;
-    const onClose = () => {
-      setIsMenuOpen(false);
-      document.getElementById('header-menu-btn')?.focus();
-    };
-    dialog?.addEventListener('close', onClose);
-    return () => dialog?.removeEventListener('close', onClose);
-  }, []);
+    if (!isMenuOpen) return;
 
-  const handleMenuKeyDown = (e: React.KeyboardEvent<HTMLDialogElement>) => {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      closeMenu();
-      return;
-    }
-    if (e.key === 'Tab') {
-      const dialog = menuRef.current;
-      if (!dialog) return;
-      const focusables: HTMLElement[] = Array.from(
-        dialog.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+    // Initialer Fokus auf ersten interaktiven Menüeintrag
+    const raf = requestAnimationFrame(() => {
+      const firstMenuItem = document.querySelector<HTMLElement>(
+        '#header-stage-menu button:not([aria-disabled="true"]):not([disabled])'
       );
-      if (focusables.length === 0) return;
-      const first = focusables[0]!;
-      const last = focusables[focusables.length - 1]!;
-      const active = document.activeElement;
-      if (e.shiftKey && (active === first || !dialog.contains(active))) {
+      firstMenuItem?.focus();
+    });
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
         e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      } else if (!dialog.contains(active)) {
-        e.preventDefault();
-        first.focus();
+        closeMenu(true);
+        return;
       }
+
+      if (e.key === 'Tab') {
+        const root = headerRootRef.current;
+        if (!root) return;
+
+        const focusables: HTMLElement[] = (
+          Array.from(
+            root.querySelectorAll<HTMLElement>(
+              'button:not([disabled]):not([aria-disabled="true"]):not([tabindex="-1"]), [href], input:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])'
+            )
+          ) as HTMLElement[]
+        ).filter((el) => el.offsetParent !== null || el.getClientRects().length > 0);
+
+        if (focusables.length === 0) return;
+
+        const first = focusables[0]!;
+        const last = focusables[focusables.length - 1]!;
+        const active = document.activeElement;
+
+        if (e.shiftKey) {
+          if (active === first || !root.contains(active)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (active === last || !root.contains(active)) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMenuOpen, closeMenu]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (e.changedTouches[0].clientY - touchStartY.current < -40) {
+      closeMenu();
     }
   };
 
   const go = useCallback(
     (path: string) => {
-      closeMenu();
+      closeMenu(false);
       handleNavigate(path);
     },
     [closeMenu, handleNavigate]
   );
 
   const openSyncFromMenu = useCallback(() => {
-    closeMenu();
+    closeMenu(false);
     syncCtx.openSyncModal();
   }, [closeMenu, syncCtx]);
 
@@ -468,239 +560,375 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
   const syncConfig = syncCtx.syncConfig;
   const isFamilyConnected = syncConfig?.mode === 'family' && Boolean(syncConfig.groupId);
 
+  const stageGroup1 = useMemo(
+    () => [
+      {
+        icon: Compass,
+        label: 'Entdecker',
+        path: '/',
+        isActive: location.pathname === '/' || location.pathname === '/favorites',
+        onClick: () => go('/'),
+      },
+      {
+        icon: Refrigerator,
+        label: 'Vorratskammer',
+        path: '/fridge',
+        isActive: location.pathname.startsWith('/fridge'),
+        onClick: () => go('/fridge'),
+      },
+      {
+        icon: Calendar,
+        label: 'Wochenplaner',
+        path: '/planner',
+        isActive: location.pathname.startsWith('/planner'),
+        onClick: () => go('/planner'),
+      },
+      {
+        icon: Bookmark,
+        label: 'Merkliste',
+        path: '/bookmarks',
+        isActive: location.pathname.startsWith('/bookmarks'),
+        badge: bookmarksCount,
+        onClick: () => go('/bookmarks'),
+      },
+      {
+        icon: ShoppingCart,
+        label: 'Einkaufswagen',
+        path: '/shopping',
+        isActive: location.pathname.startsWith('/shopping'),
+        badge: shoppingCount,
+        onClick: () => go('/shopping'),
+      },
+    ],
+    [bookmarksCount, go, location.pathname, shoppingCount]
+  );
+
+  const stageGroup2 = useMemo(
+    () => [
+      {
+        icon: User,
+        label: 'Profil',
+        placeholder: true,
+      },
+      {
+        icon: Cloud,
+        label: 'Synchronisation',
+        onClick: openSyncFromMenu,
+        status: isFamilyConnected ? syncConfig?.groupName || 'Verbunden' : 'Lokal',
+        connected: isFamilyConnected,
+      },
+      {
+        icon: Settings,
+        label: 'Einstellungen',
+        placeholder: true,
+      },
+      {
+        icon: SlidersHorizontal,
+        label: 'Präferenzen',
+        placeholder: true,
+      },
+      {
+        icon: BarChart3,
+        label: 'Statistiken',
+        path: '/stats',
+        isActive: location.pathname.startsWith('/stats'),
+        onClick: () => go('/stats'),
+      },
+    ],
+    [go, isFamilyConnected, openSyncFromMenu, syncConfig?.groupName, location.pathname]
+  );
+
   /* ------------------------------ UI ------------------------------ */
   return (
     <>
-      <header className="vc-header-root relative z-40">
-      {/* Zeile 1: Logo + Tabs (ab md) + Aktionen – Zitronen-/Aprikosenfläche mit Blattmotiv */}
-      <div className="relative bg-header-top">
-        <div className="relative mx-auto w-full max-w-[1280px] flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 lg:px-8 h-14 md:h-16">
-          {/* Wortmarke */}
-          <button
-            id="brand-logo"
-            type="button"
-            onClick={() => handleNavigate('/')}
-            aria-label="VeggieChef – zur Startseite"
-            className="vc-press flex items-center gap-2 shrink-0 cursor-pointer touch-manipulation"
-          >
-            <span className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-accent text-on-accent flex items-center justify-center shadow-xs shrink-0">
-              <Leaf className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
-            </span>
-            <span className="hidden min-[380px]:inline text-xl md:text-2xl font-extrabold tracking-tight text-header-fg leading-none">
-              VeggieChef
-            </span>
-          </button>
-
-          {/* Desktop-Tabs (eine Zeile ab 768 px); im offenen Suchzustand wechselt das
-              Feld per Crossfade an dieselbe Stelle. */}
-          <div className="relative hidden md:block ml-2">
-            <TabNav tabs={HEADER_TABS} active={activeTab} onNavigate={handleNavigate} idPrefix="nav-tab-" hidden={isSearchOpen} />
-            <div
-              className={`absolute inset-0 flex items-center vc-fade-swap transition-all ease-out ${
-                isSearchOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
-              }`}
+      <header ref={headerRootRef} className="vc-header-root relative z-40">
+        {/* Zeile 1: Logo + Tabs (ab md) + Aktionen – Zitronen-/Aprikosenfläche mit Blattmotiv */}
+        <div className="relative bg-header-top">
+          <div className="relative mx-auto w-full max-w-[1280px] flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 lg:px-8 h-14 md:h-16">
+            {/* Wortmarke */}
+            <button
+              id="brand-logo"
+              type="button"
+              onClick={() => handleNavigate('/')}
+              aria-label="VeggieChef – zur Startseite"
+              className="vc-press flex items-center gap-2 shrink-0 cursor-pointer touch-manipulation"
             >
-              <SearchField
-                fieldId="header-search-input-lg"
-                inputRef={searchDesktopRef}
-                value={searchQuery}
-                placeholder={searchPlaceholder}
-                onValueChange={setSearchQuery}
-                onKeyDown={handleSearchKeyDown}
-                filterCount={activeFilterCount}
-                onFilterOpen={openFilterSheetFromHeader}
-                onClose={() => closeSearch(true)}
+              <span className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-accent text-on-accent flex items-center justify-center shadow-xs shrink-0">
+                <Leaf className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
+              </span>
+              <span className="hidden min-[380px]:inline text-xl md:text-2xl font-extrabold tracking-tight text-header-fg leading-none">
+                VeggieChef
+              </span>
+            </button>
+
+            {/* Desktop-Tabs (eine Zeile ab 768 px); im offenen Suchzustand wechselt das
+                Feld per Crossfade an dieselbe Stelle. Bei offenem Menü ausgeblendet. */}
+            <div className="relative hidden md:block ml-2">
+              <TabNav
+                tabs={HEADER_TABS}
+                active={activeTab}
+                onNavigate={handleNavigate}
+                idPrefix="nav-tab-"
+                hidden={isSearchOpen || isMenuOpen}
               />
+              <div
+                className={`absolute inset-0 flex items-center vc-fade-swap transition-all ease-out ${
+                  isSearchOpen && !isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+                }`}
+              >
+                <SearchField
+                  fieldId="header-search-input-lg"
+                  inputRef={searchDesktopRef}
+                  value={searchQuery}
+                  placeholder={searchPlaceholder}
+                  onValueChange={setSearchQuery}
+                  onKeyDown={handleSearchKeyDown}
+                  filterCount={activeFilterCount}
+                  onFilterOpen={openFilterSheetFromHeader}
+                  onClose={() => closeSearch(true)}
+                />
+              </div>
+            </div>
+
+            {/* Flexibler Zwischenraum */}
+            <div className="flex-1 self-stretch relative min-w-6" aria-hidden="true">
+              <div className="vc-leaf-pattern vc-leaf-fade absolute inset-y-0 left-0 right-0 opacity-[0.09] pointer-events-none" />
+            </div>
+
+            {/* Aktionen: Lupe · Herz · Einkaufswagen · Menü (je ≥ 44×44) */}
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+              <button
+                id="header-search-btn"
+                type="button"
+                onClick={() => {
+                  if (isSearchOpen) {
+                    closeSearch(true);
+                  } else {
+                    openSearch();
+                  }
+                }}
+                aria-pressed={isSearchOpen}
+                aria-label={isSearchOpen ? 'Suche schließen' : 'Suche öffnen'}
+                title="Suchen"
+                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer touch-manipulation vc-press ${
+                  isSearchOpen ? 'bg-card/60 text-accent' : 'text-header-icon hover:bg-card/40'
+                }`}
+              >
+                <Search className="w-6 h-6" aria-hidden="true" />
+              </button>
+
+              <button
+                id="nav-tab-favorites"
+                type="button"
+                onClick={() => handleNavigate('/favorites')}
+                aria-label={favoritesCount > 0 ? `Favoriten, ${favoritesCount} gespeichert` : 'Favoriten'}
+                title="Favoriten"
+                className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation vc-press"
+              >
+                <span
+                  key={heartPulse}
+                  className={`flex items-center justify-center ${heartPulse > 0 ? 'vc-icon-pulse' : ''}`}
+                >
+                  <Heart className="w-6 h-6" aria-hidden="true" />
+                </span>
+              </button>
+
+              <button
+                id="nav-tab-shopping-badge"
+                type="button"
+                onClick={() => handleNavigate('/shopping')}
+                aria-label={shoppingCount > 0 ? `Einkaufswagen, ${shoppingCount} Artikel` : 'Einkaufswagen'}
+                title="Einkaufsliste"
+                className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation vc-press"
+              >
+                <ShoppingCart className="w-6 h-6" aria-hidden="true" />
+                {shoppingCount > 0 && (
+                  <span
+                    key={cartBump}
+                    className={`absolute top-0 right-0 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-on-accent text-[11px] font-bold flex items-center justify-center leading-none ring-2 ring-header-top ${
+                      cartBump > 0 ? 'vc-badge-bump' : ''
+                    }`}
+                  >
+                    {shoppingCount >= 10 ? '9+' : shoppingCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                id="header-menu-btn"
+                type="button"
+                onClick={handleMenuToggle}
+                aria-haspopup="true"
+                aria-expanded={isMenuOpen}
+                aria-controls="header-stage-menu"
+                aria-label={isMenuOpen ? 'Menü schließen' : 'Menü öffnen'}
+                title={isMenuOpen ? 'Menü schließen' : 'Menü'}
+                className="w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation vc-press"
+              >
+                {/* Burger→X-Morph: Linien rotieren ±45°, Mitte blendet aus */}
+                <span className="relative w-6 h-6 block" aria-hidden="true">
+                  <span
+                    className={`vc-burger-line absolute left-0 w-6 h-[2px] rounded-full bg-current ${
+                      isMenuOpen ? 'top-1/2 -translate-y-1/2 rotate-45' : 'top-[6px]'
+                    }`}
+                  />
+                  <span
+                    className={`vc-burger-line absolute left-0 top-1/2 -translate-y-1/2 w-6 h-[2px] rounded-full bg-current transition-[opacity] ${
+                      isMenuOpen ? 'opacity-0' : 'opacity-100'
+                    }`}
+                  />
+                  <span
+                    className={`vc-burger-line absolute left-0 w-6 h-[2px] rounded-full bg-current ${
+                      isMenuOpen ? 'bottom-1/2 translate-y-1/2 -rotate-45' : 'bottom-[6px]'
+                    }`}
+                  />
+                </span>
+              </button>
             </div>
           </div>
-
-          {/* Flexibler Zwischenraum (mobil: Logo→Icons; Desktop: nach den Tabs):
-              hier lebt das Blattmuster (Punkt 7) – nicht hinter Logo/Icons,
-              Ränder faden über 40 px aus, Kontrast nur ~9 %. */}
-          <div className="flex-1 self-stretch relative min-w-6" aria-hidden="true">
-            <div className="vc-leaf-pattern vc-leaf-fade absolute inset-y-0 left-0 right-0 opacity-[0.09] pointer-events-none" />
-          </div>
-
-          {/* Aktionen: Lupe · Herz · Einkaufswagen · Menü (je ≥ 44×44) */}
-          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-            <button
-              id="header-search-btn"
-              type="button"
-              onClick={() => (isSearchOpen ? closeSearch(true) : openSearch())}
-              aria-pressed={isSearchOpen}
-              aria-label={isSearchOpen ? 'Suche schließen' : 'Suche öffnen'}
-              title="Suchen"
-              className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer touch-manipulation vc-press ${
-                isSearchOpen ? 'bg-card/60 text-accent' : 'text-header-icon hover:bg-card/40'
-              }`}
-            >
-              <Search className="w-6 h-6" aria-hidden="true" />
-            </button>
-
-            <button
-              id="nav-tab-favorites"
-              type="button"
-              onClick={() => handleNavigate('/favorites')}
-              aria-label={favoritesCount > 0 ? `Favoriten, ${favoritesCount} gespeichert` : 'Favoriten'}
-              title="Favoriten"
-              className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation vc-press"
-            >
-              <span
-                key={heartPulse}
-                className={`flex items-center justify-center ${heartPulse > 0 ? 'vc-icon-pulse' : ''}`}
-              >
-                <Heart className="w-6 h-6" aria-hidden="true" />
-              </span>
-            </button>
-
-            <button
-              id="nav-tab-shopping-badge"
-              type="button"
-              onClick={() => handleNavigate('/shopping')}
-              aria-label={shoppingCount > 0 ? `Einkaufswagen, ${shoppingCount} Artikel` : 'Einkaufswagen'}
-              title="Einkaufsliste"
-              className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation vc-press"
-            >
-              <ShoppingCart className="w-6 h-6" aria-hidden="true" />
-              {shoppingCount > 0 && (
-                <span
-                  key={cartBump}
-                  className={`absolute top-0 right-0 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-on-accent text-[11px] font-bold flex items-center justify-center leading-none ring-2 ring-header-top ${
-                    cartBump > 0 ? 'vc-badge-bump' : ''
-                  }`}
-                >
-                  {shoppingCount >= 10 ? '9+' : shoppingCount}
-                </span>
-              )}
-            </button>
-
-            <button
-              id="header-menu-btn"
-              type="button"
-              onClick={isMenuOpen ? closeMenu : openMenu}
-              aria-haspopup="dialog"
-              aria-expanded={isMenuOpen}
-              aria-label={isMenuOpen ? 'Menü schließen' : 'Menü öffnen'}
-              title={isMenuOpen ? 'Menü schließen' : 'Menü'}
-              className="w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation vc-press"
-            >
-              {/* Burger→X-Morph: Linien rotieren ±45°, Mitte blendet aus (Punkt 5) */}
-              <span className="relative w-6 h-6 block" aria-hidden="true">
-                <span
-                  className={`vc-burger-line absolute left-0 w-6 h-[2px] rounded-full bg-current ${
-                    isMenuOpen ? 'top-1/2 -translate-y-1/2 rotate-45' : 'top-[6px]'
-                  }`}
-                />
-                <span
-                  className={`vc-burger-line absolute left-0 top-1/2 -translate-y-1/2 w-6 h-[2px] rounded-full bg-current transition-[opacity] ${
-                    isMenuOpen ? 'opacity-0' : 'opacity-100'
-                  }`}
-                />
-                <span
-                  className={`vc-burger-line absolute left-0 w-6 h-[2px] rounded-full bg-current ${
-                    isMenuOpen ? 'bottom-1/2 translate-y-1/2 -rotate-45' : 'bottom-[6px]'
-                  }`}
-                />
-              </span>
-            </button>
-          </div>
         </div>
-      </div>
 
-      {/* Zeile 2 (nur mobil): Tabs bzw. Suchfeld an derselben Stelle (Crossfade, kein Layoutsprung) */}
-      <div className="md:hidden bg-header-panel">
-        <div className="relative h-11 max-w-[1280px] mx-auto px-3 sm:px-6">
-          <TabNav tabs={HEADER_TABS} active={activeTab} onNavigate={handleNavigate} idPrefix="nav-tab-mobile-" mobile hidden={isSearchOpen} />
+        {/* Zone 2 (Bühne): 3 Zustände: 'tabs', 'search', 'menu' */}
+        <div
+          className={`w-full overflow-hidden transition-[height] duration-[var(--dur-base)] ease-[var(--ease-standard)] ${
+            isMenuOpen
+              ? 'flex justify-center bg-transparent pointer-events-auto'
+              : isDesktop
+                ? 'pointer-events-none md:h-0'
+                : 'bg-header-panel pointer-events-auto'
+          }`}
+          style={{
+            height: isMenuOpen
+              ? (menuContentHeight > 0 ? `${menuContentHeight}px` : 'auto')
+              : (isDesktop ? '0px' : '52px'),
+          }}
+        >
           <div
-            className={`absolute inset-0 flex items-center vc-fade-swap transition-all ease-out ${
-              isSearchOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+            className={`w-full transition-[border-radius,box-shadow] duration-[var(--dur-base)] ease-[var(--ease-standard)] ${
+              isMenuOpen
+                ? 'bg-header-panel rounded-b-[24px] shadow-2xl md:max-w-xl md:mx-auto'
+                : 'bg-header-panel max-w-[1280px] mx-auto'
             }`}
           >
-            <SearchField
-              fieldId="header-search-input"
-              inputRef={searchMobileRef}
-              value={searchQuery}
-              placeholder={searchPlaceholder}
-              onValueChange={setSearchQuery}
-              onKeyDown={handleSearchKeyDown}
-              filterCount={activeFilterCount}
-              onFilterOpen={openFilterSheetFromHeader}
-              onClose={() => closeSearch(true)}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Übergang zum Inhalt: Fade (mobil & 768–1023) bzw. Trennlinie (≥ 1024) */}
-      <div className="vc-header-fade md:hidden" aria-hidden="true" />
-      <div className="vc-header-fade hidden md:block lg:hidden" aria-hidden="true" />
-      <div className="hidden lg:block h-px bg-header-line" aria-hidden="true" />
-
-      {/* Menü als nicht-modales Top-Sheet unterhalb des Headers (Punkt 5):
-          das einzige Schließen-Symbol ist der Burger→X-Morph im Header. */}
-      <dialog
-        ref={menuRef}
-        aria-label="Hauptmenü"
-        className="vc-topsheet"
-        onKeyDown={handleMenuKeyDown}
-        onTouchStart={(e) => {
-          touchStartY.current = e.touches[0].clientY;
-        }}
-        onTouchEnd={(e) => {
-          if (e.changedTouches[0].clientY - touchStartY.current < -40) closeMenu();
-        }}
-      >
-        <div className="flex items-center h-12 sm:h-14 pl-5 pr-2 border-b border-header-line">
-          <span className="text-lg font-extrabold tracking-tight text-header-fg">Menü</span>
-        </div>
-        {isMenuOpen && (
-          <div className="p-2.5 sm:p-3 space-y-1">
-            <nav aria-label="Hauptmenü">
-              {[
-                { icon: ShoppingCart, label: 'Einkaufswagen', big: true, onClick: () => go('/shopping'), badge: shoppingCount },
-                { icon: Refrigerator, label: 'Vorratskammer', big: true, onClick: () => go('/fridge') },
-                { icon: Calendar, label: 'Wochenplaner', big: true, onClick: () => go('/planner') },
-                { icon: BarChart3, label: 'Statistiken', big: true, onClick: () => go('/stats') },
-              ].map((row, i) => (
-                <div key={row.label} className="vc-menu-row" style={{ animationDelay: `${i * 30}ms` }}>
-                  <MenuRow icon={row.icon} label={row.label} big={row.big} onClick={row.onClick} badge={row.badge} />
-                </div>
-              ))}
-            </nav>
-            <div className="h-px bg-header-line my-2 vc-menu-row" style={{ animationDelay: '120ms' }} role="separator" />
-            <nav aria-label="Mehr">
-              {[
-                { icon: User, label: 'Profil', placeholder: true },
-                {
-                  icon: Cloud,
-                  label: 'Synchronisation',
-                  onClick: openSyncFromMenu,
-                  status: isFamilyConnected ? syncConfig.groupName || 'Verbunden' : 'Lokal',
-                  connected: isFamilyConnected,
-                },
-                { icon: Settings, label: 'Einstellungen', placeholder: true },
-                { icon: SlidersHorizontal, label: 'Präferenzen', placeholder: true },
-              ].map((row, i) => (
-                <div key={row.label} className="vc-menu-row" style={{ animationDelay: `${(i + 4) * 30}ms` }}>
-                  <MenuRow
-                    icon={row.icon}
-                    label={row.label}
-                    placeholder={row.placeholder}
-                    onClick={row.onClick}
-                    status={row.status}
-                    connected={row.connected}
+            <div className="relative w-full">
+              {/* Zustand 1 & 2: mobil Tabs (~52px) bzw. Suchfeld (~52px) */}
+              <div
+                className={`w-full h-[52px] px-3 sm:px-6 relative flex items-center transition-all duration-[180ms] ease-[var(--ease-standard)] ${
+                  !isMenuOpen
+                    ? 'opacity-100 translate-y-0 pointer-events-auto'
+                    : 'opacity-0 -translate-y-2 pointer-events-none'
+                }`}
+              >
+                <TabNav
+                  tabs={HEADER_TABS}
+                  active={activeTab}
+                  onNavigate={handleNavigate}
+                  idPrefix="nav-tab-mobile-"
+                  mobile
+                  hidden={isSearchOpen || isMenuOpen}
+                />
+                <div
+                  className={`absolute inset-x-3 sm:inset-x-6 inset-y-0 flex items-center transition-all duration-[180ms] ease-[var(--ease-standard)] ${
+                    isSearchOpen && !isMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-2 pointer-events-none'
+                  }`}
+                >
+                  <SearchField
+                    fieldId="header-search-input"
+                    inputRef={searchMobileRef}
+                    value={searchQuery}
+                    placeholder={searchPlaceholder}
+                    onValueChange={setSearchQuery}
+                    onKeyDown={handleSearchKeyDown}
+                    filterCount={activeFilterCount}
+                    onFilterOpen={openFilterSheetFromHeader}
+                    onClose={() => closeSearch(true)}
                   />
                 </div>
-              ))}
-            </nav>
-          </div>
-        )}
-      </dialog>
-    </header>
+              </div>
 
-    {/* Scrim unter dem Header: Klick schließt das Menü (Punkt 5) */}
-    {isMenuOpen && <div className="vc-menu-scrim" onClick={closeMenu} aria-hidden="true" />}
-  </>
+              {/* Zustand 3: Menü in der Bühne (id="header-stage-menu") */}
+              <div
+                ref={stageMenuRef}
+                id="header-stage-menu"
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                className={`absolute top-0 left-0 right-0 p-3 sm:p-4 space-y-1 max-h-[calc(100dvh-56px)] overflow-y-auto overscroll-contain scrollbar-none transition-all duration-[180ms] ease-[var(--ease-standard)] ${
+                  isMenuOpen
+                    ? 'opacity-100 translate-y-0 pointer-events-auto'
+                    : 'opacity-0 -translate-y-2 pointer-events-none'
+                }`}
+              >
+                <nav aria-label="Hauptbereiche" className="space-y-1">
+                  {stageGroup1.map((item, i) => (
+                    <div
+                      key={item.label}
+                      className={isMenuOpen ? 'vc-menu-row' : ''}
+                      style={{ animationDelay: `${i * 25}ms` }}
+                    >
+                      <MenuRow
+                        icon={item.icon}
+                        label={item.label}
+                        big
+                        isActive={item.isActive}
+                        onClick={item.onClick}
+                        badge={item.badge}
+                        tabIndex={isMenuOpen ? 0 : -1}
+                      />
+                    </div>
+                  ))}
+                </nav>
+
+                <div className="h-px bg-header-line my-2.5 mx-2" role="separator" />
+
+                <nav aria-label="Weitere Optionen" className="space-y-1">
+                  {stageGroup2.map((item, i) => (
+                    <div
+                      key={item.label}
+                      className={isMenuOpen ? 'vc-menu-row' : ''}
+                      style={{ animationDelay: `${(i + 5) * 25}ms` }}
+                    >
+                      <MenuRow
+                        icon={item.icon}
+                        label={item.label}
+                        isActive={item.isActive}
+                        placeholder={item.placeholder}
+                        onClick={item.onClick}
+                        status={item.status}
+                        connected={item.connected}
+                        tabIndex={isMenuOpen ? 0 : -1}
+                      />
+                    </div>
+                  ))}
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Übergang zum Inhalt: Fade / Trennlinie wird bei offenem Menü NICHT gerendert */}
+        {!isMenuOpen && (
+          <>
+            <div className="vc-header-fade md:hidden" aria-hidden="true" />
+            <div className="vc-header-fade hidden md:block lg:hidden" aria-hidden="true" />
+            <div className="hidden lg:block h-px bg-header-line" aria-hidden="true" />
+          </>
+        )}
+      </header>
+
+      {/* Scrim via Portal auf document.body: Tippen oder Wischen nach oben schließt */}
+      {typeof document !== 'undefined' &&
+        isMenuOpen &&
+        createPortal(
+          <div
+            className="vc-menu-scrim"
+            onClick={() => closeMenu()}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            aria-hidden="true"
+          />,
+          document.body
+        )}
+    </>
   );
 };
 
