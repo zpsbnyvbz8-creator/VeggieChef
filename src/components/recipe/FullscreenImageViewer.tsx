@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, CheckCircle2, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, Trash2 } from 'lucide-react';
+import { CloseButton } from '../ui/CloseButton';
 
 interface FullscreenImageViewerProps {
   isOpen: boolean;
@@ -148,14 +149,10 @@ export const FullscreenImageViewer: React.FC<FullscreenImageViewerProps> = ({
               </button>
             )}
 
-            <button
-              type="button"
+            <CloseButton
               onClick={onClose}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-card/15 hover:bg-card/25 text-on-accent flex items-center justify-center backdrop-blur-md border border-on-accent/10 transition-all cursor-pointer touch-manipulation active:scale-95"
-              aria-label="Detailansicht schließen"
-            >
-              <X className="w-5 h-5" />
-            </button>
+              ariaLabel="Detailansicht schließen"
+            />
           </div>
         </div>
       </header>

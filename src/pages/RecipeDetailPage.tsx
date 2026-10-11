@@ -609,7 +609,7 @@ export const RecipeDetailPage: React.FC = () => {
             onClick={handleGoBack}
             className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
               isScrolled
-                ? 'bg-accent-tint hover:bg-[#E2ECE4] text-text-main border border-border shadow-2xs'
+                ? 'bg-accent-tint hover:bg-accent-tint text-text-main border border-border shadow-2xs'
                 : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-on-accent shadow-md'
             }`}
             aria-label="Zurück"
@@ -637,7 +637,7 @@ export const RecipeDetailPage: React.FC = () => {
               onClick={() => fileInputRef.current?.click()}
               className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                 isScrolled
-                  ? 'bg-accent-tint hover:bg-[#E2ECE4] text-text-main border border-border shadow-2xs'
+                  ? 'bg-accent-tint hover:bg-accent-tint text-text-main border border-border shadow-2xs'
                   : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-on-accent shadow-md'
               }`}
               title="Rezept-Titelbild / Foto hochladen"
@@ -685,7 +685,7 @@ export const RecipeDetailPage: React.FC = () => {
                 onClick={() => setIsOverflowMenuOpen(!isOverflowMenuOpen)}
                 className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                   isScrolled
-                    ? 'bg-accent-tint hover:bg-[#E2ECE4] text-text-main border border-border shadow-2xs'
+                    ? 'bg-accent-tint hover:bg-accent-tint text-text-main border border-border shadow-2xs'
                     : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-on-accent shadow-md'
                 }`}
                 aria-label="Weitere Optionen"

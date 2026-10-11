@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, Leaf, Droplets, Car, ShieldCheck } from 'lucide-react';
+import { Leaf, Droplets, Car } from 'lucide-react';
+import { CloseButton } from '../ui/CloseButton';
 
 interface EcoImpactModalProps {
   isOpen: boolean;
@@ -45,14 +46,7 @@ export const EcoImpactModal: React.FC<EcoImpactModalProps> = ({
               <p className="text-xs text-text-muted">Vergleich zu konventionellen Rezepten</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-10 h-10 rounded-full hover:bg-surface text-[#57534d] hover:text-[#57534d] flex items-center justify-center transition-colors cursor-pointer"
-            aria-label="Schließen"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <CloseButton onClick={onClose} />
         </div>
 
         {/* Eco Badge */}
@@ -65,7 +59,7 @@ export const EcoImpactModal: React.FC<EcoImpactModalProps> = ({
             <div className="text-sm font-bold text-accent">
               {isVegan ? '100% Pflanzlich (Hervorragend)' : 'Vegetarisch (Klimaschonend)'}
             </div>
-            <p className="text-xs text-[#57534d] mt-0.5">
+            <p className="text-xs text-text-muted mt-0.5">
               Bis zu <strong>85% weniger Treibhausgasemissionen</strong> als bei Gerichten mit Rind- oder Schweinefleisch.
             </p>
           </div>
@@ -74,7 +68,7 @@ export const EcoImpactModal: React.FC<EcoImpactModalProps> = ({
         {/* Breakdown Stats */}
         <div className="space-y-3">
           <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-surface border border-border">
-            <div className="w-9 h-9 rounded-lg bg-[#EBF5EE] text-accent flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-accent-tint text-accent flex items-center justify-center shrink-0">
               <Leaf className="w-5 h-5" />
             </div>
             <div className="flex-1">

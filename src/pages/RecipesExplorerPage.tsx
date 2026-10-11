@@ -176,7 +176,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
               id="explorer-slot-machine-btn"
               type="button"
               onClick={() => setIsSlotOpen(true)}
-              className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-season-autumn/25 bg-[#FFF8F0] hover:border-season-autumn/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+              className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-season-autumn/25 bg-season-autumn-bg hover:border-season-autumn/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
             >
               <Shuffle className="w-6 h-6 text-season-autumn group-hover:rotate-12 transition-transform" aria-hidden="true" />
               <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Überrasch mich</span>
@@ -185,7 +185,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
               id="explorer-swipe-btn"
               type="button"
               onClick={() => setIsSwipeOpen(true)}
-              className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-accent/25 bg-[#F6F9F6] hover:border-accent/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+              className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-accent/25 bg-accent-tint hover:border-accent/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
             >
               <Layers className="w-7 h-7 sm:w-8 sm:h-8 text-accent group-hover:scale-110 transition-transform" aria-hidden="true" />
               <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Entdecken</span>

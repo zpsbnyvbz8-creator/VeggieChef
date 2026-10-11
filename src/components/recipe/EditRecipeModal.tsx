@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Plus, Trash2, Clock, Users, ChefHat, ChevronDown, Camera, CheckCircle2 } from 'lucide-react';
+import { CloseButton } from '../ui/CloseButton';
 import { Recipe, RecipeCategory, RecipeIngredient, RecipeStep } from '../../types';
 import { compressImageToDataUrl } from '../../utils/helpers';
 
@@ -168,14 +169,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
             </h3>
             <p className="text-xs text-text-muted">Passe Zutaten, Zubereitung oder Metadaten an</p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-10 h-10 rounded-full hover:bg-surface text-[#57534d] hover:text-[#57534d] flex items-center justify-center transition-colors cursor-pointer"
-            aria-label="Schließen"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <CloseButton onClick={onClose} />
         </div>
 
         {/* Scrollable Form Body */}

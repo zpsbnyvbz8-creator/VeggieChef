@@ -61,7 +61,7 @@ export const HeartButton: React.FC<HeartButtonProps> = ({
         <Heart
           className={`w-[22px] h-[22px] transition-colors ${
             isPulsing ? 'vc-icon-pulse' : ''
-          } ${isFavorite ? 'fill-[#E74C3C] text-[#E74C3C]' : variant === 'on-surface' ? 'text-text-muted' : 'text-on-accent'}`}
+          } ${isFavorite ? 'fill-favorite text-favorite' : variant === 'on-surface' ? 'text-text-muted' : 'text-on-accent'}`}
           aria-hidden="true"
         />
       </span>

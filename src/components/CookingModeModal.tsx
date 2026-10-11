@@ -31,6 +31,7 @@ import { formatIngredientAmount, calculateMealSavings } from '../utils/helpers';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 import { useRecipes } from '../context/RecipeContext';
 import { useToast } from '../context/ToastContext';
+import { CloseButton } from './ui/CloseButton';
 import confetti from 'canvas-confetti';
 
 interface CookingModeModalProps {
@@ -718,8 +719,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
             </button>
 
             {/* Close */}
-            <button
-              type="button"
+            <CloseButton
               onClick={() => {
                 if (floatingTimers.some((t) => t.isRunning)) {
                   setShowExitConfirm(true);
@@ -727,11 +727,9 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                   onClose();
                 }
               }}
-              className="w-11 h-11 rounded-xl bg-card/10 hover:bg-rose-500/20 text-on-accent/90 hover:text-rose-200 flex items-center justify-center transition-colors cursor-pointer"
+              ariaLabel="Kochmodus beenden"
               title="Kochmodus beenden"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            />
           </div>
         </div>
 
@@ -1281,16 +1279,13 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-on-accent">Alle Zutaten</h3>
-                  <p className="text-xs text-[#8DB898] font-semibold">Berechnet für {currentServings} Portionen</p>
+                  <p className="text-xs text-accent font-semibold">Berechnet für {currentServings} Portionen</p>
                 </div>
               </div>
-              <button
-                type="button"
+              <CloseButton
                 onClick={() => setShowIngredientsModal(false)}
-                className="w-9 h-9 rounded-xl bg-card/10 hover:bg-card/20 text-on-accent flex items-center justify-center"
-              >
-                <X className="w-5 h-5" />
-              </button>
+                ariaLabel="Zutatenliste schließen"
+              />
             </div>
 
             <div className="flex-1 overflow-y-auto py-4 space-y-2">
@@ -1299,7 +1294,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                 return (
                   <div key={ing.name} className="flex items-center justify-between py-2 px-3 rounded-xl bg-card/5">
                     <span className="text-sm text-on-accent/90">{ing.name}</span>
-                    <span className="text-sm font-mono font-bold text-[#8DB898]">{formatted}</span>
+                    <span className="text-sm font-mono font-bold text-accent">{formatted}</span>
                   </div>
                 );
               })}
@@ -1369,13 +1364,11 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
           className="fixed inset-0 z-80 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in"
           onClick={() => setLightboxImage(null)}
         >
-          <button
-            type="button"
+          <CloseButton
             onClick={() => setLightboxImage(null)}
-            className="absolute top-4 right-4 w-11 h-11 rounded-full bg-card/20 text-on-accent flex items-center justify-center"
-          >
-            <X className="w-6 h-6" />
-          </button>
+            ariaLabel="Großansicht schließen"
+            className="absolute top-4 right-4"
+          />
           <img
             src={lightboxImage}
             alt="Großansicht"

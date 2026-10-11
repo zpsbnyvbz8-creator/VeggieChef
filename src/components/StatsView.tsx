@@ -21,7 +21,8 @@ import {
   Crown,
   Filter,
   X,
-  Clock
+  Clock,
+  Users
 } from 'lucide-react';
 import { CookedLog, Recipe } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
@@ -445,7 +446,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                       : 'bg-surface text-text-muted border-border hover:bg-card'
                   }`}
                 >
-                  🌱 Vegan
+                  Vegan
                 </button>
               </div>
             </div>
@@ -459,13 +460,13 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
           </div>
         ) : filteredLogs.length === 0 ? (
           <div className="text-center py-6 text-xs text-text-muted space-y-3">
-            <p className="font-semibold text-[#57534d]">Keine Treffer für diese Filterung</p>
+            <p className="font-semibold text-text-main">Keine Treffer für diese Filterung</p>
             <button
               onClick={() => {
                 setHistorySearchQuery('');
                 setHistoryFilter('all');
               }}
-              className="min-h-[42px] px-4 py-2 bg-accent-tint hover:bg-[#E8EFEA] text-accent font-semibold text-xs rounded-xl transition-colors cursor-pointer touch-manipulation active:scale-95 inline-flex items-center justify-center"
+              className="min-h-[42px] px-4 py-2 bg-accent-tint hover:bg-accent-tint text-accent font-semibold text-xs rounded-xl transition-colors cursor-pointer touch-manipulation active:scale-95 inline-flex items-center justify-center"
             >
               Filter zurücksetzen
             </button>
@@ -630,20 +631,15 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                       transition: isThisItemTouching ? 'none' : 'transform 0.32s cubic-bezier(0.16, 1, 0.3, 1)',
                       willChange: isThisItemTouching ? 'transform' : 'auto',
                     }}
-                    className="relative z-10 p-3 sm:p-3.5 bg-card sm:bg-surface rounded-2xl border border-border flex items-center justify-between gap-2.5 sm:gap-3 transition-colors hover:bg-card hover:border-[#DCDAD5] shadow-2xs"
+                    className="relative z-10 p-3 sm:p-3.5 bg-card sm:bg-surface rounded-2xl border border-border flex items-center justify-between gap-2.5 sm:gap-3 transition-colors hover:bg-card hover:border-accent-border shadow-2xs"
                   >
                     {/* Log Card Body: Clean mobile arrangement */}
                     <div className="space-y-1.5 min-w-0 flex-1">
-                      {/* Top Row: Title + Badge */}
+                      {/* Top Row: Title */}
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="font-semibold text-text-main text-sm truncate">
                           {log.recipeTitle}
                         </span>
-                        {log.isVegan && (
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-accent-tint text-accent border border-border shrink-0">
-                            🌱 Vegan
-                          </span>
-                        )}
                       </div>
 
                       {/* Notes (if any) */}
@@ -655,17 +651,21 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
 
                       {/* Clean Scannable Metrics Badges (Apple-Style Clean Pills) */}
                       <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-text-muted">
-                        <span className="bg-surface px-2 py-0.5 rounded-md border border-border">
-                          📅 {formattedDate}
+                        <span className="bg-surface px-2 py-0.5 rounded-md border border-border inline-flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-text-muted" aria-hidden="true" />
+                          <span>{formattedDate}</span>
                         </span>
-                        <span className="bg-surface px-2 py-0.5 rounded-md border border-border">
-                          👥 {log.servingsCooked || 2} Port.
+                        <span className="bg-surface px-2 py-0.5 rounded-md border border-border inline-flex items-center gap-1">
+                          <Users className="w-3 h-3 text-text-muted" aria-hidden="true" />
+                          <span>{log.servingsCooked || 2} Port.</span>
                         </span>
-                        <span className="bg-accent-tint text-accent font-medium px-2 py-0.5 rounded-md border border-border">
-                          🌱 {log.savedCO2Kg} kg CO₂
+                        <span className="bg-accent-tint text-accent font-medium px-2 py-0.5 rounded-md border border-border inline-flex items-center gap-1">
+                          <Leaf className="w-3 h-3 text-accent" aria-hidden="true" />
+                          <span>{log.savedCO2Kg} kg CO₂</span>
                         </span>
-                        <span className="bg-surface px-2 py-0.5 rounded-md border border-border hidden xs:inline">
-                          💧 {log.savedWaterLiters.toLocaleString('de-DE')} L
+                        <span className="bg-surface px-2 py-0.5 rounded-md border border-border hidden xs:inline-flex items-center gap-1">
+                          <Droplets className="w-3 h-3 text-accent" aria-hidden="true" />
+                          <span>{log.savedWaterLiters.toLocaleString('de-DE')} L</span>
                         </span>
                       </div>
                     </div>
@@ -780,7 +780,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                 : 'bg-surface text-text-muted border-border hover:bg-card'
             }`}
           >
-            ✓ Erreicht ({unlockedCount})
+            Erreicht ({unlockedCount})
           </button>
           <button
             onClick={() => setAchievementTierFilter('bronze')}
@@ -790,7 +790,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                 : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
             }`}
           >
-            🌱 Bronze
+            Bronze
           </button>
           <button
             onClick={() => setAchievementTierFilter('silver')}
@@ -800,7 +800,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                 : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
             }`}
           >
-            🥈 Silber
+            Silber
           </button>
           <button
             onClick={() => setAchievementTierFilter('gold')}
@@ -810,7 +810,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                 : 'bg-yellow-50 text-yellow-800 border-yellow-300 hover:bg-yellow-100'
             }`}
           >
-            🥇 Gold
+            Gold
           </button>
           <button
             onClick={() => setAchievementTierFilter('diamond')}
@@ -820,7 +820,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                 : 'bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100'
             }`}
           >
-            💎 Diamant
+            Diamant
           </button>
           <button
             onClick={() => setAchievementTierFilter('insane')}
@@ -831,7 +831,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
             }`}
           >
             <Flame className="w-4 h-4 text-rose-600" />
-            <span>🔥 Insane ({insaneCount})</span>
+            <span>Insane ({insaneCount})</span>
           </button>
         </div>
 
@@ -851,7 +851,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                 silver: { label: 'Silber', bg: 'bg-slate-200 text-slate-700 border-slate-300' },
                 gold: { label: 'Gold', bg: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
                 diamond: { label: 'Diamant', bg: 'bg-teal-100 text-teal-800 border-teal-200' },
-                insane: { label: '🔥 Insane', bg: 'bg-rose-100 text-rose-700 border-rose-200 font-bold' },
+                insane: { label: 'Insane', bg: 'bg-rose-100 text-rose-700 border-rose-200 font-bold' },
               }[ach.tier];
 
               return (
@@ -903,7 +903,7 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
                       <div className="flex items-center justify-between text-xs text-text-muted">
                         <span className="font-medium">
                           {ach.unlocked
-                            ? 'Erreicht ✓'
+                            ? 'Erreicht'
                             : `${Math.min(ach.current, ach.target).toLocaleString('de-DE')} / ${ach.target.toLocaleString('de-DE')} ${ach.unit}`}
                         </span>
                         <span className="font-bold text-text-main">

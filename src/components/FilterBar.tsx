@@ -31,7 +31,7 @@ export const FilterBar: React.FC = () => {
           aria-label="Kategorien"
           className="flex items-center gap-2 overflow-x-auto scrollbar-none px-3 sm:px-0 py-0.5 sm:flex-wrap sm:overflow-visible mask-fade-x"
         >
-          {[{ value: 'all', label: 'Alle', emoji: '' }, ...categories].map((cat) => {
+          {[{ value: 'all', label: 'Alle' }, ...categories].map((cat) => {
             const selected = filters.category === cat.value;
             return (
               <button
@@ -40,13 +40,12 @@ export const FilterBar: React.FC = () => {
                 type="button"
                 aria-pressed={selected}
                 onClick={() => setFilters((prev) => ({ ...prev, category: cat.value }))}
-                className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                   selected
                     ? 'bg-accent border-accent text-on-accent shadow-2xs'
                     : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
                 }`}
               >
-                {cat.emoji && <span aria-hidden="true">{cat.emoji}</span>}
                 {cat.label}
               </button>
             );
@@ -63,7 +62,7 @@ export const FilterBar: React.FC = () => {
               type="button"
               onClick={() => removeFilter(chip.key)}
               aria-label={`Filter entfernen: ${chip.label}`}
-              className="h-9 pl-3 pr-2 rounded-full bg-accent-tint border border-accent/25 text-accent text-xs font-bold flex items-center gap-1.5 hover:bg-[#E3EBE5] transition-colors cursor-pointer"
+              className="h-9 pl-3 pr-2 rounded-full bg-accent-tint border border-accent/25 text-accent text-xs font-bold flex items-center gap-1.5 hover:bg-accent-tint transition-colors cursor-pointer"
             >
               {chip.label}
               <X className="w-3.5 h-3.5" />

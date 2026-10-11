@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { Leaf } from 'lucide-react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { 
   ToastProvider, 
@@ -132,7 +133,9 @@ function MainApp() {
         <footer className="mt-16 bg-card border-t border-border py-8 px-4 text-center text-xs text-text-muted">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 font-semibold text-text-main">
-              <span className="p-1 rounded-md bg-accent text-on-accent text-xs">🌱</span>
+              <span className="p-1 rounded-md bg-accent text-on-accent flex items-center justify-center">
+                <Leaf className="w-3.5 h-3.5" aria-hidden="true" />
+              </span>
               <span>VeggieChef • 100% Vegetarische & Vegane Koch-App</span>
             </div>
             <div>

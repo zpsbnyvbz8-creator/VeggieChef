@@ -39,20 +39,20 @@ export function isHighProteinRecipe(recipe: Recipe): boolean {
 export interface CategoryMeta {
   value: string;
   label: string;
-  emoji: string;
+  emoji?: string;
 }
 
-/** Display order + emoji for known canonical categories. Unknown ones are appended. */
+/** Display order for known canonical categories. Unknown ones are appended. */
 const CATEGORY_META: CategoryMeta[] = [
-  { value: 'Schnelle Küche', label: 'Schnell', emoji: '⚡' },
-  { value: 'Pasta & Gnocchi', label: 'Pasta', emoji: '🍝' },
-  { value: 'Currys & Eintöpfe', label: 'Currys & Eintöpfe', emoji: '🍛' },
-  { value: 'Bowls & Salate', label: 'Bowls & Salate', emoji: '🥗' },
-  { value: 'Ofengerichte', label: 'Ofengerichte', emoji: '🥘' },
-  { value: HIGH_PROTEIN_CATEGORY, label: 'High Protein', emoji: '💪' },
-  { value: 'Frühstück & Süßes', label: 'Frühstück & Süßes', emoji: '🥞' },
-  { value: 'Snacks & Dips', label: 'Snacks & Dips', emoji: '🥨' },
-  { value: 'Festlich', label: 'Festlich', emoji: '✨' },
+  { value: 'Schnelle Küche', label: 'Schnell' },
+  { value: 'Pasta & Gnocchi', label: 'Pasta' },
+  { value: 'Currys & Eintöpfe', label: 'Currys & Eintöpfe' },
+  { value: 'Bowls & Salate', label: 'Bowls & Salate' },
+  { value: 'Ofengerichte', label: 'Ofengerichte' },
+  { value: HIGH_PROTEIN_CATEGORY, label: 'High Protein' },
+  { value: 'Frühstück & Süßes', label: 'Frühstück & Süßes' },
+  { value: 'Snacks & Dips', label: 'Snacks & Dips' },
+  { value: 'Festlich', label: 'Festlich' },
 ];
 
 export interface CategoryOption extends CategoryMeta {
@@ -83,7 +83,7 @@ export function buildCategoryOptions(recipes: Recipe[]): CategoryOption[] {
   }
   // Unknown / user-defined categories (e.g. from AI-generated recipes)
   for (const [value, count] of counts) {
-    options.push({ value, label: value, emoji: '🍽️', count });
+    options.push({ value, label: value, count });
   }
   return options;
 }

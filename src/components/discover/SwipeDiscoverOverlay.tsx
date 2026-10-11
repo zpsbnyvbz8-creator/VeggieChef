@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useTransform, useMotionValueEvent, PanInfo } from 'motion/react';
-import { X, RotateCcw, ChefHat, Bookmark } from 'lucide-react';
+import { X, RotateCcw, ChefHat, Bookmark, Clock } from 'lucide-react';
 import { Recipe } from '../../types';
 import { RecipeImage } from '../RecipeImage';
 import { CloseButton } from '../ui/CloseButton';
@@ -144,8 +144,9 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
               Vegetarisch
             </span>
           )}
-          <span>
-            ⏱ {recipe.totalTimeMinutes} Min · ★ {ratingStr} ({reviewCountStr}) · {recipe.difficulty}
+          <span className="inline-flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5 text-accent" />
+            <span>{recipe.totalTimeMinutes} Min · ★ {ratingStr} ({reviewCountStr}) · {recipe.difficulty}</span>
           </span>
         </div>
 
@@ -379,8 +380,9 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
                           Vegetarisch
                         </span>
                       )}
-                      <span>
-                        ⏱ {next.totalTimeMinutes} Min · ★ {(next.rating || 4.8).toFixed(1).replace('.', ',')} ({next.reviewCount ?? 0}) · {next.difficulty}
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-accent" />
+                        <span>{next.totalTimeMinutes} Min · ★ {(next.rating || 4.8).toFixed(1).replace('.', ',')} ({next.reviewCount ?? 0}) · {next.difficulty}</span>
                       </span>
                     </div>
                     <p className="line-clamp-2 text-sm text-text-muted">

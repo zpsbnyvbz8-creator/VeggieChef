@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, RotateCcw, Clock, Flame, Dumbbell, Check, Lightbulb, AlertTriangle, Leaf } from 'lucide-react';
+import { CloseButton } from './ui/CloseButton';
 import { FridgeCookIdea } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 
@@ -86,7 +87,7 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
         {/* Modal Header */}
         <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between bg-surface">
           <div className="flex items-center gap-2">
-            <span className={`p-1.5 rounded-lg ${errorMessage ? 'bg-amber-100 text-amber-700' : 'bg-[#EBF3ED] text-accent'}`}>
+            <span className={`p-1.5 rounded-lg ${errorMessage ? 'bg-amber-100 text-amber-700' : 'bg-accent-tint text-accent'}`}>
               {errorMessage ? (
                 <AlertTriangle className="w-5 h-5 text-amber-600" />
               ) : (
@@ -99,7 +100,7 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
                   {errorMessage ? 'Rezept konnte nicht erstellt werden' : 'Vorgeschlagene Rezeptidee'}
                 </h3>
                 {!errorMessage && attemptNumber > 1 && (
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-stone-200 text-[#57534d]">
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-surface text-text-muted border border-border">
                     Vorschlag #{attemptNumber}
                   </span>
                 )}
@@ -109,15 +110,11 @@ export const FridgeIdeaModal: React.FC<FridgeIdeaModalProps> = ({
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isCreatingFinalRecipe}
-            className="p-1.5 rounded-xl hover:bg-stone-200 text-[#57534d] hover:text-[#57534d] transition-colors cursor-pointer disabled:opacity-50"
-            aria-label="Schließen"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <CloseButton
+            onClick={() => !isCreatingFinalRecipe && onCancel()}
+            className={isCreatingFinalRecipe ? 'opacity-50 pointer-events-none' : ''}
+            ariaLabel="Schließen"
+          />
         </div>
 
         {/* Modal Body */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, Check, Lightbulb, ChefHat, RefreshCw, ArrowRight, AlertCircle } from 'lucide-react';
+import { Sparkles, Check, Lightbulb, ChefHat, RefreshCw, ArrowRight, AlertCircle } from 'lucide-react';
+import { CloseButton } from '../ui/CloseButton';
 import { RecipeIngredient } from '../../types';
 
 interface IngredientSubstituteModalProps {
@@ -192,7 +193,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#EBF5EE] text-accent flex items-center justify-center font-bold shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center font-bold shadow-2xs">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
@@ -201,7 +202,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
                   Zutat tauschen
                 </h3>
                 {isAiPowered && (
-                  <span className="px-2 py-0.5 rounded-full bg-[#EBF5EE] text-accent text-[10px] font-bold tracking-wide">
+                  <span className="px-2 py-0.5 rounded-full bg-accent-tint text-accent text-[10px] font-bold tracking-wide">
                     KI-Aktiv
                   </span>
                 )}
@@ -211,14 +212,7 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-10 h-10 rounded-full hover:bg-surface text-[#57534d] hover:text-[#57534d] flex items-center justify-center transition-colors cursor-pointer"
-            aria-label="Schließen"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <CloseButton onClick={onClose} />
         </div>
 
         {/* AI Vorräte-Abfrage & Custom Wish */}
