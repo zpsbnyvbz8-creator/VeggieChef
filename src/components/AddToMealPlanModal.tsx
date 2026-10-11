@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Calendar, Clock, Flame, Dumbbell, Sun, Moon, Check, ChevronDown } from 'lucide-react';
+import { Calendar, Clock, Flame, Dumbbell, Sun, Moon, Check, ChevronDown } from 'lucide-react';
 import { Recipe, DayPlan, WeekPlan } from '../types';
 import { RecipeImage } from './RecipeImage';
+import { CloseButton } from './ui/CloseButton';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 
 import { usePlanner } from '../context/PlannerContext';
@@ -67,12 +68,7 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
               <p className="text-xs text-text-muted">Wähle Tag und Mahlzeit</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl hover:bg-surface text-[#57534d] hover:text-[#57534d] transition-colors cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <CloseButton onClick={onClose} ariaLabel="Planer schließen" />
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
@@ -87,9 +83,9 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
               />
             </div>
             <div className="min-w-0 flex-1">
-              {recipe.isVegan && (
-                <span className="inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full mb-1 border border-border bg-[#EBF3ED] text-accent">
-                  🌱 100% Vegan
+              {(!recipe.isVegan || recipe.diet === 'vegetarisch') && (
+                <span className="inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full mb-1 border border-border bg-accent-tint text-accent">
+                  Vegetarisch
                 </span>
               )}
               <h4 className="text-sm font-semibold text-text-main truncate">{recipe.title}</h4>

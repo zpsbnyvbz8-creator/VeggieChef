@@ -36,10 +36,7 @@ const FamilySyncModal = lazy(() => import('./components/FamilySyncModal').then((
 function RouteLoadingFallback() {
   return (
     <div className="min-h-[45vh] flex flex-col items-center justify-center py-12 px-4 animate-in fade-in duration-150">
-      <div className="relative flex items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-2 border-border border-t-accent animate-spin" />
-        <span className="absolute text-sm">🌱</span>
-      </div>
+      <div className="w-8 h-8 rounded-full border-2 border-border border-t-accent animate-spin" />
       <p className="text-xs font-medium text-text-muted mt-3 tracking-wide">Wird geladen...</p>
     </div>
   );

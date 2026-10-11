@@ -6,6 +6,7 @@ export interface CloseButtonProps {
   ariaLabel?: string;
   title?: string;
   className?: string;
+  id?: string;
 }
 
 export const CloseButton: React.FC<CloseButtonProps> = ({
@@ -13,9 +14,11 @@ export const CloseButton: React.FC<CloseButtonProps> = ({
   ariaLabel = 'Schließen',
   title,
   className = '',
+  id,
 }) => {
   return (
     <button
+      id={id}
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}

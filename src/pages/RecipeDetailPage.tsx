@@ -5,7 +5,6 @@ import {
   Clock, 
   Flame, 
   Dumbbell, 
-  Heart, 
   Copy, 
   Check, 
   ShoppingCart, 
@@ -47,6 +46,7 @@ import { IngredientSubstituteModal } from '../components/recipe/IngredientSubsti
 import { FullscreenImageViewer } from '../components/recipe/FullscreenImageViewer';
 import { EditRecipeModal } from '../components/recipe/EditRecipeModal';
 import { StepImageSwiper } from '../components/recipe/StepImageSwiper';
+import { HeartButton } from '../components/ui/HeartButton';
 
 export const RecipeDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -647,23 +647,12 @@ export const RecipeDetailPage: React.FC = () => {
             </button>
 
             {/* Favorite Toggle Button */}
-            <button
+            <HeartButton
+              variant={isScrolled ? 'on-surface' : 'on-image'}
+              isFavorite={isFavorite}
+              onToggle={() => toggleFavorite(recipe.id)}
               id="recipe-fav-floating-btn"
-              type="button"
-              onClick={() => toggleFavorite(recipe.id)}
-              className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                isScrolled
-                  ? 'bg-accent-tint hover:bg-[#E2ECE4] text-text-main border border-border shadow-2xs'
-                  : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-on-accent shadow-md'
-              }`}
-              aria-label={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
-            >
-              <Heart
-                className={`w-5 h-5 transition-colors ${
-                  isFavorite ? 'fill-[#E74C3C] text-[#E74C3C]' : isScrolled ? 'text-text-main' : 'text-on-accent'
-                }`}
-              />
-            </button>
+            />
 
             {/* Overflow Menu Button */}
             <div ref={overflowMenuRef} className="relative">
@@ -840,9 +829,11 @@ export const RecipeDetailPage: React.FC = () => {
         <section className="space-y-3">
           {/* Metadata Badges: Strictly max 2 badges, no metric duplicates or generic fluff */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="px-3 py-1 rounded-full bg-accent text-on-accent text-xs font-semibold shadow-2xs">
-              {isVeganized || recipe.isVegan ? '🌱 Vegan' : '🧀 Vegetarisch'}
-            </span>
+            {!recipe.isVegan && !isVeganized && (
+              <span className="px-3 py-1 rounded-full bg-accent text-on-accent text-xs font-semibold shadow-2xs">
+                Vegetarisch
+              </span>
+            )}
             {recipe.category && (
               <span className="px-3 py-1 rounded-full bg-accent-tint text-accent border border-border text-xs font-semibold">
                 {recipe.category}

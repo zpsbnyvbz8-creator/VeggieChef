@@ -660,3 +660,16 @@ dialog.vc-sheet[open]::backdrop {
   animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/* Safari-Overlays (Punkt 9) */
+.vc-overlay-viewport {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100%;
+  height: -webkit-fill-available;
+  height: 100lvh;
+  min-height: 100lvh;
+  overscroll-behavior: contain;
+}
+
+

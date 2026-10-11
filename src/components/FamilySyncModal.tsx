@@ -5,14 +5,14 @@ import {
   Cloud, 
   Copy, 
   Check, 
-  X, 
   ArrowRight, 
   LogOut, 
   ShieldCheck, 
   RefreshCw,
-  Sparkles,
+  Sparkles, 
   Share2
 } from 'lucide-react';
+import { CloseButton } from './ui/CloseButton';
 import { SyncConfig, sanitizeGroupId, generateSecureFamilyCode } from '../lib/syncService';
 import { safeCopyToClipboard } from '../utils/helpers';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
@@ -138,17 +138,15 @@ export const FamilySyncModal: React.FC<FamilySyncModalProps> = (props) => {
               </p>
             </div>
           </div>
-          <button
+          <CloseButton
             id="close-sync-modal-btn"
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-card text-[#57534d] hover:text-[#57534d] transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+            ariaLabel="Synchronisation schließen"
+          />
         </div>
 
         {/* Content Body */}
-        <div className="p-5 sm:p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        <div className="p-5 sm:p-6 space-y-6 max-h-[75dvh] overflow-y-auto">
           {/* Status Banner */}
           <div className={`p-4 rounded-xl border flex items-start gap-3 ${
             isFamilyActive 

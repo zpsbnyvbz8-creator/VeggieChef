@@ -23,6 +23,7 @@ import { Recipe, RecipeCategory, RecipeIngredient, RecipeStep } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 import { useRecipes } from '../context/RecipeContext';
 import { HybridPortionStepper } from './HybridPortionStepper';
+import { CloseButton } from './ui/CloseButton';
 
 interface AddRecipeModalProps {
   isOpen?: boolean;
@@ -483,7 +484,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
     >
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="bg-card border border-border rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] overscroll-contain"
+        className="bg-card border border-border rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90dvh] overscroll-contain"
       >
         {/* Header */}
         <div className="px-5 sm:px-7 py-4 sm:py-5 border-b border-border flex items-center justify-between bg-surface">
@@ -502,12 +503,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 rounded-full hover:bg-black/5 flex items-center justify-center text-[#57534d] hover:text-[#57534d] transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <CloseButton onClick={onClose} ariaLabel="Schließen" />
         </div>
 
         {/* Content Area */}
@@ -541,15 +537,11 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-5 text-on-accent">
                   <div className="flex items-center gap-2 mb-2">
-                    <span
-                      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                        previewRecipe.isVegan
-                          ? 'bg-accent text-on-accent'
-                          : 'bg-emerald-600 text-on-accent'
-                      }`}
-                    >
-                      {previewRecipe.isVegan ? '🌱 100% Vegan' : '🧀 Vegetarisch'}
-                    </span>
+                    {(previewRecipe.diet === 'vegetarisch' || !previewRecipe.isVegan) && (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-600 text-on-accent">
+                        Vegetarisch
+                      </span>
+                    )}
                     <span className="text-xs bg-card/20 backdrop-blur-md px-2.5 py-1 rounded-full font-medium">
                       {previewRecipe.category}
                     </span>

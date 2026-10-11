@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { X, Clock, ChefHat, Flame, Dumbbell, Leaf } from 'lucide-react';
+import { Clock, ChefHat, Flame, Dumbbell, Leaf } from 'lucide-react';
+import { CloseButton } from '../ui/CloseButton';
 import { FilterState } from '../../types';
 import {
   CALORIE_OPTIONS,
@@ -104,14 +105,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({ open, onClose, filters
           <h2 id="filter-sheet-title" className="text-xl font-extrabold tracking-tight text-text-main">
             Filter
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Filter schließen"
-            className="w-11 h-11 -mr-2 rounded-full hover:bg-accent-tint text-text-muted hover:text-text-main flex items-center justify-center transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <CloseButton onClick={onClose} ariaLabel="Filter schließen" />
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-5 space-y-6">
