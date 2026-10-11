@@ -3,7 +3,8 @@ import {
   Recipe, 
   FilterState, 
   CookedLog, 
-  CookingTimerState 
+  CookingTimerState,
+  RecipeContextType,
 } from '../types';
 import { INITIAL_RECIPES } from '../data/recipes';
 import { 
@@ -18,6 +19,8 @@ import {
 import { useToast } from './ToastContext';
 import { useSync } from './SyncContext';
 
+export type { RecipeContextType };
+
 const DEFAULT_FILTERS: FilterState = {
   category: 'all',
   searchQuery: '',
@@ -30,48 +33,6 @@ const DEFAULT_FILTERS: FilterState = {
   selectedTags: [],
   sortBy: 'featured',
 };
-
-export interface RecipeContextType {
-  recipes: Recipe[];
-  setRecipes: React.Dispatch<React.SetStateAction<Recipe[]>>;
-  favorites: string[];
-  setFavorites: React.Dispatch<React.SetStateAction<string[]>>;
-  toggleFavorite: (recipeId: string) => void;
-  dislikedIds: string[];
-  setDislikedIds: React.Dispatch<React.SetStateAction<string[]>>;
-  toggleDislike: (recipeId: string) => void;
-  onlyVegan: boolean;
-  setOnlyVegan: React.Dispatch<React.SetStateAction<boolean>>;
-  filters: FilterState;
-  setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
-  resetFilters: () => void;
-  filteredRecipes: Recipe[];
-  dishOfTheDay: Recipe;
-  selectedRecipe: Recipe | null;
-  setSelectedRecipe: React.Dispatch<React.SetStateAction<Recipe | null>>;
-  isAddRecipeOpen: boolean;
-  setIsAddRecipeOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  /** Filter-Sheet (nur auf der Entdecker-Seite gemountet); Header öffnet es über das Filter-Icon im Suchfeld. */
-  isFilterSheetOpen: boolean;
-  openFilterSheet: () => void;
-  closeFilterSheet: () => void;
-  cookedLogs: CookedLog[];
-  setCookedLogs: React.Dispatch<React.SetStateAction<CookedLog[]>>;
-  logCooked: (recipe: Recipe, servings: number, notes?: string, rating?: number, photoUrl?: string) => void;
-  saveCustomRecipe: (newRecipe: Recipe) => void;
-  addRecipe: (newRecipe: Recipe) => void;
-  updateRecipe: (updatedRecipe: Recipe) => void;
-  deleteRecipe: (recipeId: string) => void;
-  duplicateRecipe: (recipe: Recipe) => Recipe;
-  cookingModeRecipe: { recipe: Recipe; servings: number } | null;
-  setCookingModeRecipe: React.Dispatch<React.SetStateAction<{ recipe: Recipe; servings: number } | null>>;
-  isCookingMinimized: boolean;
-  setIsCookingMinimized: React.Dispatch<React.SetStateAction<boolean>>;
-  cookingCurrentStep: number;
-  setCookingCurrentStep: React.Dispatch<React.SetStateAction<number>>;
-  cookingTimer: CookingTimerState | null;
-  setCookingTimer: React.Dispatch<React.SetStateAction<CookingTimerState | null>>;
-}
 
 const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
@@ -112,6 +73,11 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Favorites
   const [favorites, setFavorites] = useState<string[]>(() => 
     loadFromLocalStorage('veggiechef_favorites', ['rec-1', 'rec-3'])
+  );
+
+  // Bookmarks (Merkliste getrennt von Favoriten)
+  const [bookmarks, setBookmarks] = useState<string[]>(() =>
+    loadFromLocalStorage('veggiechef_bookmarks', [])
   );
 
   // Disliked Recipes (to show less frequently & deprioritize)
@@ -173,6 +139,10 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     saveToLocalStorage('veggiechef_favorites', favorites);
   }, [favorites]);
+
+  useEffect(() => {
+    saveToLocalStorage('veggiechef_bookmarks', bookmarks);
+  }, [bookmarks]);
 
   useEffect(() => {
     saveToLocalStorage('veggiechef_dislikes', dislikedIds);
@@ -260,7 +230,18 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setFavorites((prev) => [...prev, recipeId]);
       // Automatisch Dislike aufheben, damit das Gericht wieder öfter/normal angezeigt wird
       setDislikedIds((prev) => prev.filter((id) => id !== recipeId));
-      showToast('Zu Favoriten hinzugefügt! ❤️');
+      showToast('Zu Favoriten hinzugefügt!');
+    }
+  };
+
+  const isBookmarked = (id: string) => bookmarks.includes(id);
+  const toggleBookmark = (recipeId: string) => {
+    if (isBookmarked(recipeId)) {
+      setBookmarks((prev) => prev.filter((id) => id !== recipeId));
+      showToast('Aus Merkliste entfernt');
+    } else {
+      setBookmarks((prev) => [...prev, recipeId]);
+      showToast('Auf Merkliste gespeichert');
     }
   };
 
@@ -326,6 +307,7 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const deleteRecipe = (recipeId: string) => {
     setRecipes((prev) => prev.filter((r) => r.id !== recipeId));
     setFavorites((prev) => prev.filter((id) => id !== recipeId));
+    setBookmarks((prev) => prev.filter((id) => id !== recipeId));
     setDislikedIds((prev) => prev.filter((id) => id !== recipeId));
     showToast('Gericht wurde gelöscht.');
   };
@@ -371,6 +353,10 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         favorites,
         setFavorites,
         toggleFavorite,
+        bookmarks,
+        bookmarksCount: bookmarks.length,
+        toggleBookmark,
+        isBookmarked,
         dislikedIds,
         setDislikedIds,
         toggleDislike,

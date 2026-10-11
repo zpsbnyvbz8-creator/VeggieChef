@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useNavigationType } from 'react-router-dom';
-import { ArrowUpDown, ChevronDown, Layers, LayoutGrid, List, Plus } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, Layers, LayoutGrid, List, Plus, Bookmark } from 'lucide-react';
 import { useRecipes } from '../context/RecipeContext';
 import { DishOfTheDay } from '../components/DishOfTheDay';
 import { SeasonHighlights } from '../components/SeasonHighlights';
@@ -26,15 +26,16 @@ import {
 const listMemory: Record<string, { count: number; scrollY: number }> = {};
 
 interface RecipesExplorerPageProps {
-  isFavorites: boolean;
+  isFavorites?: boolean;
+  isBookmarks?: boolean;
 }
 
-export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavorites }) => {
+export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavorites = false, isBookmarks = false }) => {
   const navigate = useNavigate();
   const navType = useNavigationType();
-  const { favorites, filters, setFilters, resetFilters, filteredRecipes, dishOfTheDay, setIsAddRecipeOpen, isFilterSheetOpen, closeFilterSheet } = useRecipes();
+  const { favorites, bookmarks, filters, setFilters, resetFilters, filteredRecipes, dishOfTheDay, setIsAddRecipeOpen, isFilterSheetOpen, closeFilterSheet } = useRecipes();
 
-  const memoryKey = isFavorites ? 'favorites' : 'explore';
+  const memoryKey = isBookmarks ? 'bookmarks' : isFavorites ? 'favorites' : 'explore';
   const restore = navType === 'POP' ? listMemory[memoryKey] : undefined;
 
   const [visibleCount, setVisibleCount] = useState(restore?.count ?? RECIPES_PAGE_SIZE);
@@ -50,11 +51,19 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
 
   /* ---- data ---- */
   const recipes = useMemo(
-    () => (isFavorites ? filteredRecipes.filter((r) => favorites.includes(r.id)) : filteredRecipes),
-    [isFavorites, filteredRecipes, favorites]
+    () => {
+      if (isBookmarks) {
+        return filteredRecipes.filter((r) => bookmarks.includes(r.id));
+      }
+      if (isFavorites) {
+        return filteredRecipes.filter((r) => favorites.includes(r.id));
+      }
+      return filteredRecipes;
+    },
+    [isBookmarks, isFavorites, filteredRecipes, bookmarks, favorites]
   );
   const isNarrowed = hasAnyNarrowingFilter(filters);
-  const isBrowsing = !isFavorites && !isNarrowed;
+  const isBrowsing = !isFavorites && !isBookmarks && !isNarrowed;
   const visible = recipes.slice(0, visibleCount);
   const hasMore = recipes.length > visibleCount;
 
@@ -67,7 +76,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
       return;
     }
     setVisibleCount(RECIPES_PAGE_SIZE);
-  }, [filterKey, isFavorites]);
+  }, [filterKey, isFavorites, isBookmarks]);
 
   /* ---- scroll memory ---- */
   useLayoutEffect(() => {
@@ -115,13 +124,17 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
       {/* Page header */}
       <header className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          {isFavorites && (
+          {isBookmarks ? (
+            <p className="text-xs sm:text-sm font-medium text-text-muted">
+              {bookmarks.length} gemerkt
+            </p>
+          ) : isFavorites ? (
             <p className="text-xs sm:text-sm font-medium text-text-muted">
               {favorites.length} gespeichert
             </p>
-          )}
+          ) : null}
           <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-text-main leading-tight">
-            {isFavorites ? 'Deine Favoriten' : 'Was kochen wir heute?'}
+            {isBookmarks ? 'Merkliste' : isFavorites ? 'Deine Favoriten' : 'Was kochen wir heute?'}
           </h1>
         </div>
         <button
@@ -141,7 +154,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
       <FilterBar />
 
       {/* Discovery entry points (browse mode only) */}
-      {!isFavorites && isBrowsing && (
+      {isBrowsing && (
         <>
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             <button
@@ -177,7 +190,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h2 id="results-title" className="text-xl sm:text-2xl font-extrabold tracking-tight text-text-main truncate">
-              {isFavorites ? 'Gespeicherte Rezepte' : isNarrowed ? 'Ergebnisse' : 'Alle Rezepte'}
+              {isBookmarks ? 'Gemerkte Rezepte' : isFavorites ? 'Gespeicherte Rezepte' : isNarrowed ? 'Ergebnisse' : 'Alle Rezepte'}
             </h2>
             <p className="text-sm text-text-muted" aria-live="polite">
               {recipes.length} {recipes.length === 1 ? 'Rezept' : 'Rezepte'}
@@ -240,12 +253,44 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
         </div>
 
         {recipes.length === 0 ? (
-          <EmptyState
-            isFavorites={isFavorites}
-            isNarrowed={isNarrowed}
-            onReset={resetFilters}
-            onBrowse={() => navigate('/')}
-          />
+          isBookmarks && !isNarrowed ? (
+            <div className="bg-card rounded-3xl border border-border shadow-2xs px-6 py-12 text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-accent-tint text-accent flex items-center justify-center mx-auto" aria-hidden="true">
+                <Bookmark className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-text-main">
+                  Noch nichts gemerkt
+                </h3>
+                <p className="text-sm text-text-muted max-w-sm mx-auto leading-relaxed">
+                  Wische im Entdecken-Modus nach rechts, um Rezepte zu merken.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsSwipeOpen(true)}
+                  className="h-12 px-6 rounded-xl bg-accent hover:bg-accent-hover text-on-accent font-bold transition-all active:scale-95 cursor-pointer min-w-[44px] min-h-[44px]"
+                >
+                  Entdecken öffnen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/')}
+                  className="h-12 px-6 rounded-xl bg-card border border-border hover:bg-surface text-text-main font-bold transition-all active:scale-95 cursor-pointer min-w-[44px] min-h-[44px]"
+                >
+                  Zurück zum Entdecken
+                </button>
+              </div>
+            </div>
+          ) : (
+            <EmptyState
+              isFavorites={isFavorites}
+              isNarrowed={isNarrowed}
+              onReset={resetFilters}
+              onBrowse={() => navigate('/')}
+            />
+          )
         ) : (
           <>
             <ul

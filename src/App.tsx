@@ -72,7 +72,7 @@ function MainApp() {
   }, [searchParams, navigate]);
 
   const showBottomTimerBar = Boolean(cookingTimer || (cookingModeRecipe && isCookingMinimized));
-  const isExplorerRoute = location.pathname === '/' || location.pathname === '/favorites';
+  const isExplorerRoute = location.pathname === '/' || location.pathname === '/favorites' || location.pathname === '/bookmarks';
 
   return (
     <div className="min-h-dvh bg-[var(--bg-page)] text-[var(--text-main)] flex flex-col font-sans selection:bg-accent-tint selection:text-accent">
@@ -88,6 +88,7 @@ function MainApp() {
           <Routes>
             <Route path="/" element={<RecipesExplorerPage isFavorites={false} />} />
             <Route path="/favorites" element={<RecipesExplorerPage isFavorites={true} />} />
+            <Route path="/bookmarks" element={<RecipesExplorerPage isBookmarks={true} />} />
             <Route path="/recipes/:id" element={<RecipeDetailPage />} />
             <Route path="/fridge" element={<FridgeCookView />} />
             <Route path="/planner" element={<WeeklyPlannerView />} />

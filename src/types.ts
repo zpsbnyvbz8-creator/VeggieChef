@@ -1,3 +1,5 @@
+import type React from 'react';
+
 export type RecipeCategory =
   | 'Schnelle Küche'
   | 'Schnelle Feierabendküche'
@@ -139,7 +141,7 @@ export interface ShoppingItem {
   recipeSource?: string;
 }
 
-export type ViewMode = 'recipes' | 'fridge' | 'planner' | 'shopping' | 'stats' | 'favorites';
+export type ViewMode = 'recipes' | 'fridge' | 'planner' | 'shopping' | 'stats' | 'favorites' | 'bookmarks';
 
 export interface FilterState {
   searchQuery: string;
@@ -188,5 +190,52 @@ export interface FridgeCookIdea {
   basicPantryItemsNeeded?: string[];
   additionalIngredientsProposed?: string[];
 }
+
+export interface RecipeContextType {
+  recipes: Recipe[];
+  setRecipes: React.Dispatch<React.SetStateAction<Recipe[]>>;
+  favorites: string[];
+  setFavorites: React.Dispatch<React.SetStateAction<string[]>>;
+  toggleFavorite: (recipeId: string) => void;
+  bookmarks: string[];
+  bookmarksCount: number;
+  toggleBookmark: (recipeId: string) => void;
+  isBookmarked: (recipeId: string) => boolean;
+  dislikedIds: string[];
+  setDislikedIds: React.Dispatch<React.SetStateAction<string[]>>;
+  toggleDislike: (recipeId: string) => void;
+  onlyVegan: boolean;
+  setOnlyVegan: React.Dispatch<React.SetStateAction<boolean>>;
+  filters: FilterState;
+  setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
+  resetFilters: () => void;
+  filteredRecipes: Recipe[];
+  dishOfTheDay: Recipe;
+  selectedRecipe: Recipe | null;
+  setSelectedRecipe: React.Dispatch<React.SetStateAction<Recipe | null>>;
+  isAddRecipeOpen: boolean;
+  setIsAddRecipeOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Filter-Sheet (nur auf der Entdecker-Seite gemountet); Header öffnet es über das Filter-Icon im Suchfeld. */
+  isFilterSheetOpen: boolean;
+  openFilterSheet: () => void;
+  closeFilterSheet: () => void;
+  cookedLogs: CookedLog[];
+  setCookedLogs: React.Dispatch<React.SetStateAction<CookedLog[]>>;
+  logCooked: (recipe: Recipe, servings: number, notes?: string, rating?: number, photoUrl?: string) => void;
+  saveCustomRecipe: (newRecipe: Recipe) => void;
+  addRecipe: (newRecipe: Recipe) => void;
+  updateRecipe: (updatedRecipe: Recipe) => void;
+  deleteRecipe: (recipeId: string) => void;
+  duplicateRecipe: (recipe: Recipe) => Recipe;
+  cookingModeRecipe: { recipe: Recipe; servings: number } | null;
+  setCookingModeRecipe: React.Dispatch<React.SetStateAction<{ recipe: Recipe; servings: number } | null>>;
+  isCookingMinimized: boolean;
+  setIsCookingMinimized: React.Dispatch<React.SetStateAction<boolean>>;
+  cookingCurrentStep: number;
+  setCookingCurrentStep: React.Dispatch<React.SetStateAction<number>>;
+  cookingTimer: CookingTimerState | null;
+  setCookingTimer: React.Dispatch<React.SetStateAction<CookingTimerState | null>>;
+}
+
 
 
