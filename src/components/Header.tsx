@@ -196,16 +196,19 @@ interface TabNavProps {
 
 const TabNav: React.FC<TabNavProps> = ({ tabs, active, onNavigate, idPrefix, mobile = false, hidden = false }) => {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const labelRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [ind, setInd] = useState({ left: 0, width: 0 });
 
   const measure = useCallback(() => {
     const idx = tabs.findIndex((t) => t.id === active);
     const el = refs.current[idx];
     if (!el) return;
-    // Desktop-Indikator sitzt wie bisher mit 8 px Inset; mobil voll breit.
-    const inset = mobile ? 0 : 8;
-    setInd({ left: el.offsetLeft + inset, width: el.offsetWidth - inset * 2 });
-  }, [tabs, active, mobile]);
+    const spanEl = labelRefs.current[idx];
+    const textWidth = spanEl ? spanEl.offsetWidth : el.offsetWidth;
+    const width = textWidth + 16;
+    const left = el.offsetLeft + (el.offsetWidth - width) / 2;
+    setInd({ left, width });
+  }, [tabs, active]);
 
   useLayoutEffect(() => {
     measure();
@@ -241,16 +244,22 @@ const TabNav: React.FC<TabNavProps> = ({ tabs, active, onNavigate, idPrefix, mob
                 ? 'flex-1 min-w-0 min-h-[44px] flex items-center justify-center px-1 text-[15px] max-[380px]:text-[14px]'
                 : 'flex items-center h-10 px-3 text-sm'
             } font-semibold whitespace-nowrap rounded-lg cursor-pointer touch-manipulation ${
-              isActive ? 'text-accent-hover' : 'text-header-fg hover:text-accent-hover'
+              isActive ? 'text-header-active' : 'text-header-fg hover:text-header-active'
             }`}
           >
-            {tab.label}
+            <span
+              ref={(span) => {
+                labelRefs.current[i] = span;
+              }}
+            >
+              {tab.label}
+            </span>
           </button>
         );
       })}
       <span
         aria-hidden="true"
-        className="absolute bottom-0 left-0 h-[3px] rounded-t-full bg-accent vc-underline pointer-events-none"
+        className="absolute bottom-0 left-0 h-[3px] rounded-full bg-accent vc-underline pointer-events-none"
         style={{ width: ind.width, transform: `translateX(${ind.left}px)` }}
       />
     </nav>
@@ -477,7 +486,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
             <span className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-accent text-on-accent flex items-center justify-center shadow-xs shrink-0">
               <Leaf className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
             </span>
-            <span className="hidden min-[380px]:inline text-xl md:text-2xl font-extrabold tracking-tight text-header-icon leading-none">
+            <span className="hidden min-[380px]:inline text-xl md:text-2xl font-extrabold tracking-tight text-header-fg leading-none">
               VeggieChef
             </span>
           </button>
@@ -522,7 +531,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
               aria-label={isSearchOpen ? 'Suche schließen' : 'Suche öffnen'}
               title="Suchen"
               className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer touch-manipulation vc-press ${
-                isSearchOpen ? 'bg-card/40 text-accent' : 'text-header-icon hover:bg-card/40'
+                isSearchOpen ? 'bg-card/60 text-accent' : 'text-header-icon hover:bg-card/40'
               }`}
             >
               <Search className="w-6 h-6" aria-hidden="true" />

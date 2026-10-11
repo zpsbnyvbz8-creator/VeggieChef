@@ -64,7 +64,9 @@
   --header-panel: #F8EAD3;
   --header-line: #E6CFA8;
   --header-fg: var(--text-main);
-  --header-icon: var(--accent);
+  --header-icon: var(--text-main);
+  --header-active: var(--text-main);
+  /* Alternative: --header-icon: var(--accent-hover); --header-active: var(--accent-hover); */
 
   /* Kanal-Tokens für Schatten & Scrim: rgb(var(--shadow-rgb) / 0.22) */
   --shadow-rgb: 45 62 64;   /* #2D3E40 */
@@ -110,6 +112,7 @@
   --color-header-line: var(--header-line);
   --color-header-fg: var(--header-fg);
   --color-header-icon: var(--header-icon);
+  --color-header-active: var(--header-active);
   --color-rose-50: var(--rose-50);
   --color-rose-100: var(--rose-100);
   --color-rose-200: var(--rose-200);
