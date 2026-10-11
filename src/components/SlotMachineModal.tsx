@@ -65,6 +65,9 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
     timeoutsRef.current = [];
   }, []);
 
+  const displayedRecipeRef = useRef<Recipe | null>(null);
+  displayedRecipeRef.current = displayedRecipe;
+
   // Pick winning recipe
   const pickRecipe = useCallback((currentPool: Recipe[]): Recipe | null => {
     if (currentPool.length === 0) return null;
@@ -74,14 +77,11 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
 
     let candidates: Recipe[];
     if (currentPool.length <= 5) {
-      // Wenn pool <= 5, alle verfügbaren außer dem aktuellen nutzen
       candidates = currentPool.filter((r) => r.id !== lastDrawnId);
     } else {
-      // Letzte 5 gezogene ausschließen
       candidates = currentPool.filter((r) => !recentIdsRef.current.includes(r.id));
     }
 
-    // Fallback: nie dasselbe Rezept zweimal hintereinander
     if (candidates.length === 0) {
       candidates = currentPool.filter((r) => r.id !== lastDrawnId);
     }
@@ -128,7 +128,7 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
       return candidates[Math.floor(Math.random() * candidates.length)];
     };
 
-    let prevDummy = displayedRecipe?.id;
+    let prevDummy = displayedRecipeRef.current?.id;
     const firstDummy = pickDummy(prevDummy);
     setDisplayedRecipe(firstDummy);
     prevDummy = firstDummy.id;
@@ -154,7 +154,7 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
 
       timeoutsRef.current.push(timerId);
     }
-  }, [clearTimers, displayedRecipe?.id, pickRecipe]);
+  }, [clearTimers, pickRecipe]);
 
   // Dialog sync
   useEffect(() => {
@@ -181,22 +181,15 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
   }, [isOpen]);
 
   // Trigger shuffle on modal open & cleanup on close/unmount
-  const prevOpenRef = useRef(false);
   useEffect(() => {
-    if (isOpen && !prevOpenRef.current) {
+    if (isOpen) {
       pickAndShuffle();
-    } else if (!isOpen && prevOpenRef.current) {
-      clearTimers();
-      setIsShuffling(false);
     }
-    prevOpenRef.current = isOpen;
-  }, [isOpen, pickAndShuffle, clearTimers]);
-
-  useEffect(() => {
     return () => {
       clearTimers();
+      setIsShuffling(false);
     };
-  }, [clearTimers]);
+  }, [isOpen, pickAndShuffle, clearTimers]);
 
   const isBookmarked = displayedRecipe ? bookmarks.includes(displayedRecipe.id) : false;
   const isFavorite = displayedRecipe ? favorites.includes(displayedRecipe.id) : false;
