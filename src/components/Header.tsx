@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Leaf,
@@ -177,6 +177,86 @@ const SearchField: React.FC<SearchFieldProps> = ({
   </div>
 );
 
+/* -------------------------------------------------------------------------- */
+/* Tab-Navigation mit gleitender Unterstreichung (Punkt 9.1): Ein gemeinsamer
+   Indikator fährt per transform (~250 ms) zwischen den Tabs; Press-Feedback
+   (Punkt 9.2) über .vc-press (nur Touch-Geräte). Scroll-top bei aktivem Tab
+   übernimmt handleNavigate (Punkt 9.3). */
+/* -------------------------------------------------------------------------- */
+interface TabNavProps {
+  tabs: HeaderTab[];
+  active: NavTab;
+  onNavigate: (path: string) => void;
+  idPrefix: string;
+  /** true → mobil (Zeile 2), false → Desktop (Zeile 1) */
+  mobile?: boolean;
+  /** Suche offen → Nav ausgeblendet (Crossfade 200 ms) */
+  hidden?: boolean;
+}
+
+const TabNav: React.FC<TabNavProps> = ({ tabs, active, onNavigate, idPrefix, mobile = false, hidden = false }) => {
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [ind, setInd] = useState({ left: 0, width: 0 });
+
+  const measure = useCallback(() => {
+    const idx = tabs.findIndex((t) => t.id === active);
+    const el = refs.current[idx];
+    if (!el) return;
+    // Desktop-Indikator sitzt wie bisher mit 8 px Inset; mobil voll breit.
+    const inset = mobile ? 0 : 8;
+    setInd({ left: el.offsetLeft + inset, width: el.offsetWidth - inset * 2 });
+  }, [tabs, active, mobile]);
+
+  useLayoutEffect(() => {
+    measure();
+  }, [measure]);
+
+  useEffect(() => {
+    const onResize = () => measure();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [measure]);
+
+  return (
+    <nav
+      aria-label="Hauptbereiche"
+      className={`vc-fade-swap transition-all ease-out ${
+        mobile ? 'absolute inset-0 flex items-stretch' : 'flex items-center gap-0.5'
+      } ${hidden ? 'opacity-0 -translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0'}`}
+    >
+      {tabs.map((tab, i) => {
+        const isActive = active === tab.id;
+        return (
+          <button
+            key={tab.id}
+            id={`${idPrefix}${tab.id}`}
+            ref={(el) => {
+              refs.current[i] = el;
+            }}
+            type="button"
+            onClick={() => onNavigate(tab.path)}
+            aria-current={isActive ? 'page' : undefined}
+            className={`vc-press ${
+              mobile
+                ? 'flex-1 min-w-0 min-h-[44px] flex items-center justify-center px-1 text-[15px] max-[380px]:text-[14px]'
+                : 'flex items-center h-10 px-3 text-sm'
+            } font-semibold whitespace-nowrap rounded-lg cursor-pointer touch-manipulation ${
+              isActive ? 'text-accent-hover' : 'text-header-fg hover:text-accent-hover'
+            }`}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
+      <span
+        aria-hidden="true"
+        className="absolute bottom-0 left-0 h-[3px] rounded-t-full bg-accent vc-underline pointer-events-none"
+        style={{ width: ind.width, transform: `translateX(${ind.left}px)` }}
+      />
+    </nav>
+  );
+};
+
 export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -193,7 +273,12 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
 
   const handleNavigate = useCallback(
     (path: string) => {
-      if (location.pathname !== path) navigate(path);
+      if (location.pathname !== path) {
+        navigate(path);
+      } else {
+        // Klick auf den aktiven Tab bzw. das Logo → sanft nach oben scrollen (Punkt 9.3).
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     },
     [location.pathname, navigate]
   );
@@ -372,7 +457,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
             type="button"
             onClick={() => handleNavigate('/')}
             aria-label="VeggieChef – zur Startseite"
-            className="flex items-center gap-2 shrink-0 cursor-pointer touch-manipulation active:scale-95 transition-transform"
+            className="vc-press flex items-center gap-2 shrink-0 cursor-pointer touch-manipulation"
           >
             <span className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-accent text-on-accent flex items-center justify-center shadow-xs shrink-0">
               <Leaf className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
@@ -385,35 +470,9 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
           {/* Desktop-Tabs (eine Zeile ab 768 px); im offenen Suchzustand wechselt das
               Feld per Crossfade an dieselbe Stelle. */}
           <div className="relative hidden md:block ml-2">
-            <nav
-              aria-label="Hauptbereiche"
-              className={`flex items-center gap-0.5 transition-all duration-[220ms] ease-out ${
-                isSearchOpen ? 'opacity-0 -translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0'
-              }`}
-            >
-              {HEADER_TABS.map((tab) => {
-                const active = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    id={`nav-tab-${tab.id}`}
-                    type="button"
-                    onClick={() => handleNavigate(tab.path)}
-                    aria-current={active ? 'page' : undefined}
-                    className={`relative flex items-center h-10 px-3 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer touch-manipulation active:scale-[0.98] ${
-                      active ? 'text-accent-hover' : 'text-header-fg hover:text-accent-hover'
-                    }`}
-                  >
-                    {tab.label}
-                    {active && (
-                      <span aria-hidden="true" className="absolute inset-x-2 bottom-0 h-[3px] rounded-t-full bg-accent" />
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
+            <TabNav tabs={HEADER_TABS} active={activeTab} onNavigate={handleNavigate} idPrefix="nav-tab-" hidden={isSearchOpen} />
             <div
-              className={`absolute inset-0 flex items-center transition-all duration-[220ms] ease-out ${
+              className={`absolute inset-0 flex items-center vc-fade-swap transition-all ease-out ${
                 isSearchOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
               }`}
             >
@@ -527,38 +586,9 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
       {/* Zeile 2 (nur mobil): Tabs bzw. Suchfeld an derselben Stelle (Crossfade, kein Layoutsprung) */}
       <div className="md:hidden bg-header-panel">
         <div className="relative h-11 max-w-[1280px] mx-auto px-3 sm:px-6">
-          <nav
-            aria-label="Hauptbereiche"
-            className={`absolute inset-0 flex items-stretch transition-all duration-[220ms] ease-out ${
-              isSearchOpen ? 'opacity-0 -translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0'
-            }`}
-          >
-            {HEADER_TABS.map((tab) => {
-              const active = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  id={`nav-tab-mobile-${tab.id}`}
-                  type="button"
-                  onClick={() => handleNavigate(tab.path)}
-                  aria-current={active ? 'page' : undefined}
-                  className={`relative flex-1 min-w-0 min-h-[44px] flex items-center justify-center px-1 text-[15px] max-[380px]:text-[14px] font-semibold whitespace-nowrap transition-colors cursor-pointer touch-manipulation active:scale-[0.98] ${
-                    active ? 'text-accent-hover' : 'text-header-fg hover:text-accent-hover'
-                  }`}
-                >
-                  {tab.label}
-                  {active && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-12 rounded-t-full bg-accent"
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
+          <TabNav tabs={HEADER_TABS} active={activeTab} onNavigate={handleNavigate} idPrefix="nav-tab-mobile-" mobile hidden={isSearchOpen} />
           <div
-            className={`absolute inset-0 flex items-center transition-all duration-[220ms] ease-out ${
+            className={`absolute inset-0 flex items-center vc-fade-swap transition-all ease-out ${
               isSearchOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
             }`}
           >
