@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Star, ChefHat, ArrowRight, Heart } from 'lucide-react';
+import { Clock, Star, ChefHat, ArrowRight } from 'lucide-react';
 import { RecipeImage } from './RecipeImage';
+import { HeartButton } from './ui/HeartButton';
 import { useRecipes } from '../context/RecipeContext';
 import { getRecipeDiet } from '../utils/discover';
 
@@ -47,21 +48,14 @@ const DishOfTheDayComponent: React.FC = () => {
           <span className="inline-flex items-center h-8 px-3 rounded-full bg-card/95 backdrop-blur-xs text-text-main text-xs font-bold shadow-xs">
             Tagesrezept
           </span>
-          <button
+          <HeartButton
             id="dish-of-the-day-fav-btn"
-            type="button"
-            onClick={() => toggleFavorite(recipe.id)}
-            aria-pressed={isFavorite}
-            aria-label={isFavorite ? 'Tagesrezept aus Favoriten entfernen' : 'Tagesrezept zu Favoriten hinzufügen'}
-            className="pointer-events-auto w-12 h-12 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90"
-          >
-            <span className="w-10 h-10 rounded-full bg-black/35 hover:bg-black/55 backdrop-blur-md border border-on-accent/10 flex items-center justify-center transition-colors">
-              <Heart
-                className={`w-[22px] h-[22px] ${isFavorite ? 'fill-[#E74C3C] text-[#E74C3C]' : 'text-on-accent'}`}
-                aria-hidden="true"
-              />
-            </span>
-          </button>
+            variant="on-image"
+            isFavorite={isFavorite}
+            onToggle={() => toggleFavorite(recipe.id)}
+            ariaLabel={isFavorite ? 'Tagesrezept aus Favoriten entfernen' : 'Tagesrezept zu Favoriten hinzufügen'}
+            className="pointer-events-auto"
+          />
         </div>
 
         {/* Content */}

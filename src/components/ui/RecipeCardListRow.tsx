@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Star, ChefHat, Heart, Flame, Dumbbell } from 'lucide-react';
+import { Clock, Star, ChefHat, Flame, Dumbbell } from 'lucide-react';
 import { Recipe } from '../../types';
 import { RecipeImage } from '../RecipeImage';
+import { HeartButton } from './HeartButton';
 import { useRecipes } from '../../context/RecipeContext';
 import { getRecipeDiet } from '../../utils/discover';
 
@@ -98,25 +99,14 @@ export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe }) 
       </div>
 
       {/* Herz: identisches Maß wie auf der Einheitskarte */}
-      <button
+      <HeartButton
         id={`fav-btn-${recipe.id}`}
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          toggleFavorite(recipe.id);
-        }}
-        aria-pressed={isFavorite}
-        aria-label={isFavorite ? `${recipe.title} aus Favoriten entfernen` : `${recipe.title} zu Favoriten hinzufügen`}
-        className="absolute top-2 right-2 z-10 w-12 h-12 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90"
-      >
-        <span className="w-10 h-10 rounded-full bg-card/95 hover:bg-accent-tint border border-border shadow-sm flex items-center justify-center transition-colors">
-          <Heart
-            className={`w-[22px] h-[22px] transition-colors ${isFavorite ? 'fill-[#E74C3C] text-[#E74C3C]' : 'text-text-muted'}`}
-            aria-hidden="true"
-          />
-        </span>
-      </button>
+        variant="on-surface"
+        isFavorite={isFavorite}
+        onToggle={() => toggleFavorite(recipe.id)}
+        ariaLabel={isFavorite ? `${recipe.title} aus Favoriten entfernen` : `${recipe.title} zu Favoriten hinzufügen`}
+        className="absolute top-2 right-2 z-10"
+      />
     </article>
   );
 };

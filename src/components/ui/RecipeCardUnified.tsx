@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Heart, Star, ChefHat } from 'lucide-react';
+import { Clock, Star, ChefHat } from 'lucide-react';
 import { Recipe } from '../../types';
 import { RecipeImage } from '../RecipeImage';
+import { HeartButton } from './HeartButton';
 import { useRecipes } from '../../context/RecipeContext';
 import { getRecipeDiet } from '../../utils/discover';
 
@@ -60,25 +61,14 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
           alt=""
         />
         {/* Herz: 48px Tippfläche, sichtbarer 40px-Kreis, Icon 22px, 8px Randabstand (überall gleich) */}
-        <button
+        <HeartButton
           id={`fav-btn-${recipe.id}`}
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleFavorite(recipe.id);
-          }}
-          aria-pressed={isFavorite}
-          aria-label={isFavorite ? `${recipe.title} aus Favoriten entfernen` : `${recipe.title} zu Favoriten hinzufügen`}
-          className="absolute top-2 right-2 z-10 w-12 h-12 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90"
-        >
-          <span className="w-10 h-10 rounded-full bg-black/35 hover:bg-black/55 backdrop-blur-md border border-on-accent/10 flex items-center justify-center transition-colors">
-            <Heart
-              className={`w-[22px] h-[22px] transition-colors ${isFavorite ? 'fill-[#E74C3C] text-[#E74C3C]' : 'text-on-accent'}`}
-              aria-hidden="true"
-            />
-          </span>
-        </button>
+          variant="on-image"
+          isFavorite={isFavorite}
+          onToggle={() => toggleFavorite(recipe.id)}
+          ariaLabel={isFavorite ? `${recipe.title} aus Favoriten entfernen` : `${recipe.title} zu Favoriten hinzufügen`}
+          className="absolute top-2 right-2 z-10"
+        />
       </div>
 
       <div className={`flex flex-col flex-1 ${isCompact ? 'p-3' : 'p-3.5 sm:p-4'}`}>
