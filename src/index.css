@@ -417,33 +417,34 @@ dialog.vc-sheet[open]::backdrop {
   mask-size: 150px 48px;
 }
 
-/* Nativer <dialog> als Top-Sheet (Menü): von oben, max 60dvh, Scrim.
-   < 640 px volle Breite; ≥ 640 px oben rechts verankert (380 px); ≥ 768 px
-   unterhalb des Headers. */
+/* Menü als nicht-modales Top-Sheet (Punkt 5): Panel beginnt UNTERHALB des
+   Headers, geschlossen wird über den Burger→X-Morph im Header – das einzige
+   Schließen-Symbol. Der Scrim ist ein eigener Div (kein ::backdrop), damit
+   der Header darüber hinweg bedienbar bleibt. */
 dialog.vc-topsheet {
   position: fixed;
-  top: 0;
+  --vc-topsheet-top: 128px; /* Kopf 56px + Tabs 44px + Fade 28px */
+  top: calc(env(safe-area-inset-top) + var(--vc-topsheet-top));
   left: 0;
   right: 0;
   bottom: auto;
-  margin: max(env(safe-area-inset-top), 8px) 0 0 0;
+  margin: 0;
   padding: 0;
   border: 0;
   width: 100%;
   max-width: 100%;
-  max-height: 60dvh;
+  max-height: calc(100dvh - var(--vc-topsheet-top));
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--header-panel);
   color: var(--header-fg);
   border-radius: 0 0 24px 24px;
-  overflow: hidden;
   box-shadow: 0 24px 48px rgb(var(--shadow-rgb) / 0.22);
   opacity: 0;
   transform: translateY(-100%);
   transition:
     opacity 0.2s ease-out,
-    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-    display 0.3s allow-discrete,
-    overlay 0.3s allow-discrete;
+    transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 dialog.vc-topsheet[open] {
@@ -455,31 +456,10 @@ dialog.vc-topsheet[open] {
   }
 }
 
-dialog.vc-topsheet::backdrop {
-  background: rgb(var(--scrim-rgb) / 0);
-  backdrop-filter: blur(0px);
-  transition:
-    background-color 0.22s ease-out,
-    backdrop-filter 0.22s ease-out,
-    display 0.22s allow-discrete,
-    overlay 0.22s allow-discrete;
-}
-
-dialog.vc-topsheet[open]::backdrop {
-  background: rgb(var(--scrim-rgb) / 0.45);
-  backdrop-filter: blur(3px);
-  @starting-style {
-    background: rgb(var(--scrim-rgb) / 0);
-    backdrop-filter: blur(0px);
-  }
-}
-
-@media (min-width: 640px) {
+@media (min-width: 640px) and (max-width: 767px) {
   dialog.vc-topsheet {
-    top: max(env(safe-area-inset-top), 12px);
     left: auto;
     right: 12px;
-    margin: 0;
     width: 380px;
     max-width: calc(100vw - 24px);
     border-radius: 24px;
@@ -489,7 +469,19 @@ dialog.vc-topsheet[open]::backdrop {
 
 @media (min-width: 768px) {
   dialog.vc-topsheet {
-    top: calc(env(safe-area-inset-top) + 78px);
+    --vc-topsheet-top: 92px; /* Kopf 64px + Fade 28px */
+    left: auto;
+    right: 12px;
+    width: 380px;
+    max-width: calc(100vw - 24px);
+    border-radius: 24px;
+    box-shadow: 0 24px 64px rgb(var(--shadow-rgb) / 0.28);
+  }
+}
+
+@media (min-width: 1024px) {
+  dialog.vc-topsheet {
+    --vc-topsheet-top: 65px; /* Kopf 64px + 1px Trennlinie */
   }
 }
 
@@ -498,6 +490,64 @@ dialog.vc-topsheet[open]::backdrop {
   dialog.vc-topsheet[open] {
     transform: none;
     transition-duration: 0.01s;
+  }
+}
+
+/* Scrim unter dem Header (z-30 < Header z-40) – Klick schließt das Menü. */
+.vc-menu-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgb(var(--scrim-rgb) / 0.45);
+  backdrop-filter: blur(3px);
+  animation: vc-fade-in 0.22s ease-out;
+}
+@keyframes vc-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vc-menu-scrim {
+    animation: none;
+  }
+}
+
+/* Burger→X-Morph (Punkt 5): Linien rotieren ±45°, die Mitte blendet aus.
+   Snapping-Easing wie beim Header-Einrasten. */
+.vc-burger-line {
+  transition:
+    transform 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.2s ease-out,
+    top 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    bottom 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .vc-burger-line {
+    transition-duration: 0.01s;
+  }
+}
+
+/* Staffelung der Panel-Einträge beim Öffnen (Punkt 5): ~30 ms Versatz. */
+@keyframes vc-menu-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.vc-menu-row {
+  animation: vc-menu-row-in 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vc-menu-row {
+    animation: none;
   }
 }
 

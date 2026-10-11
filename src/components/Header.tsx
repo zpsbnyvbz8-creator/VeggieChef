@@ -4,7 +4,6 @@ import {
   Leaf,
   Heart,
   ShoppingCart,
-  Menu,
   Search,
   X,
   Refrigerator,
@@ -294,17 +293,50 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
   const openMenu = useCallback(() => {
     closeSearch(true);
     setIsMenuOpen(true);
-    menuRef.current?.showModal();
+    menuRef.current?.show();
   }, [closeSearch]);
   const closeMenu = useCallback(() => menuRef.current?.close(), []);
 
-  // Zustand synchron halten (Esc / Scrim / X → natives close-Event).
+  // Zustand synchron halten + Fokus zurück zum Burger (nicht-modales Dialog:
+  // Esc wird NICHT vom Browser behandelt – siehe handleMenuKeyDown).
   useEffect(() => {
     const dialog = menuRef.current;
-    const onClose = () => setIsMenuOpen(false);
+    const onClose = () => {
+      setIsMenuOpen(false);
+      document.getElementById('header-menu-btn')?.focus();
+    };
     dialog?.addEventListener('close', onClose);
     return () => dialog?.removeEventListener('close', onClose);
   }, []);
+
+  const handleMenuKeyDown = (e: React.KeyboardEvent<HTMLDialogElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeMenu();
+      return;
+    }
+    if (e.key === 'Tab') {
+      const dialog = menuRef.current;
+      if (!dialog) return;
+      const focusables: HTMLElement[] = Array.from(
+        dialog.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0]!;
+      const last = focusables[focusables.length - 1]!;
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || !dialog.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      } else if (!dialog.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  };
 
   const go = useCallback(
     (path: string) => {
@@ -329,7 +361,8 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
 
   /* ------------------------------ UI ------------------------------ */
   return (
-    <header className="vc-header-root relative z-40">
+    <>
+      <header className="vc-header-root relative z-40">
       {/* Zeile 1: Logo + Tabs (ab md) + Aktionen – Zitronen-/Aprikosenfläche mit Blattmotiv */}
       <div className="relative bg-header-top">
         <div
@@ -463,11 +496,28 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
               onClick={isMenuOpen ? closeMenu : openMenu}
               aria-haspopup="dialog"
               aria-expanded={isMenuOpen}
-              aria-label="Menü öffnen"
-              title="Menü"
+              aria-label={isMenuOpen ? 'Menü schließen' : 'Menü öffnen'}
+              title={isMenuOpen ? 'Menü schließen' : 'Menü'}
               className="w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
             >
-              <Menu className="w-6 h-6" aria-hidden="true" />
+              {/* Burger→X-Morph: Linien rotieren ±45°, Mitte blendet aus (Punkt 5) */}
+              <span className="relative w-6 h-6 block" aria-hidden="true">
+                <span
+                  className={`vc-burger-line absolute left-0 w-6 h-[2px] rounded-full bg-current ${
+                    isMenuOpen ? 'top-1/2 -translate-y-1/2 rotate-45' : 'top-[6px]'
+                  }`}
+                />
+                <span
+                  className={`vc-burger-line absolute left-0 top-1/2 -translate-y-1/2 w-6 h-[2px] rounded-full bg-current transition-[opacity] ${
+                    isMenuOpen ? 'opacity-0' : 'opacity-100'
+                  }`}
+                />
+                <span
+                  className={`vc-burger-line absolute left-0 w-6 h-[2px] rounded-full bg-current ${
+                    isMenuOpen ? 'bottom-1/2 translate-y-1/2 -rotate-45' : 'bottom-[6px]'
+                  }`}
+                />
+              </span>
             </button>
           </div>
         </div>
@@ -531,11 +581,13 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
       <div className="vc-header-fade hidden md:block lg:hidden" aria-hidden="true" />
       <div className="hidden lg:block h-px bg-header-line" aria-hidden="true" />
 
-      {/* Menü als natives Top-Sheet */}
+      {/* Menü als nicht-modales Top-Sheet unterhalb des Headers (Punkt 5):
+          das einzige Schließen-Symbol ist der Burger→X-Morph im Header. */}
       <dialog
         ref={menuRef}
         aria-label="Hauptmenü"
         className="vc-topsheet"
+        onKeyDown={handleMenuKeyDown}
         onTouchStart={(e) => {
           touchStartY.current = e.touches[0].clientY;
         }}
@@ -543,40 +595,57 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
           if (e.changedTouches[0].clientY - touchStartY.current < -40) closeMenu();
         }}
       >
-        <div className="flex items-center justify-between h-14 sm:h-16 pr-2 pl-5 border-b border-header-line">
+        <div className="flex items-center h-12 sm:h-14 pl-5 pr-2 border-b border-header-line">
           <span className="text-lg font-extrabold tracking-tight text-header-fg">Menü</span>
-          <button
-            type="button"
-            onClick={closeMenu}
-            aria-label="Menü schließen"
-            className="w-11 h-11 rounded-full flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
-          >
-            <X className="w-5 h-5" aria-hidden="true" />
-          </button>
         </div>
-        <div className="p-2.5 sm:p-3 space-y-1">
-          <nav aria-label="Hauptbereiche">
-            <MenuRow icon={ShoppingCart} label="Einkaufswagen" big onClick={() => go('/shopping')} badge={shoppingCount} />
-            <MenuRow icon={Refrigerator} label="Vorratskammer" big onClick={() => go('/fridge')} />
-            <MenuRow icon={Calendar} label="Wochenplaner" big onClick={() => go('/planner')} />
-            <MenuRow icon={BarChart3} label="Statistiken" big onClick={() => go('/stats')} />
-          </nav>
-          <div className="h-px bg-header-line my-2" role="separator" />
-          <nav aria-label="Mehr">
-            <MenuRow icon={User} label="Profil" placeholder />
-            <MenuRow
-              icon={Cloud}
-              label="Synchronisation"
-              onClick={openSyncFromMenu}
-              status={isFamilyConnected ? syncConfig.groupName || 'Verbunden' : 'Lokal'}
-              connected={isFamilyConnected}
-            />
-            <MenuRow icon={Settings} label="Einstellungen" placeholder />
-            <MenuRow icon={SlidersHorizontal} label="Präferenzen" placeholder />
-          </nav>
-        </div>
+        {isMenuOpen && (
+          <div className="p-2.5 sm:p-3 space-y-1">
+            <nav aria-label="Hauptbereiche">
+              {[
+                { icon: ShoppingCart, label: 'Einkaufswagen', big: true, onClick: () => go('/shopping'), badge: shoppingCount },
+                { icon: Refrigerator, label: 'Vorratskammer', big: true, onClick: () => go('/fridge') },
+                { icon: Calendar, label: 'Wochenplaner', big: true, onClick: () => go('/planner') },
+                { icon: BarChart3, label: 'Statistiken', big: true, onClick: () => go('/stats') },
+              ].map((row, i) => (
+                <div key={row.label} className="vc-menu-row" style={{ animationDelay: `${i * 30}ms` }}>
+                  <MenuRow icon={row.icon} label={row.label} big={row.big} onClick={row.onClick} badge={row.badge} />
+                </div>
+              ))}
+            </nav>
+            <div className="h-px bg-header-line my-2 vc-menu-row" style={{ animationDelay: '120ms' }} role="separator" />
+            <nav aria-label="Mehr">
+              {[
+                { icon: User, label: 'Profil', placeholder: true },
+                {
+                  icon: Cloud,
+                  label: 'Synchronisation',
+                  onClick: openSyncFromMenu,
+                  status: isFamilyConnected ? syncConfig.groupName || 'Verbunden' : 'Lokal',
+                  connected: isFamilyConnected,
+                },
+                { icon: Settings, label: 'Einstellungen', placeholder: true },
+                { icon: SlidersHorizontal, label: 'Präferenzen', placeholder: true },
+              ].map((row, i) => (
+                <div key={row.label} className="vc-menu-row" style={{ animationDelay: `${(i + 4) * 30}ms` }}>
+                  <MenuRow
+                    icon={row.icon}
+                    label={row.label}
+                    placeholder={row.placeholder}
+                    onClick={row.onClick}
+                    status={row.status}
+                    connected={row.connected}
+                  />
+                </div>
+              ))}
+            </nav>
+          </div>
+        )}
       </dialog>
     </header>
+
+    {/* Scrim unter dem Header: Klick schließt das Menü (Punkt 5) */}
+    {isMenuOpen && <div className="vc-menu-scrim" onClick={closeMenu} aria-hidden="true" />}
+  </>
   );
 };
 
