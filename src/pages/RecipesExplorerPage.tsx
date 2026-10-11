@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate, useNavigationType } from 'react-router-dom';
-import { ArrowUpDown, ChevronDown, Layers, LayoutGrid, List, Plus, Bookmark } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, Layers, LayoutGrid, List, Plus, Bookmark, Shuffle } from 'lucide-react';
 import { useRecipes } from '../context/RecipeContext';
 import { DishOfTheDay } from '../components/DishOfTheDay';
 import { SeasonHighlights } from '../components/SeasonHighlights';
@@ -178,9 +178,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
               onClick={() => setIsSlotOpen(true)}
               className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-season-autumn/25 bg-[#FFF8F0] hover:border-season-autumn/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
             >
-              <span className="text-3xl sm:text-4xl leading-none group-hover:rotate-12 transition-transform" aria-hidden="true">
-                🎲
-              </span>
+              <Shuffle className="w-6 h-6 text-season-autumn group-hover:rotate-12 transition-transform" aria-hidden="true" />
               <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Überrasch mich</span>
             </button>
             <button

@@ -1,378 +1,362 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  X, 
-  Sparkles, 
-  Dices, 
-  Clock, 
-  Flame, 
-  Dumbbell, 
-  ArrowRight,
-  Heart
-} from 'lucide-react';
+import { Clock, Star, ChefHat, Shuffle, Bookmark } from 'lucide-react';
 import { Recipe } from '../types';
 import { useRecipes } from '../context/RecipeContext';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
-import confetti from 'canvas-confetti';
+import { RecipeImage } from './RecipeImage';
+import { SheetHeader } from './ui/SheetHeader';
+import { HeartButton } from './ui/HeartButton';
+import { getRecipeDiet, hasAnyNarrowingFilter } from '../utils/discover';
 
 interface SlotMachineModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const CATEGORY_REEL = [
-  { icon: '🍝', label: 'Pasta & Gnocchi' },
-  { icon: '🍛', label: 'Currys & Eintöpfe' },
-  { icon: '🥗', label: 'Bowls & Salate' },
-  { icon: '🍕', label: 'Ofengerichte' },
-  { icon: '🍔', label: 'Schnelle Küche' },
-  { icon: '🥞', label: 'Süßes & Frühstück' },
-  { icon: '🍄', label: 'Herbst-Liebling' },
-  { icon: '🥑', label: 'High Protein' },
-];
+const DIFFICULTY_LABEL: Record<Recipe['difficulty'], string> = {
+  Einfach: 'Einfach',
+  Mittel: 'Mittel',
+  Anspruchsvoll: 'Aufwendig',
+};
 
-const TIME_REEL = [
-  { icon: '⚡', label: 'Express (<20 Min.)' },
-  { icon: '⏱️', label: 'Entspannt (25-35 Min.)' },
-  { icon: '🍲', label: 'Schmorig (40+ Min.)' },
-  { icon: '✨', label: 'Perfekter Feierabend' },
-  { icon: '🌟', label: 'Wochenend-Genuss' },
-];
-
-/**
- * Gentle Web Audio synthesizer for mechanical slot clicks and winning jingles
- */
-function playSlotSound(type: 'click' | 'stop' | 'win') {
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-
-    if (type === 'click') {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(320 + Math.random() * 80, ctx.currentTime);
-      gain.gain.setValueAtTime(0.04, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.05);
-    } else if (type === 'stop') {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(540, ctx.currentTime);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.12);
-    } else if (type === 'win') {
-      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
-      notes.forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.1);
-        gain.gain.setValueAtTime(0.12, ctx.currentTime + idx * 0.1);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.1 + 0.25);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(ctx.currentTime + idx * 0.1);
-        osc.stop(ctx.currentTime + idx * 0.1 + 0.25);
-      });
-    }
-  } catch {
-    // Audio context may be restricted or unsupported; silent fallback
-  }
-}
+const formatRating = (recipe: Recipe): string | null => {
+  if (!recipe.rating || recipe.rating <= 0) return null;
+  if (!recipe.reviewCount || recipe.reviewCount <= 0) return null;
+  const value = recipe.rating.toFixed(1).replace('.', ',');
+  return `${value} (${recipe.reviewCount})`;
+};
 
 export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { filteredRecipes, recipes, favorites, toggleFavorite, dislikedIds } = useRecipes();
+  const {
+    filteredRecipes,
+    recipes,
+    favorites,
+    toggleFavorite,
+    bookmarks,
+    toggleBookmark,
+    dislikedIds,
+    filters,
+    onlyVegan,
+  } = useRecipes();
+
   useLockBodyScroll(isOpen);
 
-  // Slot states
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [reel1Index, setReel1Index] = useState(0);
-  const [reel2Index, setReel2Index] = useState(0);
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [hasSpunAtLeastOnce, setHasSpunAtLeastOnce] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [displayedRecipe, setDisplayedRecipe] = useState<Recipe | null>(null);
+  const [isShuffling, setIsShuffling] = useState(false);
 
-  const animationFrameRef = useRef<number | null>(null);
+  // Pool: Alle Rezepte (bzw. filteredRecipes falls Filter aktiv sind, ohne dislikedIds)
+  const isNarrowed = hasAnyNarrowingFilter(filters) || onlyVegan;
+  const basePool = isNarrowed && filteredRecipes.length > 0 ? filteredRecipes : recipes;
+  const nonDisliked = basePool.filter((r) => !dislikedIds.includes(r.id));
+  const pool = nonDisliked.length > 0 ? nonDisliked : basePool;
 
-  // Pool of recipes: respects active filters, never suggests recipes the user disliked
-  const basePool = filteredRecipes.length > 0 ? filteredRecipes : recipes;
-  const notDisliked = basePool.filter((r) => !dislikedIds.includes(r.id));
-  const candidateRecipes = notDisliked.length > 0 ? notDisliked : basePool;
+  const poolRef = useRef<Recipe[]>(pool);
+  poolRef.current = pool;
 
-  // Spin the slot machine
-  const handleSpin = () => {
-    if (isSpinning || candidateRecipes.length === 0) return;
+  // Merke die letzten 5 gezogenen Rezept-IDs
+  const recentIdsRef = useRef<string[]>([]);
+  const timeoutsRef = useRef<number[]>([]);
 
-    setIsSpinning(true);
-    setHasSpunAtLeastOnce(true);
-    setSelectedRecipe(null);
+  const clearTimers = useCallback(() => {
+    timeoutsRef.current.forEach((t) => window.clearTimeout(t));
+    timeoutsRef.current = [];
+  }, []);
 
-    // Pick winning recipe (avoid repeating the previous pick when there are alternatives)
-    const pool =
-      candidateRecipes.length > 1 && selectedRecipe
-        ? candidateRecipes.filter((r) => r.id !== selectedRecipe.id)
-        : candidateRecipes;
-    const randomIndex = Math.floor(Math.random() * pool.length);
-    const targetRecipe = pool[randomIndex];
+  // Pick winning recipe
+  const pickRecipe = useCallback((currentPool: Recipe[]): Recipe | null => {
+    if (currentPool.length === 0) return null;
+    if (currentPool.length === 1) return currentPool[0];
 
-    // Pick corresponding reels based on target recipe
-    const matchingCatIdx = CATEGORY_REEL.findIndex((c) => c.label.includes(targetRecipe.category) || targetRecipe.category.includes(c.label));
-    const targetReel1 = matchingCatIdx !== -1 ? matchingCatIdx : Math.floor(Math.random() * CATEGORY_REEL.length);
-    const targetReel2 = targetRecipe.totalTimeMinutes <= 25 ? 0 : targetRecipe.totalTimeMinutes <= 40 ? 1 : 2;
+    const lastDrawnId = recentIdsRef.current[recentIdsRef.current.length - 1];
 
-    const startTime = performance.now();
-    const duration = 2400; // 2.4 seconds total spin
-
-    let lastSoundTime = 0;
-
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-
-      // Click sound at steady intervals that slow down
-      if (currentTime - lastSoundTime > 90 + (elapsed / duration) * 150) {
-        playSlotSound('click');
-        lastSoundTime = currentTime;
-      }
-
-      // Fast random cycling
-      if (elapsed < 1200) {
-        setReel1Index(Math.floor(Math.random() * CATEGORY_REEL.length));
-      } else {
-        setReel1Index(targetReel1);
-      }
-
-      if (elapsed < 1700) {
-        setReel2Index(Math.floor(Math.random() * TIME_REEL.length));
-      } else {
-        setReel2Index(targetReel2);
-      }
-
-      if (elapsed < duration) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      } else {
-        // Finished spinning!
-        setReel1Index(targetReel1);
-        setReel2Index(targetReel2);
-        setSelectedRecipe(targetRecipe);
-        setIsSpinning(false);
-        playSlotSound('win');
-
-        // Confetti burst
-        confetti({
-          particleCount: 60,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#4A7856', '#C86D3B', '#E67E22', '#F1F5F2']
-        });
-      }
-    };
-
-    animationFrameRef.current = requestAnimationFrame(animate);
-  };
-
-  // Auto spin once when modal is first opened
-  useEffect(() => {
-    if (isOpen && !hasSpunAtLeastOnce) {
-      handleSpin();
+    let candidates: Recipe[];
+    if (currentPool.length <= 5) {
+      // Wenn pool <= 5, alle verfügbaren außer dem aktuellen nutzen
+      candidates = currentPool.filter((r) => r.id !== lastDrawnId);
+    } else {
+      // Letzte 5 gezogene ausschließen
+      candidates = currentPool.filter((r) => !recentIdsRef.current.includes(r.id));
     }
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
+
+    // Fallback: nie dasselbe Rezept zweimal hintereinander
+    if (candidates.length === 0) {
+      candidates = currentPool.filter((r) => r.id !== lastDrawnId);
+    }
+    if (candidates.length === 0) {
+      candidates = currentPool;
+    }
+
+    const randomIndex = Math.floor(Math.random() * candidates.length);
+    const chosen = candidates[randomIndex];
+
+    recentIdsRef.current = [...recentIdsRef.current.slice(-4), chosen.id];
+    return chosen;
+  }, []);
+
+  // Reveal-Animation beim Öffnen und bei "Nochmal":
+  // kurzes Durchwürfeln von 4–6 Rezepten (verlangsamend, Intervalle ca. 75ms → 95ms → 125ms → 165ms → 240ms, gesamt ca. 700ms)
+  const pickAndShuffle = useCallback(() => {
+    const currentPool = poolRef.current;
+    if (currentPool.length === 0) return;
+
+    clearTimers();
+
+    const targetRecipe = pickRecipe(currentPool);
+    if (!targetRecipe) return;
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+
+    // prefers-reduced-motion: sofort das Ergebnis ohne Animation anzeigen
+    if (prefersReducedMotion || currentPool.length <= 1) {
+      setDisplayedRecipe(targetRecipe);
+      setIsShuffling(false);
+      return;
+    }
+
+    setIsShuffling(true);
+
+    const pickDummy = (excludeId?: string) => {
+      const candidates =
+        currentPool.length > 1 && excludeId
+          ? currentPool.filter((r) => r.id !== excludeId)
+          : currentPool;
+      return candidates[Math.floor(Math.random() * candidates.length)];
     };
+
+    let prevDummy = displayedRecipe?.id;
+    const firstDummy = pickDummy(prevDummy);
+    setDisplayedRecipe(firstDummy);
+    prevDummy = firstDummy.id;
+
+    // Intervalle: 75ms → 95ms → 125ms → 165ms → 240ms (gesamt ca. 700ms)
+    const intervals = [75, 95, 125, 165, 240];
+    let accumulatedTime = 0;
+
+    for (let i = 0; i < intervals.length; i++) {
+      accumulatedTime += intervals[i];
+      const isLast = i === intervals.length - 1;
+
+      const timerId = window.setTimeout(() => {
+        if (isLast) {
+          setDisplayedRecipe(targetRecipe);
+          setIsShuffling(false);
+        } else {
+          const nextDummy = pickDummy(prevDummy);
+          prevDummy = nextDummy.id;
+          setDisplayedRecipe(nextDummy);
+        }
+      }, accumulatedTime);
+
+      timeoutsRef.current.push(timerId);
+    }
+  }, [clearTimers, displayedRecipe?.id, pickRecipe]);
+
+  // Dialog sync
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (isOpen && !dialog.open) {
+      if (typeof dialog.showModal === 'function') {
+        try {
+          dialog.showModal();
+        } catch {
+          // ignore
+        }
+      }
+    } else if (!isOpen && dialog.open) {
+      if (typeof dialog.close === 'function') {
+        try {
+          dialog.close();
+        } catch {
+          // ignore
+        }
+      }
+    }
   }, [isOpen]);
 
-  // Close on Escape
+  // Trigger shuffle on modal open & cleanup on close/unmount
+  const prevOpenRef = useRef(false);
   useEffect(() => {
-    if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
+    if (isOpen && !prevOpenRef.current) {
+      pickAndShuffle();
+    } else if (!isOpen && prevOpenRef.current) {
+      clearTimers();
+      setIsShuffling(false);
+    }
+    prevOpenRef.current = isOpen;
+  }, [isOpen, pickAndShuffle, clearTimers]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    return () => {
+      clearTimers();
+    };
+  }, [clearTimers]);
+
+  const isBookmarked = displayedRecipe ? bookmarks.includes(displayedRecipe.id) : false;
+  const isFavorite = displayedRecipe ? favorites.includes(displayedRecipe.id) : false;
+  const ratingText = displayedRecipe ? formatRating(displayedRecipe) : null;
+  const diet = displayedRecipe ? getRecipeDiet(displayedRecipe) : 'vegan';
 
   return (
-    <div 
-      className="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-5 animate-in fade-in duration-200"
-      onClick={onClose}
+    <dialog
+      ref={dialogRef}
+      className="vc-sheet"
+      aria-labelledby="slot-sheet-title"
+      {...({ closedby: 'any' } as Record<string, string>)}
+      onClose={onClose}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      <div 
-        role="dialog"
-        aria-modal="true"
-        aria-label="Überrasch mich"
-        className="w-full max-w-lg bg-surface border border-border rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-text-main animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-200 max-h-[92dvh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="bg-gradient-to-r from-accent-hover via-accent to-text-main text-on-accent p-4 sm:p-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-card/15 flex items-center justify-center text-2xl shadow-inner">
-              🎰
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-200 uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                Überraschungs-Kochautomat
-              </div>
-              <h3 className="text-xl sm:text-2xl font-black text-on-accent tracking-tight">
-                Überrasch mich!
-              </h3>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-10 h-10 min-h-[40px] rounded-xl bg-card/10 hover:bg-card/20 text-on-accent flex items-center justify-center transition-colors cursor-pointer"
-            aria-label="Schließen"
-          >
-            <X className="w-5 h-5" />
-          </button>
+      <div className="flex flex-col max-h-[88dvh] overflow-hidden">
+        {/* Grab handle (mobile) */}
+        <div className="sm:hidden pt-2.5 flex justify-center shrink-0" aria-hidden="true">
+          <span className="w-10 h-1.5 rounded-full bg-border" />
         </div>
 
-        {/* Slot Machine Main Body */}
-        <div className="p-4 sm:p-6 space-y-5">
-          {/* 3 Slot Reels Container */}
-          <div className="bg-[#243335] p-3 sm:p-4 rounded-2xl border-4 border-accent-hover/60 shadow-inner grid grid-cols-2 gap-2.5 sm:gap-3">
-            {/* Reel 1: Category */}
-            <div className="bg-[#1A2627] rounded-xl p-3 sm:p-4 text-center border border-on-accent/10 flex flex-col items-center justify-center min-h-[100px] overflow-hidden relative shadow-sm">
-              <span className="text-xs uppercase font-bold tracking-wider text-[#8DB898] mb-1">
-                Kategorie
-              </span>
-              <div className={`transition-transform duration-100 flex flex-col items-center ${isSpinning ? 'animate-pulse' : ''}`}>
-                <span className="text-3xl sm:text-4xl mb-1">
-                  {CATEGORY_REEL[reel1Index].icon}
-                </span>
-                <span className="text-xs sm:text-sm font-bold text-on-accent text-center leading-tight">
-                  {CATEGORY_REEL[reel1Index].label}
-                </span>
-              </div>
-            </div>
+        {/* SheetHeader mit Titel "Überrasch mich" und Standard-CloseButton */}
+        <SheetHeader
+          title="Überrasch mich"
+          onClose={onClose}
+          titleId="slot-sheet-title"
+          className="shrink-0"
+        />
 
-            {/* Reel 2: Time */}
-            <div className="bg-[#1A2627] rounded-xl p-3 sm:p-4 text-center border border-on-accent/10 flex flex-col items-center justify-center min-h-[100px] overflow-hidden relative shadow-sm">
-              <span className="text-xs uppercase font-bold tracking-wider text-amber-300 mb-1">
-                Zubereitung
-              </span>
-              <div className={`transition-transform duration-100 flex flex-col items-center ${isSpinning ? 'animate-pulse' : ''}`}>
-                <span className="text-3xl sm:text-4xl mb-1">
-                  {TIME_REEL[reel2Index].icon}
-                </span>
-                <span className="text-xs sm:text-sm font-bold text-on-accent text-center leading-tight">
-                  {TIME_REEL[reel2Index].label}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Winning Recipe Card Presentation */}
-          {selectedRecipe ? (
-            <div className="bg-card rounded-2xl border-2 border-accent p-3.5 sm:p-4 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col sm:flex-row gap-3 sm:gap-4 items-center">
-              <div className="relative w-full sm:w-32 h-32 rounded-xl overflow-hidden shrink-0 bg-accent-tint">
-                <img
-                  src={selectedRecipe.image}
-                  alt={selectedRecipe.title}
-                  className="w-full h-full object-cover"
+        {/* Content area */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 pt-1 pb-[max(1.25rem,env(safe-area-inset-bottom))] flex flex-col gap-4">
+          {displayedRecipe ? (
+            <div className="flex flex-col">
+              {/* Bild 16:10 mit HeartButton */}
+              <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-surface">
+                <RecipeImage
+                  recipe={displayedRecipe}
+                  size="lg"
+                  imgClassName="w-full h-full object-cover"
+                  alt={displayedRecipe.title}
                 />
-                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-on-accent text-[11px] font-semibold">
-                  {selectedRecipe.isVegan ? '🌱 Vegan' : '🧀 Veggie'}
+                <HeartButton
+                  id={`fav-btn-slot-${displayedRecipe.id}`}
+                  variant="on-image"
+                  isFavorite={isFavorite}
+                  onToggle={() => {
+                    if (!isShuffling) toggleFavorite(displayedRecipe.id);
+                  }}
+                  ariaLabel={
+                    isFavorite
+                      ? `${displayedRecipe.title} aus Favoriten entfernen`
+                      : `${displayedRecipe.title} zu Favoriten hinzufügen`
+                  }
+                  className="absolute top-2 right-2 z-10"
+                />
+              </div>
+
+              {/* Titel */}
+              <h3 className="text-xl font-extrabold text-text-main line-clamp-2 mt-3 leading-snug">
+                {displayedRecipe.title}
+              </h3>
+
+              {/* Standard-Infozeile: Zeit · Bewertung (Anzahl) · Schwierigkeit, 'Vegetarisch'-Label nur bei vegetarisch */}
+              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-card-info font-medium text-text-muted">
+                {diet === 'vegetarisch' && (
+                  <>
+                    <span>Vegetarisch</span>
+                    <span className="text-text-muted/50" aria-hidden="true">·</span>
+                  </>
+                )}
+                <span className="inline-flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
+                  {displayedRecipe.totalTimeMinutes} Min
+                </span>
+                {ratingText && (
+                  <>
+                    <span className="text-text-muted/50" aria-hidden="true">·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 fill-[#E67E22] text-[#E67E22]" aria-hidden="true" />
+                      {ratingText}
+                    </span>
+                  </>
+                )}
+                <span className="text-text-muted/50" aria-hidden="true">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <ChefHat className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
+                  {DIFFICULTY_LABEL[displayedRecipe.difficulty] || displayedRecipe.difficulty}
                 </span>
               </div>
 
-              <div className="flex-1 w-full text-left">
-                <div className="flex items-center gap-1.5 text-xs text-season-autumn-text font-bold">
-                  <span>✨ DEIN MATCH GEFUNDEN!</span>
-                </div>
-                <h4 className="text-lg font-bold text-text-main leading-snug line-clamp-1 mt-0.5">
-                  {selectedRecipe.title}
-                </h4>
-                <p className="text-xs text-text-muted line-clamp-2 mt-0.5">
-                  {selectedRecipe.subtitle}
+              {/* Beschreibung (subtitle) max. 2 Zeilen */}
+              {displayedRecipe.subtitle && (
+                <p className="mt-2 text-sm text-text-muted line-clamp-2 leading-relaxed">
+                  {displayedRecipe.subtitle}
                 </p>
-
-                <div className="flex items-center gap-3 mt-2 text-xs font-semibold text-[#57534d]">
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-accent" />
-                    {selectedRecipe.totalTimeMinutes} Min.
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Flame className="w-3.5 h-3.5 text-amber-500" />
-                    {selectedRecipe.nutrients.calories} kcal
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Dumbbell className="w-3.5 h-3.5 text-emerald-600" />
-                    {selectedRecipe.nutrients.protein}g Protein
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
           ) : (
-            <div className="bg-surface border border-dashed border-border rounded-2xl p-6 text-center text-text-muted">
-              <div className="w-10 h-10 rounded-full border-2 border-border border-t-accent animate-spin mx-auto mb-2" />
-              <p className="text-sm font-semibold text-text-main">Die Walzen rotieren...</p>
-              <p className="text-xs text-text-muted">Finde dein perfektes Überraschungsgericht</p>
+            <div className="flex flex-col items-center justify-center p-8 text-center text-text-muted">
+              <p className="text-sm font-semibold">Keine passenden Rezepte gefunden</p>
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="space-y-2.5 pt-1">
-            {selectedRecipe && !isSpinning && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  navigate(`/recipes/${selectedRecipe.id}`);
-                }}
-                className="w-full h-12 min-h-[48px] rounded-xl bg-accent hover:bg-accent-hover text-on-accent font-bold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-98 cursor-pointer"
-              >
-                <span>Rezept ansehen</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            )}
+          {/* Aktionen unten */}
+          <div className="space-y-2.5 pt-1 mt-auto shrink-0">
+            <button
+              type="button"
+              disabled={isShuffling || !displayedRecipe}
+              onClick={() => {
+                if (isShuffling || !displayedRecipe) return;
+                onClose();
+                navigate(`/recipes/${displayedRecipe.id}`);
+              }}
+              className="w-full h-12 min-h-[48px] bg-accent hover:bg-accent-hover text-on-accent font-bold rounded-xl flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+            >
+              Rezept ansehen
+            </button>
 
             <div className="flex items-center gap-2.5">
               <button
                 type="button"
-                disabled={isSpinning}
-                onClick={handleSpin}
-                className="flex-1 h-12 min-h-[48px] rounded-xl bg-surface hover:bg-accent-tint border border-border hover:border-accent/40 text-text-main font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer disabled:opacity-50"
+                disabled={isShuffling}
+                onClick={() => {
+                  if (isShuffling) return;
+                  pickAndShuffle();
+                }}
+                className="h-12 min-h-[48px] flex-1 rounded-xl bg-card border border-border hover:bg-surface text-text-main font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
               >
-                <Dices className={`w-5 h-5 text-accent ${isSpinning ? 'animate-spin' : ''}`} />
-                <span>{isSpinning ? 'Dreht...' : 'Nochmal drehen 🎲'}</span>
+                <Shuffle className={`w-5 h-5 text-accent ${isShuffling ? 'animate-spin' : ''}`} aria-hidden="true" />
+                <span>Nochmal</span>
               </button>
 
-              {selectedRecipe && (
-                <button
-                  type="button"
-                  onClick={() => toggleFavorite(selectedRecipe.id)}
-                  className={`h-12 min-h-[48px] px-4 rounded-xl border flex items-center justify-center gap-1.5 text-sm font-semibold transition-all cursor-pointer ${
-                    favorites.includes(selectedRecipe.id)
-                      ? 'bg-rose-50 text-rose-600 border-rose-200'
-                      : 'bg-card border-border text-text-muted hover:text-rose-500'
+              <button
+                type="button"
+                disabled={isShuffling || !displayedRecipe}
+                onClick={() => {
+                  if (isShuffling || !displayedRecipe) return;
+                  toggleBookmark(displayedRecipe.id);
+                }}
+                aria-label={isBookmarked ? 'Aus Merkliste entfernen' : 'Auf Merkliste speichern'}
+                title={isBookmarked ? 'Aus Merkliste entfernen' : 'Auf Merkliste speichern'}
+                className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl border border-border bg-card hover:bg-surface flex items-center justify-center text-text-main transition-all active:scale-95 cursor-pointer disabled:opacity-50 ${
+                  isBookmarked ? 'border-accent/40 bg-accent-tint/40 text-accent' : ''
+                }`}
+              >
+                <Bookmark
+                  className={`w-5 h-5 transition-colors ${
+                    isBookmarked ? 'fill-current text-accent' : 'text-text-main'
                   }`}
-                  title="Merken"
-                >
-                  <Heart className={`w-4 h-4 ${favorites.includes(selectedRecipe.id) ? 'fill-current text-rose-600' : ''}`} />
-                  <span className="hidden sm:inline">Merken</span>
-                </button>
-              )}
+                  aria-hidden="true"
+                />
+              </button>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 };
+
+export default SlotMachineModal;

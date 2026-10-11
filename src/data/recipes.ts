@@ -2407,7 +2407,7 @@ export const INITIAL_RECIPES: Recipe[] = [
     id: 'rec-32',
     title: 'Soja-Bolognese mit Penne',
     subtitle: 'Bissfeste Nudeln in samtig-würziger Bolognese aus feinem Soja-Granulat und Tomaten',
-    image: 'https://images.unsplash.com/photo-1598866594230-a7c12756260f?auto=format&fit=crop&w=1200&q=80',
+    image: 'https://images.unsplash.com/photo-1621996346565-e3d5d606771a?auto=format&fit=crop&w=1200&q=80',
     category: 'Pasta & Gnocchi',
     isVegan: true,
     isVegetarian: true,
@@ -2433,7 +2433,7 @@ export const INITIAL_RECIPES: Recipe[] = [
     tags: ['Vegan', 'High Protein', 'Unter 20 Min', 'Pasta', 'Klassiker', 'Leicht & Kalorienreich'],
     chefTip: 'Feines Soja-Granulat saugt die Aromen der Tomatenbrühe vollständig auf und sorgt für ein authentisches, leichtes Mundgefühl ohne Cholesterin.',
     ingredients: [
-      { name: 'Nudeln (Spaghetti oder Rigatoni)', amount: 375, unit: 'g', category: 'trockenwaren', isEssential: true },
+      { name: 'Penne (oder Rigatoni)', amount: 375, unit: 'g', category: 'trockenwaren', isEssential: true },
       { name: 'Soja-Granulat (trocken)', amount: 150, unit: 'g', category: 'trockenwaren', isEssential: true },
       { name: 'Stückige Tomaten (Dose)', amount: 800, unit: 'g', category: 'trockenwaren' },
       { name: 'Tomatenmark', amount: 6, unit: 'EL', category: 'trockenwaren' },
