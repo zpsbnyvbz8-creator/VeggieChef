@@ -97,6 +97,9 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
 
   const triggerConfetti = useCallback(() => {
     try {
+      if (typeof window !== 'undefined' && (window as any).__onConfetti) {
+        (window as any).__onConfetti();
+      }
       confetti({
         particleCount: 35,
         spread: 60,
