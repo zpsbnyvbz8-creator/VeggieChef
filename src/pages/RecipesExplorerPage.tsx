@@ -122,7 +122,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
   return (
     <div className="space-y-5 sm:space-y-7 animate-in fade-in duration-200">
       {/* Page header */}
-      <header className="flex items-center justify-between gap-3">
+      <header className="flex items-center justify-between gap-2 sm:gap-3">
         <div className="min-w-0">
           {isBookmarks ? (
             <p className="text-xs sm:text-sm font-medium text-text-muted">
@@ -141,12 +141,13 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
           id="explorer-add-recipe-btn"
           type="button"
           onClick={() => setIsAddRecipeOpen(true)}
-          aria-label="Neues Gericht hinzufügen"
-          title="Neues Gericht per KI, Foto oder manuell hinzufügen"
-          className="shrink-0 h-12 min-w-12 sm:px-5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent font-bold text-sm shadow-xs flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+          aria-label="Rezept hinzufügen"
+          title="Rezept per KI, Foto oder manuell hinzufügen"
+          className="h-10 min-h-[44px] px-3.5 sm:px-4 rounded-full text-xs sm:text-sm font-bold bg-accent hover:bg-accent-hover text-on-accent shrink-0 flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
         >
-          <Plus className="w-5 h-5" />
-          <span className="hidden sm:inline">Neues Gericht</span>
+          <Plus className="w-4 h-4" />
+          <span className="sm:hidden">Rezept</span>
+          <span className="hidden sm:inline">Rezept hinzufügen</span>
         </button>
       </header>
 
