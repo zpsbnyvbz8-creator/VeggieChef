@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { flushSync } from 'react-dom';
 import { useNavigate, useNavigationType } from 'react-router-dom';
 import { ArrowUpDown, ChevronDown, Layers, LayoutGrid, List, Plus, Bookmark, Shuffle } from 'lucide-react';
+import { AnimatePresence } from 'motion/react';
 import { useRecipes } from '../context/RecipeContext';
 import { DishOfTheDay } from '../components/DishOfTheDay';
 import { SeasonHighlights } from '../components/SeasonHighlights';
@@ -182,13 +183,13 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
               <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Überrasch mich</span>
             </button>
             <button
-              id="explorer-swipe-btn"
+              id="explorer-swipe-deck-btn"
               type="button"
               onClick={() => setIsSwipeOpen(true)}
               className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-accent/25 bg-accent-tint hover:border-accent/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
             >
               <Layers className="w-7 h-7 sm:w-8 sm:h-8 text-accent group-hover:scale-110 transition-transform" aria-hidden="true" />
-              <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Entdecken</span>
+              <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Swipen</span>
             </button>
           </div>
         </>
@@ -347,7 +348,9 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
       </section>
 
       {isSlotOpen && <SlotMachineModal isOpen onClose={closeSlot} />}
-      {isSwipeOpen && <SwipeDiscoverOverlay recipes={filteredRecipes} onClose={closeSwipe} />}
+      <AnimatePresence>
+        {isSwipeOpen && <SwipeDiscoverOverlay recipes={filteredRecipes} onClose={closeSwipe} />}
+      </AnimatePresence>
 
       {/* Filter-Sheet: wird vom Header (Filter-Icon im Suchfeld) geöffnet */}
       <FilterSheet
