@@ -10,6 +10,7 @@ import {
   ShoppingCart, 
   CalendarPlus, 
   Leaf, 
+  Salad, 
   ChefHat, 
   Users, 
   Play, 
@@ -178,8 +179,8 @@ export const RecipeDetailPage: React.FC = () => {
   if (!recipe) {
     return (
       <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-accent-tint text-accent flex items-center justify-center text-3xl font-bold">
-          🥗
+        <div className="w-16 h-16 rounded-2xl bg-accent-tint text-accent flex items-center justify-center font-bold">
+          <Salad className="w-8 h-8 text-accent" />
         </div>
         <h2 className="text-2xl font-bold text-text-main">Rezept nicht gefunden</h2>
         <p className="text-sm text-text-muted max-w-sm">
@@ -534,7 +535,7 @@ export const RecipeDetailPage: React.FC = () => {
     };
     updateRecipe(updated);
     setShowStepImages(true);
-    showToast(newUrls.length > 1 ? `${newUrls.length} Fotos zu Schritt ${stepNumTarget} hinzugefügt! 📸` : `Foto zu Schritt ${stepNumTarget} hinzugefügt! 📸`);
+    showToast(newUrls.length > 1 ? `${newUrls.length} Fotos zu Schritt ${stepNumTarget} hinzugefügt!` : `Foto zu Schritt ${stepNumTarget} hinzugefügt!`);
     setTargetStepForPhoto(null);
     e.target.value = '';
   };
@@ -609,7 +610,7 @@ export const RecipeDetailPage: React.FC = () => {
 
     logCooked(recipe, servings, cookedNotes);
     setShowCookedDialog(false);
-    showToast('🎉 Großartig! Als gekocht in deiner Statistik erfasst!');
+    showToast('Als gekocht erfasst!');
   };
 
   // Open lightbox with specific images
@@ -867,8 +868,8 @@ export const RecipeDetailPage: React.FC = () => {
           /* Fallback banner for text-only / AI recipes without image */
           <div className="relative h-64 sm:h-72 w-full bg-gradient-to-br from-text-main to-[#1F2C2D] flex items-center justify-center p-6 text-on-accent text-center">
             <div className="space-y-2 max-w-md">
-              <div className="w-14 h-14 rounded-2xl bg-card/10 mx-auto flex items-center justify-center text-3xl">
-                🌱
+              <div className="w-14 h-14 rounded-2xl bg-card/10 mx-auto flex items-center justify-center">
+                <Leaf className="w-12 h-12 text-accent/40" />
               </div>
               <h2 className="text-2xl font-bold tracking-tight">{recipe.title}</h2>
               <p className="text-xs text-stone-300">Vegetarisches Chef-Rezept</p>

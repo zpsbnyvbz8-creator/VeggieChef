@@ -399,7 +399,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       setUndoBackup(null);
       setLastDeletedInfo(null);
       setShowUndoBanner(false);
-      onCopyFeedback(`${count} ${count === 1 ? 'Zutat' : 'Zutaten'} wiederhergestellt! 🛒`);
+      onCopyFeedback(`${count} ${count === 1 ? 'Zutat' : 'Zutaten'} wiederhergestellt`);
     }
   };
 
@@ -1589,7 +1589,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                     type="button"
                     onClick={() => {
                       setItems(backup);
-                      onCopyFeedback(`${backup.length} Zutaten wiederhergestellt! 🛒`);
+                      onCopyFeedback(`${backup.length} Zutaten wiederhergestellt`);
                     }}
                     className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface hover:bg-[#E8EFEA] border border-border text-accent text-sm font-semibold shadow-2xs transition-all cursor-pointer active:scale-95 min-h-[44px] touch-manipulation"
                   >
