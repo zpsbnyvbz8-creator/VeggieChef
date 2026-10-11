@@ -1,8 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-import { X, Clock, ChefHat, Flame, Dumbbell, Leaf } from 'lucide-react';
+import { Clock, ChefHat, Flame, Dumbbell, Leaf } from 'lucide-react';
+import { CloseButton } from '../ui/CloseButton';
 import { FilterState } from '../../types';
 import {
   CALORIE_OPTIONS,
+  DIET_OPTIONS,
   DIFFICULTY_OPTIONS,
   PROTEIN_OPTIONS,
   TIME_OPTIONS,
@@ -32,8 +34,8 @@ function OptionGroup<T extends string | number>({ label, icon, options, value, o
   const labelId = `filter-group-${label.replace(/\s+/g, '-').toLowerCase()}`;
   return (
     <div className="space-y-2.5">
-      <div id={labelId} className="flex items-center gap-2 text-sm font-bold text-[#2D3E40]">
-        <span className="text-[#4A7856]" aria-hidden="true">
+      <div id={labelId} className="flex items-center gap-2 text-sm font-bold text-text-main">
+        <span className="text-accent" aria-hidden="true">
           {icon}
         </span>
         {label}
@@ -50,8 +52,8 @@ function OptionGroup<T extends string | number>({ label, icon, options, value, o
               onClick={() => onChange(opt.value)}
               className={`h-11 px-4 rounded-xl border text-sm font-semibold transition-all cursor-pointer touch-manipulation active:scale-95 ${
                 selected
-                  ? 'bg-[#4A7856] border-[#4A7856] text-white shadow-2xs'
-                  : 'bg-[#FAF9F6] border-[#ECEBE8] text-[#2D3E40] hover:border-[#4A7856]/50 hover:bg-[#F1F5F2]'
+                  ? 'bg-accent border-accent text-on-accent shadow-2xs'
+                  : 'bg-surface border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
               }`}
             >
               {opt.label}
@@ -96,53 +98,24 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({ open, onClose, filters
       <div className="flex flex-col max-h-[88dvh]">
         {/* Grab handle (mobile) */}
         <div className="sm:hidden pt-2.5 flex justify-center" aria-hidden="true">
-          <span className="w-10 h-1.5 rounded-full bg-[#ECEBE8]" />
+          <span className="w-10 h-1.5 rounded-full bg-border" />
         </div>
 
         <div className="flex items-center justify-between gap-3 px-5 pt-3 sm:pt-5 pb-3">
-          <h2 id="filter-sheet-title" className="text-xl font-extrabold tracking-tight text-[#2D3E40]">
+          <h2 id="filter-sheet-title" className="text-xl font-extrabold tracking-tight text-text-main">
             Filter
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Filter schließen"
-            className="w-11 h-11 -mr-2 rounded-full hover:bg-[#F1F5F2] text-[#686E6A] hover:text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <CloseButton onClick={onClose} ariaLabel="Filter schließen" />
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-5 space-y-6">
-          {/* Vegan switch */}
-          <button
-            id="filter-vegan-switch"
-            type="button"
-            role="switch"
-            aria-checked={filters.onlyVegan}
-            onClick={() => patch({ onlyVegan: !filters.onlyVegan })}
-            className="w-full min-h-14 flex items-center justify-between gap-4 rounded-2xl border border-[#ECEBE8] bg-[#FAF9F6] px-4 py-3 text-left cursor-pointer hover:border-[#4A7856]/40 transition-colors"
-          >
-            <span className="flex items-center gap-3">
-              <span className="w-9 h-9 rounded-xl bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center">
-                <Leaf className="w-5 h-5" />
-              </span>
-              <span>
-                <span className="block text-sm font-bold text-[#2D3E40]">Nur vegane Rezepte</span>
-                <span className="block text-xs text-[#686E6A]">Ohne Milch, Eier & Honig</span>
-              </span>
-            </span>
-            <span
-              aria-hidden="true"
-              className={`relative w-12 h-7 rounded-full shrink-0 transition-colors ${filters.onlyVegan ? 'bg-[#4A7856]' : 'bg-[#CCD5CF]'}`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow-xs transition-transform ${
-                  filters.onlyVegan ? 'translate-x-5' : ''
-                }`}
-              />
-            </span>
-          </button>
+          <OptionGroup
+            label="Ernährungsform"
+            icon={<Leaf className="w-4 h-4" />}
+            options={DIET_OPTIONS}
+            value={filters.diet}
+            onChange={(diet) => patch({ diet })}
+          />
 
           <OptionGroup
             label="Zubereitungszeit"
@@ -174,13 +147,13 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({ open, onClose, filters
           />
         </div>
 
-        <div className="flex items-center gap-3 px-5 py-4 border-t border-[#ECEBE8] bg-white pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="flex items-center gap-3 px-5 py-4 border-t border-border bg-card pb-[max(1rem,env(safe-area-inset-bottom))]">
           <button
             id="filter-sheet-reset-btn"
             type="button"
             disabled={activeCount === 0}
             onClick={() => patch(SHEET_FILTER_DEFAULTS)}
-            className="h-12 px-4 rounded-xl text-sm font-bold text-[#686E6A] hover:text-[#2D3E40] hover:bg-[#F1F5F2] disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+            className="h-12 px-4 rounded-xl text-sm font-bold text-text-muted hover:text-text-main hover:bg-accent-tint disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
           >
             Zurücksetzen
           </button>
@@ -188,7 +161,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({ open, onClose, filters
             id="filter-sheet-apply-btn"
             type="button"
             onClick={onClose}
-            className="flex-1 h-12 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-base font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+            className="flex-1 h-12 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-base font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
           >
             {resultCount === 0
               ? 'Keine Rezepte gefunden'

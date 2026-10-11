@@ -1,6 +1,7 @@
 ---
 description: Testing-Agent für VeggieChef. Erkennt fehlende Tests, erstellt sinnvolle Playwright/E2E- oder Unit-Tests ohne überflüssiges Boilerplate.
 mode: subagent
+model: google/gemini-3.8-flash
 permissions:
   - action: read
     resource: "**/*"

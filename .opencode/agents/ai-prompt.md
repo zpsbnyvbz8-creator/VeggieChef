@@ -1,6 +1,7 @@
 ---
 description: AI/Prompt-Engineer für VeggieChef – optimiert Gemini-Prompts, Schemas, Fallbacks, JSON-Robustheit & Kosten.
 mode: subagent
+model: google/gemini-3.8-flash
 permissions:
   - action: read
     resource: "**/*"

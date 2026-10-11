@@ -129,8 +129,8 @@ export const RecipeActionMenu: React.FC<RecipeActionMenuProps> = ({ recipe, vari
         }}
         className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
           variant === 'glass'
-            ? 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-white border border-white/10'
-            : 'text-[#686E6A] hover:bg-[#F1F5F2] hover:text-[#2D3E40]'
+            ? 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-on-accent border border-on-accent/10'
+            : 'text-text-muted hover:bg-accent-tint hover:text-text-main'
         } ${className}`}
       >
         <MoreHorizontal className="w-5 h-5" />
@@ -144,20 +144,20 @@ export const RecipeActionMenu: React.FC<RecipeActionMenuProps> = ({ recipe, vari
             aria-label={`Aktionen für ${recipe.title}`}
             style={{ top: pos.top, left: pos.left, width: MENU_WIDTH }}
             onClick={(e) => e.stopPropagation()}
-            className="fixed z-[70] bg-white rounded-2xl border border-[#ECEBE8] shadow-xl py-2 animate-in fade-in zoom-in-95 duration-150"
+            className="fixed z-[70] bg-card rounded-2xl border border-border shadow-xl py-2 animate-in fade-in zoom-in-95 duration-150"
           >
             {items.map((item, idx) => (
               <React.Fragment key={item.id}>
-                {item.muted && <div className="my-1 mx-3 border-t border-[#ECEBE8]" />}
+                {item.muted && <div className="my-1 mx-3 border-t border-border" />}
                 <button
                   type="button"
                   role="menuitem"
                   onClick={run(item.onClick)}
-                  className={`w-full h-12 flex items-center gap-3 px-4 text-[15px] font-semibold text-left transition-colors cursor-pointer hover:bg-[#FAF9F6] focus-visible:bg-[#F1F5F2] focus-visible:outline-hidden ${
-                    item.muted ? 'text-[#686E6A]' : 'text-[#2D3E40]'
+                  className={`w-full h-12 flex items-center gap-3 px-4 text-[15px] font-semibold text-left transition-colors cursor-pointer hover:bg-surface focus-visible:bg-accent-tint focus-visible:outline-hidden ${
+                    item.muted ? 'text-text-muted' : 'text-text-main'
                   }`}
                 >
-                  <item.icon className={`w-5 h-5 shrink-0 ${item.muted ? 'text-[#686E6A]' : 'text-[#4A7856]'}`} />
+                  <item.icon className={`w-5 h-5 shrink-0 ${item.muted ? 'text-text-muted' : 'text-accent'}`} />
                   <span className="truncate">{item.label}</span>
                 </button>
               </React.Fragment>

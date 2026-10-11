@@ -720,16 +720,16 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         }}
         className={`relative overflow-hidden select-none group touch-pan-y transition-all ${
           isBeingDragged
-            ? 'opacity-40 border-dashed border-[#4A7856]'
+            ? 'opacity-40 border-dashed border-accent'
             : 'opacity-100'
         }`}
       >
         {/* Drop Insertion Line (Geschmeidige Vorschau ohne Layout-Shift) */}
         {isDragOver && dragDropPosition === 'before' && (
-          <div className="absolute top-0 left-2 right-2 h-1 bg-[#4A7856] rounded-full z-30 pointer-events-none shadow-xs" />
+          <div className="absolute top-0 left-2 right-2 h-1 bg-accent rounded-full z-30 pointer-events-none shadow-xs" />
         )}
         {isDragOver && dragDropPosition === 'after' && (
-          <div className="absolute bottom-0 left-2 right-2 h-1 bg-[#4A7856] rounded-full z-30 pointer-events-none shadow-xs" />
+          <div className="absolute bottom-0 left-2 right-2 h-1 bg-accent rounded-full z-30 pointer-events-none shadow-xs" />
         )}
 
         {/* Background Action Tray: Für Mobile-Swipe (nicht durch sm:hidden verstecken) */}
@@ -737,12 +737,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           className={`absolute inset-0 z-0 overflow-hidden flex items-center justify-end transition-[background-color,border-color] duration-150 ease-out ${
             isFullSwipeDelete
               ? 'bg-[#C93B2B]'
-              : 'bg-[#FAF9F6] pr-2.5 pl-3'
+              : 'bg-surface pr-2.5 pl-3'
           }`}
         >
           {isFullSwipeDelete ? (
             /* Apple Full-Swipe: Bei ~70% nimmt das dunklere Rot komplett den Background Space ein (Zeichen für Löschen) */
-            <div className="flex items-center justify-end w-full px-6 gap-2.5 text-white font-semibold text-sm animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-end w-full px-6 gap-2.5 text-on-accent font-semibold text-sm animate-in fade-in zoom-in-95 duration-150">
               <Trash2 className="w-5 h-5 stroke-[2.5] scale-110 transition-transform" />
               <span>Löschen</span>
             </div>
@@ -764,7 +764,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   pointerEvents: pencilOpacity < 0.2 ? 'none' : 'auto',
                   transition: isThisItemTouching ? 'none' : 'opacity 0.2s, transform 0.2s',
                 }}
-                className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl bg-white text-[#4A7856] hover:bg-[#E8EFEA] border border-[#ECEBE8] flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0"
+                className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl bg-card text-accent hover:bg-[#E8EFEA] border border-border flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0"
                 title="Menge anpassen"
                 aria-label="Menge anpassen"
               >
@@ -937,7 +937,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           }}
           className={`relative z-10 w-full flex justify-between py-2.5 sm:py-2 px-3.5 sm:px-4 gap-2.5 sm:gap-3 min-h-[52px] sm:min-h-[52px] touch-pan-y transition-colors ${
             isEditing
-              ? 'cursor-default bg-[#FAF9F6] items-stretch'
+              ? 'cursor-default bg-surface items-stretch'
               : hasSecondaryText
               ? 'items-start'
               : 'items-center'
@@ -945,8 +945,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             isEditing
               ? ''
               : item.completed
-              ? 'cursor-pointer bg-white hover:bg-[#FAF9F6] text-[#686E6A]'
-              : 'cursor-pointer bg-white hover:bg-[#FAF9F6] active:bg-[#F5F4F0] text-[#2D3E40]'
+              ? 'cursor-pointer bg-card hover:bg-surface text-text-muted'
+              : 'cursor-pointer bg-card hover:bg-surface active:bg-[#F5F4F0] text-text-main'
           }`}
         >
           {isEditing ? (
@@ -959,33 +959,33 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               {/* Header row: Checkbox/Pencil icon, item name and status badge */}
               <div className="flex items-center justify-between gap-2 min-w-0">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-5 h-5 rounded-md flex items-center justify-center border-2 border-[#4A7856] bg-white text-[#4A7856] shrink-0">
+                  <div className="w-5 h-5 rounded-md flex items-center justify-center border-2 border-accent bg-card text-accent shrink-0">
                     <Pencil className="w-3 h-3 stroke-[2.5]" />
                   </div>
                   <div className="min-w-0 flex flex-col">
-                    <span className="text-base font-semibold text-[#2D3E40] truncate">
+                    <span className="text-base font-semibold text-text-main truncate">
                       {item.name}
                     </span>
                     {recipeSourceText && (
-                      <span className="text-[13px] text-[#686e6a] truncate">
+                      <span className="text-[13px] text-text-muted truncate">
                         {recipeSourceText}
                       </span>
                     )}
                   </div>
                 </div>
-                <span className="text-xs font-semibold text-[#4A7856] bg-[#F1F5F2] px-2.5 py-0.5 rounded-full shrink-0 border border-[#D5DDD7]">
+                <span className="text-xs font-semibold text-accent bg-accent-tint px-2.5 py-0.5 rounded-full shrink-0 border border-[#D5DDD7]">
                   Menge anpassen
                 </span>
               </div>
 
               {/* Controls row: Stepper (- / input / +) and actions (Cancel / Save) - all 44px buttons! */}
-              <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#ECEBE8]">
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
                 {/* Stepper with 44px buttons and 44px input */}
-                <div className="flex items-center bg-white border border-[#D1D5D2] rounded-xl shadow-2xs overflow-hidden h-[44px]">
+                <div className="flex items-center bg-card border border-[#D1D5D2] rounded-xl shadow-2xs overflow-hidden h-[44px]">
                   <button
                     type="button"
                     onClick={() => stepEditedAmount(-1)}
-                    className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] flex items-center justify-center bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors cursor-pointer touch-manipulation active:scale-95 border-r border-[#ECEBE8]"
+                    className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] flex items-center justify-center bg-surface hover:bg-accent-tint text-text-main transition-colors cursor-pointer touch-manipulation active:scale-95 border-r border-border"
                     title="Menge verringern (-1)"
                     aria-label="Menge verringern"
                   >
@@ -1006,13 +1006,13 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                     }}
                     autoFocus
                     placeholder="1 Stk"
-                    className="w-20 sm:w-24 h-full px-2 text-center text-[16px] font-semibold text-[#2D3E40] bg-white focus:outline-hidden focus:bg-[#FAF9F6]"
+                    className="w-20 sm:w-24 h-full px-2 text-center text-[16px] font-semibold text-text-main bg-card focus:outline-hidden focus:bg-surface"
                   />
 
                   <button
                     type="button"
                     onClick={() => stepEditedAmount(1)}
-                    className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] flex items-center justify-center bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#2D3E40] transition-colors cursor-pointer touch-manipulation active:scale-95 border-l border-[#ECEBE8]"
+                    className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] flex items-center justify-center bg-surface hover:bg-accent-tint text-text-main transition-colors cursor-pointer touch-manipulation active:scale-95 border-l border-border"
                     title="Menge erhöhen (+1)"
                     aria-label="Menge erhöhen"
                   >
@@ -1025,7 +1025,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   <button
                     type="button"
                     onClick={cancelEditing}
-                    className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#686e6a] hover:text-[#2D3E40] flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shadow-2xs"
+                    className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl border border-border bg-surface hover:bg-accent-tint text-text-muted hover:text-text-main flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shadow-2xs"
                     title="Abbrechen"
                     aria-label="Abbrechen"
                   >
@@ -1035,7 +1035,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   <button
                     type="button"
                     onClick={() => saveEditedAmount(item.id)}
-                    className="h-[44px] min-h-[44px] px-3.5 sm:px-4 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white flex items-center justify-center gap-1.5 font-semibold text-[14px] sm:text-[15px] shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
+                    className="h-[44px] min-h-[44px] px-3.5 sm:px-4 rounded-xl bg-accent hover:bg-accent-hover text-on-accent flex items-center justify-center gap-1.5 font-semibold text-[14px] sm:text-[15px] shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
                     title="Speichern"
                     aria-label="Speichern"
                   >
@@ -1057,8 +1057,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                     hasSecondaryText ? 'mt-0.5' : ''
                   } ${
                     item.completed
-                      ? 'bg-[#4A7856] border-[#4A7856] text-white'
-                      : 'border-[#D1D5D2] bg-white group-hover:border-[#4A7856]'
+                      ? 'bg-accent border-accent text-on-accent'
+                      : 'border-[#D1D5D2] bg-card group-hover:border-accent'
                   }`}
                 >
                   {item.completed && <Check className="w-3 h-3 stroke-[3]" />}
@@ -1070,14 +1070,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 }`}>
                   <span
                     className={`text-base font-medium block break-words leading-tight ${
-                      item.completed ? 'line-through text-[#686e6a]' : 'text-[#2D3E40]'
+                      item.completed ? 'line-through text-text-muted' : 'text-text-main'
                     }`}
                   >
                     {item.name}
                   </span>
                   {recipeSourceText && (
                     <span 
-                      className="text-[13px] font-normal text-[#686e6a] break-words leading-normal mt-0.5 line-clamp-2"
+                      className="text-[13px] font-normal text-text-muted break-words leading-normal mt-0.5 line-clamp-2"
                       title={item.recipeSource}
                     >
                       {recipeSourceText}
@@ -1106,7 +1106,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   <button
                     type="button"
                     onClick={() => startEditingItem(item)}
-                    className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[#FAF9F6] text-[#4A7856] hover:bg-[#E8EFEA] hover:text-[#3D6447] border border-[#ECEBE8] transition-all cursor-pointer active:scale-95 shadow-2xs"
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-surface text-accent hover:bg-[#E8EFEA] hover:text-accent-hover border border-border transition-all cursor-pointer active:scale-95 shadow-2xs"
                     title="Menge bearbeiten"
                     aria-label="Menge bearbeiten"
                   >
@@ -1118,7 +1118,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       deleteItem(item.id);
                       onCopyFeedback(`"${item.name}" gelöscht.`);
                     }}
-                    className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[#FAF9F6] text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-[#ECEBE8] transition-all cursor-pointer active:scale-95 shadow-2xs"
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-surface text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-border transition-all cursor-pointer active:scale-95 shadow-2xs"
                     title="Löschen"
                     aria-label="Löschen"
                   >
@@ -1129,7 +1129,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 {item.amount ? (() => {
                   const display = formatDisplayGrocery(item.amount, item.unit, item.name);
                   return (
-                    /* Mengenangabe ganz rechts: Exakt wie in der Rezept-Detailansicht (font-semibold tabular-nums text-[#4A7856]) */
+                    /* Mengenangabe ganz rechts: Exakt wie in der Rezept-Detailansicht (font-semibold tabular-nums text-accent) */
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1146,8 +1146,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       }}
                       className={`text-base font-semibold tabular-nums select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline flex items-baseline gap-1.5 ${
                         item.completed
-                          ? 'text-[#686e6a] line-through opacity-60'
-                          : 'text-[#4A7856] hover:text-[#3D6447]'
+                          ? 'text-text-muted line-through opacity-60'
+                          : 'text-accent hover:text-accent-hover'
                       }`}
                       title="Menge anpassen (- / +)"
                     >
@@ -1155,7 +1155,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                         {display.formattedAmount} {display.formattedUnit}
                       </span>
                       {display.hintBadge && (
-                        <span className="text-[12px] font-medium text-[#686e6a] bg-stone-100 px-1.5 py-0.2 rounded-md border border-[#ECEBE8] no-underline inline-block">
+                        <span className="text-[12px] font-medium text-text-muted bg-stone-100 px-1.5 py-0.2 rounded-md border border-border no-underline inline-block">
                           {display.hintBadge}
                         </span>
                       )}
@@ -1167,8 +1167,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <div
                   className={`p-1 transition-colors hidden sm:flex items-center justify-center ${
                     isAnySwiped
-                      ? 'text-[#686e6a] opacity-30 cursor-not-allowed pointer-events-none'
-                      : 'text-[#686e6a] hover:text-[#57534d] cursor-grab active:cursor-grabbing'
+                      ? 'text-text-muted opacity-30 cursor-not-allowed pointer-events-none'
+                      : 'text-text-muted hover:text-[#57534d] cursor-grab active:cursor-grabbing'
                   }`}
                   title={isAnySwiped ? 'Verschieben gesperrt' : 'Gedrückt halten zum Verschieben'}
                 >
@@ -1185,11 +1185,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   return (
     <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-300">
       {/* Header & Controls */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 lg:p-6 border border-[#ECEBE8] shadow-xs space-y-4">
+      <div className="bg-card rounded-2xl p-4 sm:p-5 lg:p-6 border border-border shadow-xs space-y-4">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             {/* Einheitliches Status-Badge: Zeigt aktive Artikel ohne Redundanz */}
-            <div className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F2] text-[#4A7856] text-xs font-semibold border border-[#ECEBE8] whitespace-nowrap">
+            <div className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent-tint text-accent text-xs font-semibold border border-border whitespace-nowrap">
               <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
               <span>{activeCount} offen</span>
             </div>
@@ -1201,7 +1201,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap ${
                   syncConfig?.mode === 'family' && syncConfig?.groupId
                     ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                    : 'bg-[#FAF9F6] text-[#686e6a] border-[#ECEBE8] hover:bg-[#F1F5F2]'
+                    : 'bg-surface text-text-muted border-border hover:bg-accent-tint'
                 }`}
                 title="Synchronisationseinstellungen öffnen"
               >
@@ -1213,27 +1213,27 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   </>
                 ) : (
                   <>
-                    <Cloud className="w-3 h-3 text-[#686e6a]" />
+                    <Cloud className="w-3 h-3 text-text-muted" />
                     <span style={{ color: '#686e6a' }}>Lokal • Teilen</span>
                   </>
                 )}
               </button>
             )}
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#2D3E40] leading-tight">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-main leading-tight">
             Einkaufsliste
           </h1>
-          <p className="text-base text-[#686E6A] leading-relaxed mt-1">
+          <p className="text-base text-text-muted leading-relaxed mt-1">
             Alles für deine Woche – geordnet nach Supermarkt-Regal.
           </p>
         </div>
 
         {/* Unified Action Row: single horizontal row with consistent sizing and alignment */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#ECEBE8]">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-border">
           {/* Left side: View switcher ([ Regale ] / [ Liste ]) styled as cohesive segmented control pill */}
-          <div className="relative flex items-center p-1 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-[16px] select-none shadow-2xs h-[44px]">
+          <div className="relative flex items-center p-1 bg-surface border border-border rounded-xl text-[16px] select-none shadow-2xs h-[44px]">
             <div
-              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#4A7856] rounded-lg shadow-xs transition-all duration-200 ease-out pointer-events-none ${
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-accent rounded-lg shadow-xs transition-all duration-200 ease-out pointer-events-none ${
                 viewMode === 'categorized' ? 'left-1' : 'left-[calc(50%+2px)]'
               }`}
             />
@@ -1243,8 +1243,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               onClick={() => setViewMode('categorized')}
               className={`relative z-10 px-3.5 sm:px-4 h-full flex items-center justify-center gap-2 rounded-lg text-[16px] transition-colors cursor-pointer touch-manipulation select-none ${
                 viewMode === 'categorized'
-                  ? 'text-white font-bold'
-                  : 'text-[#57534d] hover:text-[#4A7856] font-semibold'
+                  ? 'text-on-accent font-bold'
+                  : 'text-[#57534d] hover:text-accent font-semibold'
               }`}
               title="Nach Supermarkt-Regalen gruppiert"
             >
@@ -1257,8 +1257,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               onClick={() => setViewMode('flat')}
               className={`relative z-10 px-3.5 sm:px-4 h-full flex items-center justify-center gap-2 rounded-lg text-[16px] transition-colors cursor-pointer touch-manipulation select-none ${
                 viewMode === 'flat'
-                  ? 'text-white font-bold'
-                  : 'text-[#57534d] hover:text-[#4A7856] font-semibold'
+                  ? 'text-on-accent font-bold'
+                  : 'text-[#57534d] hover:text-accent font-semibold'
               }`}
               title="Alle Artikel in einer sortierbaren Liste"
             >
@@ -1274,13 +1274,13 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               type="button"
               onClick={handleCopyFormattedList}
               disabled={items.length === 0}
-              className="h-[44px] px-3.5 sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#57534d] hover:text-[#4A7856] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#FAF9F6] font-semibold text-[16px] shadow-2xs transition-all active:scale-95 touch-manipulation cursor-pointer group"
+              className="h-[44px] px-3.5 sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-surface hover:bg-accent-tint border border-border text-[#57534d] hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface font-semibold text-[16px] shadow-2xs transition-all active:scale-95 touch-manipulation cursor-pointer group"
               title="Kopiert die Liste formatiert für WhatsApp & Notizen"
             >
               {copied ? (
-                <Check className="w-4 h-4 text-[#4a7856]" />
+                <Check className="w-4 h-4 text-accent" />
               ) : (
-                <Copy className="w-4 h-4 text-[#4a7856] transition-colors" />
+                <Copy className="w-4 h-4 text-accent transition-colors" />
               )}
               <span>{copied ? 'Kopiert!' : 'Kopieren'}</span>
             </button>
@@ -1310,10 +1310,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               disabled={items.length === 0 && !draggedShelf && !draggedItemId}
               className={`h-[44px] px-3.5 sm:px-4 flex items-center justify-center gap-2 rounded-xl font-semibold text-[16px] border transition-all select-none touch-manipulation group shadow-2xs ${
                 isDragOverDelete
-                  ? 'bg-rose-600 text-white border-rose-600 shadow-md ring-2 ring-rose-400'
+                  ? 'bg-rose-600 text-on-accent border-rose-600 shadow-md ring-2 ring-rose-400'
                   : items.length > 0
-                  ? 'bg-[#FAF9F6] hover:bg-[#F1F5F2] text-[#57534d] hover:text-rose-700 border-[#ECEBE8] hover:border-rose-200 active:scale-95 cursor-pointer'
-                  : 'bg-[#FAF9F6] text-[#686e6a] border-[#ECEBE8] opacity-40 cursor-not-allowed'
+                  ? 'bg-surface hover:bg-accent-tint text-[#57534d] hover:text-rose-700 border-border hover:border-rose-200 active:scale-95 cursor-pointer'
+                  : 'bg-surface text-text-muted border-border opacity-40 cursor-not-allowed'
               }`}
               title={
                 draggedShelf
@@ -1326,10 +1326,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               <Trash2
                 className={`w-4 h-4 shrink-0 transition-colors ${
                   isDragOverDelete
-                    ? 'text-white animate-bounce'
+                    ? 'text-on-accent animate-bounce'
                     : items.length > 0
                     ? 'text-rose-600 group-hover:text-rose-700'
-                    : 'text-[#686e6a]'
+                    : 'text-text-muted'
                 }`}
               />
               <span>Löschen</span>
@@ -1341,7 +1341,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       {/* 2. Compact 1-Row Quick Add Module */}
       <form
         onSubmit={handleAddItem}
-        className="bg-white p-1.5 sm:p-2 rounded-2xl border border-[#ECEBE8] shadow-xs flex items-center gap-1.5 sm:gap-2"
+        className="bg-card p-1.5 sm:p-2 rounded-2xl border border-border shadow-xs flex items-center gap-1.5 sm:gap-2"
       >
         {/* Left/Flexible: Text input field */}
         <div className="relative flex-1 min-w-0">
@@ -1350,7 +1350,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             placeholder="Schnell hinzufügen (z. B. 400g Tofu)..."
             value={quickAddInput}
             onChange={(e) => setQuickAddInput(e.target.value)}
-            className="w-full bg-[#FAF9F6] hover:bg-[#F5F4F0] focus:bg-white border border-[#ECEBE8] focus:border-[#4A7856] rounded-xl px-3 sm:px-3.5 py-2 text-base text-[#2D3E40] placeholder:text-[#686e6a] focus:outline-hidden transition-all h-12 sm:h-10"
+            className="w-full bg-surface hover:bg-[#F5F4F0] focus:bg-card border border-border focus:border-accent rounded-xl px-3 sm:px-3.5 py-2 text-base text-text-main placeholder:text-text-muted focus:outline-hidden transition-all h-12 sm:h-10"
           />
         </div>
 
@@ -1376,7 +1376,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             type="button"
             id="shopping-item-category-select"
             onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-            className="inline-flex items-center gap-2 bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] rounded-xl px-3 sm:px-3.5 py-2 text-[16px] font-semibold text-[#2D3E40] cursor-pointer focus:border-[#4A7856] focus:outline-hidden h-12 sm:h-11 min-h-[44px] transition-colors select-none"
+            className="inline-flex items-center gap-2 bg-surface hover:bg-accent-tint border border-border rounded-xl px-3 sm:px-3.5 py-2 text-[16px] font-semibold text-text-main cursor-pointer focus:border-accent focus:outline-hidden h-12 sm:h-11 min-h-[44px] transition-colors select-none"
             title="Regal / Kategorie wählen"
             aria-label="Regal / Kategorie wählen"
             aria-expanded={isCategoryDropdownOpen}
@@ -1397,15 +1397,15 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 : '📦 Sonstiges'}
             </span>
             <ChevronDown
-              className={`w-4 h-4 text-[#686E6A] transition-transform duration-150 ${
-                isCategoryDropdownOpen ? 'rotate-180 text-[#4A7856]' : ''
+              className={`w-4 h-4 text-text-muted transition-transform duration-150 ${
+                isCategoryDropdownOpen ? 'rotate-180 text-accent' : ''
               }`}
             />
           </button>
 
           {/* Desktop Popover Menu with categories */}
           {isCategoryDropdownOpen && (
-            <div className="hidden sm:block absolute right-0 top-full mt-1.5 z-40 w-64 bg-white rounded-xl shadow-lg border border-[#ECEBE8] p-1.5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="hidden sm:block absolute right-0 top-full mt-1.5 z-40 w-64 bg-card rounded-xl shadow-lg border border-border p-1.5 animate-in fade-in zoom-in-95 duration-150">
               <button
                 type="button"
                 onClick={() => {
@@ -1414,18 +1414,18 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 }}
                 className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-lg text-[16px] font-medium transition-colors cursor-pointer text-left ${
                   categoryChoice === 'auto'
-                    ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold'
-                    : 'text-[#2D3E40] hover:bg-[#FAF9F6]'
+                    ? 'bg-accent-tint text-accent font-semibold'
+                    : 'text-text-main hover:bg-surface'
                 }`}
               >
                 <span className="flex items-center gap-2">
                   <span>✨</span>
                   <span>Auto-Erkennung</span>
                 </span>
-                {categoryChoice === 'auto' && <Check className="w-4 h-4 text-[#4A7856]" />}
+                {categoryChoice === 'auto' && <Check className="w-4 h-4 text-accent" />}
               </button>
 
-              <div className="my-1 border-t border-[#ECEBE8]" />
+              <div className="my-1 border-t border-border" />
 
               {(
                 [
@@ -1448,12 +1448,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                     }}
                     className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-lg text-[16px] transition-colors cursor-pointer text-left ${
                       isSelected
-                        ? 'bg-[#F1F5F2] text-[#4A7856] font-semibold'
-                        : 'text-[#2D3E40] hover:bg-[#FAF9F6] font-normal'
+                        ? 'bg-accent-tint text-accent font-semibold'
+                        : 'text-text-main hover:bg-surface font-normal'
                     }`}
                   >
                     <span>{catLabel}</span>
-                    {isSelected && <Check className="w-4 h-4 text-[#4A7856]" />}
+                    {isSelected && <Check className="w-4 h-4 text-accent" />}
                   </button>
                 );
               })}
@@ -1465,7 +1465,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         <button
           type="submit"
           disabled={!quickAddInput.trim()}
-          className="w-12 h-12 sm:w-10 sm:h-10 min-w-[48px] min-h-[48px] sm:min-w-0 sm:min-h-0 bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-40 text-white rounded-xl flex items-center justify-center shadow-xs shrink-0 transition-all active:scale-95 touch-manipulation cursor-pointer"
+          className="w-12 h-12 sm:w-10 sm:h-10 min-w-[48px] min-h-[48px] sm:min-w-0 sm:min-h-0 bg-accent hover:bg-accent-hover disabled:opacity-40 text-on-accent rounded-xl flex items-center justify-center shadow-xs shrink-0 transition-all active:scale-95 touch-manipulation cursor-pointer"
           title="Zutat hinzufügen"
           aria-label="Zutat hinzufügen"
         >
@@ -1475,12 +1475,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
       {/* Main Content Area */}
       {items.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center border border-[#ECEBE8] space-y-3 shadow-xs">
-          <div className="w-14 h-14 rounded-full bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center mx-auto text-2xl border border-[#ECEBE8]">
+        <div className="bg-card rounded-2xl p-12 text-center border border-border space-y-3 shadow-xs">
+          <div className="w-14 h-14 rounded-full bg-accent-tint text-accent flex items-center justify-center mx-auto text-2xl border border-border">
             🛒
           </div>
-          <h3 className="text-xl font-bold tracking-tight text-[#2D3E40]">Deine Liste ist leer</h3>
-          <p className="text-base text-[#686E6A] leading-relaxed max-w-sm mx-auto">
+          <h3 className="text-xl font-bold tracking-tight text-text-main">Deine Liste ist leer</h3>
+          <p className="text-base text-text-muted leading-relaxed max-w-sm mx-auto">
             Füge Zutaten direkt aus Rezepten oder dem Wochenplan hinzu, oder tippe oben z.B. „400g Tofu“ ein.
           </p>
           {(() => {
@@ -1494,7 +1494,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       setItems(backup);
                       onCopyFeedback(`${backup.length} Zutaten wiederhergestellt! 🛒`);
                     }}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FAF9F6] hover:bg-[#E8EFEA] border border-[#ECEBE8] text-[#4A7856] text-sm font-semibold shadow-2xs transition-all cursor-pointer active:scale-95 min-h-[44px] touch-manipulation"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface hover:bg-[#E8EFEA] border border-border text-accent text-sm font-semibold shadow-2xs transition-all cursor-pointer active:scale-95 min-h-[44px] touch-manipulation"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Gesicherte Liste wiederherstellen ({backup.length} {backup.length === 1 ? 'Zutat' : 'Zutaten'})</span>
@@ -1508,13 +1508,13 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       ) : viewMode === 'flat' ? (
         /* Gesamtansicht (Liste mit Drag & Drop Sortierung) */
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-[#ECEBE8] shadow-xs overflow-hidden">
-            <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-[#ECEBE8] bg-[#F1F5F2]">
-              <div className="flex items-center gap-2 font-semibold text-[#2D3E40] text-base">
-                <List className="w-4 h-4 text-[#4A7856]" />
+          <div className="bg-card rounded-2xl border border-border shadow-xs overflow-hidden">
+            <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-border bg-accent-tint">
+              <div className="flex items-center gap-2 font-semibold text-text-main text-base">
+                <List className="w-4 h-4 text-accent" />
                 <span style={{ fontSize: '16px' }} className="text-[16px]">Offene Artikel</span>
               </div>
-              <span className="text-xs font-semibold text-[#57534d] bg-white px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
+              <span className="text-xs font-semibold text-[#57534d] bg-card px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
                 {activeItems.length} offen
               </span>
             </div>
@@ -1524,7 +1524,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 {activeItems.map(renderItemRow)}
               </div>
             ) : (
-              <p className="text-xs text-[#686E6A] py-6 text-center italic">
+              <p className="text-xs text-text-muted py-6 text-center italic">
                 Alle Artikel sind abgehakt! 🎉
               </p>
             )}
@@ -1550,7 +1550,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   key={catKey}
                   onDragOver={(e) => handleDragOverShelf(e, catKey)}
                   onDrop={(e) => handleDropShelf(e, catKey)}
-                  className={`bg-white rounded-2xl border border-[#ECEBE8] shadow-xs overflow-hidden transition-opacity duration-150 ${
+                  className={`bg-card rounded-2xl border border-border shadow-xs overflow-hidden transition-opacity duration-150 ${
                     isBeingDragged ? 'opacity-40' : 'opacity-100'
                   }`}
                 >
@@ -1563,13 +1563,13 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       setDragOverShelf(null);
                       setIsDragOverDelete(false);
                     }}
-                    className="flex items-center justify-between p-3.5 sm:p-4 bg-[#F1F5F2] hover:bg-[#E8EFEA] transition-colors border-b border-[#ECEBE8] cursor-grab active:cursor-grabbing select-none"
+                    className="flex items-center justify-between p-3.5 sm:p-4 bg-accent-tint hover:bg-[#E8EFEA] transition-colors border-b border-border cursor-grab active:cursor-grabbing select-none"
                     title="Gedrückt halten und ziehen, um das Regal zu sortieren oder auf 'Löschen' zu ziehen"
                   >
                     {/* Category Title & Drag Handle */}
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <div
-                        className="p-1 text-[#686e6a] shrink-0 pointer-events-none"
+                        className="p-1 text-text-muted shrink-0 pointer-events-none"
                       >
                         <GripVertical className="w-4 h-4" />
                       </div>
@@ -1583,7 +1583,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                         className="flex items-center gap-2 text-left cursor-pointer select-none flex-1 min-w-0"
                       >
                         <span className="text-xl shrink-0 pointer-events-none">{meta.icon}</span>
-                        <span className="font-semibold text-[#2D3E40] text-base truncate pointer-events-none">
+                        <span className="font-semibold text-text-main text-base truncate pointer-events-none">
                           {meta.label}
                         </span>
                       </button>
@@ -1598,11 +1598,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       className="flex items-center gap-1.5 shrink-0 ml-2 cursor-pointer"
                       title={isCollapsed ? 'Regal aufklappen' : 'Regal zuklappen'}
                     >
-                      <span className="text-xs font-semibold text-[#57534d] bg-white px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
+                      <span className="text-xs font-semibold text-[#57534d] bg-card px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
                         {activeInCat.length} offen
                       </span>
 
-                      <div className="p-1 text-[#4A7856] group-hover:text-[#3D6447] transition-colors">
+                      <div className="p-1 text-accent group-hover:text-accent-hover transition-colors">
                         <ChevronDown
                           className={`w-4 h-4 transition-transform duration-200 ${
                             isCollapsed ? '-rotate-90' : 'rotate-0'
@@ -1629,10 +1629,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             })}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl p-8 text-center border border-[#ECEBE8] shadow-xs space-y-2">
+          <div className="bg-card rounded-2xl p-8 text-center border border-border shadow-xs space-y-2">
             <span className="text-2xl">🎉</span>
-            <h3 className="text-base font-semibold text-[#2D3E40]">Alle Regale sind abgehakt!</h3>
-            <p className="text-xs text-[#686E6A]">
+            <h3 className="text-base font-semibold text-text-main">Alle Regale sind abgehakt!</h3>
+            <p className="text-xs text-text-muted">
               Alle Artikel wurden erledigt und befinden sich im erledigten Bereich unten.
             </p>
           </div>
@@ -1641,10 +1641,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
       {/* 3. Erledigte Items: Einklappbarer Bereich am Ende („Erledigt (X)“) */}
       {completedCount > 0 && (
-        <div className="bg-white rounded-2xl border border-[#ECEBE8] overflow-hidden shadow-xs mt-6">
+        <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-xs mt-6">
           <div
             onClick={() => setShowCompletedSection(!showCompletedSection)}
-            className="w-full flex items-center justify-between p-4 sm:p-5 bg-[#F1F5F2] hover:bg-[#E3EBE5] text-left transition-colors cursor-pointer select-none"
+            className="w-full flex items-center justify-between p-4 sm:p-5 bg-accent-tint hover:bg-[#E3EBE5] text-left transition-colors cursor-pointer select-none"
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
@@ -1654,8 +1654,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               }
             }}
           >
-            <div className="flex items-center gap-2 font-semibold text-[#2D3E40] text-base">
-              <CheckCheck className="w-4 h-4 text-[#4A7856]" />
+            <div className="flex items-center gap-2 font-semibold text-text-main text-base">
+              <CheckCheck className="w-4 h-4 text-accent" />
               <span>Erledigt ({completedCount})</span>
             </div>
 
@@ -1672,7 +1672,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               <button
                 type="button"
                 onClick={() => setShowCompletedSection(!showCompletedSection)}
-                className="p-1 text-[#57534d] hover:text-[#4A7856] cursor-pointer"
+                className="p-1 text-[#57534d] hover:text-accent cursor-pointer"
                 title={showCompletedSection ? 'Zuklappen' : 'Aufklappen'}
               >
                 <ChevronDown
@@ -1694,7 +1694,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             }}
           >
             <div className="overflow-hidden">
-              <div className="border-t border-[#ECEBE8] divide-y divide-[#F0EFEB] bg-white">
+              <div className="border-t border-border divide-y divide-[#F0EFEB] bg-card">
                 {completedItems.map(renderItemRow)}
               </div>
             </div>
@@ -1704,10 +1704,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
       {/* Undo Notification Banner (Nach unten gerückt: hinter 'Erledigt', sowohl Mobile als auch PC) */}
       {showUndoBanner && undoBackup && (
-        <div className="p-3.5 sm:p-4 bg-[#2D3E40] text-white rounded-2xl shadow-lg border border-[#ECEBE8]/20 flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-bottom duration-200 mt-2">
+        <div className="p-3.5 sm:p-4 bg-text-main text-on-accent rounded-2xl shadow-lg border border-border/20 flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-bottom duration-200 mt-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-[#4A7856] shrink-0" />
-            <span className="text-[16px] font-medium text-white/95 truncate">
+            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-accent shrink-0" />
+            <span className="text-[16px] font-medium text-on-accent/95 truncate">
               {lastDeletedInfo?.type === 'completed'
                 ? `${lastDeletedInfo.count} erledigte ${lastDeletedInfo.count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`
                 : lastDeletedInfo?.type === 'category'
@@ -1720,14 +1720,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleUndo}
-              className="h-[44px] min-h-[44px] px-4 sm:px-5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[16px] font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center gap-2"
+              className="h-[44px] min-h-[44px] px-4 sm:px-5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-[16px] font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center gap-2"
             >
               <RotateCcw className="w-4 h-4 sm:hidden" />
               <span>Rückgängig</span>
             </button>
             <button
               onClick={() => setShowUndoBanner(false)}
-              className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer touch-manipulation active:scale-95"
+              className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-on-accent/70 hover:text-on-accent hover:bg-card/10 transition-colors cursor-pointer touch-manipulation active:scale-95"
               title="Schließen"
               aria-label="Schließen"
             >
@@ -1745,7 +1745,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-3xl p-5 sm:p-7 max-w-md w-full shadow-2xl border border-[#ECEBE8] space-y-4 animate-in zoom-in-95 duration-200 overscroll-contain"
+            className="bg-card rounded-3xl p-5 sm:p-7 max-w-md w-full shadow-2xl border border-border space-y-4 animate-in zoom-in-95 duration-200 overscroll-contain"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0">
@@ -1755,7 +1755,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">
                   Sicherheitsabfrage
                 </span>
-                <h3 className="text-xl font-bold text-[#2D3E40] leading-snug">
+                <h3 className="text-xl font-bold text-text-main leading-snug">
                   {confirmDeleteState.type === 'all'
                     ? 'Liste wirklich löschen?'
                     : 'Erledigte Zutaten entfernen?'}
@@ -1774,7 +1774,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 id="cancel-delete-shopping-btn"
                 type="button"
                 onClick={() => setConfirmDeleteState(null)}
-                className="min-h-[44px] sm:min-h-[48px] px-5 py-2.5 rounded-xl border border-[#ECEBE8] bg-white hover:bg-[#FAF9F6] text-[#57534d] font-semibold text-[16px] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                className="min-h-[44px] sm:min-h-[48px] px-5 py-2.5 rounded-xl border border-border bg-card hover:bg-surface text-[#57534d] font-semibold text-[16px] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 Abbrechen
               </button>
@@ -1782,9 +1782,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 id="confirm-delete-shopping-btn"
                 type="button"
                 onClick={handleConfirmDeleteAction}
-                className="min-h-[44px] sm:min-h-[48px] px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-[16px] shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
+                className="min-h-[44px] sm:min-h-[48px] px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-on-accent font-semibold text-[16px] shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
               >
-                <Trash2 className="w-4 h-4 text-white" />
+                <Trash2 className="w-4 h-4 text-on-accent" />
                 <span>Ja, wirklich löschen</span>
               </button>
             </div>

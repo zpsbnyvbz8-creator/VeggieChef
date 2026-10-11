@@ -9,6 +9,8 @@ interface CookingTimerBarProps {
   onReset?: () => void;
   onDismiss?: () => void;
   onOpenCookingMode?: () => void;
+  /** Raise the bar above the bottom navigation (non-detail pages). */
+  offsetForBottomNav?: boolean;
 }
 
 export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
@@ -69,15 +71,15 @@ export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
   return (
     <aside
       id="persistent-cooking-timer-bar"
-      className="fixed bottom-0 inset-x-0 z-40 bg-[#57534d] text-white border-t border-[#3D5254] px-3 sm:px-6 py-2.5 shadow-2xl animate-in slide-in-from-bottom duration-200"
+      className={`fixed inset-x-0 ${props.offsetForBottomNav ? 'bottom-[calc(3.5rem+env(safe-area-inset-bottom))]' : 'bottom-0'} z-50 bg-[#57534d] text-on-accent border-t border-[#3D5254] px-3 sm:px-6 py-2.5 shadow-2xl animate-in slide-in-from-bottom duration-200`}
       aria-label="Aktiver Kochmodus und Timer"
     >
       {/* Top Countdown Progress Indicator */}
       {timer && timer.totalSeconds > 0 && (
-        <div className="absolute top-0 inset-x-0 h-1 bg-white/10 overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-1 bg-card/10 overflow-hidden">
           <div
             className={`h-full transition-all duration-300 ${
-              isFinished ? 'bg-amber-400' : timer.isRunning ? 'bg-[#4A7856]' : 'bg-[#4A7856]/60'
+              isFinished ? 'bg-amber-400' : timer.isRunning ? 'bg-accent' : 'bg-accent/60'
             }`}
             style={{ width: `${progressPercent}%` }}
           />
@@ -93,10 +95,10 @@ export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
         >
           <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
             isFinished
-              ? 'bg-amber-500 text-white animate-bounce'
+              ? 'bg-amber-500 text-on-accent animate-bounce'
               : timer?.isRunning
-              ? 'bg-[#4A7856] text-white animate-pulse'
-              : 'bg-white/10 text-white/90 group-hover:bg-[#4A7856] group-hover:text-white'
+              ? 'bg-accent text-on-accent animate-pulse'
+              : 'bg-card/10 text-on-accent/90 group-hover:bg-accent group-hover:text-on-accent'
           }`}>
             {timer ? <Clock className="w-5 h-5" /> : <ChefHat className="w-5 h-5 text-[#8DB898]" />}
           </div>
@@ -104,7 +106,7 @@ export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               {timeFormatted ? (
-                <span className="text-lg font-mono font-bold tracking-wider text-white">
+                <span className="text-lg font-mono font-bold tracking-wider text-on-accent">
                   {isFinished ? 'Fertig!' : timeFormatted}
                 </span>
               ) : (
@@ -112,11 +114,11 @@ export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
                   Kochmodus aktiv
                 </span>
               )}
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white/10 text-[#8DB898] truncate">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-card/10 text-[#8DB898] truncate">
                 Schritt {stepNumber}{totalSteps ? ` / ${totalSteps}` : ''}
               </span>
             </div>
-            <p className="text-xs text-white/70 truncate max-w-[130px] xs:max-w-[200px] sm:max-w-xs md:max-w-md group-hover:text-white transition-colors">
+            <p className="text-xs text-on-accent/70 truncate max-w-[130px] xs:max-w-[200px] sm:max-w-xs md:max-w-md group-hover:text-on-accent transition-colors">
               {recipeTitle}
             </p>
           </div>
@@ -131,8 +133,8 @@ export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
                 onClick={onTogglePlay}
                 className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 ${
                   timer.isRunning
-                    ? 'bg-[#D35400] hover:bg-[#B94600] text-white'
-                    : 'bg-[#4A7856] hover:bg-[#3D6447] text-white'
+                    ? 'bg-[#D35400] hover:bg-[#B94600] text-on-accent'
+                    : 'bg-accent hover:bg-accent-hover text-on-accent'
                 }`}
                 title={timer.isRunning ? 'Timer pausieren' : 'Timer starten'}
               >
@@ -143,7 +145,7 @@ export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
               <button
                 type="button"
                 onClick={onReset}
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 transition-colors flex items-center justify-center cursor-pointer touch-manipulation active:scale-95"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-card/10 hover:bg-card/20 text-on-accent/80 transition-colors flex items-center justify-center cursor-pointer touch-manipulation active:scale-95"
                 title="Timer zurücksetzen"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -156,7 +158,7 @@ export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
             type="button"
             id="cooking-timer-bar-open-btn"
             onClick={onOpenCookingMode}
-            className="min-h-[38px] px-3 sm:px-3.5 py-1.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer touch-manipulation active:scale-95 shadow-xs"
+            className="min-h-[38px] px-3 sm:px-3.5 py-1.5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer touch-manipulation active:scale-95 shadow-xs"
             title="Kochmodus im Vollbild fortsetzen"
           >
             <ChevronUp className="w-4 h-4" />
@@ -167,7 +169,7 @@ export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
           <button
             type="button"
             onClick={onDismiss}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl hover:bg-white/10 text-white/60 hover:text-white transition-colors flex items-center justify-center cursor-pointer touch-manipulation active:scale-95"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl hover:bg-card/10 text-on-accent/60 hover:text-on-accent transition-colors flex items-center justify-center cursor-pointer touch-manipulation active:scale-95"
             title="Kochleiste beenden"
           >
             <X className="w-4 h-4" />

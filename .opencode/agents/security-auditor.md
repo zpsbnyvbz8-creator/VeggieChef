@@ -1,6 +1,7 @@
 ---
 description: Security-Auditor für VeggieChef (Express, Firebase/Firestore, Gemini, CSP/CORS, AI-Upload).
 mode: subagent
+model: google/gemini-3.8-flash
 permissions:
   - action: read
     resource: "**/*"

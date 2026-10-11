@@ -5,7 +5,6 @@ import {
   Clock, 
   Flame, 
   Dumbbell, 
-  Heart, 
   Copy, 
   Check, 
   ShoppingCart, 
@@ -47,6 +46,7 @@ import { IngredientSubstituteModal } from '../components/recipe/IngredientSubsti
 import { FullscreenImageViewer } from '../components/recipe/FullscreenImageViewer';
 import { EditRecipeModal } from '../components/recipe/EditRecipeModal';
 import { StepImageSwiper } from '../components/recipe/StepImageSwiper';
+import { HeartButton } from '../components/ui/HeartButton';
 
 export const RecipeDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -153,18 +153,18 @@ export const RecipeDetailPage: React.FC = () => {
   // Fallback if recipe not found
   if (!recipe) {
     return (
-      <div className="min-h-screen bg-[#FAF9F6] flex flex-col items-center justify-center p-6 text-center space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center text-3xl font-bold">
+      <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-accent-tint text-accent flex items-center justify-center text-3xl font-bold">
           🥗
         </div>
-        <h2 className="text-2xl font-bold text-[#2D3E40]">Rezept nicht gefunden</h2>
-        <p className="text-sm text-[#686E6A] max-w-sm">
+        <h2 className="text-2xl font-bold text-text-main">Rezept nicht gefunden</h2>
+        <p className="text-sm text-text-muted max-w-sm">
           Dieses Gericht existiert leider nicht mehr oder der Link ist ungültig.
         </p>
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4A7856] text-white font-semibold text-sm shadow-xs hover:bg-[#3D6447] transition-all cursor-pointer"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-on-accent font-semibold text-sm shadow-xs hover:bg-accent-hover transition-all cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Zur Rezept-Übersicht</span>
@@ -571,7 +571,7 @@ export const RecipeDetailPage: React.FC = () => {
   const hasBottomTimer = Boolean(cookingTimer || (cookingModeRecipe && isCookingMinimized));
 
   return (
-    <div className={`min-h-screen bg-[#FAF9F6] text-[#2D3E40] selection:bg-[#F1F5F2] selection:text-[#4A7856] ${hasBottomTimer ? 'pb-44 sm:pb-48' : 'pb-28'}`}>
+    <div className={`min-h-screen bg-surface text-text-main selection:bg-accent-tint selection:text-accent ${hasBottomTimer ? 'pb-44 sm:pb-48' : 'pb-28'}`}>
       {/* Hidden file input for uploading user cover photos */}
       <input
         ref={fileInputRef}
@@ -597,8 +597,8 @@ export const RecipeDetailPage: React.FC = () => {
         aria-label="Rezept Navigation"
         className={`fixed top-0 inset-x-0 z-30 transition-all duration-300 ${
           isScrolled
-            ? 'bg-white/95 backdrop-blur-md border-b border-[#ECEBE8] shadow-xs py-2.5 px-4 text-[#2D3E40]'
-            : 'bg-transparent py-4 px-4 text-white pointer-events-none'
+            ? 'bg-card/95 backdrop-blur-md border-b border-border shadow-xs py-2.5 px-4 text-text-main'
+            : 'bg-transparent py-4 px-4 text-on-accent pointer-events-none'
         }`}
       >
         <div className="max-w-4xl mx-auto flex items-center justify-between pointer-events-auto">
@@ -609,8 +609,8 @@ export const RecipeDetailPage: React.FC = () => {
             onClick={handleGoBack}
             className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
               isScrolled
-                ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] border border-[#ECEBE8] shadow-2xs'
-                : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md'
+                ? 'bg-accent-tint hover:bg-accent-tint text-text-main border border-border shadow-2xs'
+                : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-on-accent shadow-md'
             }`}
             aria-label="Zurück"
           >
@@ -623,7 +623,7 @@ export const RecipeDetailPage: React.FC = () => {
               isScrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           >
-            <span className="font-bold text-base text-[#2D3E40] truncate block">
+            <span className="font-bold text-base text-text-main truncate block">
               {recipe.title}
             </span>
           </div>
@@ -637,8 +637,8 @@ export const RecipeDetailPage: React.FC = () => {
               onClick={() => fileInputRef.current?.click()}
               className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                 isScrolled
-                  ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] border border-[#ECEBE8] shadow-2xs'
-                  : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md'
+                  ? 'bg-accent-tint hover:bg-accent-tint text-text-main border border-border shadow-2xs'
+                  : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-on-accent shadow-md'
               }`}
               title="Rezept-Titelbild / Foto hochladen"
               aria-label="Rezept-Titelbild / Foto hochladen"
@@ -647,23 +647,12 @@ export const RecipeDetailPage: React.FC = () => {
             </button>
 
             {/* Favorite Toggle Button */}
-            <button
+            <HeartButton
+              variant={isScrolled ? 'on-surface' : 'on-image'}
+              isFavorite={isFavorite}
+              onToggle={() => toggleFavorite(recipe.id)}
               id="recipe-fav-floating-btn"
-              type="button"
-              onClick={() => toggleFavorite(recipe.id)}
-              className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                isScrolled
-                  ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] border border-[#ECEBE8] shadow-2xs'
-                  : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md'
-              }`}
-              aria-label={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
-            >
-              <Heart
-                className={`w-5 h-5 transition-colors ${
-                  isFavorite ? 'fill-[#E74C3C] text-[#E74C3C]' : isScrolled ? 'text-[#2D3E40]' : 'text-white'
-                }`}
-              />
-            </button>
+            />
 
             {/* Overflow Menu Button */}
             <div ref={overflowMenuRef} className="relative">
@@ -696,8 +685,8 @@ export const RecipeDetailPage: React.FC = () => {
                 onClick={() => setIsOverflowMenuOpen(!isOverflowMenuOpen)}
                 className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                   isScrolled
-                    ? 'bg-[#F1F5F2] hover:bg-[#E2ECE4] text-[#2D3E40] border border-[#ECEBE8] shadow-2xs'
-                    : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-white shadow-md'
+                    ? 'bg-accent-tint hover:bg-accent-tint text-text-main border border-border shadow-2xs'
+                    : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-on-accent shadow-md'
                 }`}
                 aria-label="Weitere Optionen"
               >
@@ -711,13 +700,13 @@ export const RecipeDetailPage: React.FC = () => {
                     className="fixed inset-0 z-40"
                     onClick={() => setIsOverflowMenuOpen(false)}
                   />
-                  <div className="hidden sm:block absolute right-0 top-14 z-50 w-64 bg-white rounded-2xl shadow-xl border border-[#ECEBE8] py-2 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="hidden sm:block absolute right-0 top-14 z-50 w-64 bg-card rounded-2xl shadow-xl border border-border py-2 animate-in fade-in zoom-in-95 duration-150">
                     <button
                       type="button"
                       onClick={handleShare}
-                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
+                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-text-main hover:bg-surface transition-colors cursor-pointer"
                     >
-                      <Share2 className="w-5 h-5 text-[#4A7856]" />
+                      <Share2 className="w-5 h-5 text-accent" />
                       <span>Rezept teilen</span>
                     </button>
 
@@ -727,9 +716,9 @@ export const RecipeDetailPage: React.FC = () => {
                         setIsOverflowMenuOpen(false);
                         setIsEditModalOpen(true);
                       }}
-                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
+                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-text-main hover:bg-surface transition-colors cursor-pointer"
                     >
-                      <Pencil className="w-5 h-5 text-[#4A7856]" />
+                      <Pencil className="w-5 h-5 text-accent" />
                       <span>Rezept bearbeiten</span>
                     </button>
 
@@ -739,9 +728,9 @@ export const RecipeDetailPage: React.FC = () => {
                         setIsOverflowMenuOpen(false);
                         setShowCookedDialog(true);
                       }}
-                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
+                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-text-main hover:bg-surface transition-colors cursor-pointer"
                     >
-                      <SmilePlus className="w-5 h-5 text-[#4A7856]" />
+                      <SmilePlus className="w-5 h-5 text-accent" />
                       <span>Als gekocht erfassen</span>
                     </button>
 
@@ -751,13 +740,13 @@ export const RecipeDetailPage: React.FC = () => {
                         setIsOverflowMenuOpen(false);
                         toggleDislike(recipe.id);
                       }}
-                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-[#2D3E40] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
+                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-text-main hover:bg-surface transition-colors cursor-pointer"
                     >
-                      <ThumbsDown className="w-5 h-5 text-[#686e6a]" />
+                      <ThumbsDown className="w-5 h-5 text-text-muted" />
                       <span>{isDisliked ? 'Wieder öfter anzeigen' : 'Seltener anzeigen'}</span>
                     </button>
 
-                    <div className="my-1 border-t border-[#ECEBE8]" />
+                    <div className="my-1 border-t border-border" />
 
                     <button
                       type="button"
@@ -812,7 +801,7 @@ export const RecipeDetailPage: React.FC = () => {
                       setCurrentImageIndex(idx);
                     }}
                     className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                      currentImageIndex === idx ? 'w-5 bg-white shadow-xs' : 'w-1.5 bg-white/45 hover:bg-white/80'
+                      currentImageIndex === idx ? 'w-5 bg-card shadow-xs' : 'w-1.5 bg-card/45 hover:bg-card/80'
                     }`}
                     aria-label={`Bild ${idx + 1}`}
                   />
@@ -822,9 +811,9 @@ export const RecipeDetailPage: React.FC = () => {
           </div>
         ) : (
           /* Fallback banner for text-only / AI recipes without image */
-          <div className="relative h-64 sm:h-72 w-full bg-gradient-to-br from-[#2D3E40] to-[#1F2C2D] flex items-center justify-center p-6 text-white text-center">
+          <div className="relative h-64 sm:h-72 w-full bg-gradient-to-br from-text-main to-[#1F2C2D] flex items-center justify-center p-6 text-on-accent text-center">
             <div className="space-y-2 max-w-md">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 mx-auto flex items-center justify-center text-3xl">
+              <div className="w-14 h-14 rounded-2xl bg-card/10 mx-auto flex items-center justify-center text-3xl">
                 🌱
               </div>
               <h2 className="text-2xl font-bold tracking-tight">{recipe.title}</h2>
@@ -840,24 +829,26 @@ export const RecipeDetailPage: React.FC = () => {
         <section className="space-y-3">
           {/* Metadata Badges: Strictly max 2 badges, no metric duplicates or generic fluff */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="px-3 py-1 rounded-full bg-[#4A7856] text-white text-xs font-semibold shadow-2xs">
-              {isVeganized || recipe.isVegan ? '🌱 Vegan' : '🧀 Vegetarisch'}
-            </span>
+            {!recipe.isVegan && !isVeganized && (
+              <span className="px-3 py-1 rounded-full bg-accent text-on-accent text-xs font-semibold shadow-2xs">
+                Vegetarisch
+              </span>
+            )}
             {recipe.category && (
-              <span className="px-3 py-1 rounded-full bg-[#F1F5F2] text-[#4A7856] border border-[#ECEBE8] text-xs font-semibold">
+              <span className="px-3 py-1 rounded-full bg-accent-tint text-accent border border-border text-xs font-semibold">
                 {recipe.category}
               </span>
             )}
           </div>
 
           {/* Glanceable Mobile Title */}
-          <h1 className="text-4xl font-bold tracking-tight text-[#2D3E40] leading-tight">
+          <h1 className="text-4xl font-bold tracking-tight text-text-main leading-tight">
             {recipe.title}
           </h1>
 
           {/* Subtitle */}
           {recipe.subtitle && (
-            <p id="recipe-detail-subtitle" className="text-base text-[#686E6A] leading-relaxed max-w-3xl">
+            <p id="recipe-detail-subtitle" className="text-base text-text-muted leading-relaxed max-w-3xl">
               {recipe.subtitle}
             </p>
           )}
@@ -866,60 +857,60 @@ export const RecipeDetailPage: React.FC = () => {
         {/* 4. QUICK-FACTS GRID (2x2 Mobile Hierarchy with Schwierigkeit Metric) */}
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Total Time */}
-          <div className="p-3.5 bg-white rounded-2xl border border-[#ECEBE8] flex items-center gap-3 shadow-2xs">
-            <div className="w-10 h-10 rounded-xl bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center shrink-0">
+          <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center shrink-0">
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[14px] font-semibold text-[#686E6A] uppercase tracking-wider">
+              <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
                 Gesamtzeit
               </div>
-              <div className="font-bold text-[#2D3E40] text-base tabular-nums">
+              <div className="font-bold text-text-main text-base tabular-nums">
                 {recipe.totalTimeMinutes} Min.
               </div>
             </div>
           </div>
 
           {/* Calories */}
-          <div className="p-3.5 bg-white rounded-2xl border border-[#ECEBE8] flex items-center gap-3 shadow-2xs">
+          <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
             <div className="w-10 h-10 rounded-xl bg-[#FDF6F0] text-[#E67E22] flex items-center justify-center shrink-0">
               <Flame className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[14px] font-semibold text-[#686E6A] uppercase tracking-wider">
+              <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
                 Kalorien
               </div>
-              <div className="font-bold text-[#2D3E40] text-base tabular-nums">
+              <div className="font-bold text-text-main text-base tabular-nums">
                 {recipe.nutrients.calories} kcal
               </div>
             </div>
           </div>
 
           {/* Protein */}
-          <div className="p-3.5 bg-white rounded-2xl border border-[#ECEBE8] flex items-center gap-3 shadow-2xs">
-            <div className="w-10 h-10 rounded-xl bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center shrink-0">
+          <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center shrink-0">
               <Dumbbell className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[14px] font-semibold text-[#686E6A] uppercase tracking-wider">
+              <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
                 Protein
               </div>
-              <div className="font-bold text-[#4A7856] text-base tabular-nums">
+              <div className="font-bold text-accent text-base tabular-nums">
                 {recipe.nutrients.protein}g
               </div>
             </div>
           </div>
 
           {/* Schwierigkeit (Replaces Eco-Score with matching typography and weight) */}
-          <div className="p-3.5 bg-white rounded-2xl border border-[#ECEBE8] flex items-center gap-3 shadow-2xs">
-            <div className="w-10 h-10 rounded-xl bg-[#F1F5F2] text-[#4A7856] flex items-center justify-center shrink-0">
+          <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center shrink-0">
               <ChefHat className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[14px] font-semibold text-[#686E6A] uppercase tracking-wider">
+              <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
                 Schwierigkeit
               </div>
-              <div className="font-bold text-[#2D3E40] text-base truncate">
+              <div className="font-bold text-text-main text-base truncate">
                 {recipe.difficulty || 'Einfach'}
               </div>
             </div>
@@ -927,29 +918,29 @@ export const RecipeDetailPage: React.FC = () => {
         </section>
 
         {/* 5. SERVINGS CARD & BALANCED 3-COLUMN ACTION ROW */}
-        <section className="bg-white border border-[#ECEBE8] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
           <div className="flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 flex-wrap">
-            <div className="inline-flex items-center justify-between bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl p-1 shadow-2xs w-[210px] h-[54px]">
+            <div className="inline-flex items-center justify-between bg-surface border border-border rounded-xl p-1 shadow-2xs w-[210px] h-[54px]">
               <button
                 id="servings-step-decrease-btn"
                 type="button"
                 onClick={() => setServings(Math.max(1, servings - 1))}
                 disabled={servings <= 1}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 aria-label="Portion verringern"
               >
                 <Minus className="w-5 h-5" />
               </button>
-              <div className="h-6 w-[1px] bg-[#ECEBE8] shrink-0" />
-              <span className="px-2 text-[16px] font-bold text-[#2D3E40] tabular-nums flex-1 text-center select-none whitespace-nowrap">
+              <div className="h-6 w-[1px] bg-border shrink-0" />
+              <span className="px-2 text-[16px] font-bold text-text-main tabular-nums flex-1 text-center select-none whitespace-nowrap">
                 {servings} {servings === 1 ? 'Portion' : 'Portionen'}
               </span>
-              <div className="h-6 w-[1px] bg-[#ECEBE8] shrink-0" />
+              <div className="h-6 w-[1px] bg-border shrink-0" />
               <button
                 id="servings-step-increase-btn"
                 type="button"
                 onClick={() => setServings(Math.min(24, servings + 1))}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 aria-label="Portion erhöhen"
               >
                 <Plus className="w-5 h-5" />
@@ -962,8 +953,8 @@ export const RecipeDetailPage: React.FC = () => {
                 onClick={handleVeganize}
                 className={`h-11 px-3.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 ${
                   isVeganized
-                    ? 'bg-[#4A7856] text-white border-[#4A7856]'
-                    : 'bg-[#FAF9F6] text-[#4A7856] border-[#ECEBE8] hover:border-[#4A7856]/40'
+                    ? 'bg-accent text-on-accent border-accent'
+                    : 'bg-surface text-accent border-border hover:border-accent/40'
                 }`}
               >
                 <Leaf className="w-3.5 h-3.5" />
@@ -973,15 +964,15 @@ export const RecipeDetailPage: React.FC = () => {
           </div>
 
           {/* Under servings counter: Clean 3-Column Action Row */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-1 border-t border-[#ECEBE8]/70">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-1 border-t border-border/70">
             {/* 1. [ + Planer ] */}
             <button
               id="servings-add-to-plan-btn"
               type="button"
               onClick={() => setRecipeToAddToPlan(recipe)}
-              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#57534d] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-surface border border-border hover:bg-accent-tint hover:border-accent/40 text-[#57534d] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
             >
-              <CalendarPlus className="w-4 h-4 text-[#4A7856] shrink-0" />
+              <CalendarPlus className="w-4 h-4 text-accent shrink-0" />
               <span className="text-[16px] truncate">+ Planer</span>
             </button>
 
@@ -990,12 +981,12 @@ export const RecipeDetailPage: React.FC = () => {
               id="servings-add-to-shopping-btn"
               type="button"
               onClick={handleAddShopping}
-              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#57534d] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-surface border border-border hover:bg-accent-tint hover:border-accent/40 text-[#57534d] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
             >
               {addedShopping ? (
-                <Check className="w-4 h-4 text-[#4A7856] shrink-0" />
+                <Check className="w-4 h-4 text-accent shrink-0" />
               ) : (
-                <ShoppingCart className="w-4 h-4 text-[#4A7856] shrink-0" />
+                <ShoppingCart className="w-4 h-4 text-accent shrink-0" />
               )}
               <span className="text-[16px] truncate">{addedShopping ? 'Auf Liste' : '+ Liste'}</span>
             </button>
@@ -1005,9 +996,9 @@ export const RecipeDetailPage: React.FC = () => {
               id="servings-copy-ingredients-btn"
               type="button"
               onClick={handleCopyIngredients}
-              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-[#FAF9F6] border border-[#ECEBE8] hover:bg-[#F1F5F2] hover:border-[#4A7856]/40 text-[#57534d] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-surface border border-border hover:bg-accent-tint hover:border-accent/40 text-[#57534d] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
             >
-              <Copy className="w-4 h-4 text-[#4A7856] shrink-0" />
+              <Copy className="w-4 h-4 text-accent shrink-0" />
               <span className="text-[16px] truncate">Kopieren</span>
             </button>
           </div>
@@ -1017,10 +1008,10 @@ export const RecipeDetailPage: React.FC = () => {
         <section ref={ingredientsSectionRef} className="space-y-3">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <h2 className="text-xl font-bold text-[#2D3E40] flex items-center gap-2">
+              <h2 className="text-xl font-bold text-text-main flex items-center gap-2">
                 <span>Zutaten</span>
               </h2>
-              <span className="text-xs text-[#686E6A] hidden sm:inline">
+              <span className="text-xs text-text-muted hidden sm:inline">
                 {isCustomizingIngredients ? 'Tippe auf Ersetzen für Alternativen' : 'Tippe zum Abhaken'}
               </span>
             </div>
@@ -1032,8 +1023,8 @@ export const RecipeDetailPage: React.FC = () => {
               onClick={() => setIsCustomizingIngredients(!isCustomizingIngredients)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[16px] font-semibold transition-all cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
                 isCustomizingIngredients
-                  ? 'bg-[#4A7856] text-white border-[#4A7856] shadow-xs hover:bg-[#3D6447]'
-                  : 'bg-white hover:bg-[#F1F5F2] border-[#ECEBE8] text-[#57534d] shadow-2xs'
+                  ? 'bg-accent text-on-accent border-accent shadow-xs hover:bg-accent-hover'
+                  : 'bg-card hover:bg-accent-tint border-border text-[#57534d] shadow-2xs'
               }`}
               title={isCustomizingIngredients ? 'Zutatenanpassung beenden' : 'Zutaten anpassen'}
             >
@@ -1044,7 +1035,7 @@ export const RecipeDetailPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <ArrowLeftRight className="w-3.5 h-3.5 text-[#4A7856]" />
+                  <ArrowLeftRight className="w-3.5 h-3.5 text-accent" />
                   <span className="text-[16px]">Zutaten anpassen</span>
                 </>
               )}
@@ -1052,8 +1043,8 @@ export const RecipeDetailPage: React.FC = () => {
           </div>
 
           {/* Flat List with Dividers; Clean in Default State, Explicit Replace Buttons in Edit State */}
-          <div className="border border-[#ECEBE8] rounded-2xl overflow-hidden bg-white shadow-2xs">
-            <ul className="divide-y divide-[#ECEBE8]">
+          <div className="border border-border rounded-2xl overflow-hidden bg-card shadow-2xs">
+            <ul className="divide-y divide-border">
               {activeIngredients.map((ing) => {
                 const isChecked = !!checkedIngredients[ing.name];
                 const amountStr = formatIngredientAmount(ing, recipe.servings, servings);
@@ -1067,7 +1058,7 @@ export const RecipeDetailPage: React.FC = () => {
                         toggleCheckIngredient(ing.name);
                       }
                     }}
-                    className={`flex items-center justify-between py-3.5 px-4 sm:px-5 hover:bg-[#FAF9F6] transition-colors select-none group ${
+                    className={`flex items-center justify-between py-3.5 px-4 sm:px-5 hover:bg-surface transition-colors select-none group ${
                       isCustomizingIngredients ? 'cursor-default' : 'cursor-pointer'
                     }`}
                   >
@@ -1084,8 +1075,8 @@ export const RecipeDetailPage: React.FC = () => {
                           isCustomizingIngredients ? 'cursor-pointer' : ''
                         } ${
                           isChecked
-                            ? 'bg-[#4A7856] border-[#4A7856] text-white'
-                            : 'border-[#D1D5DB] bg-white group-hover:border-[#4A7856]'
+                            ? 'bg-accent border-accent text-on-accent'
+                            : 'border-[#D1D5DB] bg-card group-hover:border-accent'
                         }`}
                       >
                         {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
@@ -1095,7 +1086,7 @@ export const RecipeDetailPage: React.FC = () => {
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span
                             className={`text-base font-medium break-words leading-normal transition-all ${
-                              isChecked ? 'line-through text-[#686e6a] opacity-60' : 'text-[#2D3E40]'
+                              isChecked ? 'line-through text-text-muted opacity-60' : 'text-text-main'
                             }`}
                           >
                             {ing.name}
@@ -1103,7 +1094,7 @@ export const RecipeDetailPage: React.FC = () => {
 
                           {/* Non-intrusive inline adaptation hint */}
                           {isCustomized && (
-                            <span className="inline-flex items-center text-[10px] font-bold text-[#4A7856] bg-[#F1F5F2] px-1.5 py-0.5 rounded-md shrink-0">
+                            <span className="inline-flex items-center text-[10px] font-bold text-accent bg-accent-tint px-1.5 py-0.5 rounded-md shrink-0">
                               (angepasst)
                             </span>
                           )}
@@ -1115,7 +1106,7 @@ export const RecipeDetailPage: React.FC = () => {
                     <div className="flex items-center gap-2.5 shrink-0 pl-2">
                       <span
                         className={`text-base font-semibold text-right tabular-nums whitespace-nowrap ${
-                          isChecked ? 'line-through text-[#686e6a] opacity-60' : 'text-[#4A7856]'
+                          isChecked ? 'line-through text-text-muted opacity-60' : 'text-accent'
                         }`}
                       >
                         {amountStr}
@@ -1130,7 +1121,7 @@ export const RecipeDetailPage: React.FC = () => {
                             e.stopPropagation();
                             setSubstitutingIngredient(ing);
                           }}
-                          className={`inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] hover:border-[#4A7856]/40 text-[14px] font-semibold text-[#4A7856] transition-all cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
+                          className={`inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-xl bg-surface hover:bg-accent-tint border border-border hover:border-accent/40 text-[14px] font-semibold text-accent transition-all cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
                             isChecked ? 'opacity-40 hover:opacity-80' : ''
                           }`}
                           title={`${ing.name} ersetzen`}
@@ -1157,86 +1148,86 @@ export const RecipeDetailPage: React.FC = () => {
 
           {/* Primary Macro Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3.5 bg-white rounded-xl border border-[#ECEBE8] text-center shadow-2xs">
-              <div className="text-[16px] font-semibold text-[#686E6A]">Protein</div>
-              <div className="text-lg font-bold text-[#4A7856] mt-0.5 tabular-nums">
+            <div className="p-3.5 bg-card rounded-xl border border-border text-center shadow-2xs">
+              <div className="text-[16px] font-semibold text-text-muted">Protein</div>
+              <div className="text-lg font-bold text-accent mt-0.5 tabular-nums">
                 {recipe.nutrients.protein}g
               </div>
             </div>
-            <div className="p-3.5 bg-white rounded-xl border border-[#ECEBE8] text-center shadow-2xs">
-              <div className="text-[16px] font-semibold text-[#686E6A]">Kohlenhydrate</div>
-              <div className="text-lg font-bold text-[#2D3E40] mt-0.5 tabular-nums">
+            <div className="p-3.5 bg-card rounded-xl border border-border text-center shadow-2xs">
+              <div className="text-[16px] font-semibold text-text-muted">Kohlenhydrate</div>
+              <div className="text-lg font-bold text-text-main mt-0.5 tabular-nums">
                 {recipe.nutrients.carbs}g
               </div>
             </div>
-            <div className="p-3.5 bg-white rounded-xl border border-[#ECEBE8] text-center shadow-2xs">
-              <div className="text-[16px] font-semibold text-[#686E6A]">Fett</div>
-              <div className="text-lg font-bold text-[#2D3E40] mt-0.5 tabular-nums">
+            <div className="p-3.5 bg-card rounded-xl border border-border text-center shadow-2xs">
+              <div className="text-[16px] font-semibold text-text-muted">Fett</div>
+              <div className="text-lg font-bold text-text-main mt-0.5 tabular-nums">
                 {recipe.nutrients.fat}g
               </div>
             </div>
-            <div className="p-3.5 bg-white rounded-xl border border-[#ECEBE8] text-center shadow-2xs">
-              <div className="text-[16px] font-semibold text-[#686E6A]">Ballaststoffe</div>
-              <div className="text-lg font-bold text-[#2D3E40] mt-0.5 tabular-nums">
+            <div className="p-3.5 bg-card rounded-xl border border-border text-center shadow-2xs">
+              <div className="text-[16px] font-semibold text-text-muted">Ballaststoffe</div>
+              <div className="text-lg font-bold text-text-main mt-0.5 tabular-nums">
                 {recipe.nutrients.fiber}g
               </div>
             </div>
           </div>
 
           {/* Expandable Micronutrients Accordion */}
-          <div className="bg-white rounded-xl border border-[#ECEBE8] overflow-hidden shadow-2xs">
+          <div className="bg-card rounded-xl border border-border overflow-hidden shadow-2xs">
             <button
               type="button"
               onClick={() => setIsMicronutrientsOpen(!isMicronutrientsOpen)}
-              className="w-full px-4 py-3 flex items-center justify-between text-[14px] font-semibold text-[#57534d] hover:bg-[#FAF9F6] transition-colors cursor-pointer"
+              className="w-full px-4 py-3 flex items-center justify-between text-[14px] font-semibold text-[#57534d] hover:bg-surface transition-colors cursor-pointer"
             >
               <span className="flex items-center gap-2">
-                <Leaf className="w-3.5 h-3.5 text-[#4A7856]" />
+                <Leaf className="w-3.5 h-3.5 text-accent" />
                 <span className="text-[14px]">Mikronährstoffe, Vitamine & Mineralien</span>
               </span>
               {isMicronutrientsOpen ? (
-                <ChevronUp className="w-4 h-4 text-[#686E6A]" />
+                <ChevronUp className="w-4 h-4 text-text-muted" />
               ) : (
-                <ChevronDown className="w-4 h-4 text-[#686E6A]" />
+                <ChevronDown className="w-4 h-4 text-text-muted" />
               )}
             </button>
 
             {isMicronutrientsOpen && (
-              <div className="px-4 pb-4 pt-1 border-t border-[#ECEBE8] bg-[#FAF9F6]/50 animate-in fade-in duration-150">
+              <div className="px-4 pb-4 pt-1 border-t border-border bg-surface/50 animate-in fade-in duration-150">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
-                  <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[12px] text-[#686E6A]">Eisen</div>
-                    <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
+                  <div className="p-2.5 bg-card rounded-lg border border-border">
+                    <div className="text-[12px] text-text-muted">Eisen</div>
+                    <div className="font-bold text-sm text-text-main tabular-nums">
                       {recipe.nutrients.iron ?? (Math.round((recipe.nutrients.calories / 100) * 0.9 * 10) / 10)} mg
                     </div>
                   </div>
-                  <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[12px] text-[#686E6A]">Vitamin B12</div>
-                    <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
+                  <div className="p-2.5 bg-card rounded-lg border border-border">
+                    <div className="text-[12px] text-text-muted">Vitamin B12</div>
+                    <div className="font-bold text-sm text-text-main tabular-nums">
                       {recipe.nutrients.b12 ?? (recipe.isVegan ? '0 µg (pflanzl.)' : '0.5 µg')}
                     </div>
                   </div>
-                  <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[12px] text-[#686E6A]">Calcium</div>
-                    <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
+                  <div className="p-2.5 bg-card rounded-lg border border-border">
+                    <div className="text-[12px] text-text-muted">Calcium</div>
+                    <div className="font-bold text-sm text-text-main tabular-nums">
                       {recipe.nutrients.calcium ?? Math.round((recipe.nutrients.calories / 100) * 38)} mg
                     </div>
                   </div>
-                  <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[12px] text-[#686E6A]">Zink</div>
-                    <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
+                  <div className="p-2.5 bg-card rounded-lg border border-border">
+                    <div className="text-[12px] text-text-muted">Zink</div>
+                    <div className="font-bold text-sm text-text-main tabular-nums">
                       {recipe.nutrients.zinc ?? (Math.round((recipe.nutrients.calories / 100) * 0.7 * 10) / 10)} mg
                     </div>
                   </div>
-                  <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[12px] text-[#686E6A]">Vitamin C</div>
-                    <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
+                  <div className="p-2.5 bg-card rounded-lg border border-border">
+                    <div className="text-[12px] text-text-muted">Vitamin C</div>
+                    <div className="font-bold text-sm text-text-main tabular-nums">
                       {recipe.nutrients.vitaminC ?? 26} mg
                     </div>
                   </div>
-                  <div className="p-2.5 bg-white rounded-lg border border-[#ECEBE8]">
-                    <div className="text-[12px] text-[#686E6A]">Magnesium</div>
-                    <div className="font-bold text-sm text-[#2D3E40] tabular-nums">
+                  <div className="p-2.5 bg-card rounded-lg border border-border">
+                    <div className="text-[12px] text-text-muted">Magnesium</div>
+                    <div className="font-bold text-sm text-text-main tabular-nums">
                       {recipe.nutrients.magnesium ?? 68} mg
                     </div>
                   </div>
@@ -1258,10 +1249,10 @@ export const RecipeDetailPage: React.FC = () => {
               <>
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-xl font-bold text-[#2D3E40]">
+                    <h3 className="text-xl font-bold text-text-main">
                       Zubereitung Schritt für Schritt
                     </h3>
-                    <span className="text-xs text-[#686E6A]">Tippe zum Abhaken</span>
+                    <span className="text-xs text-text-muted">Tippe zum Abhaken</span>
                   </div>
 
                   {/* Header Actions for Step Photos */}
@@ -1272,7 +1263,7 @@ export const RecipeDetailPage: React.FC = () => {
                         id="finish-step-photos-btn"
                         type="button"
                         onClick={() => setIsManagingStepPhotos(false)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[16px] font-semibold bg-[#4A7856] text-white border border-[#4A7856] hover:bg-[#3D6447] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[16px] font-semibold bg-accent text-on-accent border border-accent hover:bg-accent-hover transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
                         title="Bearbeitung beenden"
                       >
                         <Check className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -1285,17 +1276,17 @@ export const RecipeDetailPage: React.FC = () => {
                           id="toggle-step-images-btn"
                           type="button"
                           onClick={() => setShowStepImages(!showStepImages)}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[16px] font-semibold text-[#57534d] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-card hover:bg-accent-tint border border-border text-[16px] font-semibold text-[#57534d] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
                           title={showStepImages ? 'Schritt-Fotos ausblenden' : 'Schritt-Fotos einblenden'}
                         >
                           {showStepImages ? (
                             <>
-                              <EyeOff className="w-3.5 h-3.5 text-[#686E6A]" />
+                              <EyeOff className="w-3.5 h-3.5 text-text-muted" />
                               <span className="text-[16px]">Fotos ausblenden</span>
                             </>
                           ) : (
                             <>
-                              <Eye className="w-3.5 h-3.5 text-[#4A7856]" />
+                              <Eye className="w-3.5 h-3.5 text-accent" />
                               <span className="text-[16px]">Fotos einblenden</span>
                             </>
                           )}
@@ -1307,7 +1298,7 @@ export const RecipeDetailPage: React.FC = () => {
                             setIsManagingStepPhotos(true);
                             setShowStepImages(true);
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[16px] font-semibold bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[16px] font-semibold bg-card hover:bg-accent-tint border border-border text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0"
                           title="Fotos verwalten"
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -1323,17 +1314,17 @@ export const RecipeDetailPage: React.FC = () => {
                           setIsManagingStepPhotos(true);
                           setShowStepImages(true);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[16px] font-semibold bg-white hover:bg-[#F1F5F2] border border-[#ECEBE8] text-[#57534d] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[16px] font-semibold bg-card hover:bg-accent-tint border border-border text-[#57534d] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
                         title="Schritt-Fotos hinzufügen"
                       >
-                        <Plus className="w-3.5 h-3.5 text-[#4A7856]" />
+                        <Plus className="w-3.5 h-3.5 text-accent" />
                         <span className="text-[16px]">Fotos hinzufügen</span>
                       </button>
                     )}
                   </div>
                 </div>
 
-                <div className="relative pl-1 sm:pl-3 space-y-6 sm:space-y-7 before:absolute before:left-[17px] sm:before:left-[23px] before:top-4 before:bottom-4 before:w-0.5 before:bg-[#ECEBE8]">
+                <div className="relative pl-1 sm:pl-3 space-y-6 sm:space-y-7 before:absolute before:left-[17px] sm:before:left-[23px] before:top-4 before:bottom-4 before:w-0.5 before:bg-border">
                   {recipe.steps.map((step, idx) => {
                     const stepObj: RecipeStep =
                       typeof step === 'string'
@@ -1352,8 +1343,8 @@ export const RecipeDetailPage: React.FC = () => {
                           onClick={() => toggleCompleteStep(stepObj.stepNumber)}
                           className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all cursor-pointer ${
                             isStepDone
-                              ? 'bg-[#4A7856] text-white shadow-xs ring-4 ring-white'
-                              : 'bg-white border-2 border-[#4A7856] text-[#4A7856] group-hover:bg-[#F1F5F2] ring-4 ring-white'
+                              ? 'bg-accent text-on-accent shadow-xs ring-4 ring-on-accent'
+                              : 'bg-card border-2 border-accent text-accent group-hover:bg-accent-tint ring-4 ring-on-accent'
                           }`}
                         >
                           {isStepDone ? <Check className="w-4 h-4 stroke-[3]" /> : stepObj.stepNumber}
@@ -1368,7 +1359,7 @@ export const RecipeDetailPage: React.FC = () => {
                             <div className="flex flex-wrap items-center gap-2">
                               <span
                                 className={`text-base font-bold transition-colors ${
-                                  isStepDone ? 'line-through text-[#686e6a] opacity-60' : 'text-[#2D3E40]'
+                                  isStepDone ? 'line-through text-text-muted opacity-60' : 'text-text-main'
                                 }`}
                               >
                                 {stepObj.title || `Schritt ${stepObj.stepNumber}`}
@@ -1380,7 +1371,7 @@ export const RecipeDetailPage: React.FC = () => {
                                     isStepDone ? 'opacity-40' : ''
                                   }`}
                                 >
-                                  <Clock className="w-3.5 h-3.5 text-[#4A7856]" />
+                                  <Clock className="w-3.5 h-3.5 text-accent" />
                                   {stepObj.timerMinutes} Min.
                                 </span>
                               )}
@@ -1388,7 +1379,7 @@ export const RecipeDetailPage: React.FC = () => {
 
                             <p
                               className={`text-base leading-relaxed break-words mt-1 transition-colors ${
-                                isStepDone ? 'line-through text-[#686e6a] opacity-60' : 'text-[#2D3E40]'
+                                isStepDone ? 'line-through text-text-muted opacity-60' : 'text-text-main'
                               }`}
                             >
                               {stepObj.text}
@@ -1415,9 +1406,9 @@ export const RecipeDetailPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleTriggerAddStepPhoto(stepObj.stepNumber)}
-                                className="w-full py-3 px-4 rounded-xl border border-dashed border-[#4A7856]/50 hover:border-[#4A7856] bg-[#F1F5F2]/60 hover:bg-[#F1F5F2] text-xs font-semibold text-[#4A7856] flex items-center justify-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-[0.99]"
+                                className="w-full py-3 px-4 rounded-xl border border-dashed border-accent/50 hover:border-accent bg-accent-tint/60 hover:bg-accent-tint text-xs font-semibold text-accent flex items-center justify-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-[0.99]"
                               >
-                                <Plus className="w-4 h-4 text-[#4A7856]" />
+                                <Plus className="w-4 h-4 text-accent" />
                                 <span>Foto zu Schritt {stepObj.stepNumber} hinzufügen</span>
                               </button>
                             </div>
@@ -1439,7 +1430,7 @@ export const RecipeDetailPage: React.FC = () => {
                 <h4 id="chef-tip-heading" className="text-[16px] leading-[24px] font-bold text-[#BD4800] uppercase tracking-wider">
                   Profi-Tipp vom Veggie-Chef
                 </h4>
-                <p className="text-[16px] leading-[26px] text-[#2D3E40] mt-1">
+                <p className="text-[16px] leading-[26px] text-text-main mt-1">
                   {recipe.chefTip}
                 </p>
               </div>
@@ -1448,18 +1439,18 @@ export const RecipeDetailPage: React.FC = () => {
         </section>
 
         {/* 9. USER NOTES SECTION (Default Collapsed with Clean Trigger) */}
-        <section className="bg-white border border-[#ECEBE8] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#4A7856]" />
-              <h3 className="text-base font-bold text-[#2D3E40]">
+              <FileText className="w-4 h-4 text-accent" />
+              <h3 className="text-base font-bold text-text-main">
                 Persönliche Notizen
               </h3>
             </div>
             <button
               type="button"
               onClick={() => setIsNotesExpanded(!isNotesExpanded)}
-              className="text-[16px] text-[#57534d] hover:text-[#4A7856] font-semibold cursor-pointer"
+              className="text-[16px] text-[#57534d] hover:text-accent font-semibold cursor-pointer"
             >
               {isNotesExpanded ? 'Schließen' : personalNoteText.trim() ? 'Bearbeiten' : '+ Notiz hinzufügen'}
             </button>
@@ -1469,7 +1460,7 @@ export const RecipeDetailPage: React.FC = () => {
           {!isNotesExpanded && personalNoteText.trim() && (
             <div 
               onClick={() => setIsNotesExpanded(true)}
-              className="p-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl text-base text-[#2D3E40] cursor-pointer hover:border-[#4A7856]/40 transition-colors italic"
+              className="p-3 bg-surface border border-border rounded-xl text-base text-text-main cursor-pointer hover:border-accent/40 transition-colors italic"
             >
               "{personalNoteText}"
             </div>
@@ -1483,7 +1474,7 @@ export const RecipeDetailPage: React.FC = () => {
                 onChange={(e) => setPersonalNoteText(e.target.value)}
                 placeholder="z.B. 'Etwas weniger Salz nehmen, mit gerösteten Pinienkernen toppen. Hat der ganzen Familie geschmeckt!'"
                 rows={3}
-                className="w-full text-base p-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl focus:border-[#4A7856] focus:outline-hidden text-[#2D3E40]"
+                className="w-full text-base p-3 bg-surface border border-border rounded-xl focus:border-accent focus:outline-hidden text-text-main"
               />
 
               <div className="flex items-center justify-end gap-2.5 pt-1">
@@ -1491,7 +1482,7 @@ export const RecipeDetailPage: React.FC = () => {
                   id="cancel-personal-notes-btn"
                   type="button"
                   onClick={() => setIsNotesExpanded(false)}
-                  className="h-11 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-semibold text-[#57534d] hover:text-[#4A7856] hover:bg-[#FAF9F6] border border-transparent hover:border-[#ECEBE8] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                  className="h-11 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-semibold text-[#57534d] hover:text-accent hover:bg-surface border border-transparent hover:border-border transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
                 >
                   Abbrechen
                 </button>
@@ -1499,7 +1490,7 @@ export const RecipeDetailPage: React.FC = () => {
                   id="save-personal-notes-btn"
                   type="button"
                   onClick={handleSaveNotes}
-                  className="h-11 min-h-[44px] px-5 py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-sm font-bold transition-all shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                  className="h-11 min-h-[44px] px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-sm font-bold transition-all shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
                 >
                   {isNotesSaved ? '✓ Gespeichert' : 'Notiz speichern'}
                 </button>
@@ -1512,33 +1503,33 @@ export const RecipeDetailPage: React.FC = () => {
       {/* 10. EXCLUSIVE PRIMARY CTA IN PERSISTENT STICKY BOTTOM BAR */}
       <aside
         aria-label="Koch-Modus Schnellzugriff"
-        className={`fixed ${hasBottomTimer ? 'bottom-16 sm:bottom-18' : 'bottom-0'} inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-[#ECEBE8] px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] transition-all duration-200`}
+        className={`fixed ${hasBottomTimer ? 'bottom-16 sm:bottom-18' : 'bottom-0'} inset-x-0 z-30 bg-card/95 backdrop-blur-md border-t border-border px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] transition-all duration-200`}
       >
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
           {/* Quick portions stepper in sticky bar */}
           <div className="flex items-center gap-2">
-            <div className="inline-flex items-center bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl p-1 h-11 min-h-[44px]">
+            <div className="inline-flex items-center bg-surface border border-border rounded-xl p-1 h-11 min-h-[44px]">
               <button
                 id="sticky-servings-decrease-btn"
                 type="button"
                 onClick={() => setServings(Math.max(1, servings - 1))}
                 disabled={servings <= 1}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 title="Portion verringern"
               >
                 <Minus className="w-4 h-4" />
               </button>
-              <div className="h-5 w-[1px] bg-[#ECEBE8] shrink-0" />
+              <div className="h-5 w-[1px] bg-border shrink-0" />
               <span className="px-2.5 sm:px-3 text-[16px] font-bold text-[#57534d] tabular-nums min-w-[65px] sm:min-w-[95px] text-center select-none whitespace-nowrap">
                 <span className="inline sm:hidden">{servings} Port.</span>
                 <span className="hidden sm:inline">{servings} {servings === 1 ? 'Portion' : 'Portionen'}</span>
               </span>
-              <div className="h-5 w-[1px] bg-[#ECEBE8] shrink-0" />
+              <div className="h-5 w-[1px] bg-border shrink-0" />
               <button
                 id="sticky-servings-increase-btn"
                 type="button"
                 onClick={() => setServings(Math.min(24, servings + 1))}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white active:bg-[#ECEBE8] text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 title="Portion erhöhen"
               >
                 <Plus className="w-4 h-4" />
@@ -1551,9 +1542,9 @@ export const RecipeDetailPage: React.FC = () => {
             id="sticky-start-cooking-mode-btn"
             type="button"
             onClick={handleLaunchCookingMode}
-            className="flex-1 max-w-sm h-12 flex items-center justify-center gap-2.5 px-6 rounded-xl text-base font-bold bg-[#4A7856] hover:bg-[#3D6447] active:bg-[#34553C] text-white shadow-md transition-all cursor-pointer active:scale-[0.99] touch-manipulation"
+            className="flex-1 max-w-sm h-12 flex items-center justify-center gap-2.5 px-6 rounded-xl text-base font-bold bg-accent hover:bg-accent-hover active:bg-[#34553C] text-on-accent shadow-md transition-all cursor-pointer active:scale-[0.99] touch-manipulation"
           >
-            <Play className="w-4 h-4 fill-white" />
+            <Play className="w-4 h-4 fill-on-accent" />
             <span>Koch-Modus starten</span>
           </button>
         </div>
@@ -1623,14 +1614,14 @@ export const RecipeDetailPage: React.FC = () => {
           onClick={() => setIsDeleteConfirmOpen(false)}
         >
           <div
-            className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 border border-[#ECEBE8] shadow-2xl animate-in zoom-in-95 duration-200"
+            className="bg-card rounded-3xl max-w-sm w-full p-6 space-y-4 border border-border shadow-2xl animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>
             <div className="text-center space-y-1.5">
-              <h3 className="text-xl font-bold text-[#2D3E40]">Rezept löschen?</h3>
+              <h3 className="text-xl font-bold text-text-main">Rezept löschen?</h3>
               <p className="text-[16px] text-[#57534d] leading-relaxed">
                 Möchtest du "{recipe.title}" wirklich unwiderruflich aus deiner Rezeptsammlung entfernen?
               </p>
@@ -1639,14 +1630,14 @@ export const RecipeDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsDeleteConfirmOpen(false)}
-                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-[#57534d] bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-[#57534d] bg-surface hover:bg-accent-tint border border-border cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 Abbrechen
               </button>
               <button
                 type="button"
                 onClick={handleDeleteConfirm}
-                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-on-accent bg-rose-600 hover:bg-rose-700 shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 Endgültig löschen
               </button>
@@ -1663,18 +1654,18 @@ export const RecipeDetailPage: React.FC = () => {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-xl border border-[#ECEBE8] animate-in zoom-in-95 duration-200"
+            className="bg-card rounded-3xl p-6 max-w-md w-full space-y-4 shadow-xl border border-border animate-in zoom-in-95 duration-200"
           >
             <div className="text-center space-y-1.5">
               <span className="text-3xl">🎉</span>
-              <h3 className="text-xl font-bold text-[#2D3E40]">Guten Appetit!</h3>
+              <h3 className="text-xl font-bold text-text-main">Guten Appetit!</h3>
               <p className="text-[16px] text-[#57534d] leading-relaxed">
                 Möchtest du "{recipe.title}" in deiner Kochstatistik erfassen?
               </p>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#2D3E40] mb-1">
+              <label className="block text-xs font-semibold text-text-main mb-1">
                 Eigene Notizen / Zubereitungs-Feedback (optional):
               </label>
               <textarea
@@ -1682,11 +1673,11 @@ export const RecipeDetailPage: React.FC = () => {
                 onChange={(e) => setCookedNotes(e.target.value)}
                 placeholder="z.B. 'Super lecker, nächstes Mal noch etwas Chili dazugeben!'"
                 rows={3}
-                className="w-full text-[16px] p-3 border border-[#ECEBE8] rounded-xl focus:border-[#4A7856] focus:outline-hidden text-[#2D3E40]"
+                className="w-full text-[16px] p-3 border border-border rounded-xl focus:border-accent focus:outline-hidden text-text-main"
               />
             </div>
 
-            <div className="p-3.5 bg-[#F1F5F2] rounded-xl text-xs text-[#4A7856] border border-[#ECEBE8]">
+            <div className="p-3.5 bg-accent-tint rounded-xl text-xs text-accent border border-border">
               🌱 Durch dieses Gericht hast du ca. <strong>{savings.savedCO2Kg} kg CO₂</strong> und{' '}
               <strong>{savings.savedWaterLiters} Liter Wasser</strong> eingespart!
             </div>
@@ -1695,14 +1686,14 @@ export const RecipeDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowCookedDialog(false)}
-                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-[#57534d] bg-[#FAF9F6] hover:bg-[#F1F5F2] border border-[#ECEBE8] cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-[#57534d] bg-surface hover:bg-accent-tint border border-border cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 Abbrechen
               </button>
               <button
                 type="button"
                 onClick={handleConfirmCooked}
-                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-white bg-[#4A7856] hover:bg-[#3D6447] shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-on-accent bg-accent hover:bg-accent-hover shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 In Statistik speichern
               </button>

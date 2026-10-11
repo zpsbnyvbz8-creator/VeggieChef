@@ -1,7 +1,7 @@
 ---
 description: Senior-Code-Reviewer für VeggieChef (TypeScript, React 19, Express, Firebase Sync, KI-Endpoints). Fokus auf Bugs, Konsistenz, Architektur.
 mode: subagent
-model: anthropic/claude-sonnet-4-5
+model: google/gemini-3.8-flash
 permissions:
   - action: read
     resource: "**/*"

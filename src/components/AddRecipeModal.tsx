@@ -23,6 +23,7 @@ import { Recipe, RecipeCategory, RecipeIngredient, RecipeStep } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 import { useRecipes } from '../context/RecipeContext';
 import { HybridPortionStepper } from './HybridPortionStepper';
+import { CloseButton } from './ui/CloseButton';
 
 interface AddRecipeModalProps {
   isOpen?: boolean;
@@ -483,31 +484,26 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
     >
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="bg-white border border-[#ECEBE8] rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] overscroll-contain"
+        className="bg-card border border-border rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90dvh] overscroll-contain"
       >
         {/* Header */}
-        <div className="px-5 sm:px-7 py-4 sm:py-5 border-b border-[#ECEBE8] flex items-center justify-between bg-[#FAF9F6]">
+        <div className="px-5 sm:px-7 py-4 sm:py-5 border-b border-border flex items-center justify-between bg-surface">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#4A7856]/10 flex items-center justify-center text-[#4A7856]">
+            <div className="w-10 h-10 rounded-2xl bg-accent/10 flex items-center justify-center text-accent">
               <ChefHat className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-[#2D3E40]">
+              <h2 className="text-xl font-bold text-text-main">
                 {previewRecipe ? 'Rezept-Vorschau' : 'Neues Gericht hinzufügen'}
               </h2>
-              <p className="text-xs text-[#686E6A]">
+              <p className="text-xs text-text-muted">
                 {previewRecipe
                   ? 'Prüfe die Zutaten und Zubereitungsschritte vor dem Speichern'
                   : 'Mit intelligenter KI, Foto-Scan oder klassisch Schritt für Schritt'}
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 rounded-full hover:bg-black/5 flex items-center justify-center text-[#57534d] hover:text-[#57534d] transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <CloseButton onClick={onClose} ariaLabel="Schließen" />
         </div>
 
         {/* Content Area */}
@@ -533,24 +529,20 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
           {previewRecipe ? (
             <div className="space-y-6">
               {/* Hero Image & Metadata */}
-              <div className="relative rounded-2xl overflow-hidden border border-[#ECEBE8] aspect-21/9 bg-[#FAF9F6]">
+              <div className="relative rounded-2xl overflow-hidden border border-border aspect-21/9 bg-surface">
                 <img
                   src={previewRecipe.image}
                   alt={previewRecipe.title}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-5 text-white">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-5 text-on-accent">
                   <div className="flex items-center gap-2 mb-2">
-                    <span
-                      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                        previewRecipe.isVegan
-                          ? 'bg-[#4A7856] text-white'
-                          : 'bg-emerald-600 text-white'
-                      }`}
-                    >
-                      {previewRecipe.isVegan ? '🌱 100% Vegan' : '🧀 Vegetarisch'}
-                    </span>
-                    <span className="text-xs bg-white/20 backdrop-blur-md px-2.5 py-1 rounded-full font-medium">
+                    {(previewRecipe.diet === 'vegetarisch' || !previewRecipe.isVegan) && (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-600 text-on-accent">
+                        Vegetarisch
+                      </span>
+                    )}
+                    <span className="text-xs bg-card/20 backdrop-blur-md px-2.5 py-1 rounded-full font-medium">
                       {previewRecipe.category}
                     </span>
                   </div>
@@ -558,7 +550,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                     {previewRecipe.title}
                   </h3>
                   {previewRecipe.subtitle && (
-                    <p className="text-sm text-white/80 line-clamp-1 mt-1">
+                    <p className="text-sm text-on-accent/80 line-clamp-1 mt-1">
                       {previewRecipe.subtitle}
                     </p>
                   )}
@@ -566,40 +558,40 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
               </div>
 
               {/* Nutrients Row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 bg-[#FAF9F6] rounded-2xl border border-[#ECEBE8]">
-                <div className="text-center p-2 bg-white rounded-xl border border-[#ECEBE8]">
-                  <span className="text-[11px] text-[#686E6A] font-medium block">Kalorien</span>
-                  <span className="text-base font-bold text-[#2D3E40]">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 bg-surface rounded-2xl border border-border">
+                <div className="text-center p-2 bg-card rounded-xl border border-border">
+                  <span className="text-[11px] text-text-muted font-medium block">Kalorien</span>
+                  <span className="text-base font-bold text-text-main">
                     {previewRecipe.nutrients.calories} kcal
                   </span>
                 </div>
-                <div className="text-center p-2 bg-white rounded-xl border border-[#ECEBE8]">
-                  <span className="text-[11px] text-[#686E6A] font-medium block">Protein</span>
-                  <span className="text-base font-bold text-[#4A7856]">
+                <div className="text-center p-2 bg-card rounded-xl border border-border">
+                  <span className="text-[11px] text-text-muted font-medium block">Protein</span>
+                  <span className="text-base font-bold text-accent">
                     {previewRecipe.nutrients.protein} g
                   </span>
                 </div>
-                <div className="text-center p-2 bg-white rounded-xl border border-[#ECEBE8]">
-                  <span className="text-[11px] text-[#686E6A] font-medium block">Kochzeit</span>
-                  <span className="text-base font-bold text-[#2D3E40]">
+                <div className="text-center p-2 bg-card rounded-xl border border-border">
+                  <span className="text-[11px] text-text-muted font-medium block">Kochzeit</span>
+                  <span className="text-base font-bold text-text-main">
                     {(previewRecipe.prepTimeMinutes || 0) + (previewRecipe.cookTimeMinutes || 0)} Min
                   </span>
                 </div>
-                <div className="text-center p-2 bg-white rounded-xl border border-[#ECEBE8]">
-                  <span className="text-[11px] text-[#686E6A] font-medium block">Portionen</span>
-                  <span className="text-base font-bold text-[#2D3E40]">
+                <div className="text-center p-2 bg-card rounded-xl border border-border">
+                  <span className="text-[11px] text-text-muted font-medium block">Portionen</span>
+                  <span className="text-base font-bold text-text-main">
                     {previewRecipe.servings || 2} Pers.
                   </span>
                 </div>
               </div>
 
               {/* Portion Adjuster in Preview */}
-              <div className="p-3.5 bg-[#FAF9F6] border border-[#ECEBE8] rounded-2xl space-y-2">
+              <div className="p-3.5 bg-surface border border-border rounded-2xl space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#57534d] uppercase tracking-wide">
                     Portionen anpassen
                   </span>
-                  <span className="text-xs text-[#686E6A]">
+                  <span className="text-xs text-text-muted">
                     {previewRecipe.servings || 2} {(previewRecipe.servings || 2) === 1 ? 'Portion' : 'Portionen'}
                   </span>
                 </div>
@@ -614,9 +606,9 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
               {/* Ingredients List */}
               <div className="space-y-2.5">
-                <h4 className="text-sm font-bold text-[#2D3E40] flex items-center justify-between">
+                <h4 className="text-sm font-bold text-text-main flex items-center justify-between">
                   <span>Zutaten ({previewRecipe.ingredients.length})</span>
-                  <span className="text-xs text-[#686E6A] font-normal">
+                  <span className="text-xs text-text-muted font-normal">
                     abgestimmt für {previewRecipe.servings || 2} Portionen
                   </span>
                 </h4>
@@ -624,10 +616,10 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   {previewRecipe.ingredients.map((ing, idx) => (
                     <div
                       key={idx}
-                      className="p-2.5 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl flex items-center justify-between text-sm"
+                      className="p-2.5 bg-surface border border-border rounded-xl flex items-center justify-between text-sm"
                     >
-                      <span className="font-medium text-[#2D3E40]">{ing.name}</span>
-                      <span className="text-[#4A7856] font-semibold bg-white px-2 py-0.5 rounded-md border border-[#ECEBE8]">
+                      <span className="font-medium text-text-main">{ing.name}</span>
+                      <span className="text-accent font-semibold bg-card px-2 py-0.5 rounded-md border border-border">
                         {ing.amount} {ing.unit}
                       </span>
                     </div>
@@ -637,18 +629,18 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
               {/* HelloFresh Preparation Steps */}
               <div className="space-y-3">
-                <h4 className="text-sm font-bold text-[#2D3E40]">
+                <h4 className="text-sm font-bold text-text-main">
                   Zubereitungsschritte ({previewRecipe.steps.length})
                 </h4>
                 <div className="space-y-2.5">
                   {previewRecipe.steps.map((step, idx) => (
                     <div
                       key={idx}
-                      className="p-3.5 bg-white border border-[#ECEBE8] rounded-xl space-y-1.5 shadow-2xs"
+                      className="p-3.5 bg-card border border-border rounded-xl space-y-1.5 shadow-2xs"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-full bg-[#4A7856] text-white text-[11px] font-bold flex items-center justify-center">
+                          <span className="w-5 h-5 rounded-full bg-accent text-on-accent text-[11px] font-bold flex items-center justify-center">
                             {step.stepNumber || idx + 1}
                           </span>
                           <span className="text-sm font-bold text-[#57534d]">
@@ -656,7 +648,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                           </span>
                         </div>
                         {step.timerMinutes && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#4A7856] bg-[#F1F5F2] px-2 py-0.5 rounded-md">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded-md">
                             <Clock className="w-3 h-3" />
                             {step.timerMinutes} Min.
                           </span>
@@ -672,25 +664,25 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
               {/* Chef Tip if available */}
               {previewRecipe.chefTip && (
-                <div className="p-3.5 bg-[#F1F5F2] rounded-2xl border border-[#4A7856]/20 text-sm text-[#57534d]">
-                  <strong className="text-[#4A7856] block mb-1">👨‍🍳 Tipp des Küchenchefs:</strong>
+                <div className="p-3.5 bg-accent-tint rounded-2xl border border-accent/20 text-sm text-[#57534d]">
+                  <strong className="text-accent block mb-1">👨‍🍳 Tipp des Küchenchefs:</strong>
                   {previewRecipe.chefTip}
                 </div>
               )}
 
               {/* Bottom Actions */}
-              <div className="pt-3 border-t border-[#ECEBE8] flex items-center justify-between gap-3">
+              <div className="pt-3 border-t border-border flex items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => setPreviewRecipe(null)}
-                  className="min-h-[48px] h-12 px-5 py-2.5 rounded-xl border border-[#ECEBE8] hover:bg-[#FAF9F6] text-[16px] font-semibold text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                  className="min-h-[48px] h-12 px-5 py-2.5 rounded-xl border border-border hover:bg-surface text-[16px] font-semibold text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
                 >
                   ← Zurück & Anpassen
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmPreview}
-                  className="min-h-[48px] h-12 px-6 py-2.5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[16px] font-bold shadow-md shadow-[#4A7856]/20 flex items-center justify-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95"
+                  className="min-h-[48px] h-12 px-6 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-[16px] font-bold shadow-md shadow-accent/20 flex items-center justify-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95"
                 >
                   <Check className="w-5 h-5" />
                   <span>Ins Rezeptbuch speichern</span>
@@ -700,17 +692,17 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
           ) : (
             <>
               {/* Tab Navigation */}
-              <div className="grid grid-cols-3 gap-2 p-1.5 bg-[#FAF9F6] border border-[#ECEBE8] rounded-2xl">
+              <div className="grid grid-cols-3 gap-2 p-1.5 bg-surface border border-border rounded-2xl">
                 <button
                   type="button"
                   onClick={() => setActiveTab('ai')}
                   className={`py-2.5 px-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
                     activeTab === 'ai'
-                      ? 'bg-white text-[#4A7856] shadow-xs border border-[#ECEBE8]'
-                      : 'text-[#57534d] hover:text-[#4A7856]'
+                      ? 'bg-card text-accent shadow-xs border border-border'
+                      : 'text-[#57534d] hover:text-accent'
                   }`}
                 >
-                  <Sparkles className="w-4 h-4 text-[#4A7856]" />
+                  <Sparkles className="w-4 h-4 text-accent" />
                   <span>KI-Küchenchef</span>
                 </button>
                 <button
@@ -718,11 +710,11 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   onClick={() => setActiveTab('scan')}
                   className={`py-2.5 px-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
                     activeTab === 'scan'
-                      ? 'bg-white text-[#4A7856] shadow-xs border border-[#ECEBE8]'
-                      : 'text-[#57534d] hover:text-[#4A7856]'
+                      ? 'bg-card text-accent shadow-xs border border-border'
+                      : 'text-[#57534d] hover:text-accent'
                   }`}
                 >
-                  <Camera className="w-4 h-4 text-[#4A7856]" />
+                  <Camera className="w-4 h-4 text-accent" />
                   <span>Foto-Scan</span>
                 </button>
                 <button
@@ -730,11 +722,11 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   onClick={() => setActiveTab('manual')}
                   className={`py-2.5 px-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
                     activeTab === 'manual'
-                      ? 'bg-white text-[#4A7856] shadow-xs border border-[#ECEBE8]'
-                      : 'text-[#57534d] hover:text-[#4A7856]'
+                      ? 'bg-card text-accent shadow-xs border border-border'
+                      : 'text-[#57534d] hover:text-accent'
                   }`}
                 >
-                  <PenTool className="w-4 h-4 text-[#4A7856]" />
+                  <PenTool className="w-4 h-4 text-accent" />
                   <span>Eigenes Rezept</span>
                 </button>
               </div>
@@ -744,7 +736,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                 <div className="space-y-5">
                   {/* Dish title input */}
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-[#2D3E40]">
+                    <label className="text-sm font-bold text-text-main">
                       Welches Gericht möchtest du kochen?
                     </label>
                     <input
@@ -752,7 +744,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       value={aiTitle}
                       onChange={(e) => setAiTitle(e.target.value)}
                       placeholder="z.B. Vegane Linsen-Bolognese, Cremiges Pilz-Risotto, Tofu Tikka..."
-                      className="w-full px-4 py-3 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] focus:bg-white focus:outline-none focus:border-[#4A7856] text-[16px] text-[#57534d] transition-colors"
+                      className="w-full px-4 py-3 rounded-xl border border-border bg-surface focus:bg-card focus:outline-none focus:border-accent text-[16px] text-[#57534d] transition-colors"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -764,14 +756,14 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
                   {/* Quick Inspirations */}
                   <div className="space-y-1.5">
-                    <span className="text-xs text-[#686E6A] font-medium">Inspirationen:</span>
+                    <span className="text-xs text-text-muted font-medium">Inspirationen:</span>
                     <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {QUICK_INSPIRATIONS.map((dish) => (
                         <button
                           key={dish}
                           type="button"
                           onClick={() => setAiTitle(dish)}
-                          className="px-3 py-1.5 min-h-[36px] text-xs sm:text-sm font-medium rounded-xl bg-[#FAF9F6] hover:bg-[#F1F5F2] active:bg-[#E8F1EC] hover:text-[#4A7856] border border-[#ECEBE8] text-[#57534d] transition-colors touch-manipulation cursor-pointer flex items-center"
+                          className="px-3 py-1.5 min-h-[36px] text-xs sm:text-sm font-medium rounded-xl bg-surface hover:bg-accent-tint active:bg-[#E8F1EC] hover:text-accent border border-border text-[#57534d] transition-colors touch-manipulation cursor-pointer flex items-center"
                         >
                           {dish}
                         </button>
@@ -781,7 +773,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
                   {/* Diet Selection */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
+                    <label className="text-xs font-bold text-text-main uppercase tracking-wider">
                       Ernährungsform
                     </label>
                     <div className="grid grid-cols-2 gap-3">
@@ -790,8 +782,8 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                         onClick={() => setAiIsVegan(true)}
                         className={`p-3 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
                           aiIsVegan
-                            ? 'bg-[#F1F5F2] border-[#4A7856] text-[#4A7856] shadow-xs'
-                            : 'bg-white border-[#ECEBE8] text-[#686E6A] hover:border-[#4A7856]/40'
+                            ? 'bg-accent-tint border-accent text-accent shadow-xs'
+                            : 'bg-card border-border text-text-muted hover:border-accent/40'
                         }`}
                       >
                         <Leaf className="w-4 h-4" />
@@ -802,8 +794,8 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                         onClick={() => setAiIsVegan(false)}
                         className={`p-3 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
                           !aiIsVegan
-                            ? 'bg-[#F1F5F2] border-[#4A7856] text-[#4A7856] shadow-xs'
-                            : 'bg-white border-[#ECEBE8] text-[#686E6A] hover:border-[#4A7856]/40'
+                            ? 'bg-accent-tint border-accent text-accent shadow-xs'
+                            : 'bg-card border-border text-text-muted hover:border-accent/40'
                         }`}
                       >
                         <span>🧀 Vegetarisch (mit Käse/Ei)</span>
@@ -814,14 +806,14 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   {/* Optional Options: Category & Time */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
+                      <label className="text-xs font-bold text-text-main uppercase tracking-wider">
                         Kategorie (Optional)
                       </label>
                       <div className="relative">
                         <select
                           value={aiCategory}
                           onChange={(e) => setAiCategory(e.target.value as RecipeCategory)}
-                          className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-9 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] font-medium text-[#2D3E40] focus:outline-none focus:border-[#4A7856] cursor-pointer"
+                          className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-9 py-2.5 rounded-xl border border-border bg-surface text-[16px] font-medium text-text-main focus:outline-none focus:border-accent cursor-pointer"
                         >
                           <option value="">Automatisch erkennen</option>
                           {CATEGORIES.map((cat) => (
@@ -830,33 +822,33 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                             </option>
                           ))}
                         </select>
-                        <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <ChevronDown className="w-4 h-4 text-text-muted absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
+                      <label className="text-xs font-bold text-text-main uppercase tracking-wider">
                         Zubereitungszeit
                       </label>
                       <div className="relative">
                         <select
                           value={aiTimeOption}
                           onChange={(e) => setAiTimeOption(e.target.value as any)}
-                          className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-9 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] font-medium text-[#2D3E40] focus:outline-none focus:border-[#4A7856] cursor-pointer"
+                          className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-9 py-2.5 rounded-xl border border-border bg-surface text-[16px] font-medium text-text-main focus:outline-none focus:border-accent cursor-pointer"
                         >
                           <option value="medium">Ausgewogen (~ 30 Min.)</option>
                           <option value="quick">Express (&lt; 20 Min.)</option>
                           <option value="elaborate">Ausführlich / Festlich (~ 50 Min.)</option>
                           <option value="any">Keine Einschränkung</option>
                         </select>
-                        <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <ChevronDown className="w-4 h-4 text-text-muted absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
                     </div>
                   </div>
 
                   {/* Optional extra ingredients */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
+                    <label className="text-xs font-bold text-text-main uppercase tracking-wider">
                       Bestimmte Zutaten einbauen? (Optional)
                     </label>
                     <input
@@ -864,7 +856,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       value={aiExtraIngredients}
                       onChange={(e) => setAiExtraIngredients(e.target.value)}
                       placeholder="z.B. Champignons, Spinat, Cashewmus..."
-                      className="w-full px-3 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] text-[#2D3E40] focus:outline-none focus:border-[#4A7856]"
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-[16px] text-text-main focus:outline-none focus:border-accent"
                     />
                   </div>
 
@@ -874,7 +866,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       type="button"
                       disabled={isSubmitting || !aiTitle.trim()}
                       onClick={handleGenerateAi}
-                      className="w-full py-3.5 px-5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-50 disabled:cursor-not-allowed text-white text-base font-bold shadow-md shadow-[#4A7856]/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                      className="w-full py-3.5 px-5 rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent text-base font-bold shadow-md shadow-accent/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
                     >
                       {isSubmitting ? (
                         <>
@@ -897,7 +889,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                 <div className="space-y-5">
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-[#ECEBE8] hover:border-[#4A7856]/50 rounded-2xl p-6 text-center bg-[#FAF9F6] cursor-pointer transition-all"
+                    className="border-2 border-dashed border-border hover:border-accent/50 rounded-2xl p-6 text-center bg-surface cursor-pointer transition-all"
                   >
                     <input
                       type="file"
@@ -914,19 +906,19 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                           alt="Vorschau"
                           className="max-h-48 mx-auto rounded-xl shadow-xs object-cover"
                         />
-                        <p className="text-xs text-[#4A7856] font-semibold">
+                        <p className="text-xs text-accent font-semibold">
                           Bild ausgewählt • Klicke zum Ändern
                         </p>
                       </div>
                     ) : (
                       <div className="space-y-2 py-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[#4A7856]/10 text-[#4A7856] flex items-center justify-center mx-auto">
+                        <div className="w-12 h-12 rounded-2xl bg-accent/10 text-accent flex items-center justify-center mx-auto">
                           <Camera className="w-6 h-6" />
                         </div>
-                        <h4 className="text-sm font-bold text-[#2D3E40]">
+                        <h4 className="text-sm font-bold text-text-main">
                           Foto aufnehmen oder hochladen
                         </h4>
-                        <p className="text-xs text-[#686E6A] max-w-sm mx-auto">
+                        <p className="text-xs text-text-muted max-w-sm mx-auto">
                           Fotografiere ein Gericht, eine handschriftliche Notiz oder ein Kochbuch. Die KI erkennt Zutaten und Schritte.
                         </p>
                       </div>
@@ -935,7 +927,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
                   {/* Scan Diet selection */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
+                    <label className="text-xs font-bold text-text-main uppercase tracking-wider">
                       Ernährungsform
                     </label>
                     <div className="grid grid-cols-2 gap-3">
@@ -944,8 +936,8 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                         onClick={() => setScanIsVegan(true)}
                         className={`p-2.5 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 ${
                           scanIsVegan
-                            ? 'bg-[#F1F5F2] border-[#4A7856] text-[#4A7856]'
-                            : 'bg-white border-[#ECEBE8] text-[#686E6A]'
+                            ? 'bg-accent-tint border-accent text-accent'
+                            : 'bg-card border-border text-text-muted'
                         }`}
                       >
                         <Leaf className="w-4 h-4" />
@@ -956,8 +948,8 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                         onClick={() => setScanIsVegan(false)}
                         className={`p-2.5 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 ${
                           !scanIsVegan
-                            ? 'bg-[#F1F5F2] border-[#4A7856] text-[#4A7856]'
-                            : 'bg-white border-[#ECEBE8] text-[#686E6A]'
+                            ? 'bg-accent-tint border-accent text-accent'
+                            : 'bg-card border-border text-text-muted'
                         }`}
                       >
                         <span>Vegetarisch</span>
@@ -967,7 +959,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
                   {/* Optional notes */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
+                    <label className="text-xs font-bold text-text-main uppercase tracking-wider">
                       Zusätzliche Notizen (Optional)
                     </label>
                     <input
@@ -975,7 +967,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       value={scanNotes}
                       onChange={(e) => setScanNotes(e.target.value)}
                       placeholder="z.B. Bitte ohne Koriander, mild gewürzt"
-                      className="w-full px-3 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] text-[#2D3E40] focus:outline-none focus:border-[#4A7856]"
+                      className="w-full px-3 py-2.5 rounded-xl border border-border bg-surface text-[16px] text-text-main focus:outline-none focus:border-accent"
                     />
                   </div>
 
@@ -983,7 +975,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                     type="button"
                     disabled={isSubmitting || !scanImageBase64}
                     onClick={handleScanRecipe}
-                    className="w-full py-3.5 px-5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] disabled:opacity-50 disabled:cursor-not-allowed text-white text-base font-bold shadow-md shadow-[#4A7856]/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    className="w-full py-3.5 px-5 rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-on-accent text-base font-bold shadow-md shadow-accent/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     {isSubmitting ? (
                       <>
@@ -1006,7 +998,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   {/* Title & Subtitle */}
                   <div className="space-y-3">
                     <div>
-                      <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider block mb-1">
+                      <label className="text-xs font-bold text-text-main uppercase tracking-wider block mb-1">
                         Gerichtsname *
                       </label>
                       <input
@@ -1015,11 +1007,11 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                         value={manualTitle}
                         onChange={(e) => setManualTitle(e.target.value)}
                         placeholder="z.B. Cremige Avocadopasta mit Kirschtomaten"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] focus:bg-white text-[16px] text-[#57534d] focus:outline-none focus:border-[#4A7856]"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface focus:bg-card text-[16px] text-[#57534d] focus:outline-none focus:border-accent"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider block mb-1">
+                      <label className="text-xs font-bold text-text-main uppercase tracking-wider block mb-1">
                         Kurzbeschreibung (Optional)
                       </label>
                       <input
@@ -1027,7 +1019,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                         value={manualSubtitle}
                         onChange={(e) => setManualSubtitle(e.target.value)}
                         placeholder="z.B. Herrlich cremig, nussig und in 15 Minuten fertig"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] text-[#2D3E40] focus:outline-none focus:border-[#4A7856]"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface text-[16px] text-text-main focus:outline-none focus:border-accent"
                       />
                     </div>
                   </div>
@@ -1035,14 +1027,14 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   {/* Category, Diet, Times, Portions */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
-                      <label className="text-[11px] font-bold text-[#2D3E40] uppercase tracking-wider block mb-1">
+                      <label className="text-[11px] font-bold text-text-main uppercase tracking-wider block mb-1">
                         Kategorie
                       </label>
                       <div className="relative">
                         <select
                           value={manualCategory}
                           onChange={(e) => setManualCategory(e.target.value as RecipeCategory)}
-                          className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-8 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] font-medium text-[#2D3E40] focus:outline-none focus:border-[#4A7856] cursor-pointer"
+                          className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-8 py-2 rounded-xl border border-border bg-surface text-[16px] font-medium text-text-main focus:outline-none focus:border-accent cursor-pointer"
                         >
                           {CATEGORIES.map((c) => (
                             <option key={c} value={c}>
@@ -1050,29 +1042,29 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                             </option>
                           ))}
                         </select>
-                        <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <ChevronDown className="w-4 h-4 text-text-muted absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-[11px] font-bold text-[#2D3E40] uppercase tracking-wider block mb-1">
+                      <label className="text-[11px] font-bold text-text-main uppercase tracking-wider block mb-1">
                         Ernährung
                       </label>
                       <div className="relative">
                         <select
                           value={manualIsVegan ? 'vegan' : 'vegetarian'}
                           onChange={(e) => setManualIsVegan(e.target.value === 'vegan')}
-                          className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-8 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] font-medium text-[#2D3E40] focus:outline-none focus:border-[#4A7856] cursor-pointer"
+                          className="appearance-none w-full h-11 min-h-[44px] px-3.5 pr-8 py-2 rounded-xl border border-border bg-surface text-[16px] font-medium text-text-main focus:outline-none focus:border-accent cursor-pointer"
                         >
                           <option value="vegan">100% Vegan</option>
                           <option value="vegetarian">Vegetarisch</option>
                         </select>
-                        <ChevronDown className="w-4 h-4 text-[#686E6A] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <ChevronDown className="w-4 h-4 text-text-muted absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-[11px] font-bold text-[#2D3E40] uppercase tracking-wider block mb-1">
+                      <label className="text-[11px] font-bold text-text-main uppercase tracking-wider block mb-1">
                         Vorbereitung (Min.)
                       </label>
                       <input
@@ -1080,12 +1072,12 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                         min="1"
                         value={manualPrepTime}
                         onChange={(e) => setManualPrepTime(Number(e.target.value))}
-                        className="w-full px-2.5 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] font-medium text-[#2D3E40]"
+                        className="w-full px-2.5 py-2 rounded-xl border border-border bg-surface text-[16px] font-medium text-text-main"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[11px] font-bold text-[#2D3E40] uppercase tracking-wider block mb-1">
+                      <label className="text-[11px] font-bold text-text-main uppercase tracking-wider block mb-1">
                         Kochzeit (Min.)
                       </label>
                       <input
@@ -1093,14 +1085,14 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                         min="0"
                         value={manualCookTime}
                         onChange={(e) => setManualCookTime(Number(e.target.value))}
-                        className="w-full px-2.5 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] font-medium text-[#2D3E40]"
+                        className="w-full px-2.5 py-2 rounded-xl border border-border bg-surface text-[16px] font-medium text-text-main"
                       />
                     </div>
                   </div>
 
                   {/* Portionen */}
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-[#2D3E40] uppercase tracking-wider block">
+                    <label className="text-[11px] font-bold text-text-main uppercase tracking-wider block">
                       Portionen
                     </label>
                     <HybridPortionStepper
@@ -1111,54 +1103,54 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   </div>
 
                   {/* Nutrients per Portion */}
-                  <div className="p-3 bg-[#FAF9F6] rounded-2xl border border-[#ECEBE8] space-y-2">
-                    <label className="text-[11px] font-bold text-[#2D3E40] uppercase tracking-wider block">
+                  <div className="p-3 bg-surface rounded-2xl border border-border space-y-2">
+                    <label className="text-[11px] font-bold text-text-main uppercase tracking-wider block">
                       Nährwerte pro Portion
                     </label>
                     <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                       <div>
-                        <span className="text-[10px] text-[#686E6A] block">Kalorien (kcal)</span>
+                        <span className="text-[10px] text-text-muted block">Kalorien (kcal)</span>
                         <input
                           type="number"
                           value={manualCalories}
                           onChange={(e) => setManualCalories(Number(e.target.value))}
-                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-[16px] font-bold text-[#2D3E40]"
+                          className="w-full px-2 py-1.5 bg-card border border-border rounded-lg text-[16px] font-bold text-text-main"
                         />
                       </div>
                       <div>
-                        <span className="text-[10px] text-[#686E6A] block">Protein (g)</span>
+                        <span className="text-[10px] text-text-muted block">Protein (g)</span>
                         <input
                           type="number"
                           value={manualProtein}
                           onChange={(e) => setManualProtein(Number(e.target.value))}
-                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-[16px] font-bold text-[#4A7856]"
+                          className="w-full px-2 py-1.5 bg-card border border-border rounded-lg text-[16px] font-bold text-accent"
                         />
                       </div>
                       <div>
-                        <span className="text-[10px] text-[#686E6A] block">Carbs (g)</span>
+                        <span className="text-[10px] text-text-muted block">Carbs (g)</span>
                         <input
                           type="number"
                           value={manualCarbs}
                           onChange={(e) => setManualCarbs(Number(e.target.value))}
-                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-[16px] font-bold text-[#2D3E40]"
+                          className="w-full px-2 py-1.5 bg-card border border-border rounded-lg text-[16px] font-bold text-text-main"
                         />
                       </div>
                       <div>
-                        <span className="text-[10px] text-[#686E6A] block">Fett (g)</span>
+                        <span className="text-[10px] text-text-muted block">Fett (g)</span>
                         <input
                           type="number"
                           value={manualFat}
                           onChange={(e) => setManualFat(Number(e.target.value))}
-                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-[16px] font-bold text-[#2D3E40]"
+                          className="w-full px-2 py-1.5 bg-card border border-border rounded-lg text-[16px] font-bold text-text-main"
                         />
                       </div>
                       <div>
-                        <span className="text-[10px] text-[#686E6A] block">Ballaststoffe (g)</span>
+                        <span className="text-[10px] text-text-muted block">Ballaststoffe (g)</span>
                         <input
                           type="number"
                           value={manualFiber}
                           onChange={(e) => setManualFiber(Number(e.target.value))}
-                          className="w-full px-2 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-[16px] font-bold text-[#2D3E40]"
+                          className="w-full px-2 py-1.5 bg-card border border-border rounded-lg text-[16px] font-bold text-text-main"
                         />
                       </div>
                     </div>
@@ -1167,7 +1159,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   {/* Ingredients Section */}
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
+                      <label className="text-xs font-bold text-text-main uppercase tracking-wider">
                         Zutaten
                       </label>
                       <button
@@ -1178,7 +1170,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                             { name: '', amount: 100, unit: 'g', category: 'gemuese', isEssential: false }
                           ])
                         }
-                        className="text-xs font-bold text-[#4A7856] hover:underline flex items-center gap-1"
+                        className="text-xs font-bold text-accent hover:underline flex items-center gap-1"
                       >
                         <Plus className="w-3.5 h-3.5" /> Zutat hinzufügen
                       </button>
@@ -1197,7 +1189,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                               );
                             }}
                             placeholder="Zutat (z.B. Kichererbsen)"
-                            className="flex-1 px-3 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] text-[#2D3E40]"
+                            className="flex-1 px-3 py-2 rounded-xl border border-border bg-surface text-[16px] text-text-main"
                           />
                           <input
                             type="text"
@@ -1209,7 +1201,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                               );
                             }}
                             placeholder="Menge"
-                            className="w-20 px-2 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] text-[#2D3E40] text-center"
+                            className="w-20 px-2 py-2 rounded-xl border border-border bg-surface text-[16px] text-text-main text-center"
                           />
                           <input
                             type="text"
@@ -1221,7 +1213,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                               );
                             }}
                             placeholder="Einheit"
-                            className="w-16 px-2 py-2 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] text-[#2D3E40] text-center"
+                            className="w-16 px-2 py-2 rounded-xl border border-border bg-surface text-[16px] text-text-main text-center"
                           />
                           {manualIngredients.length > 1 && (
                             <button
@@ -1229,7 +1221,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                               onClick={() =>
                                 setManualIngredients((prev) => prev.filter((_, i) => i !== idx))
                               }
-                              className="p-2 text-[#686E6A] hover:text-rose-600 transition-colors"
+                              className="p-2 text-text-muted hover:text-rose-600 transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1242,7 +1234,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   {/* HelloFresh Preparation Steps Section */}
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider">
+                      <label className="text-xs font-bold text-text-main uppercase tracking-wider">
                         Zubereitungsschritte (HelloFresh-Stil)
                       </label>
                       <button
@@ -1258,7 +1250,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                             }
                           ])
                         }
-                        className="text-xs font-bold text-[#4A7856] hover:underline flex items-center gap-1"
+                        className="text-xs font-bold text-accent hover:underline flex items-center gap-1"
                       >
                         <Plus className="w-3.5 h-3.5" /> Schritt hinzufügen
                       </button>
@@ -1268,11 +1260,11 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       {manualSteps.map((step, idx) => (
                         <div
                           key={idx}
-                          className="p-3 bg-[#FAF9F6] border border-[#ECEBE8] rounded-xl space-y-2"
+                          className="p-3 bg-surface border border-border rounded-xl space-y-2"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 flex-1">
-                              <span className="w-5 h-5 rounded-full bg-[#4A7856] text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                              <span className="w-5 h-5 rounded-full bg-accent text-on-accent text-[11px] font-bold flex items-center justify-center shrink-0">
                                 {idx + 1}
                               </span>
                               <input
@@ -1285,13 +1277,13 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                                   );
                                 }}
                                 placeholder="Schritt-Titel (z.B. Gemüse vorbereiten)"
-                                className="px-2.5 py-1.5 bg-white border border-[#ECEBE8] rounded-lg text-[16px] font-bold text-[#2D3E40] w-full max-w-xs"
+                                className="px-2.5 py-1.5 bg-card border border-border rounded-lg text-[16px] font-bold text-text-main w-full max-w-xs"
                               />
                             </div>
 
                             <div className="flex items-center gap-2">
                               <div className="flex items-center gap-1">
-                                <Clock className="w-3.5 h-3.5 text-[#686E6A]" />
+                                <Clock className="w-3.5 h-3.5 text-text-muted" />
                                 <input
                                   type="number"
                                   min="1"
@@ -1303,7 +1295,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                                     );
                                   }}
                                   placeholder="Timer (Min.)"
-                                  className="w-24 px-2 py-1 bg-white border border-[#ECEBE8] rounded-lg text-[16px] text-[#57534d] text-center"
+                                  className="w-24 px-2 py-1 bg-card border border-border rounded-lg text-[16px] text-[#57534d] text-center"
                                 />
                               </div>
 
@@ -1313,7 +1305,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                                   onClick={() =>
                                     setManualSteps((prev) => prev.filter((_, i) => i !== idx))
                                   }
-                                  className="p-1 text-[#686E6A] hover:text-rose-600 transition-colors"
+                                  className="p-1 text-text-muted hover:text-rose-600 transition-colors"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -1331,7 +1323,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                               );
                             }}
                             placeholder="Erkläre die Zubereitung für diesen Schritt genau..."
-                            className="w-full px-3 py-2 bg-white border border-[#ECEBE8] rounded-xl text-[16px] text-[#57534d] focus:outline-none focus:border-[#4A7856]"
+                            className="w-full px-3 py-2 bg-card border border-border rounded-xl text-[16px] text-[#57534d] focus:outline-none focus:border-accent"
                           />
                         </div>
                       ))}
@@ -1340,7 +1332,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
                   {/* Chef Tip */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-[#2D3E40] uppercase tracking-wider block">
+                    <label className="text-xs font-bold text-text-main uppercase tracking-wider block">
                       Tipp des Kochs (Optional)
                     </label>
                     <input
@@ -1348,7 +1340,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       value={manualChefTip}
                       onChange={(e) => setManualChefTip(e.target.value)}
                       placeholder="z.B. Zum Schluss einen Spritzer Limette oder Hefeflocken darübergeben..."
-                      className="w-full px-3 py-2.5 rounded-xl border border-[#ECEBE8] bg-[#FAF9F6] text-[16px] text-[#2D3E40]"
+                      className="w-full px-3 py-2.5 rounded-xl border border-border bg-surface text-[16px] text-text-main"
                     />
                   </div>
 
@@ -1356,7 +1348,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   <div className="pt-2">
                     <button
                       type="submit"
-                      className="w-full min-h-[48px] h-12 py-3 px-5 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white text-[16px] font-bold shadow-md shadow-[#4A7856]/20 flex items-center justify-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95"
+                      className="w-full min-h-[48px] h-12 py-3 px-5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-[16px] font-bold shadow-md shadow-accent/20 flex items-center justify-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95"
                     >
                       <Check className="w-5 h-5" />
                       <span>Rezept speichern</span>

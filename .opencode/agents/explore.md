@@ -1,6 +1,7 @@
 ---
 description: Fast agent specialized for exploring codebases. Use this when you need to quickly find files by patterns, search code for keywords, or answer questions about the codebase.
 mode: subagent
+model: google/gemini-3.8-flash
 permissions:
   - action: read
     resource: "**/*"

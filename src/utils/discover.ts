@@ -3,7 +3,7 @@
  * Single source of truth for categories, filter options, sort options,
  * active-filter counting, seasons and greetings.
  */
-import { FilterState, Recipe } from '../types';
+import { FilterState, Recipe, RecipeDiet } from '../types';
 
 /* -------------------------------------------------------------------------- */
 /* Categories                                                                  */
@@ -39,20 +39,20 @@ export function isHighProteinRecipe(recipe: Recipe): boolean {
 export interface CategoryMeta {
   value: string;
   label: string;
-  emoji: string;
+  emoji?: string;
 }
 
-/** Display order + emoji for known canonical categories. Unknown ones are appended. */
+/** Display order for known canonical categories. Unknown ones are appended. */
 const CATEGORY_META: CategoryMeta[] = [
-  { value: 'Schnelle Küche', label: 'Schnell', emoji: '⚡' },
-  { value: 'Pasta & Gnocchi', label: 'Pasta', emoji: '🍝' },
-  { value: 'Currys & Eintöpfe', label: 'Currys & Eintöpfe', emoji: '🍛' },
-  { value: 'Bowls & Salate', label: 'Bowls & Salate', emoji: '🥗' },
-  { value: 'Ofengerichte', label: 'Ofengerichte', emoji: '🥘' },
-  { value: HIGH_PROTEIN_CATEGORY, label: 'High Protein', emoji: '💪' },
-  { value: 'Frühstück & Süßes', label: 'Frühstück & Süßes', emoji: '🥞' },
-  { value: 'Snacks & Dips', label: 'Snacks & Dips', emoji: '🥨' },
-  { value: 'Festlich', label: 'Festlich', emoji: '✨' },
+  { value: 'Schnelle Küche', label: 'Schnell' },
+  { value: 'Pasta & Gnocchi', label: 'Pasta' },
+  { value: 'Currys & Eintöpfe', label: 'Currys & Eintöpfe' },
+  { value: 'Bowls & Salate', label: 'Bowls & Salate' },
+  { value: 'Ofengerichte', label: 'Ofengerichte' },
+  { value: HIGH_PROTEIN_CATEGORY, label: 'High Protein' },
+  { value: 'Frühstück & Süßes', label: 'Frühstück & Süßes' },
+  { value: 'Snacks & Dips', label: 'Snacks & Dips' },
+  { value: 'Festlich', label: 'Festlich' },
 ];
 
 export interface CategoryOption extends CategoryMeta {
@@ -83,7 +83,7 @@ export function buildCategoryOptions(recipes: Recipe[]): CategoryOption[] {
   }
   // Unknown / user-defined categories (e.g. from AI-generated recipes)
   for (const [value, count] of counts) {
-    options.push({ value, label: value, emoji: '🍽️', count });
+    options.push({ value, label: value, count });
   }
   return options;
 }
@@ -109,6 +109,12 @@ export const DIFFICULTY_OPTIONS: Option<string>[] = [
   { label: 'Einfach', value: 'Einfach' },
   { label: 'Mittel', value: 'Mittel' },
   { label: 'Anspruchsvoll', value: 'Anspruchsvoll' },
+];
+
+export const DIET_OPTIONS: Option<'all' | 'vegan' | 'vegetarisch'>[] = [
+  { label: 'Alle', value: 'all' },
+  { label: 'Vegan', value: 'vegan' },
+  { label: 'Vegetarisch', value: 'vegetarisch' },
 ];
 
 export const CALORIE_OPTIONS: Option<number>[] = [
@@ -139,7 +145,17 @@ export const SORT_OPTIONS: Option<FilterState['sortBy']>[] = [
 /* Active filters                                                              */
 /* -------------------------------------------------------------------------- */
 
-export type SheetFilterKey = 'onlyVegan' | 'maxTime' | 'difficulty' | 'maxCalories' | 'minProtein' | 'minFiber' | 'selectedTags';
+export type SheetFilterKey = 'diet' | 'maxTime' | 'difficulty' | 'maxCalories' | 'minProtein' | 'minFiber' | 'selectedTags';
+
+/**
+ * Liefert die kanonische Ernährungsform eines Rezepts. Bevorzugt das neue
+ * `diet`-Datenfeld; bei Rezepten ohne dieses Feld (z. B. KI-generiert oder
+ * importiert) wird aus `isVegan` abgeleitet.
+ */
+export function getRecipeDiet(recipe: Pick<Recipe, 'diet' | 'isVegan'>): RecipeDiet {
+  if (recipe.diet === 'vegan' || recipe.diet === 'vegetarisch') return recipe.diet;
+  return recipe.isVegan ? 'vegan' : 'vegetarisch';
+}
 
 export interface ActiveFilterChip {
   key: SheetFilterKey;
@@ -152,7 +168,7 @@ export interface ActiveFilterChip {
  */
 export function getActiveSheetFilters(filters: FilterState): ActiveFilterChip[] {
   const chips: ActiveFilterChip[] = [];
-  if (filters.onlyVegan) chips.push({ key: 'onlyVegan', label: 'Nur vegan' });
+  if (filters.diet && filters.diet !== 'all') chips.push({ key: 'diet', label: filters.diet === 'vegan' ? 'Vegan' : 'Vegetarisch' });
   if (filters.maxTime > 0) chips.push({ key: 'maxTime', label: `bis ${filters.maxTime} Min.` });
   if (filters.difficulty && filters.difficulty !== 'all') chips.push({ key: 'difficulty', label: filters.difficulty });
   if (filters.maxCalories > 0) chips.push({ key: 'maxCalories', label: `unter ${filters.maxCalories} kcal` });
@@ -163,7 +179,7 @@ export function getActiveSheetFilters(filters: FilterState): ActiveFilterChip[] 
 }
 
 export const SHEET_FILTER_DEFAULTS: Pick<FilterState, SheetFilterKey> = {
-  onlyVegan: false,
+  diet: 'all',
   maxTime: 0,
   difficulty: 'all',
   maxCalories: 0,

@@ -1,51 +1,157 @@
 @import "tailwindcss";
 
-@theme {
-  --color-accent: #4A7856;
-  --color-accent-hover: #3D6447;
-  --color-accent-tint: #F1F5F2;
-  --color-accent-border: #CCD5CF;
-  --color-surface: #FAF9F6;
-  --color-card: #FFFFFF;
-  --color-border: #ECEBE8;
-  --color-text-main: #2D3E40;
-  --color-text-muted: #686E6A;
-  --color-rose-50: #FFF1F2;
-  --color-rose-100: #FFE4E6;
-  --color-rose-200: #FECDD3;
-  --color-rose-300: #FDA4AF;
-  --color-rose-400: #C91C43;
-  --color-rose-500: #C91C43;
-  --color-rose-600: #B91C3C;
-  --color-rose-700: #991331;
-  --color-rose-800: #881334;
-  --color-rose-900: #4C0519;
-  --color-red-50: #FFF1F2;
-  --color-red-100: #FFE4E6;
-  --color-red-200: #FECDD3;
-  --color-red-400: #C91C43;
-  --color-red-500: #C91C43;
-  --color-red-600: #B91C3C;
-  --color-red-700: #991331;
-}
-
+/* =====================================================================
+   FARB-TOKENS – EINZIGE Quelle der Rohwerte (:root).
+   Dark-Mode-vorbereitet: Komponenten nutzen Utilities, die über
+   @theme inline auf diese Laufzeit-Variablen zeigen. Ein späterer
+   [data-theme="dark"] muss nur Variablenwerte überschreiben.
+   ===================================================================== */
 :root {
+  color-scheme: light;
+
+  /* Abstände */
+  --inset-card: 16px;
+
+  /* Motion-Tokens */
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-slow: 360ms;
+  --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Flächen */
+  --page: #F4F1EA;
+  --surface: #FAF9F6;
+  --card: #FFFFFF;
+  --sheet: #FFFFFF;
+  --border: #ECEBE8;
+
+  /* Text */
+  --text-main: #2D3E40;
+  --text-muted: #686E6A;
+  --on-accent: #FFFFFF;
+
+  /* Akzent */
   --accent: #4A7856;
   --accent-hover: #3D6447;
   --accent-tint: #F1F5F2;
   --accent-border: #CCD5CF;
-  --surface: #FAF9F6;
-  --card: #FFFFFF;
-  --border: #ECEBE8;
-  --text-main: #2D3E40;
-  --text-muted: #686E6A;
+  --accent-thumb-top: #538561;
+  --accent-thumb-bottom: #447150;
+
+  /* Favorit / Fehler (bestehende rose/red-Werte, unverändert) */
+  --favorite: #C91C43;
+  --rose-50: #FFF1F2;
+  --rose-100: #FFE4E6;
+  --rose-200: #FECDD3;
+  --rose-300: #FDA4AF;
+  --rose-400: #C91C43;
+  --rose-500: #C91C43;
+  --rose-600: #B91C3C;
+  --rose-700: #991331;
+  --rose-800: #881334;
+  --rose-900: #4C0519;
+  --red-50: #FFF1F2;
+  --red-100: #FFE4E6;
+  --red-200: #FECDD3;
+  --red-400: #C91C43;
+  --red-500: #C91C43;
+  --red-600: #B91C3C;
+  --red-700: #991331;
+
+  /* Fokus */
+  --focus-ring: var(--accent);
+
+  /* Herbst-Saison: kräftiges Orange nur für große Schrift, Icons & Rahmen
+     (#C86D3B ≈ 3,5:1 auf Apricot); kleine Texte/Buttons nutzen das dunklere
+     --season-autumn-text (#A9552B ≈ 5:1). */
+  --season-autumn: #C86D3B;
+  --season-autumn-bg: #FFF9F3;
+  --season-autumn-text: #A9552B;
+
+  /* Header (Aprikose) – Phase 2 */
+  --header-top: #F3DDBC;
+  --header-panel: #F8EAD3;
+  --header-line: #E6CFA8;
+  --header-fg: var(--text-main);
+  --header-icon: var(--text-main);
+  --header-active: var(--text-main);
+  /* Alternative: --header-icon: var(--accent-hover); --header-active: var(--accent-hover); */
+
+  /* Kanal-Tokens für Schatten & Scrim: rgb(var(--shadow-rgb) / 0.22) */
+  --shadow-rgb: 45 62 64;   /* #2D3E40 */
+  --scrim-rgb: 30 41 43;    /* rgba(30,41,43,…) */
+  --black-rgb: 0 0 0;
+  --accent-rgb: 74 120 86;  /* #4A7856 */
+
+  /* Rückwärtskompatible Aliase (Bestand; siehe Phase-1-Bericht) */
+  --bg-page: var(--page);
+  --bg-surface: var(--surface);
+  --bg-card: var(--card);
+}
+
+/* Dark Mode: noch nicht ausgeliefert – nichts überschreiben.
+[data-theme="dark"] {
+  TODO: nur Variablenwerte überschreiben (z. B. --page, --surface, --card,
+  --text-main, --text-muted, --border, --accent-…). Keine Farben in
+  Komponenten hartkodieren.
+} */
+
+/* Tailwind-Utilities zeigen per @theme inline auf die Laufzeit-Variablen,
+   damit hell/dunkel ohne Rebuild wechseln kann. Alle bisherigen
+   Utility-Namen bleiben identisch erreichbar. */
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-sheet: var(--sheet);
+  --color-border: var(--border);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-on-accent: var(--on-accent);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-tint: var(--accent-tint);
+  --color-accent-border: var(--accent-border);
+  --color-favorite: var(--favorite);
+  --color-season-autumn: var(--season-autumn);
+  --color-season-autumn-bg: var(--season-autumn-bg);
+  --color-season-autumn-text: var(--season-autumn-text);
+  --color-header-top: var(--header-top);
+  --color-header-panel: var(--header-panel);
+  --color-header-line: var(--header-line);
+  --color-header-fg: var(--header-fg);
+  --color-header-icon: var(--header-icon);
+  --color-header-active: var(--header-active);
+  --color-rose-50: var(--rose-50);
+  --color-rose-100: var(--rose-100);
+  --color-rose-200: var(--rose-200);
+  --color-rose-300: var(--rose-300);
+  --color-rose-400: var(--rose-400);
+  --color-rose-500: var(--rose-500);
+  --color-rose-600: var(--rose-600);
+  --color-rose-700: var(--rose-700);
+  --color-rose-800: var(--rose-800);
+  --color-rose-900: var(--rose-900);
+  --color-red-50: var(--red-50);
+  --color-red-100: var(--red-100);
+  --color-red-200: var(--red-200);
+  --color-red-400: var(--red-400);
+  --color-red-500: var(--red-500);
+  --color-red-600: var(--red-600);
+  --color-red-700: var(--red-700);
 }
 
 @layer base {
+  html {
+    height: 100%;
+  }
+
   body {
-    background-color: #FAF9F6;
-    color: #2D3E40;
+    background-color: var(--page);
+    color: var(--text-main);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100%;
+    min-height: 100dvh;
   }
 
   /* Prevent iOS Safari automatic zoom on inputs (requires font size of at least 16px) */
@@ -58,14 +164,33 @@
   ::placeholder,
   input::placeholder,
   textarea::placeholder {
-    color: #686e6a;
+    color: var(--text-muted);
     opacity: 1;
   }
 
   h1, h2, h3, h4, h5, h6, .font-serif {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     letter-spacing: -0.02em;
-    color: #2D3E40;
+    color: var(--text-main);
+  }
+
+  /* Visible keyboard focus everywhere */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* Respect the user's motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -88,6 +213,15 @@
   }
 }
 
+/* Fließend skalierbare Kartentypografie: Titel 16–17 px, Infozeile 13–14 px */
+@utility text-card-title {
+  font-size: clamp(16px, 0.4vw + 15.4px, 17px);
+}
+
+@utility text-card-info {
+  font-size: clamp(13px, 0.3vw + 12.6px, 14px);
+}
+
 /* ---------- Native <dialog> bottom sheet (mobile) / centered panel (desktop) ---------- */
 dialog.vc-sheet {
   margin: auto auto 0 auto;
@@ -96,11 +230,11 @@ dialog.vc-sheet {
   width: 100%;
   max-width: 560px;
   max-height: 88dvh;
-  background: #ffffff;
-  color: #2d3e40;
+  background: var(--sheet);
+  color: var(--text-main);
   border-radius: 24px 24px 0 0;
   overflow: hidden;
-  box-shadow: 0 -12px 48px rgba(45, 62, 64, 0.22);
+  box-shadow: 0 -12px 48px rgb(var(--shadow-rgb) / 0.22);
   opacity: 0;
   transform: translateY(32px);
   transition:
@@ -120,7 +254,7 @@ dialog.vc-sheet[open] {
 }
 
 dialog.vc-sheet::backdrop {
-  background: rgba(30, 41, 43, 0);
+  background: rgb(var(--scrim-rgb) / 0);
   backdrop-filter: blur(0px);
   transition:
     background-color 0.25s ease-out,
@@ -130,10 +264,10 @@ dialog.vc-sheet::backdrop {
 }
 
 dialog.vc-sheet[open]::backdrop {
-  background: rgba(30, 41, 43, 0.45);
+  background: rgb(var(--scrim-rgb) / 0.45);
   backdrop-filter: blur(3px);
   @starting-style {
-    background: rgba(30, 41, 43, 0);
+    background: rgb(var(--scrim-rgb) / 0);
     backdrop-filter: blur(0px);
   }
 }
@@ -142,7 +276,7 @@ dialog.vc-sheet[open]::backdrop {
   dialog.vc-sheet {
     margin: auto;
     border-radius: 24px;
-    box-shadow: 0 24px 64px rgba(45, 62, 64, 0.28);
+    box-shadow: 0 24px 64px rgb(var(--shadow-rgb) / 0.28);
     transform: translateY(12px) scale(0.98);
   }
   dialog.vc-sheet[open] {
@@ -209,9 +343,9 @@ dialog.vc-sheet[open]::backdrop {
   height: 32px;
   margin-top: -12px;
   border-radius: 9px;
-  background: linear-gradient(180deg, #538561 0%, #447150 100%);
-  border: 3.5px solid #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(45, 62, 64, 0.15), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(180deg, var(--accent-thumb-top) 0%, var(--accent-thumb-bottom) 100%);
+  border: 3.5px solid var(--card);
+  box-shadow: 0 2px 6px rgb(var(--black-rgb) / 0.18), 0 4px 12px rgb(var(--shadow-rgb) / 0.15), 0 0 0 0.5px rgb(var(--black-rgb) / 0.08);
   cursor: grab;
   transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
   will-change: transform, box-shadow;
@@ -219,13 +353,13 @@ dialog.vc-sheet[open]::backdrop {
 
 .ios-slider:hover::-webkit-slider-thumb {
   transform: scale(1.08);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2), 0 6px 16px rgba(45, 62, 64, 0.2), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 3px 8px rgb(var(--black-rgb) / 0.2), 0 6px 16px rgb(var(--shadow-rgb) / 0.2), 0 0 0 0.5px rgb(var(--black-rgb) / 0.08);
 }
 
 .ios-slider:active::-webkit-slider-thumb {
   transform: scale(1.22);
   cursor: grabbing;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 8px 22px rgba(74, 120, 86, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgb(var(--black-rgb) / 0.25), 0 8px 22px rgb(var(--accent-rgb) / 0.3), 0 0 0 0.5px rgb(var(--black-rgb) / 0.1);
 }
 
 /* Firefox */
@@ -239,9 +373,9 @@ dialog.vc-sheet[open]::backdrop {
   width: 24px;
   height: 32px;
   border-radius: 9px;
-  background: linear-gradient(180deg, #538561 0%, #447150 100%);
-  border: 3.5px solid #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(45, 62, 64, 0.15), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(180deg, var(--accent-thumb-top) 0%, var(--accent-thumb-bottom) 100%);
+  border: 3.5px solid var(--card);
+  box-shadow: 0 2px 6px rgb(var(--black-rgb) / 0.18), 0 4px 12px rgb(var(--shadow-rgb) / 0.15), 0 0 0 0.5px rgb(var(--black-rgb) / 0.08);
   cursor: grab;
   transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
   will-change: transform, box-shadow;
@@ -250,12 +384,292 @@ dialog.vc-sheet[open]::backdrop {
 
 .ios-slider:hover::-moz-range-thumb {
   transform: scale(1.08);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2), 0 6px 16px rgba(45, 62, 64, 0.2), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 3px 8px rgb(var(--black-rgb) / 0.2), 0 6px 16px rgb(var(--shadow-rgb) / 0.2), 0 0 0 0.5px rgb(var(--black-rgb) / 0.08);
 }
 
 .ios-slider:active::-moz-range-thumb {
   transform: scale(1.22);
   cursor: grabbing;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 8px 22px rgba(74, 120, 86, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgb(var(--black-rgb) / 0.25), 0 8px 22px rgb(var(--accent-rgb) / 0.3), 0 0 0 0.5px rgb(var(--black-rgb) / 0.1);
 }
+
+/* =====================================================================
+   HEADER (Phase 2)
+   ===================================================================== */
+
+/* Weicher Übergang vom Header zum Seiteninhalt:
+   --header-panel → transparent (24–32 px), pointer-events none. */
+.vc-header-fade {
+  height: 28px;
+  background: linear-gradient(to bottom, var(--header-panel), transparent);
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000, transparent);
+  mask-image: linear-gradient(to bottom, #000, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+/* Fallback ohne backdrop-filter: Gradient allein (siehe @supports unten) */
+@supports not ((backdrop-filter: blur(8px)) or (-webkit-backdrop-filter: blur(8px))) {
+  .vc-header-fade {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Feines Blatt-/Kräuter-Linienmotiv in Zeile 1 – als CSS-Maske mit
+   currentColor-Ersatz: sichtbare Farbe = var(--accent), gedeckt über opacity.
+   Seit Punkt 7 liegt es NUR im flexiblen Zwischenraum (Logo→Icons bzw.
+   hinter den Tabs), Ränder faden über 40 px aus. */
+:root {
+  --vc-leaf-pattern-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='48' viewBox='0 0 150 48'%3E%3Cpath d='M16 34c0-10 8-18 20-17-1 12-9 18-20 17z' fill='none' stroke='black' stroke-width='1.2'/%3E%3Cpath d='M25 29c2-5 7-9 11-10' fill='none' stroke='black' stroke-width='0.9'/%3E%3Cpath d='M120 14c0-8 6-13 14-12-1 9-5 13-14 12z' fill='none' stroke='black' stroke-width='1.2'/%3E%3Cpath d='M127 11c1.5-3.5 4-6 7-7' fill='none' stroke='black' stroke-width='0.9'/%3E%3Cpath d='M84 6c0-4 3-7 8-6-.5 4-3 6-8 6z' fill='none' stroke='black' stroke-width='1'/%3E%3Cpath d='M88 4.5c1-2 2.5-3.5 4.5-4' fill='none' stroke='black' stroke-width='0.8'/%3E%3C/svg%3E");
+}
+.vc-leaf-pattern {
+  background-color: var(--accent);
+  background-image: var(--vc-leaf-pattern-img);
+  -webkit-mask-image: var(--vc-leaf-pattern-img);
+  mask-image: var(--vc-leaf-pattern-img);
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 150px 48px;
+  mask-size: 150px 48px;
+}
+/* Rand-Ausfadeln (40 px je Seite): Mustermaske ∩ Verlaufsmaske */
+.vc-leaf-fade {
+  -webkit-mask-image: var(--vc-leaf-pattern-img), linear-gradient(90deg, transparent 0, #000 40px, #000 calc(100% - 40px), transparent 100%);
+  mask-image: var(--vc-leaf-pattern-img), linear-gradient(90deg, transparent 0, #000 40px, #000 calc(100% - 40px), transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+/* Scrim unter dem Header (z-35 < Header z-40) – Klick schließt das Menü. */
+.vc-menu-scrim {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100lvh;
+  min-height: -webkit-fill-available;
+  z-index: 35;
+  background: rgb(var(--scrim-rgb) / 0.45);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  overscroll-behavior: contain;
+  touch-action: none;
+  animation: vc-fade-in 0.22s ease-out;
+}
+@keyframes vc-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vc-menu-scrim {
+    animation: none;
+  }
+}
+
+/* Burger→X-Morph (Punkt 5): Linien rotieren ±45°, die Mitte blendet aus.
+   Snapping-Easing wie beim Header-Einrasten. */
+.vc-burger-line {
+  transition:
+    transform 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.2s ease-out,
+    top 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    bottom 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .vc-burger-line {
+    transition-duration: 0.01s;
+  }
+}
+
+/* Staffelung der Panel-Einträge beim Öffnen (Punkt 5): ~30 ms Versatz. */
+@keyframes vc-menu-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.vc-menu-row {
+  animation: vc-menu-row-in 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vc-menu-row {
+    animation: none;
+  }
+}
+
+/* Suchfeld im Header (Punkt 4): dezenter 1,5–2 px --accent-Rahmen statt des
+   globalen :focus-visible-Outlines (kein doppelter Ring). */
+.vc-search-input:focus-visible {
+  outline: none;
+}
+
+
+/* Gleitende Tab-Unterstreichung (Punkt 9.1): Position ausschließlich über
+   transform translateX (Compositor-only), Breite als Übergang – ~250 ms,
+   Snapping-Easing wie beim Header. */
+.vc-underline {
+  transition:
+    transform 250ms cubic-bezier(0.32, 0.72, 0, 1),
+    width 250ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Press-Feedback (Punkt 9.2): scale 0.96 + dezente Akzent-Tönung NUR auf
+   Touch-Geräten (@media (hover: none)) – kein Feedback für Mausnutzer. */
+.vc-press {
+  transition-property: color, background-color, transform;
+  transition-duration: 120ms;
+}
+@media (hover: none) {
+  .vc-press:active {
+    transform: scale(0.96);
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+}
+
+/* Tab⇄Suche-Crossfade (Punkte 4/9.4): 200 ms statt 220 ms – nur transform
+   + opacity laufen über. */
+.vc-fade-swap {
+  transition-duration: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vc-underline {
+    transition: none;
+  }
+  .vc-fade-swap {
+    transition-duration: 0.01s;
+  }
+  .vc-press {
+    transition-duration: 0.01s;
+  }
+  .vc-press:active {
+    transform: none;
+  }
+}
+
+/* Scroll-gekoppelter Header (Punkt 1): Snapping-Transition wird nur beim
+   Einrasten gesetzt (Hook useScrollLinkedHeader), transform/opacity direkt,
+   während des Scrollens laufen keine Transitionen (kein Ruckeln). */
+.vc-scroll-snap {
+  transition:
+    transform var(--vc-snap-dur, 340ms) var(--vc-snap-ease, cubic-bezier(0.32, 0.72, 0, 1)),
+    opacity var(--vc-snap-dur, 340ms) var(--vc-snap-ease, cubic-bezier(0.32, 0.72, 0, 1));
+}
+
+/* Komplett ausgeblendet: erst nach dem Einrasten unsichtbar/nicht fokussierbar. */
+.vc-scroll-hidden {
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s 0.34s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vc-scroll-hidden {
+    transition: visibility 0s 0.15s;
+  }
+}
+
+/* Beliebt → Favorit: kurzer Puls des Herz-Icons (Punkt 3) */
+@keyframes vc-icon-pulse {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.vc-icon-pulse {
+  animation: vc-icon-pulse 250ms ease-out;
+}
+
+/* Einkaufswagen-Badge: kurzer „Bump", wenn die Anzahl steigt (Punkt 3) */
+@keyframes vc-badge-bump {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.vc-badge-bump {
+  animation: vc-badge-bump 250ms ease-out;
+}
+
+/* PWA-Statusstreifen (display-mode: standalone): bleibt sichtbar, auch wenn
+   der Header beim Scrollen ausblendet. Die Zeile 1 beginnt unterhalb. */
+@media (display-mode: standalone) {
+  .vc-status-strip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(env(safe-area-inset-top) + 8px);
+    background: linear-gradient(to bottom, var(--header-top), transparent);
+    pointer-events: none;
+    z-index: 60;
+  }
+  .vc-header-root {
+    padding-top: calc(env(safe-area-inset-top) + 8px);
+  }
+}
+
+/* Raster ↔ Liste View Transitions API & Fallback-Stagger (Punkt 10c) */
+@keyframes vc-card-fade-swap {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.vc-card-stagger {
+  animation: vc-card-fade-swap 180ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  animation-delay: calc(min(var(--card-index, 0), 8) * 18ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vc-card-stagger {
+    animation: none !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.001ms !important;
+  }
+}
+
+::view-transition-old(recipe-*),
+::view-transition-new(recipe-*) {
+  animation-duration: 220ms;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Safari-Overlays (Punkt 9) */
+.vc-overlay-viewport {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100%;
+  height: -webkit-fill-available;
+  height: 100lvh;
+  min-height: 100lvh;
+  overscroll-behavior: contain;
+}
+
 

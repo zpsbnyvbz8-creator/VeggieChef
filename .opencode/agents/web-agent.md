@@ -1,6 +1,7 @@
 ---
 description: Web-Recherche-Agent für Tech/Docs (React/Vite/Express/Firebase/Playwright). Faktenbasiert, keine Spekulation.
 mode: subagent
+model: google/gemini-3.8-flash
 permissions:
   - action: webfetch
     resource: "*"

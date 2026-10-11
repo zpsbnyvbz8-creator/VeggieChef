@@ -31,6 +31,7 @@ import { formatIngredientAmount, calculateMealSavings } from '../utils/helpers';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 import { useRecipes } from '../context/RecipeContext';
 import { useToast } from '../context/ToastContext';
+import { CloseButton } from './ui/CloseButton';
 import confetti from 'canvas-confetti';
 
 interface CookingModeModalProps {
@@ -602,16 +603,16 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
   return (
     <div 
       id="cooking-mode-overlay"
-      className="fixed inset-0 z-60 bg-[#1A2526] text-white flex flex-col justify-between overscroll-contain select-none"
+      className="fixed inset-0 z-60 bg-[#1A2526] text-on-accent flex flex-col justify-between overscroll-contain select-none"
     >
       {/* ========================================================================= */}
       {/* 1. TOP HEADER & MULTI-TIMER FLOATING BUBBLES BAR                         */}
       {/* ========================================================================= */}
-      <header className="shrink-0 bg-[#223133] border-b border-white/10 relative z-20">
+      <header className="shrink-0 bg-[#223133] border-b border-on-accent/10 relative z-20">
         {/* Progress Bar */}
-        <div className="w-full bg-white/10 h-1.5 overflow-hidden">
+        <div className="w-full bg-card/10 h-1.5 overflow-hidden">
           <div
-            className="bg-[#4A7856] h-full transition-all duration-300 ease-out"
+            className="bg-accent h-full transition-all duration-300 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -620,7 +621,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
         <div className="px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-2 sm:gap-4">
           {/* Left: Recipe info & WakeLock indicator */}
           <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#4A7856] flex items-center justify-center font-bold text-white shadow-xs shrink-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-accent flex items-center justify-center font-bold text-on-accent shadow-xs shrink-0">
               <ChefHat className="w-6 h-6" />
             </div>
 
@@ -634,7 +635,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                     : `Schritt ${currentStepIndex + 1} von ${totalStepsCount}`}
                 </span>
 
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/10 text-white/90 font-bold">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-card/10 text-on-accent/90 font-bold">
                   {currentServings} Port.
                 </span>
 
@@ -649,7 +650,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                   </span>
                 )}
               </div>
-              <h1 className="text-base sm:text-lg font-extrabold text-white truncate max-w-[200px] xs:max-w-xs sm:max-w-md leading-tight">
+              <h1 className="text-base sm:text-lg font-extrabold text-on-accent truncate max-w-[200px] xs:max-w-xs sm:max-w-md leading-tight">
                 {recipe.title}
               </h1>
             </div>
@@ -671,12 +672,12 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
               }}
               className={`h-11 px-3 sm:px-3.5 rounded-xl flex items-center gap-1.5 font-bold text-xs transition-all cursor-pointer touch-manipulation active:scale-95 ${
                 isVoiceListening
-                  ? 'bg-rose-600 text-white shadow-md animate-pulse border border-rose-400'
-                  : 'bg-white/10 hover:bg-white/20 text-white/90'
+                  ? 'bg-rose-600 text-on-accent shadow-md animate-pulse border border-rose-400'
+                  : 'bg-card/10 hover:bg-card/20 text-on-accent/90'
               }`}
               title={isVoiceListening ? 'Sprachsteuerung beenden' : 'Freihändige Sprachsteuerung starten'}
             >
-              {isVoiceListening ? <Mic className="w-4 h-4 text-white" /> : <MicOff className="w-4 h-4 text-white/70" />}
+              {isVoiceListening ? <Mic className="w-4 h-4 text-on-accent" /> : <MicOff className="w-4 h-4 text-on-accent/70" />}
               <span className="hidden md:inline">
                 {isVoiceListening ? 'Hört zu...' : 'Freihand'}
               </span>
@@ -688,19 +689,19 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
               onClick={speakCurrentStep}
               className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                 isSpeaking
-                  ? 'bg-[#4A7856] text-white shadow-xs'
-                  : 'bg-white/10 hover:bg-white/20 text-white/90'
+                  ? 'bg-accent text-on-accent shadow-xs'
+                  : 'bg-card/10 hover:bg-card/20 text-on-accent/90'
               }`}
               title={isSpeaking ? 'Vorlesen stoppen' : 'Diesen Schritt vorlesen'}
             >
-              {isSpeaking ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5" />}
+              {isSpeaking ? <VolumeX className="w-5 h-5 text-on-accent" /> : <Volume2 className="w-5 h-5" />}
             </button>
 
             {/* All Ingredients Overview */}
             <button
               type="button"
               onClick={() => setShowIngredientsModal(true)}
-              className="h-11 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 transition-colors cursor-pointer text-xs font-bold"
+              className="h-11 px-3 rounded-xl bg-card/10 hover:bg-card/20 text-on-accent flex items-center gap-1.5 transition-colors cursor-pointer text-xs font-bold"
               title="Alle Zutaten des Rezepts ansehen"
             >
               <List className="w-4 h-4 text-[#8DB898]" />
@@ -711,15 +712,14 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
             <button
               type="button"
               onClick={onMinimize}
-              className="w-11 h-11 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+              className="w-11 h-11 rounded-xl bg-card/10 hover:bg-card/20 text-on-accent flex items-center justify-center transition-colors cursor-pointer"
               title="Minimieren"
             >
               <ChevronDown className="w-5 h-5" />
             </button>
 
             {/* Close */}
-            <button
-              type="button"
+            <CloseButton
               onClick={() => {
                 if (floatingTimers.some((t) => t.isRunning)) {
                   setShowExitConfirm(true);
@@ -727,11 +727,9 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                   onClose();
                 }
               }}
-              className="w-11 h-11 rounded-xl bg-white/10 hover:bg-rose-500/20 text-white/90 hover:text-rose-200 flex items-center justify-center transition-colors cursor-pointer"
+              ariaLabel="Kochmodus beenden"
               title="Kochmodus beenden"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            />
           </div>
         </div>
 
@@ -739,7 +737,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
         {/* FLOATING TIMER BUBBLES ROW (MULTITIMER SUPPORT)                           */}
         {/* ========================================================================= */}
         {floatingTimers.length > 0 && (
-          <div className="px-3 sm:px-6 py-2 bg-[#1A2526]/80 border-t border-white/5 flex items-center gap-2.5 overflow-x-auto scrollbar-none">
+          <div className="px-3 sm:px-6 py-2 bg-[#1A2526]/80 border-t border-on-accent/5 flex items-center gap-2.5 overflow-x-auto scrollbar-none">
             <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider shrink-0 flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" />
               Aktive Timer ({floatingTimers.length}):
@@ -754,8 +752,8 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                     isFinished
                       ? 'bg-amber-500 text-black border-amber-300 animate-bounce font-bold'
                       : timer.isRunning
-                      ? 'bg-[#2D4036] text-white border-[#4A7856] shadow-[#4A7856]/20'
-                      : 'bg-white/10 text-white/80 border-white/20'
+                      ? 'bg-[#2D4036] text-on-accent border-accent shadow-accent/20'
+                      : 'bg-card/10 text-on-accent/80 border-on-accent/20'
                   }`}
                 >
                   <span className="text-xs font-semibold max-w-[120px] truncate">
@@ -770,7 +768,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                   <button
                     type="button"
                     onClick={() => handleToggleTimer(timer.id)}
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-white/20 flex items-center justify-center cursor-pointer active:scale-90"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-card/20 flex items-center justify-center cursor-pointer active:scale-90"
                     title={timer.isRunning ? 'Pause' : 'Start'}
                     aria-label={timer.isRunning ? 'Timer pausieren' : 'Timer starten'}
                   >
@@ -781,7 +779,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                   <button
                     type="button"
                     onClick={() => handleAdjustTimer(timer.id, 60)}
-                    className="h-7 sm:h-8 px-2 rounded-lg text-[11px] font-bold hover:bg-white/20 flex items-center justify-center cursor-pointer active:scale-95"
+                    className="h-7 sm:h-8 px-2 rounded-lg text-[11px] font-bold hover:bg-card/20 flex items-center justify-center cursor-pointer active:scale-95"
                     title="1 Minute hinzufügen"
                     aria-label="1 Minute hinzufügen"
                   >
@@ -792,7 +790,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                   <button
                     type="button"
                     onClick={() => handleDeleteTimer(timer.id)}
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-rose-500/30 text-white/70 hover:text-white flex items-center justify-center cursor-pointer active:scale-90"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-rose-500/30 text-on-accent/70 hover:text-on-accent flex items-center justify-center cursor-pointer active:scale-90"
                     title="Timer schließen"
                     aria-label="Timer schließen"
                   >
@@ -816,36 +814,36 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
         {stepPhase === 'prep' && (
           <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-200">
             <div className="text-center max-w-xl mx-auto space-y-2">
-              <span className="px-3.5 py-1 rounded-full bg-[#4A7856]/20 border border-[#4A7856] text-[#8DB898] text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5">
+              <span className="px-3.5 py-1 rounded-full bg-accent/20 border border-accent text-[#8DB898] text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-amber-300" />
                 Mise-en-Place Checkliste
               </span>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-on-accent tracking-tight leading-tight">
                 Alles bereitgestellt?
               </h2>
-              <p className="text-base sm:text-lg text-white/80 leading-relaxed">
+              <p className="text-base sm:text-lg text-on-accent/80 leading-relaxed">
                 Nimm dir 2 Minuten für die Vorbereitung. Wenn alles abgewogen und parat liegt, kochst du entspannt ohne Stress!
               </p>
             </div>
 
             {/* Servings Tuner */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between max-w-lg mx-auto">
+            <div className="bg-card/5 border border-on-accent/10 rounded-2xl p-4 flex items-center justify-between max-w-lg mx-auto">
               <div>
-                <span className="text-xs uppercase font-bold text-white/60 tracking-wider">Portionen für dieses Kochen:</span>
-                <div className="text-lg font-bold text-white mt-0.5">{currentServings} Personen</div>
+                <span className="text-xs uppercase font-bold text-on-accent/60 tracking-wider">Portionen für dieses Kochen:</span>
+                <div className="text-lg font-bold text-on-accent mt-0.5">{currentServings} Personen</div>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setCurrentServings((prev) => Math.max(1, prev - 1))}
-                  className="w-10 h-10 min-h-[40px] rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-lg flex items-center justify-center cursor-pointer active:scale-95"
+                  className="w-10 h-10 min-h-[40px] rounded-xl bg-card/10 hover:bg-card/20 text-on-accent font-bold text-lg flex items-center justify-center cursor-pointer active:scale-95"
                 >
                   -
                 </button>
                 <button
                   type="button"
                   onClick={() => setCurrentServings((prev) => prev + 1)}
-                  className="w-10 h-10 min-h-[40px] rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-lg flex items-center justify-center cursor-pointer active:scale-95"
+                  className="w-10 h-10 min-h-[40px] rounded-xl bg-card/10 hover:bg-card/20 text-on-accent font-bold text-lg flex items-center justify-center cursor-pointer active:scale-95"
                 >
                   +
                 </button>
@@ -855,9 +853,9 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
             {/* Ingredients & Utensils Checklists */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
               {/* Ingredients Checklist */}
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-5 space-y-3">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <div className="bg-card/5 border border-on-accent/10 rounded-3xl p-5 space-y-3">
+                <div className="flex items-center justify-between border-b border-on-accent/10 pb-2.5">
+                  <h3 className="text-base font-bold text-on-accent flex items-center gap-2">
                     <span className="text-xl">🥗</span>
                     <span>Zutaten abgemessen</span>
                   </h3>
@@ -886,16 +884,16 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                         key={ing.name}
                         onClick={() => setPrepChecks((prev) => ({ ...prev, [ing.name]: !prev[ing.name] }))}
                         className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors ${
-                          isChecked ? 'bg-white/10 text-white/40' : 'bg-white/5 hover:bg-white/10 text-white'
+                          isChecked ? 'bg-card/10 text-on-accent/40' : 'bg-card/5 hover:bg-card/10 text-on-accent'
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
                           <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
-                            isChecked ? 'bg-[#4A7856] border-[#4A7856] text-white' : 'border-white/30 bg-white/5'
+                            isChecked ? 'bg-accent border-accent text-on-accent' : 'border-on-accent/30 bg-card/5'
                           }`}>
                             {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                           </div>
-                          <span className={`text-sm font-medium ${isChecked ? 'line-through text-white/50' : ''}`}>
+                          <span className={`text-sm font-medium ${isChecked ? 'line-through text-on-accent/50' : ''}`}>
                             {ing.name}
                           </span>
                         </div>
@@ -909,9 +907,9 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
               </div>
 
               {/* Kitchen Utensils Checklist */}
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-5 space-y-3">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <div className="bg-card/5 border border-on-accent/10 rounded-3xl p-5 space-y-3">
+                <div className="flex items-center justify-between border-b border-on-accent/10 pb-2.5">
+                  <h3 className="text-base font-bold text-on-accent flex items-center gap-2">
                     <span className="text-xl">🔪</span>
                     <span>Werkzeuge bereitgelegt</span>
                   </h3>
@@ -923,16 +921,16 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                       key={item}
                       onClick={() => setUtensilChecks((prev) => ({ ...prev, [item]: !prev[item] }))}
                       className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-colors ${
-                        isChecked ? 'bg-white/10 text-white/40' : 'bg-white/5 hover:bg-white/10 text-white'
+                        isChecked ? 'bg-card/10 text-on-accent/40' : 'bg-card/5 hover:bg-card/10 text-on-accent'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
                         <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
-                          isChecked ? 'bg-[#4A7856] border-[#4A7856] text-white' : 'border-white/30 bg-white/5'
+                          isChecked ? 'bg-accent border-accent text-on-accent' : 'border-on-accent/30 bg-card/5'
                         }`}>
                           {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                         </div>
-                        <span className={`text-sm font-medium ${isChecked ? 'line-through text-white/50' : ''}`}>
+                        <span className={`text-sm font-medium ${isChecked ? 'line-through text-on-accent/50' : ''}`}>
                           {item}
                         </span>
                       </div>
@@ -951,7 +949,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
               <button
                 type="button"
                 onClick={handleNextStep}
-                className="w-full h-16 min-h-[64px] rounded-2xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-extrabold text-xl shadow-xl hover:scale-102 active:scale-98 transition-all flex items-center justify-center gap-3 cursor-pointer"
+                className="w-full h-16 min-h-[64px] rounded-2xl bg-accent hover:bg-accent-hover text-on-accent font-extrabold text-xl shadow-xl hover:scale-102 active:scale-98 transition-all flex items-center justify-center gap-3 cursor-pointer"
               >
                 <span>Alles bereit – Koch-Modus starten!</span>
                 <ArrowRight className="w-6 h-6" />
@@ -977,7 +975,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                     return (
                       <span
                         key={ing.name}
-                        className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-sm sm:text-base font-semibold text-white shadow-xs"
+                        className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card/10 border border-on-accent/15 text-sm sm:text-base font-semibold text-on-accent shadow-xs"
                       >
                         <span className="font-bold font-mono text-[#8DB898]">
                           {amountFormatted}
@@ -999,7 +997,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
               )}
 
               {/* Ultra-large, high contrast text readable from 1 meter distance */}
-              <div className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-snug sm:leading-tight text-white tracking-normal select-text">
+              <div className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-snug sm:leading-tight text-on-accent tracking-normal select-text">
                 {currentStep.text}
               </div>
 
@@ -1017,7 +1015,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
               {/* Step Photos */}
               {currentStep.stepImages && currentStep.stepImages.length > 0 && (
                 <div className="pt-3">
-                  <div className="relative rounded-2xl overflow-hidden border border-white/15 max-h-60 sm:max-h-80 bg-black/40">
+                  <div className="relative rounded-2xl overflow-hidden border border-on-accent/15 max-h-60 sm:max-h-80 bg-black/40">
                     <img
                       src={currentStep.stepImages[0]}
                       alt="Schritt Foto"
@@ -1027,7 +1025,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                     <button
                       type="button"
                       onClick={() => setLightboxImage(currentStep.stepImages![0])}
-                      className="absolute top-3 right-3 p-2 rounded-xl bg-black/60 backdrop-blur-xs text-white"
+                      className="absolute top-3 right-3 p-2 rounded-xl bg-black/60 backdrop-blur-xs text-on-accent"
                     >
                       <Maximize2 className="w-4 h-4" />
                     </button>
@@ -1071,31 +1069,31 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
           <div className="space-y-6 sm:space-y-8 max-w-xl mx-auto text-center animate-in zoom-in-95 duration-200">
             <div className="space-y-2">
               <div className="text-6xl select-none animate-bounce">🎉</div>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-on-accent tracking-tight">
                 Fantastisch gekocht!
               </h2>
-              <p className="text-base sm:text-lg text-white/80">
-                Du hast <strong className="text-white font-bold">{recipe.title}</strong> meisterhaft zubereitet. Guten Appetit!
+              <p className="text-base sm:text-lg text-on-accent/80">
+                Du hast <strong className="text-on-accent font-bold">{recipe.title}</strong> meisterhaft zubereitet. Guten Appetit!
               </p>
             </div>
 
             {/* Sustainability Badge */}
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-around text-xs sm:text-sm">
+            <div className="p-4 rounded-2xl bg-card/5 border border-on-accent/10 flex items-center justify-around text-xs sm:text-sm">
               <div className="text-center">
                 <span className="text-xl block">🌍</span>
                 <span className="font-bold text-emerald-300">~{savings.savedCO2Kg} kg</span>
-                <span className="text-white/60 block text-[11px]">CO2 gespart</span>
+                <span className="text-on-accent/60 block text-[11px]">CO2 gespart</span>
               </div>
-              <div className="w-px h-8 bg-white/10" />
+              <div className="w-px h-8 bg-card/10" />
               <div className="text-center">
                 <span className="text-xl block">💧</span>
                 <span className="font-bold text-cyan-300">~{savings.savedWaterLiters} L</span>
-                <span className="text-white/60 block text-[11px]">Wasser geschont</span>
+                <span className="text-on-accent/60 block text-[11px]">Wasser geschont</span>
               </div>
             </div>
 
             {/* 5-Star Rating */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-2">
+            <div className="bg-card/5 border border-on-accent/10 rounded-2xl p-4 sm:p-5 space-y-2">
               <span className="text-xs uppercase font-extrabold text-[#8DB898] tracking-wider block">
                 Wie hat es dir geschmeckt?
               </span>
@@ -1111,7 +1109,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                       className={`w-8 h-8 ${
                         star <= rating
                           ? 'fill-amber-400 text-amber-400'
-                          : 'text-white/20 hover:text-white/40'
+                          : 'text-on-accent/20 hover:text-on-accent/40'
                       }`}
                     />
                   </button>
@@ -1120,13 +1118,13 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
             </div>
 
             {/* Photo Capture / Upload */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3">
+            <div className="bg-card/5 border border-on-accent/10 rounded-2xl p-4 sm:p-5 space-y-3">
               <span className="text-xs uppercase font-extrabold text-[#8DB898] tracking-wider block">
                 Foto vom Ergebnis festhalten:
               </span>
 
               {cookedPhotoUrl ? (
-                <div className="relative w-full h-44 rounded-xl overflow-hidden border border-white/20">
+                <div className="relative w-full h-44 rounded-xl overflow-hidden border border-on-accent/20">
                   <img
                     src={cookedPhotoUrl}
                     alt="Ergebnis Foto"
@@ -1135,16 +1133,16 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                   <button
                     type="button"
                     onClick={() => setCookedPhotoUrl(null)}
-                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 text-white hover:bg-rose-600 transition-colors"
+                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 text-on-accent hover:bg-rose-600 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/20 hover:border-[#4A7856] rounded-xl cursor-pointer transition-colors bg-white/5 hover:bg-white/10">
+                <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-on-accent/20 hover:border-accent rounded-xl cursor-pointer transition-colors bg-card/5 hover:bg-card/10">
                   <Camera className="w-8 h-8 text-[#8DB898] mb-2" />
-                  <span className="text-sm font-bold text-white">Foto aufnehmen oder hochladen</span>
-                  <span className="text-xs text-white/60 mt-0.5">Schnappschuss für deine Koch-Historie</span>
+                  <span className="text-sm font-bold text-on-accent">Foto aufnehmen oder hochladen</span>
+                  <span className="text-xs text-on-accent/60 mt-0.5">Schnappschuss für deine Koch-Historie</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -1158,7 +1156,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
 
             {/* Notes textarea */}
             <div className="text-left space-y-1.5">
-              <label className="text-xs uppercase font-bold text-white/60 tracking-wider">
+              <label className="text-xs uppercase font-bold text-on-accent/60 tracking-wider">
                 Optionale Notiz zum Kochen:
               </label>
               <textarea
@@ -1166,7 +1164,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                 onChange={(e) => setCookedNotes(e.target.value)}
                 placeholder="z. B. Beim nächsten Mal etwas mehr Chili hinzufügen..."
                 rows={2}
-                className="w-full p-3 rounded-xl bg-white/10 border border-white/15 text-white placeholder:text-white/40 focus:outline-hidden focus:border-[#4A7856] text-sm"
+                className="w-full p-3 rounded-xl bg-card/10 border border-on-accent/15 text-on-accent placeholder:text-on-accent/40 focus:outline-hidden focus:border-accent text-sm"
               />
             </div>
 
@@ -1175,7 +1173,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
               <button
                 type="button"
                 onClick={handleFinishAndSave}
-                className="w-full h-16 min-h-[64px] rounded-2xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-extrabold text-xl shadow-xl flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+                className="w-full h-16 min-h-[64px] rounded-2xl bg-accent hover:bg-accent-hover text-on-accent font-extrabold text-xl shadow-xl flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
               >
                 <span>🎉 Als gekocht erfassen & abschließen</span>
               </button>
@@ -1183,7 +1181,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
               <button
                 type="button"
                 onClick={() => setStepPhase('steps')}
-                className="text-xs text-white/60 hover:text-white underline cursor-pointer"
+                className="text-xs text-on-accent/60 hover:text-on-accent underline cursor-pointer"
               >
                 Nochmal die Schritte ansehen
               </button>
@@ -1195,14 +1193,14 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
       {/* ========================================================================= */}
       {/* FOOTER NAVIGATION (EXTRAGROßE TOUCH-BUTTONS MIN 48x48 / 64px)             */}
       {/* ========================================================================= */}
-      <footer className="shrink-0 p-3.5 sm:p-5 bg-[#223133] border-t border-white/10 flex items-center justify-between gap-3">
+      <footer className="shrink-0 p-3.5 sm:p-5 bg-[#223133] border-t border-on-accent/10 flex items-center justify-between gap-3">
         {/* Left: Prev Button */}
         <button
           id="cooking-mode-prev-btn"
           type="button"
           onClick={handlePrevStep}
           disabled={stepPhase === 'prep'}
-          className="h-14 sm:h-16 px-5 sm:px-7 rounded-2xl bg-white/10 hover:bg-white/15 disabled:opacity-20 disabled:pointer-events-none text-white font-extrabold text-base sm:text-lg flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95"
+          className="h-14 sm:h-16 px-5 sm:px-7 rounded-2xl bg-card/10 hover:bg-card/15 disabled:opacity-20 disabled:pointer-events-none text-on-accent font-extrabold text-base sm:text-lg flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95"
         >
           <ChevronLeft className="w-6 h-6" />
           <span>Zurück</span>
@@ -1210,7 +1208,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
 
         {/* Center: Step indicators */}
         <div className="flex flex-col items-center justify-center">
-          <span className="text-sm sm:text-base font-extrabold text-white/90">
+          <span className="text-sm sm:text-base font-extrabold text-on-accent/90">
             {stepPhase === 'prep'
               ? 'Vorbereitung'
               : stepPhase === 'finished'
@@ -1226,8 +1224,8 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                     idx === currentStepIndex
                       ? 'bg-[#8DB898] w-4'
                       : idx < currentStepIndex
-                      ? 'bg-[#4A7856] w-2'
-                      : 'bg-white/20 w-2'
+                      ? 'bg-accent w-2'
+                      : 'bg-card/20 w-2'
                   }`}
                 />
               ))}
@@ -1242,8 +1240,8 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
           onClick={handleNextStep}
           className={`h-14 sm:h-16 px-6 sm:px-9 rounded-2xl font-extrabold text-lg sm:text-xl flex items-center gap-2 shadow-xl transition-all cursor-pointer touch-manipulation active:scale-95 ${
             stepPhase === 'steps' && currentStepIndex === totalStepsCount - 1
-              ? 'bg-[#4A7856] hover:bg-[#3D6447] text-white animate-pulse'
-              : 'bg-[#4A7856] hover:bg-[#3D6447] text-white'
+              ? 'bg-accent hover:bg-accent-hover text-on-accent animate-pulse'
+              : 'bg-accent hover:bg-accent-hover text-on-accent'
           }`}
         >
           <span>
@@ -1271,35 +1269,32 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
           onClick={() => setShowIngredientsModal(false)}
         >
           <div 
-            className="w-full max-w-lg bg-[#223133] border border-white/10 rounded-3xl p-5 sm:p-7 shadow-2xl flex flex-col max-h-[85vh] text-white animate-in zoom-in-95"
+            className="w-full max-w-lg bg-[#223133] border border-on-accent/10 rounded-3xl p-5 sm:p-7 shadow-2xl flex flex-col max-h-[85vh] text-on-accent animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-white/10 pb-4 shrink-0">
+            <div className="flex items-center justify-between border-b border-on-accent/10 pb-4 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#4A7856] flex items-center justify-center text-white">
+                <div className="w-9 h-9 rounded-xl bg-accent flex items-center justify-center text-on-accent">
                   <List className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Alle Zutaten</h3>
-                  <p className="text-xs text-[#8DB898] font-semibold">Berechnet für {currentServings} Portionen</p>
+                  <h3 className="text-lg font-bold text-on-accent">Alle Zutaten</h3>
+                  <p className="text-xs text-accent font-semibold">Berechnet für {currentServings} Portionen</p>
                 </div>
               </div>
-              <button
-                type="button"
+              <CloseButton
                 onClick={() => setShowIngredientsModal(false)}
-                className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
-              >
-                <X className="w-5 h-5" />
-              </button>
+                ariaLabel="Zutatenliste schließen"
+              />
             </div>
 
             <div className="flex-1 overflow-y-auto py-4 space-y-2">
               {recipe.ingredients.map((ing) => {
                 const formatted = formatIngredientAmount(ing, recipe.servings, currentServings);
                 return (
-                  <div key={ing.name} className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/5">
-                    <span className="text-sm text-white/90">{ing.name}</span>
-                    <span className="text-sm font-mono font-bold text-[#8DB898]">{formatted}</span>
+                  <div key={ing.name} className="flex items-center justify-between py-2 px-3 rounded-xl bg-card/5">
+                    <span className="text-sm text-on-accent/90">{ing.name}</span>
+                    <span className="text-sm font-mono font-bold text-accent">{formatted}</span>
                   </div>
                 );
               })}
@@ -1308,7 +1303,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
             <button
               type="button"
               onClick={() => setShowIngredientsModal(false)}
-              className="w-full h-12 rounded-xl bg-[#4A7856] hover:bg-[#3D6447] text-white font-bold text-sm"
+              className="w-full h-12 rounded-xl bg-accent hover:bg-accent-hover text-on-accent font-bold text-sm"
             >
               Zurück zum Kochen
             </button>
@@ -1325,7 +1320,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
           onClick={() => setShowExitConfirm(false)}
         >
           <div 
-            className="w-full max-w-md bg-[#223133] border border-amber-500/30 rounded-3xl p-6 shadow-2xl space-y-4 text-white animate-in zoom-in-95"
+            className="w-full max-w-md bg-[#223133] border border-amber-500/30 rounded-3xl p-6 shadow-2xl space-y-4 text-on-accent animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
@@ -1333,7 +1328,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
             </div>
             <div>
               <h3 className="text-xl font-bold">Laufende Küchen-Timer aktiv!</h3>
-              <p className="text-sm text-white/80 mt-1">
+              <p className="text-sm text-on-accent/80 mt-1">
                 Es laufen noch Küchen-Timer im Hintergrund. Möchtest du den Kochmodus wirklich beenden?
               </p>
             </div>
@@ -1341,7 +1336,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
               <button
                 type="button"
                 onClick={() => setShowExitConfirm(false)}
-                className="flex-1 h-12 min-h-[48px] rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold"
+                className="flex-1 h-12 min-h-[48px] rounded-xl bg-card/10 hover:bg-card/15 text-on-accent font-semibold"
               >
                 Weiterkochen
               </button>
@@ -1352,7 +1347,7 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
                   setShowExitConfirm(false);
                   onClose();
                 }}
-                className="flex-1 h-12 min-h-[48px] rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold"
+                className="flex-1 h-12 min-h-[48px] rounded-xl bg-rose-600 hover:bg-rose-700 text-on-accent font-bold"
               >
                 Beenden
               </button>
@@ -1369,13 +1364,11 @@ export const CookingModeModal: React.FC<CookingModeModalProps> = (props) => {
           className="fixed inset-0 z-80 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in"
           onClick={() => setLightboxImage(null)}
         >
-          <button
-            type="button"
+          <CloseButton
             onClick={() => setLightboxImage(null)}
-            className="absolute top-4 right-4 w-11 h-11 rounded-full bg-white/20 text-white flex items-center justify-center"
-          >
-            <X className="w-6 h-6" />
-          </button>
+            ariaLabel="Großansicht schließen"
+            className="absolute top-4 right-4"
+          />
           <img
             src={lightboxImage}
             alt="Großansicht"

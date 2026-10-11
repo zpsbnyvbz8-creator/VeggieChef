@@ -1,10 +1,10 @@
-﻿{
+{
   "$schema": "https://opencode.ai/config.json",
   "agents": {
     "critic": {
-      "description": "Senior-Code-Reviewer fÃ¼r VeggieChef (TypeScript, React 19, Express, Firebase Sync, KI-Endpoints). Fokus auf Bugs, Konsistenz, Architektur.",
+      "description": "Senior-Code-Reviewer für VeggieChef (TypeScript, React 19, Express, Firebase Sync, KI-Endpoints). Fokus auf Bugs, Konsistenz, Architektur.",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-5",
+      "model": "google/gemini-3.8-flash",
       "system": "Review changes for correctness and regressions. List findings in severity order with file and line references.",
       "permissions": [
         { "action": "read", "resource": "**/*", "effect": "allow" },
@@ -26,8 +26,9 @@
       ]
     },
     "security-auditor": {
-      "description": "Security-Auditor fÃ¼r VeggieChef (Express, Firebase/Firestore, Gemini, CSP/CORS, AI-Upload).",
+      "description": "Security-Auditor für VeggieChef (Express, Firebase/Firestore, Gemini, CSP/CORS, AI-Upload).",
       "mode": "subagent",
+      "model": "google/gemini-3.8-flash",
       "permissions": [
         { "action": "read", "resource": "**/*", "effect": "allow" },
         { "action": "glob", "resource": "**/*", "effect": "allow" },
@@ -45,8 +46,9 @@
       ]
     },
     "testing": {
-      "description": "Testing-Agent fÃ¼r VeggieChef. Erkennt fehlende Tests, erstellt sinnvolle Playwright/E2E- oder Unit-Tests ohne Ã¼berflÃ¼ssiges Boilerplate.",
+      "description": "Testing-Agent für VeggieChef. Erkennt fehlende Tests, erstellt sinnvolle Playwright/E2E- oder Unit-Tests ohne überflüssiges Boilerplate.",
       "mode": "subagent",
+      "model": "google/gemini-3.8-flash",
       "permissions": [
         { "action": "read", "resource": "**/*", "effect": "allow" },
         { "action": "glob", "resource": "**/*", "effect": "allow" },
@@ -68,8 +70,9 @@
       ]
     },
     "ai-prompt": {
-      "description": "AI/Prompt-Engineer fÃ¼r VeggieChef â€“ optimiert Gemini-Prompts, Schemas, Fallbacks, JSON-Robustheit & Kosten.",
+      "description": "AI/Prompt-Engineer für VeggieChef – optimiert Gemini-Prompts, Schemas, Fallbacks, JSON-Robustheit & Kosten.",
       "mode": "subagent",
+      "model": "google/gemini-3.8-flash",
       "permissions": [
         { "action": "read", "resource": "**/*", "effect": "allow" },
         { "action": "glob", "resource": "**/*", "effect": "allow" },
@@ -90,8 +93,9 @@
       ]
     },
     "web-agent": {
-      "description": "Web-Recherche-Agent fÃ¼r Tech/Docs (React/Vite/Express/Firebase/Playwright). Faktenbasiert, keine Spekulation.",
+      "description": "Web-Recherche-Agent für Tech/Docs (React/Vite/Express/Firebase/Playwright). Faktenbasiert, keine Spekulation.",
       "mode": "subagent",
+      "model": "google/gemini-3.8-flash",
       "permissions": [
         { "action": "webfetch", "resource": "*", "effect": "allow" },
         { "action": "websearch", "resource": "*", "effect": "allow" },
@@ -109,6 +113,7 @@
     "explore": {
       "description": "Fast agent specialized for exploring codebases. Use this when you need to quickly find files by patterns, search code for keywords, or answer questions about the codebase.",
       "mode": "subagent",
+      "model": "google/gemini-3.8-flash",
       "permissions": [
         { "action": "read", "resource": "**/*", "effect": "allow" },
         { "action": "glob", "resource": "**/*", "effect": "allow" },
@@ -127,6 +132,7 @@
     "general": {
       "description": "General-purpose agent for researching complex questions and executing multi-step tasks. Use this agent to execute multiple units of work in parallel.",
       "mode": "subagent",
+      "model": "google/gemini-3.8-flash",
       "permissions": [
         { "action": "read", "resource": "**/*", "effect": "allow" },
         { "action": "glob", "resource": "**/*", "effect": "allow" },
@@ -147,10 +153,31 @@
       ]
     },
     "uiux": {
-      "description": "UI/UX-Designer & Reviewer für VeggieChef – objektive Bewertung, kommerziell-professioneller Look ohne AI-Slop/Marketing-Fluff",
-      "mode": "subagent"
+      "description": "UI/UX-Designer & Reviewer für VeggieChef – objektive Bewertung, kommerziell-professioneller Look ohne AI-Slop/Marketing-Fluff.",
+      "mode": "subagent",
+      "model": "google/gemini-3.8-flash",
+      "permissions": [
+        { "action": "read", "resource": "**/*", "effect": "allow" },
+        { "action": "glob", "resource": "**/*", "effect": "allow" },
+        { "action": "grep", "resource": "**/*", "effect": "allow" },
+        { "action": "webfetch", "resource": "*", "effect": "allow" },
+        { "action": "websearch", "resource": "*", "effect": "allow" },
+        { "action": "edit", "resource": "**/*.md", "effect": "allow" },
+        { "action": "edit", "resource": ".opencode/agents/*.md", "effect": "allow" },
+        { "action": "edit", "resource": "src/styles/**", "effect": "allow" },
+        { "action": "edit", "resource": "src/index.css", "effect": "allow" },
+        { "action": "edit", "resource": "tailwind.config.*", "effect": "allow" },
+        { "action": "edit", "resource": "postcss.config.*", "effect": "allow" },
+        { "action": "shell", "resource": "git diff*", "effect": "allow" },
+        { "action": "shell", "resource": "git log*", "effect": "allow" },
+        { "action": "shell", "resource": "git status*", "effect": "allow" },
+        { "action": "shell", "resource": "npx tsc --noEmit*", "effect": "allow" },
+        { "action": "shell", "resource": "*", "effect": "deny" },
+        { "action": "edit", "resource": "src/**", "effect": "deny" },
+        { "action": "edit", "resource": "server/**", "effect": "deny" },
+        { "action": "edit", "resource": "api/**", "effect": "deny" },
+        { "action": "subagent", "resource": "*", "effect": "deny" }
+      ]
     }
   }
-
-
-
+}
