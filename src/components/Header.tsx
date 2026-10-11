@@ -365,10 +365,6 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
       <header className="vc-header-root relative z-40">
       {/* Zeile 1: Logo + Tabs (ab md) + Aktionen – Zitronen-/Aprikosenfläche mit Blattmotiv */}
       <div className="relative bg-header-top">
-        <div
-          aria-hidden="true"
-          className="vc-leaf-pattern absolute inset-0 opacity-10 pointer-events-none"
-        />
         <div className="relative mx-auto w-full max-w-[1280px] flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 lg:px-8 h-14 md:h-16">
           {/* Wortmarke */}
           <button
@@ -435,7 +431,12 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
             </div>
           </div>
 
-          <div className="flex-1" aria-hidden="true" />
+          {/* Flexibler Zwischenraum (mobil: Logo→Icons; Desktop: nach den Tabs):
+              hier lebt das Blattmuster (Punkt 7) – nicht hinter Logo/Icons,
+              Ränder faden über 40 px aus, Kontrast nur ~9 %. */}
+          <div className="flex-1 self-stretch relative min-w-6" aria-hidden="true">
+            <div className="vc-leaf-pattern vc-leaf-fade absolute inset-y-0 left-0 right-0 opacity-[0.09] pointer-events-none" />
+          </div>
 
           {/* Aktionen: Lupe · Herz · Einkaufswagen · Menü (je ≥ 44×44) */}
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
