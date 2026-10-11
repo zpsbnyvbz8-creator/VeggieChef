@@ -569,6 +569,13 @@ dialog.vc-topsheet[open] {
   outline: none;
 }
 
+/* Das Menü ist ein nicht-modales Dialog ohne eigenes Schließen-Symbol; der
+   programmatische Fokus auf das Dialog-Element (für Esc/Tab-Trap) soll keinen
+   sichtbaren Fokus-Ring erzeugen. */
+dialog.vc-topsheet:focus {
+  outline: none;
+}
+
 /* Gleitende Tab-Unterstreichung (Punkt 9.1): Position ausschließlich über
    transform translateX (Compositor-only), Breite als Übergang – ~250 ms,
    Snapping-Easing wie beim Header. */

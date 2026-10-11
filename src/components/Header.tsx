@@ -338,6 +338,17 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
+  // Esc schließt die Suche auch, wenn das Feld nicht fokussiert ist (Enter blur'd
+  // es, um die Tastatur auszublenden). Doppeltes Schließen ist idempotent.
+  useEffect(() => {
+    if (!isSearchOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeSearch(true);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isSearchOpen, closeSearch]);
+
   useEffect(() => {
     if (!isSearchOpen) return;
     const raf = requestAnimationFrame(() => {
@@ -376,9 +387,13 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
   useLockBodyScroll(isMenuOpen);
 
   const openMenu = useCallback(() => {
-    closeSearch(true);
+    // Suche schließen OHNE Query zu leeren (wie bei Route-Change); User-Eingabe bleibt erhalten.
+    closeSearch(false);
     setIsMenuOpen(true);
     menuRef.current?.show();
+    // Nicht-modales <dialog> übernimmt keinen Fokus von selbst → Fokus ins Panel,
+    // damit Esc/Tab sofort greifen (Punkt 5/9, a11y).
+    menuRef.current?.focus();
   }, [closeSearch]);
   const closeMenu = useCallback(() => menuRef.current?.close(), []);
 
@@ -506,7 +521,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
               aria-pressed={isSearchOpen}
               aria-label={isSearchOpen ? 'Suche schließen' : 'Suche öffnen'}
               title="Suchen"
-              className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 ${
+              className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer touch-manipulation vc-press ${
                 isSearchOpen ? 'bg-card/40 text-accent' : 'text-header-icon hover:bg-card/40'
               }`}
             >
@@ -519,7 +534,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
               onClick={() => handleNavigate('/favorites')}
               aria-label={favoritesCount > 0 ? `Favoriten, ${favoritesCount} gespeichert` : 'Favoriten'}
               title="Favoriten"
-              className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
+              className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation vc-press"
             >
               <span
                 key={heartPulse}
@@ -535,7 +550,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
               onClick={() => handleNavigate('/shopping')}
               aria-label={shoppingCount > 0 ? `Einkaufswagen, ${shoppingCount} Artikel` : 'Einkaufswagen'}
               title="Einkaufsliste"
-              className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
+              className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation vc-press"
             >
               <ShoppingCart className="w-6 h-6" aria-hidden="true" />
               {shoppingCount > 0 && (
@@ -558,7 +573,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
               aria-expanded={isMenuOpen}
               aria-label={isMenuOpen ? 'Menü schließen' : 'Menü öffnen'}
               title={isMenuOpen ? 'Menü schließen' : 'Menü'}
-              className="w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
+              className="w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation vc-press"
             >
               {/* Burger→X-Morph: Linien rotieren ±45°, Mitte blendet aus (Punkt 5) */}
               <span className="relative w-6 h-6 block" aria-hidden="true">
@@ -631,7 +646,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
         </div>
         {isMenuOpen && (
           <div className="p-2.5 sm:p-3 space-y-1">
-            <nav aria-label="Hauptbereiche">
+            <nav aria-label="Hauptmenü">
               {[
                 { icon: ShoppingCart, label: 'Einkaufswagen', big: true, onClick: () => go('/shopping'), badge: shoppingCount },
                 { icon: Refrigerator, label: 'Vorratskammer', big: true, onClick: () => go('/fridge') },
