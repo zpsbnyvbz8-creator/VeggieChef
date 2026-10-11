@@ -120,7 +120,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
               {favorites.length} gespeichert
             </p>
           )}
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-main leading-tight">
+          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-text-main leading-tight">
             {isFavorites ? 'Deine Favoriten' : 'Was kochen wir heute?'}
           </h1>
         </div>
