@@ -521,6 +521,27 @@ dialog.vc-topsheet[open]::backdrop {
   }
 }
 
+/* Scroll-gekoppelter Header (Punkt 1): Snapping-Transition wird nur beim
+   Einrasten gesetzt (Hook useScrollLinkedHeader), transform/opacity direkt,
+   während des Scrollens laufen keine Transitionen (kein Ruckeln). */
+.vc-scroll-snap {
+  transition:
+    transform var(--vc-snap-dur, 340ms) var(--vc-snap-ease, cubic-bezier(0.32, 0.72, 0, 1)),
+    opacity var(--vc-snap-dur, 340ms) var(--vc-snap-ease, cubic-bezier(0.32, 0.72, 0, 1));
+}
+
+/* Komplett ausgeblendet: erst nach dem Einrasten unsichtbar/nicht fokussierbar. */
+.vc-scroll-hidden {
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s 0.34s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vc-scroll-hidden {
+    transition: visibility 0s 0.15s;
+  }
+}
+
 /* PWA-Statusstreifen (display-mode: standalone): bleibt sichtbar, auch wenn
    der Header beim Scrollen ausblendet. Die Zeile 1 beginnt unterhalb. */
 @media (display-mode: standalone) {
