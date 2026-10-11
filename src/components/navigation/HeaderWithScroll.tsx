@@ -34,7 +34,7 @@ export const HeaderWithScroll: React.FC = () => {
       <div className="vc-status-strip" aria-hidden="true" />
 
       <div ref={wrapperRef} className="fixed left-0 right-0 top-0 z-40">
-        <Header onPinnedChange={setPinned} />
+        <Header hidden={isHidden} onPinnedChange={setPinned} />
       </div>
     </>
   );

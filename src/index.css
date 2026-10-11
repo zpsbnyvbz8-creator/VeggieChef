@@ -542,6 +542,38 @@ dialog.vc-topsheet[open]::backdrop {
   }
 }
 
+/* Beliebt → Favorit: kurzer Puls des Herz-Icons (Punkt 3) */
+@keyframes vc-icon-pulse {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.vc-icon-pulse {
+  animation: vc-icon-pulse 250ms ease-out;
+}
+
+/* Einkaufswagen-Badge: kurzer „Bump", wenn die Anzahl steigt (Punkt 3) */
+@keyframes vc-badge-bump {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.vc-badge-bump {
+  animation: vc-badge-bump 250ms ease-out;
+}
+
 /* PWA-Statusstreifen (display-mode: standalone): bleibt sichtbar, auch wenn
    der Header beim Scrollen ausblendet. Die Zeile 1 beginnt unterhalb. */
 @media (display-mode: standalone) {

@@ -27,6 +27,8 @@ export type NavTab = 'recipes' | 'fridge' | 'planner';
 export interface HeaderProps {
   /** Wird true, sobald Suche oder Menü offen sind (verhindert das Ausblenden beim Scrollen). */
   onPinnedChange?: (pinned: boolean) => void;
+  /** Vom Scroll-Wrapper gemeldet: Header ist komplett ausgeblendet (für Favoriten-Puls). */
+  hidden?: boolean;
 }
 
 interface HeaderTab {
@@ -93,7 +95,7 @@ const MenuRow: React.FC<MenuRowProps> = ({
   </button>
 );
 
-export const Header: React.FC<HeaderProps> = ({ onPinnedChange }) => {
+export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const recipesCtx = useRecipes();
@@ -117,6 +119,23 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange }) => {
   const favoritesCount = recipesCtx.favorites.length;
   const shoppingCount = shoppingCtx.uncompletedCount;
   const searchQuery = recipesCtx.filters.searchQuery;
+
+  /* ----- Badge-Aktionen: Herz-Puls bei neuem Favoriten, Cart-Bump bei Zunahme ----- */
+  const [heartPulse, setHeartPulse] = useState(0);
+  const prevFavCount = useRef(favoritesCount);
+  useEffect(() => {
+    if (favoritesCount > prevFavCount.current && !hidden) {
+      setHeartPulse((n) => n + 1);
+    }
+    prevFavCount.current = favoritesCount;
+  }, [favoritesCount, hidden]);
+
+  const [cartBump, setCartBump] = useState(0);
+  const prevCartCount = useRef(shoppingCount);
+  useEffect(() => {
+    if (shoppingCount > prevCartCount.current) setCartBump((n) => n + 1);
+    prevCartCount.current = shoppingCount;
+  }, [shoppingCount]);
 
   const setSearchQuery = useCallback(
     (q: string) => {
@@ -273,26 +292,31 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange }) => {
               title="Favoriten"
               className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
             >
-              <Heart className="w-6 h-6" aria-hidden="true" />
-              {favoritesCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#D35400] text-on-accent text-[10px] font-bold flex items-center justify-center leading-none ring-2 ring-header-top">
-                  {favoritesCount > 99 ? '99+' : favoritesCount}
-                </span>
-              )}
+              <span
+                key={heartPulse}
+                className={`flex items-center justify-center ${heartPulse > 0 ? 'vc-icon-pulse' : ''}`}
+              >
+                <Heart className="w-6 h-6" aria-hidden="true" />
+              </span>
             </button>
 
             <button
               id="nav-tab-shopping-badge"
               type="button"
               onClick={() => handleNavigate('/shopping')}
-              aria-label={shoppingCount > 0 ? `Einkaufsliste, ${shoppingCount} offen` : 'Einkaufsliste'}
+              aria-label={shoppingCount > 0 ? `Einkaufswagen, ${shoppingCount} Artikel` : 'Einkaufswagen'}
               title="Einkaufsliste"
               className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
             >
               <ShoppingCart className="w-6 h-6" aria-hidden="true" />
               {shoppingCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-on-accent text-[10px] font-bold flex items-center justify-center leading-none ring-2 ring-header-top">
-                  {shoppingCount > 99 ? '99+' : shoppingCount}
+                <span
+                  key={cartBump}
+                  className={`absolute top-0 right-0 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-on-accent text-[11px] font-bold flex items-center justify-center leading-none ring-2 ring-header-top ${
+                    cartBump > 0 ? 'vc-badge-bump' : ''
+                  }`}
+                >
+                  {shoppingCount >= 10 ? '9+' : shoppingCount}
                 </span>
               )}
             </button>
