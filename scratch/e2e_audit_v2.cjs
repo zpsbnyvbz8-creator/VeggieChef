@@ -187,8 +187,8 @@ async function runAudit() {
     const h1 = document.querySelector('h1');
     return h1 ? h1.className : '';
   });
-  const hasExpectedH1Size = h1Classes.includes('text-2xl') && h1Classes.includes('sm:text-3xl') && h1Classes.includes('lg:text-4xl');
-  record('header', "H1 'Was kochen wir heute?' hat responsive Schriftgröße (text-2xl sm:text-3xl lg:text-4xl)", hasExpectedH1Size, h1Classes);
+  const hasExpectedH1Size = h1Classes.includes('text-3xl') && h1Classes.includes('sm:text-4xl');
+  record('header', "H1 'Was kochen wir heute?' hat identische Schriftgröße wie Vorratskammer/Planer (text-3xl sm:text-4xl)", hasExpectedH1Size, h1Classes);
 
   // ----------------------------------------------------
   // TEST SUITE 2: Überrasch mich (SlotMachineModal)
