@@ -22,6 +22,7 @@ const formatRating = (recipe: Recipe): string | null => {
 
 interface RecipeCardListRowProps {
   recipe: Recipe;
+  index?: number;
 }
 
 /**
@@ -30,7 +31,7 @@ interface RecipeCardListRowProps {
  * (bewusst ohne Beschreibung). Herz-Button identisch zur Einheitskarte
  * (48/40/22/8px).
  */
-export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe }) => {
+export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe, index }) => {
   const { favorites, toggleFavorite, dislikedIds } = useRecipes();
   const isFavorite = favorites.includes(recipe.id);
   const isDisliked = dislikedIds.includes(recipe.id);
@@ -38,10 +39,20 @@ export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe }) 
   const diet = getRecipeDiet(recipe);
   const detailPath = `/recipes/${recipe.id}`;
 
+  const cardStyle: React.CSSProperties = {
+    ...(index !== undefined && index < 10
+      ? ({ viewTransitionName: `recipe-${recipe.id}` } as React.CSSProperties)
+      : {}),
+    ...(index !== undefined
+      ? ({ '--card-index': index } as React.CSSProperties)
+      : {}),
+  };
+
   return (
     <article
       id={`recipe-card-${recipe.id}`}
-      className={`group relative flex w-full h-full bg-card rounded-2xl border overflow-hidden transition-all duration-300 ${
+      style={cardStyle}
+      className={`group relative flex w-full h-full bg-card rounded-2xl border overflow-hidden transition-all duration-300 vc-card-stagger ${
         isDisliked
           ? 'border-border opacity-70 hover:opacity-100'
           : 'border-border shadow-xs hover:border-accent/40 hover:shadow-md'
@@ -58,7 +69,7 @@ export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe }) 
       </div>
 
       {/* Textbereich */}
-      <div className="flex flex-col flex-1 min-w-0 gap-1 py-3 pl-3 pr-12 sm:py-3.5 sm:pl-4 sm:pr-14">
+      <div className="flex flex-col justify-center flex-1 min-w-0 py-2.5 pl-3 pr-12 sm:py-3 sm:pl-4 sm:pr-14 gap-1.5 sm:gap-2">
         <h3 className="font-bold text-card-title leading-snug line-clamp-2 text-text-main group-hover:text-accent transition-colors">
           <Link
             to={detailPath}
@@ -86,7 +97,7 @@ export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe }) 
           </span>
         </div>
 
-        <div className="mt-auto pt-1.5 flex items-center gap-3.5 text-xs font-semibold text-text-main">
+        <div className="flex items-center gap-3.5 text-xs font-semibold text-text-main">
           <span className="inline-flex items-center gap-1">
             <Flame className="w-3.5 h-3.5 text-[#E67E22]" aria-hidden="true" />
             {recipe.nutrients.calories} kcal

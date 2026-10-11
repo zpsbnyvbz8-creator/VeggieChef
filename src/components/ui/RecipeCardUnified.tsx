@@ -14,6 +14,7 @@ interface RecipeCardUnifiedProps {
   variant?: RecipeCardVariant;
   className?: string;
   showDifficulty?: boolean;
+  index?: number;
 }
 
 const DIFFICULTY_LABEL: Record<Recipe['difficulty'], string> = {
@@ -34,6 +35,7 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
   variant = 'regular',
   className = '',
   showDifficulty = true,
+  index,
 }) => {
   const { favorites, toggleFavorite, dislikedIds } = useRecipes();
   const isFavorite = favorites.includes(recipe.id);
@@ -43,10 +45,20 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
 
   const isCompact = variant === 'compact';
 
+  const cardStyle: React.CSSProperties = {
+    ...(index !== undefined && index < 10
+      ? ({ viewTransitionName: `recipe-${recipe.id}` } as React.CSSProperties)
+      : {}),
+    ...(index !== undefined
+      ? ({ '--card-index': index } as React.CSSProperties)
+      : {}),
+  };
+
   return (
     <article
       id={`recipe-card-${recipe.id}`}
-      className={`group relative flex flex-col w-full h-full bg-card rounded-2xl border overflow-hidden transition-all duration-300 ${
+      style={cardStyle}
+      className={`group relative flex flex-col w-full h-full bg-card rounded-2xl border overflow-hidden transition-all duration-300 vc-card-stagger ${
         isDisliked
           ? 'border-border opacity-70 hover:opacity-100'
           : isCompact

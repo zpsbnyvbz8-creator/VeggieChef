@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useNavigate, useNavigationType } from 'react-router-dom';
 import { ArrowUpDown, ChevronDown, Layers, LayoutGrid, List, Plus, Bookmark } from 'lucide-react';
 import { useRecipes } from '../context/RecipeContext';
@@ -48,6 +49,19 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
   useEffect(() => {
     saveToLocalStorage(VIEW_MODE_KEY, viewMode);
   }, [viewMode]);
+
+  const handleToggleViewMode = (newMode: 'grid' | 'list') => {
+    if (newMode === viewMode) return;
+    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+      (document as any).startViewTransition(() => {
+        flushSync(() => {
+          setViewMode(newMode);
+        });
+      });
+    } else {
+      setViewMode(newMode);
+    }
+  };
 
   /* ---- data ---- */
   const recipes = useMemo(
@@ -227,7 +241,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
             >
               <button
                 type="button"
-                onClick={() => setViewMode('grid')}
+                onClick={() => handleToggleViewMode('grid')}
                 aria-pressed={viewMode === 'grid'}
                 aria-label="Rasteransicht"
                 title="Raster"
@@ -239,7 +253,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
               </button>
               <button
                 type="button"
-                onClick={() => setViewMode('list')}
+                onClick={() => handleToggleViewMode('list')}
                 aria-pressed={viewMode === 'list'}
                 aria-label="Listenansicht"
                 title="Liste"
@@ -303,12 +317,12 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
                   : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 list-none'
               }
             >
-              {visible.map((recipe) => (
+              {visible.map((recipe, i) => (
                 <li key={recipe.id} className="vc-fade-up flex min-w-0">
                   {viewMode === 'list' ? (
-                    <RecipeCardListRow recipe={recipe} />
+                    <RecipeCardListRow recipe={recipe} index={i} />
                   ) : (
-                    <RecipeCardUnified recipe={recipe} variant="regular" />
+                    <RecipeCardUnified recipe={recipe} variant="regular" index={i} />
                   )}
                 </li>
               ))}
