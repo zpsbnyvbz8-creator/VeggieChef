@@ -93,6 +93,7 @@ export function buildCategoryOptions(recipes: Recipe[]): CategoryOption[] {
 /* -------------------------------------------------------------------------- */
 
 export interface Option<T> {
+  id?: string;
   label: string;
   value: T;
 }
@@ -131,14 +132,30 @@ export const PROTEIN_OPTIONS: Option<number>[] = [
   { label: 'ab 40 g', value: 40 },
 ];
 
-export const SORT_OPTIONS: Option<FilterState['sortBy']>[] = [
-  { label: 'Beliebt', value: 'featured' },
-  { label: 'Schnellste zuerst', value: 'timeAsc' },
-  { label: 'Meiste Proteine', value: 'proteinDesc' },
-  { label: 'Wenigste Kalorien', value: 'caloriesAsc' },
-  { label: 'Beste Bewertung', value: 'ratingDesc' },
-  { label: 'Neu hinzugefügt', value: 'recentlyAdded' },
-  { label: 'Zuletzt gekocht', value: 'recentlyCooked' },
+export interface SortOptionItem extends Option<FilterState['sortBy']> {
+  id: FilterState['sortBy'];
+  value: FilterState['sortBy'];
+  label: string;
+}
+
+export const SORT_OPTIONS: SortOptionItem[] = [
+  { id: 'featured', value: 'featured', label: 'Beliebt' },
+  { id: 'timeAsc', value: 'timeAsc', label: 'Schnellste zuerst' },
+  { id: 'proteinDesc', value: 'proteinDesc', label: 'Meiste Proteine' },
+  { id: 'caloriesDesc', value: 'caloriesDesc', label: 'Meiste Kalorien' },
+  { id: 'ratingDesc', value: 'ratingDesc', label: 'Beste Bewertung' },
+  { id: 'recentlyAdded', value: 'recentlyAdded', label: 'Neu hinzugefügt' },
+  { id: 'recentlyCooked', value: 'recentlyCooked', label: 'Zuletzt gekocht' },
+];
+
+export const PICKER_SORT_OPTIONS: SortOptionItem[] = [
+  { id: 'featured', value: 'featured', label: 'Beliebt' },
+  { id: 'recentlyAdded', value: 'recentlyAdded', label: 'Neu hinzugefügt' },
+  { id: 'recentlyCooked', value: 'recentlyCooked', label: 'Zuletzt gekocht' },
+  { id: 'timeAsc', value: 'timeAsc', label: 'Schnellste zuerst' },
+  { id: 'proteinDesc', value: 'proteinDesc', label: 'Meiste Proteine' },
+  { id: 'caloriesDesc', value: 'caloriesDesc', label: 'Meiste Kalorien' },
+  { id: 'ratingDesc', value: 'ratingDesc', label: 'Beste Bewertung' },
 ];
 
 /* -------------------------------------------------------------------------- */

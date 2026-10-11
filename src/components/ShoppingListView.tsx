@@ -15,10 +15,10 @@ import {
   X,
   ChevronDown,
   Sparkles,
-  Users,
-  Cloud,
-  GripVertical
+  GripVertical,
+  MoreHorizontal
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingItem, IngredientCategory } from '../types';
 import { 
   generateShoppingListText, 
@@ -175,6 +175,21 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const [confirmDeleteState, setConfirmDeleteState] = useState<{
     type: 'all' | 'completed';
   } | null>(null);
+
+  // 3-Punkte-Menü state
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const contextMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showContextMenu) return;
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+        setShowContextMenu(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+  }, [showContextMenu]);
 
   // Custom Category Dropdown in quick add form
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
@@ -697,13 +712,18 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
     const hasSecondaryText = Boolean(recipeSourceText);
 
     return (
-      <div
+      <motion.div
+        layout="position"
         key={item.id}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
+        transition={{ layout: { duration: 0.2 }, opacity: { duration: 0.18 } }}
         data-swipe-item={item.id}
         draggable={!isEditing && !isSwiped && !isAnySwiped}
-        onDragStart={(e) => handleDragStartItem(e, item.id)}
-        onDragOver={(e) => handleDragOverItem(e, item.id)}
-        onDragLeave={(e) => {
+        onDragStart={(e: any) => handleDragStartItem(e, item.id)}
+        onDragOver={(e: any) => handleDragOverItem(e, item.id)}
+        onDragLeave={(e: any) => {
           if (!e.currentTarget.contains(e.relatedTarget as Node)) {
             if (dragOverItemId === item.id) {
               setDragOverItemId(null);
@@ -711,14 +731,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             }
           }
         }}
-        onDrop={(e) => handleDropItem(e, item.id)}
+        onDrop={(e: any) => handleDropItem(e, item.id)}
         onDragEnd={() => {
           setDraggedItemId(null);
           setDragOverItemId(null);
           setDragDropPosition(null);
           setIsDragOverDelete(false);
         }}
-        className={`relative overflow-hidden select-none group touch-pan-y transition-all ${
+        className={`relative overflow-hidden select-none group touch-pan-y transition-colors ${
           isBeingDragged
             ? 'opacity-40 border-dashed border-accent'
             : 'opacity-100'
@@ -1004,7 +1024,6 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                         cancelEditing();
                       }
                     }}
-                    autoFocus
                     placeholder="1 Stk"
                     className="w-20 sm:w-24 h-full px-2 text-center text-[16px] font-semibold text-text-main bg-card focus:outline-hidden focus:bg-surface"
                   />
@@ -1178,7 +1197,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             </>
           )}
         </div>
-      </div>
+      </motion.div>
     );
   };
 
@@ -1187,39 +1206,6 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       {/* Header & Controls */}
       <div className="bg-card rounded-2xl p-4 sm:p-5 lg:p-6 border border-border shadow-xs space-y-4">
         <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Einheitliches Status-Badge: Zeigt aktive Artikel ohne Redundanz */}
-            <div className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent-tint text-accent text-xs font-semibold border border-border whitespace-nowrap">
-              <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
-              <span>{activeCount} offen</span>
-            </div>
-
-            {onOpenSyncModal && (
-              <button
-                type="button"
-                onClick={onOpenSyncModal}
-                className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap ${
-                  syncConfig?.mode === 'family' && syncConfig?.groupId
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                    : 'bg-surface text-text-muted border-border hover:bg-accent-tint'
-                }`}
-                title="Synchronisationseinstellungen öffnen"
-              >
-                {syncConfig?.mode === 'family' && syncConfig?.groupId ? (
-                  <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                    <Users className="w-3 h-3 text-emerald-700" />
-                    <span>Familie: {syncConfig.groupName || syncConfig.groupId}</span>
-                  </>
-                ) : (
-                  <>
-                    <Cloud className="w-3 h-3 text-text-muted" />
-                    <span style={{ color: '#686e6a' }}>Lokal • Teilen</span>
-                  </>
-                )}
-              </button>
-            )}
-          </div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-main leading-tight">
             Einkaufsliste
           </h1>
@@ -1267,8 +1253,119 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             </button>
           </div>
 
-          {/* Right side: Unified matching neutral action buttons ([ Kopieren ] and [ Löschen ]) */}
+          {/* Right side: Unified matching neutral action buttons & 3-Punkte-Menü */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* 3-Punkte-Menü Button (Klassisches iOS Select-Menü auf Mobile & Dropdown auf Desktop) */}
+            <div className="relative shrink-0" ref={contextMenuRef}>
+              {/* Native iOS / Mobile Dropdown Select */}
+              <select
+                aria-label="Einkaufslisten-Optionen"
+                value=""
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'copy') handleCopyFormattedList();
+                  else if (val === 'clear-completed') {
+                    if (completedCount > 0) setConfirmDeleteState({ type: 'completed' });
+                  }
+                  else if (val === 'clear-all') {
+                    if (items.length > 0) setConfirmDeleteState({ type: 'all' });
+                  }
+                  e.target.value = '';
+                }}
+                className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
+              >
+                <option value="" disabled>Einkaufslisten-Optionen...</option>
+                <option value="copy" disabled={items.length === 0}>Liste kopieren</option>
+                {completedCount > 0 && (
+                  <option value="clear-completed">Erledigte entfernen</option>
+                )}
+                {items.length > 0 && (
+                  <option value="clear-all">Gesamte Liste leeren</option>
+                )}
+              </select>
+
+              <button
+                type="button"
+                id="shopping-list-context-menu-btn"
+                onClick={() => setShowContextMenu((prev) => !prev)}
+                className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs border ${
+                  showContextMenu
+                    ? 'bg-[#E5EBE6] text-text-main border-accent-border ring-2 ring-accent/25'
+                    : 'bg-surface hover:bg-accent-tint text-text-main hover:text-text-main border-border hover:border-accent-border'
+                }`}
+                title="Weitere Optionen"
+                aria-label="Weitere Optionen"
+                aria-expanded={showContextMenu}
+              >
+                <MoreHorizontal className="w-5 h-5 text-text-main" />
+              </button>
+
+              {showContextMenu && (
+                <>
+                  {/* Backdrop for click outside on desktop */}
+                  <div
+                    className="hidden sm:block fixed inset-0 z-40"
+                    onClick={() => setShowContextMenu(false)}
+                    aria-hidden="true"
+                  />
+
+                  {/* Desktop Dropdown Popover (>= sm) */}
+                  <div className="hidden sm:block absolute right-0 top-full mt-2 w-72 bg-card rounded-2xl border border-border shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 space-y-1">
+                    <button
+                      type="button"
+                      id="context-menu-copy-list-btn"
+                      onClick={() => {
+                        setShowContextMenu(false);
+                        handleCopyFormattedList();
+                      }}
+                      disabled={items.length === 0}
+                      className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-text-main hover:bg-surface active:bg-accent-tint disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-accent-tint flex items-center justify-center shrink-0 text-accent">
+                        <Copy className="w-4 h-4 shrink-0" />
+                      </div>
+                      <span className="truncate">Liste kopieren</span>
+                    </button>
+
+                    {completedCount > 0 && (
+                      <button
+                        type="button"
+                        id="context-menu-clear-completed-btn"
+                        onClick={() => {
+                          setShowContextMenu(false);
+                          setConfirmDeleteState({ type: 'completed' });
+                        }}
+                        className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-text-main hover:bg-surface active:bg-accent-tint flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-accent-tint flex items-center justify-center shrink-0 text-accent">
+                          <CheckCheck className="w-4 h-4 shrink-0" />
+                        </div>
+                        <span className="truncate">Erledigte entfernen</span>
+                      </button>
+                    )}
+
+                    <div className="border-t border-border my-1" />
+
+                    <button
+                      type="button"
+                      id="context-menu-clear-all-btn"
+                      onClick={() => {
+                        setShowContextMenu(false);
+                        setConfirmDeleteState({ type: 'all' });
+                      }}
+                      disabled={items.length === 0}
+                      className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center shrink-0 text-rose-600">
+                        <Trash2 className="w-4 h-4 shrink-0" />
+                      </div>
+                      <span className="truncate">Gesamte Liste leeren</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
             <button
               id="copy-entire-shopping-list-btn"
               type="button"
@@ -1363,13 +1460,13 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             onChange={(e) => setCategoryChoice(e.target.value as any)}
             className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
           >
-            <option value="auto">✨ Auto-Erkennung</option>
-            <option value="gemuese">🥦 Gemüse</option>
-            <option value="kuehlregal">🥛 Kühlregal</option>
-            <option value="huelsenfruechte">🫘 Hülsenfrüchte</option>
-            <option value="trockenwaren">🌾 Vorrat</option>
-            <option value="gewuerze">🧂 Gewürze</option>
-            <option value="sonstiges">📦 Sonstiges</option>
+            <option value="auto">Auto-Erkennung</option>
+            <option value="gemuese">Gemüse</option>
+            <option value="kuehlregal">Kühlregal</option>
+            <option value="huelsenfruechte">Hülsenfrüchte</option>
+            <option value="trockenwaren">Vorrat</option>
+            <option value="gewuerze">Gewürze</option>
+            <option value="sonstiges">Sonstiges</option>
           </select>
 
           <button
@@ -1383,18 +1480,18 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           >
             <span>
               {categoryChoice === 'auto'
-                ? '✨ Auto'
+                ? 'Auto'
                 : categoryChoice === 'gemuese'
-                ? '🥦 Gemüse'
+                ? 'Gemüse'
                 : categoryChoice === 'kuehlregal'
-                ? '🥛 Kühlregal'
+                ? 'Kühlregal'
                 : categoryChoice === 'huelsenfruechte'
-                ? '🫘 Hülsenfrüchte'
+                ? 'Hülsenfrüchte'
                 : categoryChoice === 'trockenwaren'
-                ? '🌾 Vorrat'
+                ? 'Vorrat'
                 : categoryChoice === 'gewuerze'
-                ? '🧂 Gewürze'
-                : '📦 Sonstiges'}
+                ? 'Gewürze'
+                : 'Sonstiges'}
             </span>
             <ChevronDown
               className={`w-4 h-4 text-text-muted transition-transform duration-150 ${
@@ -1419,7 +1516,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 }`}
               >
                 <span className="flex items-center gap-2">
-                  <span>✨</span>
+                  <Sparkles className="w-4 h-4 text-accent" />
                   <span>Auto-Erkennung</span>
                 </span>
                 {categoryChoice === 'auto' && <Check className="w-4 h-4 text-accent" />}
@@ -1429,12 +1526,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
               {(
                 [
-                  ['gemuese', '🥦 Gemüse', 'Frisches Gemüse'],
-                  ['kuehlregal', '🥛 Kühlregal', 'Kühlwaren & Milch/Tofu'],
-                  ['huelsenfruechte', '🫘 Hülsenfrüchte', 'Bohnen, Linsen & Tofu'],
-                  ['trockenwaren', '🌾 Vorrat', 'Nudeln, Reis & Konserven'],
-                  ['gewuerze', '🧂 Gewürze', 'Gewürze & Öle'],
-                  ['sonstiges', '📦 Sonstiges', 'Haushalt & Sonstiges'],
+                  ['gemuese', 'Gemüse', 'Frisches Gemüse & Kräuter'],
+                  ['kuehlregal', 'Kühlregal', 'Kühlwaren & Alternativen'],
+                  ['huelsenfruechte', 'Hülsenfrüchte', 'Bohnen, Linsen & Tofu'],
+                  ['trockenwaren', 'Vorrat', 'Nudeln, Reis & Konserven'],
+                  ['gewuerze', 'Gewürze', 'Gewürze, Öle & Dips'],
+                  ['sonstiges', 'Sonstiges', 'Haushalt & Sonstiges'],
                 ] as const
               ).map(([catKey, catLabel]) => {
                 const isSelected = categoryChoice === catKey;
@@ -1521,7 +1618,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
             {activeItems.length > 0 ? (
               <div className="divide-y divide-[#F0EFEB]">
-                {activeItems.map(renderItemRow)}
+                <AnimatePresence initial={false}>
+                  {activeItems.map(renderItemRow)}
+                </AnimatePresence>
               </div>
             ) : (
               <p className="text-xs text-text-muted py-6 text-center italic">
@@ -1620,7 +1719,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   >
                     <div className="overflow-hidden">
                       <div className="divide-y divide-[#F0EFEB]">
-                        {activeInCat.map(renderItemRow)}
+                        <AnimatePresence initial={false}>
+                          {activeInCat.map(renderItemRow)}
+                        </AnimatePresence>
                       </div>
                     </div>
                   </div>
@@ -1695,7 +1796,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           >
             <div className="overflow-hidden">
               <div className="border-t border-border divide-y divide-[#F0EFEB] bg-card">
-                {completedItems.map(renderItemRow)}
+                <AnimatePresence initial={false}>
+                  {completedItems.map(renderItemRow)}
+                </AnimatePresence>
               </div>
             </div>
           </div>

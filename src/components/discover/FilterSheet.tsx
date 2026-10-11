@@ -1,5 +1,14 @@
-import React, { useEffect, useRef } from 'react';
-import { Clock, ChefHat, Flame, Dumbbell, Leaf } from 'lucide-react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import {
+  Clock,
+  ChefHat,
+  Flame,
+  Dumbbell,
+  Leaf,
+  Sparkles,
+  Salad,
+  Star,
+} from 'lucide-react';
 import { CloseButton } from '../ui/CloseButton';
 import { FilterState } from '../../types';
 import {
@@ -28,9 +37,17 @@ interface OptionGroupProps<T extends string | number> {
   options: Option<T>[];
   value: T;
   onChange: (v: T) => void;
+  getOptionIcon?: (value: T) => React.ReactNode;
 }
 
-function OptionGroup<T extends string | number>({ label, icon, options, value, onChange }: OptionGroupProps<T>) {
+function OptionGroup<T extends string | number>({
+  label,
+  icon,
+  options,
+  value,
+  onChange,
+  getOptionIcon,
+}: OptionGroupProps<T>) {
   const labelId = `filter-group-${label.replace(/\s+/g, '-').toLowerCase()}`;
   return (
     <div className="space-y-2.5">
@@ -43,6 +60,7 @@ function OptionGroup<T extends string | number>({ label, icon, options, value, o
       <div role="radiogroup" aria-labelledby={labelId} className="flex flex-wrap gap-2">
         {options.map((opt) => {
           const selected = opt.value === value;
+          const optIcon = getOptionIcon ? getOptionIcon(opt.value) : null;
           return (
             <button
               key={String(opt.value)}
@@ -50,13 +68,21 @@ function OptionGroup<T extends string | number>({ label, icon, options, value, o
               role="radio"
               aria-checked={selected}
               onClick={() => onChange(opt.value)}
-              className={`h-11 px-4 rounded-xl border text-sm font-semibold transition-all cursor-pointer touch-manipulation active:scale-95 ${
+              className={`h-11 px-4 rounded-xl border text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
                 selected
                   ? 'bg-accent border-accent text-on-accent shadow-2xs'
                   : 'bg-surface border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
               }`}
             >
-              {opt.label}
+              {optIcon && (
+                <span
+                  className={`shrink-0 ${selected ? 'text-on-accent' : 'text-text-muted'}`}
+                  aria-hidden="true"
+                >
+                  {optIcon}
+                </span>
+              )}
+              <span>{opt.label}</span>
             </button>
           );
         })}
@@ -71,14 +97,58 @@ function OptionGroup<T extends string | number>({ label, icon, options, value, o
  */
 export const FilterSheet: React.FC<FilterSheetProps> = ({ open, onClose, filters, setFilters, resultCount }) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [isClosing, setIsClosing] = useState(false);
+  const closingTimeoutRef = useRef<number | null>(null);
   useLockBodyScroll(open);
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
+
+    if (open) {
+      setIsClosing(false);
+      if (!dialog.open) {
+        try {
+          dialog.showModal();
+        } catch {
+          // ignore
+        }
+      }
+    } else if (dialog.open && !isClosing) {
+      try {
+        dialog.close();
+      } catch {
+        // ignore
+      }
+    }
+  }, [open, isClosing]);
+
+  useEffect(() => {
+    return () => {
+      if (closingTimeoutRef.current !== null) {
+        window.clearTimeout(closingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleClose = useCallback(() => {
+    if (isClosing) return;
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+
+    if (prefersReducedMotion) {
+      onClose();
+      return;
+    }
+
+    setIsClosing(true);
+    closingTimeoutRef.current = window.setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 200);
+  }, [isClosing, onClose]);
 
   const activeCount = getActiveSheetFilters(filters).length;
   const patch = (p: Partial<FilterState>) => setFilters((prev) => ({ ...prev, ...p }));
@@ -86,26 +156,31 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({ open, onClose, filters
   return (
     <dialog
       ref={dialogRef}
-      className="vc-sheet"
+      className={`vc-sheet transition-all duration-200 ease-out ${
+        isClosing
+          ? 'opacity-0 translate-y-8 sm:scale-95 pointer-events-none'
+          : 'opacity-100 translate-y-0 sm:scale-100'
+      }`}
       aria-labelledby="filter-sheet-title"
-      // Native light-dismiss where supported, manual fallback below
-      {...({ closedby: 'any' } as Record<string, string>)}
-      onClose={onClose}
+      onCancel={(e) => {
+        e.preventDefault();
+        handleClose();
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) handleClose();
       }}
     >
       <div className="flex flex-col max-h-[88dvh]">
         {/* Grab handle (mobile) */}
-        <div className="sm:hidden pt-2.5 flex justify-center" aria-hidden="true">
+        <div className="sm:hidden pt-2.5 flex justify-center shrink-0" aria-hidden="true">
           <span className="w-10 h-1.5 rounded-full bg-border" />
         </div>
 
-        <div className="flex items-center justify-between gap-3 px-5 pt-3 sm:pt-5 pb-3">
+        <div className="flex items-center justify-between gap-3 px-5 pt-3 sm:pt-5 pb-3 shrink-0">
           <h2 id="filter-sheet-title" className="text-xl font-extrabold tracking-tight text-text-main">
             Filter
           </h2>
-          <CloseButton onClick={onClose} ariaLabel="Filter schließen" />
+          <CloseButton onClick={handleClose} ariaLabel="Filter schließen" />
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-5 space-y-6">
@@ -115,6 +190,11 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({ open, onClose, filters
             options={DIET_OPTIONS}
             value={filters.diet}
             onChange={(diet) => patch({ diet })}
+            getOptionIcon={(v) => {
+              if (v === 'vegan') return <Leaf className="w-3.5 h-3.5" />;
+              if (v === 'vegetarisch') return <Salad className="w-3.5 h-3.5" />;
+              return <Sparkles className="w-3.5 h-3.5" />;
+            }}
           />
 
           <OptionGroup
@@ -123,31 +203,51 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({ open, onClose, filters
             options={TIME_OPTIONS}
             value={filters.maxTime}
             onChange={(maxTime) => patch({ maxTime })}
+            getOptionIcon={(v) => {
+              if (v === 0) return <Sparkles className="w-3.5 h-3.5" />;
+              return <Clock className="w-3.5 h-3.5" />;
+            }}
           />
+
           <OptionGroup
             label="Schwierigkeit"
             icon={<ChefHat className="w-4 h-4" />}
             options={DIFFICULTY_OPTIONS}
             value={filters.difficulty}
             onChange={(difficulty) => patch({ difficulty })}
+            getOptionIcon={(v) => {
+              if (v === 'all') return <Sparkles className="w-3.5 h-3.5" />;
+              if (v === 'Anspruchsvoll') return <Star className="w-3.5 h-3.5" />;
+              return <ChefHat className="w-3.5 h-3.5" />;
+            }}
           />
+
           <OptionGroup
             label="Kalorien pro Portion"
             icon={<Flame className="w-4 h-4" />}
             options={CALORIE_OPTIONS}
             value={filters.maxCalories}
             onChange={(maxCalories) => patch({ maxCalories })}
+            getOptionIcon={(v) => {
+              if (v === 0) return <Sparkles className="w-3.5 h-3.5" />;
+              return <Flame className="w-3.5 h-3.5" />;
+            }}
           />
+
           <OptionGroup
             label="Protein pro Portion"
             icon={<Dumbbell className="w-4 h-4" />}
             options={PROTEIN_OPTIONS}
             value={filters.minProtein}
             onChange={(minProtein) => patch({ minProtein })}
+            getOptionIcon={(v) => {
+              if (v === 0) return <Sparkles className="w-3.5 h-3.5" />;
+              return <Dumbbell className="w-3.5 h-3.5" />;
+            }}
           />
         </div>
 
-        <div className="flex items-center gap-3 px-5 py-4 border-t border-border bg-card pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="flex items-center gap-3 px-5 py-4 border-t border-border bg-card pb-[max(1rem,env(safe-area-inset-bottom))] shrink-0">
           <button
             id="filter-sheet-reset-btn"
             type="button"
@@ -160,7 +260,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({ open, onClose, filters
           <button
             id="filter-sheet-apply-btn"
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="flex-1 h-12 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-base font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
           >
             {resultCount === 0
