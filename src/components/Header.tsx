@@ -262,7 +262,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange }) => {
               title="Suchen"
               className="w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
             >
-              <Search className="w-5 h-5" aria-hidden="true" />
+              <Search className="w-6 h-6" aria-hidden="true" />
             </button>
 
             <button
@@ -273,7 +273,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange }) => {
               title="Favoriten"
               className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
             >
-              <Heart className="w-5 h-5" aria-hidden="true" />
+              <Heart className="w-6 h-6" aria-hidden="true" />
               {favoritesCount > 0 && (
                 <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#D35400] text-on-accent text-[10px] font-bold flex items-center justify-center leading-none ring-2 ring-header-top">
                   {favoritesCount > 99 ? '99+' : favoritesCount}
@@ -289,7 +289,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange }) => {
               title="Einkaufsliste"
               className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
             >
-              <ShoppingCart className="w-5 h-5" aria-hidden="true" />
+              <ShoppingCart className="w-6 h-6" aria-hidden="true" />
               {shoppingCount > 0 && (
                 <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-on-accent text-[10px] font-bold flex items-center justify-center leading-none ring-2 ring-header-top">
                   {shoppingCount > 99 ? '99+' : shoppingCount}
@@ -307,7 +307,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange }) => {
               title="Menü"
               className="w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
             >
-              <Menu className="w-5 h-5" aria-hidden="true" />
+              <Menu className="w-6 h-6" aria-hidden="true" />
             </button>
           </div>
         </div>
