@@ -51,6 +51,10 @@ export interface RecipeContextType {
   setSelectedRecipe: React.Dispatch<React.SetStateAction<Recipe | null>>;
   isAddRecipeOpen: boolean;
   setIsAddRecipeOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Filter-Sheet (nur auf der Entdecker-Seite gemountet); Header öffnet es über das Filter-Icon im Suchfeld. */
+  isFilterSheetOpen: boolean;
+  openFilterSheet: () => void;
+  closeFilterSheet: () => void;
   cookedLogs: CookedLog[];
   setCookedLogs: React.Dispatch<React.SetStateAction<CookedLog[]>>;
   logCooked: (recipe: Recipe, servings: number, notes?: string, rating?: number, photoUrl?: string) => void;
@@ -121,6 +125,7 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Modal / Interactive Views State
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isAddRecipeOpen, setIsAddRecipeOpen] = useState(false);
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [cookingModeRecipe, setCookingModeRecipe] = useState<{ recipe: Recipe; servings: number } | null>(null);
   const [isCookingMinimized, setIsCookingMinimized] = useState<boolean>(false);
   const [cookingCurrentStep, setCookingCurrentStep] = useState<number>(0);
@@ -275,6 +280,9 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setFilters(DEFAULT_FILTERS);
   };
 
+  const openFilterSheet = () => setIsFilterSheetOpen(true);
+  const closeFilterSheet = () => setIsFilterSheetOpen(false);
+
   const logCooked = (recipe: Recipe, servings: number, notes?: string, rating?: number, photoUrl?: string) => {
     const savings = calculateMealSavings(servings, recipe.isVegan);
     const newLog: CookedLog = {
@@ -377,6 +385,9 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setSelectedRecipe,
         isAddRecipeOpen,
         setIsAddRecipeOpen,
+        isFilterSheetOpen,
+        openFilterSheet,
+        closeFilterSheet,
         cookedLogs,
         setCookedLogs,
         logCooked,

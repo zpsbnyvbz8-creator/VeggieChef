@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Leaf,
@@ -7,7 +7,6 @@ import {
   Menu,
   Search,
   X,
-  Utensils,
   Refrigerator,
   Calendar,
   BarChart3,
@@ -21,6 +20,7 @@ import { useRecipes } from '../context/RecipeContext';
 import { useShopping } from '../context/ShoppingContext';
 import { useSync } from '../context/SyncContext';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
+import { getActiveSheetFilters } from '../utils/discover';
 
 export type NavTab = 'recipes' | 'fridge' | 'planner';
 
@@ -95,6 +95,89 @@ const MenuRow: React.FC<MenuRowProps> = ({
   </button>
 );
 
+/* -------------------------------------------------------------------------- */
+/* Suchfeld (Punkt 4): Lupe + Feld + Löschen + Filter-Icon + Schließen-Button. */
+/* -------------------------------------------------------------------------- */
+interface SearchFieldProps {
+  fieldId: string;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  value: string;
+  placeholder: string;
+  onValueChange: (v: string) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  filterCount: number;
+  onFilterOpen: () => void;
+  onClose: () => void;
+}
+
+const SearchField: React.FC<SearchFieldProps> = ({
+  fieldId,
+  inputRef,
+  value,
+  placeholder,
+  onValueChange,
+  onKeyDown,
+  filterCount,
+  onFilterOpen,
+  onClose,
+}) => (
+  <div className="flex items-center gap-2 w-full">
+    <div className="relative flex-1 min-w-0">
+      <Search
+        className="w-[18px] h-[18px] text-header-icon absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+        aria-hidden="true"
+      />
+      <input
+        id={fieldId}
+        ref={inputRef}
+        type="search"
+        enterKeyHint="search"
+        autoComplete="off"
+        aria-label="Rezepte durchsuchen"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onValueChange(e.target.value)}
+        onKeyDown={onKeyDown}
+        className="vc-search-input w-full h-11 pl-10 pr-[90px] rounded-xl bg-card border-2 border-header-line/70 focus:border-accent transition-colors text-text-main placeholder:text-text-muted shadow-2xs [&::-webkit-search-cancel-button]:hidden"
+      />
+      {value.length > 0 && (
+        <button
+          type="button"
+          onClick={() => onValueChange('')}
+          aria-label="Suche leeren"
+          className="absolute right-10 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center text-text-muted hover:text-text-main hover:bg-accent-tint cursor-pointer touch-manipulation"
+        >
+          <X className="w-4 h-4" aria-hidden="true" />
+        </button>
+      )}
+      <button
+        id="header-search-filter-btn"
+        type="button"
+        onClick={onFilterOpen}
+        aria-label={filterCount > 0 ? `Filter öffnen, ${filterCount} aktiv` : 'Filter öffnen'}
+        className={`absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-colors cursor-pointer touch-manipulation ${
+          filterCount > 0 ? 'text-accent' : 'text-text-muted hover:bg-accent-tint hover:text-text-main'
+        }`}
+      >
+        <SlidersHorizontal className="w-5 h-5" aria-hidden="true" />
+        {filterCount > 0 && (
+          <span aria-hidden="true" className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-accent" />
+        )}
+      </button>
+    </div>
+    <button
+      id="header-search-close-btn"
+      type="button"
+      onClick={onClose}
+      aria-label="Suche schließen"
+      title="Schließen"
+      className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
+    >
+      <X className="w-5 h-5" aria-hidden="true" />
+    </button>
+  </div>
+);
+
 export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -119,6 +202,9 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
   const favoritesCount = recipesCtx.favorites.length;
   const shoppingCount = shoppingCtx.uncompletedCount;
   const searchQuery = recipesCtx.filters.searchQuery;
+  const activeFilterCount = useMemo(() => getActiveSheetFilters(recipesCtx.filters).length, [recipesCtx.filters]);
+  const searchPlaceholder =
+    location.pathname === '/favorites' ? 'In Favoriten suchen …' : 'Rezept oder Zutat suchen …';
 
   /* ----- Badge-Aktionen: Herz-Puls bei neuem Favoriten, Cart-Bump bei Zunahme ----- */
   const [heartPulse, setHeartPulse] = useState(0);
@@ -140,42 +226,63 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
   const setSearchQuery = useCallback(
     (q: string) => {
       recipesCtx.setFilters((prev) => ({ ...prev, searchQuery: q }));
-      // Von anderen Seiten führt die Suche zur Entdecker-Seite mit dem Begriff.
-      if (location.pathname !== '/' && location.pathname !== '/favorites') {
-        navigate('/');
-      }
     },
-    [recipesCtx, location.pathname, navigate]
+    [recipesCtx]
   );
 
   /* ----------------------------- Suche ----------------------------- */
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const searchPanelRef = useRef<HTMLDivElement>(null);
+  const searchMobileRef = useRef<HTMLInputElement>(null);
+  const searchDesktopRef = useRef<HTMLInputElement>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  const openSearch = useCallback(() => setIsSearchOpen(true), []);
-  const closeSearch = useCallback(() => setIsSearchOpen(false), []);
+  const closeSearch = useCallback((clear: boolean) => {
+    setIsSearchOpen(false);
+    if (clear) {
+      recipesCtx.setFilters((prev) => ({ ...prev, searchQuery: '' }));
+    }
+  }, [recipesCtx]);
+
+  const openSearch = useCallback(() => {
+    setIsMenuOpen(false);
+    menuRef.current?.close();
+    setIsSearchOpen(true);
+  }, []);
+
+  // Beim Wechsel der Unterroute Suche zuklappen (Suchbegriff bleibt erhalten).
+  useEffect(() => {
+    setIsSearchOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!isSearchOpen) return;
-    const raf = requestAnimationFrame(() => searchInputRef.current?.focus());
+    const raf = requestAnimationFrame(() => {
+      const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+      const el = isDesktop ? searchDesktopRef.current : searchMobileRef.current;
+      el?.focus();
+      el?.select();
+    });
     return () => cancelAnimationFrame(raf);
   }, [isSearchOpen]);
 
-  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
+      e.preventDefault();
       e.stopPropagation();
-      closeSearch();
+      closeSearch(true);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      // Tastatur ausblenden, Feld bleibt offen.
+      e.currentTarget.blur();
+      // Von Vorratskammer/Wochenplaner führt Enter zur Entdecker-Seite.
+      if (!isExplorerRoute) navigate('/');
     }
   };
 
-  // Schließen, sobald der Fokus das Suchpanel verlässt (nicht beim Klick in der Leiste/auf Funk).
-  const handleSearchBlur = (e: React.FocusEvent) => {
-    const next = e.relatedTarget as Node | null;
-    if (searchPanelRef.current && !searchPanelRef.current.contains(next)) {
-      closeSearch();
-    }
-  };
+  const openFilterSheetFromHeader = useCallback(() => {
+    if (!isExplorerRoute) navigate('/');
+    recipesCtx.openFilterSheet();
+  }, [isExplorerRoute, navigate, recipesCtx]);
 
   /* ----------------------------- Menü ----------------------------- */
   const menuRef = useRef<HTMLDialogElement>(null);
@@ -185,9 +292,10 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
   useLockBodyScroll(isMenuOpen);
 
   const openMenu = useCallback(() => {
+    closeSearch(true);
     setIsMenuOpen(true);
     menuRef.current?.showModal();
-  }, []);
+  }, [closeSearch]);
   const closeMenu = useCallback(() => menuRef.current?.close(), []);
 
   // Zustand synchron halten (Esc / Scrim / X → natives close-Event).
@@ -245,29 +353,54 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
             </span>
           </button>
 
-          {/* Desktop-Tabs (eine Zeile ab 768 px) */}
-          <nav aria-label="Hauptbereiche" className="hidden md:flex items-center gap-0.5 ml-2">
-            {HEADER_TABS.map((tab) => {
-              const active = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  id={`nav-tab-${tab.id}`}
-                  type="button"
-                  onClick={() => handleNavigate(tab.path)}
-                  aria-current={active ? 'page' : undefined}
-                  className={`relative flex items-center h-10 px-3 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer touch-manipulation active:scale-[0.98] ${
-                    active ? 'text-accent-hover' : 'text-header-fg hover:text-accent-hover'
-                  }`}
-                >
-                  {tab.label}
-                  {active && (
-                    <span aria-hidden="true" className="absolute inset-x-2 bottom-0 h-[3px] rounded-t-full bg-accent" />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
+          {/* Desktop-Tabs (eine Zeile ab 768 px); im offenen Suchzustand wechselt das
+              Feld per Crossfade an dieselbe Stelle. */}
+          <div className="relative hidden md:block ml-2">
+            <nav
+              aria-label="Hauptbereiche"
+              className={`flex items-center gap-0.5 transition-all duration-[220ms] ease-out ${
+                isSearchOpen ? 'opacity-0 -translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0'
+              }`}
+            >
+              {HEADER_TABS.map((tab) => {
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    id={`nav-tab-${tab.id}`}
+                    type="button"
+                    onClick={() => handleNavigate(tab.path)}
+                    aria-current={active ? 'page' : undefined}
+                    className={`relative flex items-center h-10 px-3 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer touch-manipulation active:scale-[0.98] ${
+                      active ? 'text-accent-hover' : 'text-header-fg hover:text-accent-hover'
+                    }`}
+                  >
+                    {tab.label}
+                    {active && (
+                      <span aria-hidden="true" className="absolute inset-x-2 bottom-0 h-[3px] rounded-t-full bg-accent" />
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+            <div
+              className={`absolute inset-0 flex items-center transition-all duration-[220ms] ease-out ${
+                isSearchOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+              }`}
+            >
+              <SearchField
+                fieldId="header-search-input-lg"
+                inputRef={searchDesktopRef}
+                value={searchQuery}
+                placeholder={searchPlaceholder}
+                onValueChange={setSearchQuery}
+                onKeyDown={handleSearchKeyDown}
+                filterCount={activeFilterCount}
+                onFilterOpen={openFilterSheetFromHeader}
+                onClose={() => closeSearch(true)}
+              />
+            </div>
+          </div>
 
           <div className="flex-1" aria-hidden="true" />
 
@@ -276,10 +409,13 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
             <button
               id="header-search-btn"
               type="button"
-              onClick={openSearch}
-              aria-label="Suche öffnen"
+              onClick={() => (isSearchOpen ? closeSearch(true) : openSearch())}
+              aria-pressed={isSearchOpen}
+              aria-label={isSearchOpen ? 'Suche schließen' : 'Suche öffnen'}
               title="Suchen"
-              className="w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
+              className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 ${
+                isSearchOpen ? 'bg-card/40 text-accent' : 'text-header-icon hover:bg-card/40'
+              }`}
             >
               <Search className="w-6 h-6" aria-hidden="true" />
             </button>
@@ -337,85 +473,63 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
         </div>
       </div>
 
-      {/* Zeile 2: drei Text-Tabs (nur mobil) */}
+      {/* Zeile 2 (nur mobil): Tabs bzw. Suchfeld an derselben Stelle (Crossfade, kein Layoutsprung) */}
       <div className="md:hidden bg-header-panel">
-        <nav aria-label="Hauptbereiche" className="max-w-[1280px] mx-auto flex px-3 sm:px-6">
-          {HEADER_TABS.map((tab) => {
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                id={`nav-tab-mobile-${tab.id}`}
-                type="button"
-                onClick={() => handleNavigate(tab.path)}
-                aria-current={active ? 'page' : undefined}
-                className={`relative flex-1 min-w-0 min-h-[44px] flex items-center justify-center px-1 text-[15px] max-[380px]:text-[14px] font-semibold whitespace-nowrap transition-colors cursor-pointer touch-manipulation active:scale-[0.98] ${
-                  active ? 'text-accent-hover' : 'text-header-fg hover:text-accent-hover'
-                }`}
-              >
-                {tab.label}
-                {active && (
-                  <span aria-hidden="true" className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-12 rounded-t-full bg-accent" />
-                )}
-              </button>
-            );
-          })}
-        </nav>
+        <div className="relative h-11 max-w-[1280px] mx-auto px-3 sm:px-6">
+          <nav
+            aria-label="Hauptbereiche"
+            className={`absolute inset-0 flex items-stretch transition-all duration-[220ms] ease-out ${
+              isSearchOpen ? 'opacity-0 -translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0'
+            }`}
+          >
+            {HEADER_TABS.map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  id={`nav-tab-mobile-${tab.id}`}
+                  type="button"
+                  onClick={() => handleNavigate(tab.path)}
+                  aria-current={active ? 'page' : undefined}
+                  className={`relative flex-1 min-w-0 min-h-[44px] flex items-center justify-center px-1 text-[15px] max-[380px]:text-[14px] font-semibold whitespace-nowrap transition-colors cursor-pointer touch-manipulation active:scale-[0.98] ${
+                    active ? 'text-accent-hover' : 'text-header-fg hover:text-accent-hover'
+                  }`}
+                >
+                  {tab.label}
+                  {active && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-12 rounded-t-full bg-accent"
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+          <div
+            className={`absolute inset-0 flex items-center transition-all duration-[220ms] ease-out ${
+              isSearchOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+            }`}
+          >
+            <SearchField
+              fieldId="header-search-input"
+              inputRef={searchMobileRef}
+              value={searchQuery}
+              placeholder={searchPlaceholder}
+              onValueChange={setSearchQuery}
+              onKeyDown={handleSearchKeyDown}
+              filterCount={activeFilterCount}
+              onFilterOpen={openFilterSheetFromHeader}
+              onClose={() => closeSearch(true)}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Übergang zum Inhalt: Fade (mobil & 768–1023) bzw. Trennlinie (≥ 1024) */}
       <div className="vc-header-fade md:hidden" aria-hidden="true" />
       <div className="vc-header-fade hidden md:block lg:hidden" aria-hidden="true" />
       <div className="hidden lg:block h-px bg-header-line" aria-hidden="true" />
-
-      {/* Suchleiste: fährt unter der Tab-Zeile herunter (Tesla-Stil) */}
-      {isSearchOpen && (
-        <div
-          ref={searchPanelRef}
-          onBlur={handleSearchBlur}
-          className="vc-search-panel absolute inset-x-0 top-full z-50"
-        >
-          <div className="bg-header-panel px-3 sm:px-6 lg:px-8 py-3 pb-4">
-            <div className="max-w-[1280px] mx-auto flex items-center gap-2">
-              <div className="relative flex-1 min-w-0">
-                <Search className="w-5 h-5 text-header-icon absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
-                <input
-                  id="header-search-input"
-                  ref={searchInputRef}
-                  type="search"
-                  enterKeyHint="search"
-                  autoComplete="off"
-                  aria-label="Rezepte durchsuchen"
-                  placeholder={isExplorerRoute ? 'Rezept oder Zutat suchen …' : 'Suche nach Rezepten…'}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={handleSearchKeyDown}
-                  className="w-full h-12 pl-11 pr-12 rounded-2xl bg-card text-text-main placeholder:text-text-muted border border-header-line focus:outline-none focus:ring-2 focus:ring-accent/40 shadow-xs transition-shadow [&::-webkit-search-cancel-button]:hidden"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    aria-label="Suche leeren"
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center text-text-muted hover:text-text-main hover:bg-accent-tint cursor-pointer touch-manipulation"
-                  >
-                    <X className="w-4 h-4" aria-hidden="true" />
-                  </button>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={closeSearch}
-                aria-label="Suche schließen"
-                title="Schließen"
-                className="shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation active:scale-95"
-              >
-                <X className="w-5 h-5" aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Menü als natives Top-Sheet */}
       <dialog

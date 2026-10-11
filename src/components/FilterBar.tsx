@@ -1,7 +1,6 @@
-import React, { useMemo, useState } from 'react';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { X } from 'lucide-react';
 import { useRecipes } from '../context/RecipeContext';
-import { FilterSheet } from './discover/FilterSheet';
 import {
   buildCategoryOptions,
   getActiveSheetFilters,
@@ -9,20 +8,13 @@ import {
   SheetFilterKey,
 } from '../utils/discover';
 
-interface FilterBarProps {
-  /** Number of recipes currently shown (for the sheet's confirm button). */
-  resultCount: number;
-  /** Placeholder / aria text, differs between Entdecker and Favoriten. */
-  searchPlaceholder?: string;
-}
-
 /**
- * Discovery toolbar: search + filter button, a single horizontally scrolling category row,
- * and removable chips for active filters. Sorting lives next to the result count (not here).
+ * Discovery-Toolbar: eine horizontal scrollende Kategorie-Zeile und entferubbare
+ * Chips für aktive Filter. Suche und Filter-Button leben seit dem Umbau im Header
+ * (Suchfeld ersetzt die Tab-Zeile); das Filter-Sheet wird dort geöffnet.
  */
-export const FilterBar: React.FC<FilterBarProps> = ({ resultCount, searchPlaceholder = 'Rezept oder Zutat suchen …' }) => {
+export const FilterBar: React.FC = () => {
   const { filters, setFilters, recipes } = useRecipes();
-  const [sheetOpen, setSheetOpen] = useState(false);
 
   const categories = useMemo(() => buildCategoryOptions(recipes), [recipes]);
   const activeFilters = getActiveSheetFilters(filters);
@@ -32,55 +24,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({ resultCount, searchPlaceho
 
   return (
     <div className="space-y-3">
-      {/* Search + filter button */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 min-w-0">
-          <Search className="w-5 h-5 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
-          <input
-            id="recipe-search-input"
-            type="search"
-            enterKeyHint="search"
-            autoComplete="off"
-            aria-label="Rezepte durchsuchen"
-            placeholder={searchPlaceholder}
-            value={filters.searchQuery}
-            onChange={(e) => setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))}
-            className="w-full h-12 bg-card border border-border hover:border-accent/50 rounded-xl pl-11 pr-12 text-text-main placeholder:text-text-muted focus:outline-hidden focus:border-accent focus:ring-2 focus:ring-accent/15 shadow-2xs transition-all [&::-webkit-search-cancel-button]:hidden"
-          />
-          {filters.searchQuery && (
-            <button
-              type="button"
-              onClick={() => setFilters((prev) => ({ ...prev, searchQuery: '' }))}
-              aria-label="Suche leeren"
-              className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-text-muted hover:text-text-main hover:bg-accent-tint cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
-        <button
-          id="open-filter-sheet-btn"
-          type="button"
-          onClick={() => setSheetOpen(true)}
-          aria-haspopup="dialog"
-          aria-label={activeFilters.length > 0 ? `Filter öffnen, ${activeFilters.length} aktiv` : 'Filter öffnen'}
-          className={`relative h-12 min-w-12 px-3.5 sm:px-4 rounded-xl border flex items-center justify-center gap-2 text-sm font-bold transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs ${
-            activeFilters.length > 0
-              ? 'bg-accent-tint border-accent/50 text-accent'
-              : 'bg-card border-border text-text-main hover:border-accent/50'
-          }`}
-        >
-          <SlidersHorizontal className="w-5 h-5" />
-          <span className="hidden sm:inline">Filter</span>
-          {activeFilters.length > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-accent text-on-accent text-[11px] font-bold flex items-center justify-center shadow-xs">
-              {activeFilters.length}
-            </span>
-          )}
-        </button>
-      </div>
-
       {/* Category chips: one scrollable row */}
       <div className="-mx-3 sm:mx-0">
         <div
@@ -136,14 +79,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({ resultCount, searchPlaceho
           </button>
         </div>
       )}
-
-      <FilterSheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        filters={filters}
-        setFilters={setFilters}
-        resultCount={resultCount}
-      />
     </div>
   );
 };

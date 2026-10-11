@@ -5,6 +5,7 @@ import { useRecipes } from '../context/RecipeContext';
 import { DishOfTheDay } from '../components/DishOfTheDay';
 import { SeasonHighlights } from '../components/SeasonHighlights';
 import { FilterBar } from '../components/FilterBar';
+import { FilterSheet } from '../components/discover/FilterSheet';
 import { RecipeCardUnified } from '../components/ui/RecipeCardUnified';
 import { RecipeCardListRow } from '../components/ui/RecipeCardListRow';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -31,7 +32,7 @@ interface RecipesExplorerPageProps {
 export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavorites }) => {
   const navigate = useNavigate();
   const navType = useNavigationType();
-  const { favorites, filters, setFilters, resetFilters, filteredRecipes, dishOfTheDay, setIsAddRecipeOpen } = useRecipes();
+  const { favorites, filters, setFilters, resetFilters, filteredRecipes, dishOfTheDay, setIsAddRecipeOpen, isFilterSheetOpen, closeFilterSheet } = useRecipes();
 
   const memoryKey = isFavorites ? 'favorites' : 'explore';
   const restore = navType === 'POP' ? listMemory[memoryKey] : undefined;
@@ -136,11 +137,8 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
         </button>
       </header>
 
-      {/* Search + filters + categories */}
-      <FilterBar
-        resultCount={recipes.length}
-        searchPlaceholder={isFavorites ? 'In Favoriten suchen …' : 'Rezept oder Zutat suchen …'}
-      />
+      {/* Categories + aktive Filter (Suche/Filter-Button leben im Header) */}
+      <FilterBar />
 
       {/* Discovery entry points (browse mode only) */}
       {!isFavorites && isBrowsing && (
@@ -292,6 +290,15 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
 
       {isSlotOpen && <SlotMachineModal isOpen onClose={closeSlot} />}
       {isSwipeOpen && <SwipeDiscoverOverlay recipes={filteredRecipes} onClose={closeSwipe} />}
+
+      {/* Filter-Sheet: wird vom Header (Filter-Icon im Suchfeld) geöffnet */}
+      <FilterSheet
+        open={isFilterSheetOpen}
+        onClose={closeFilterSheet}
+        filters={filters}
+        setFilters={setFilters}
+        resultCount={recipes.length}
+      />
     </div>
   );
 };

@@ -501,24 +501,10 @@ dialog.vc-topsheet[open]::backdrop {
   }
 }
 
-/* Animierte Suchleiste unter der Tab-Zeile */
-@keyframes vc-search-down {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.vc-search-panel {
-  animation: vc-search-down 0.22s ease-out both;
-}
-@media (prefers-reduced-motion: reduce) {
-  .vc-search-panel {
-    animation: none;
-  }
+/* Suchfeld im Header (Punkt 4): dezenter 1,5–2 px --accent-Rahmen statt des
+   globalen :focus-visible-Outlines (kein doppelter Ring). */
+.vc-search-input:focus-visible {
+  outline: none;
 }
 
 /* Scroll-gekoppelter Header (Punkt 1): Snapping-Transition wird nur beim
