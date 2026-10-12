@@ -1,11 +1,17 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Leaf } from 'lucide-react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ToastProvider } from './context/ToastContext';
-import { SyncProvider, useSync } from './context/SyncContext';
-import { RecipeProvider, useRecipes } from './context/RecipeContext';
-import { PlannerProvider, usePlanner } from './context/PlannerContext';
-import { ShoppingProvider } from './context/ShoppingContext';
+import { SpeedInsights } from '@vercel/speed-insights/react';
+import { 
+  ToastProvider, 
+  SyncProvider, 
+  RecipeProvider, 
+  PlannerProvider, 
+  ShoppingProvider,
+  useRecipes,
+  useSync,
+  usePlanner,
+} from './context';
 import { HeaderWithScroll } from './components/navigation/HeaderWithScroll';
 import { ScrollToTop } from './components/ScrollToTop';
 import { CookingTimerBar } from './components/CookingTimerBar';
@@ -151,6 +157,7 @@ export function App() {
           <PlannerProvider>
             <ShoppingProvider>
               <MainApp />
+              <SpeedInsights />
             </ShoppingProvider>
           </PlannerProvider>
         </RecipeProvider>
