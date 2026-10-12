@@ -9,6 +9,7 @@ export interface HeartButtonProps {
   ariaLabel?: string;
   className?: string;
   id?: string;
+  size?: 'md' | 'lg';
 }
 
 export const HeartButton: React.FC<HeartButtonProps> = ({
@@ -19,6 +20,7 @@ export const HeartButton: React.FC<HeartButtonProps> = ({
   ariaLabel,
   className = '',
   id,
+  size = 'md',
 }) => {
   const [isPulsing, setIsPulsing] = useState(false);
   const prevFavoriteRef = useRef(isFavorite);
@@ -56,7 +58,9 @@ export const HeartButton: React.FC<HeartButtonProps> = ({
       className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 ${className}`}
     >
       <span
-        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${variantCircleClasses}`}
+        className={`${
+          size === 'lg' ? 'w-12 h-12 min-w-[48px] min-h-[48px]' : 'w-10 h-10'
+        } rounded-full flex items-center justify-center transition-colors ${variantCircleClasses}`}
       >
         <Heart
           className={`w-[22px] h-[22px] transition-colors ${

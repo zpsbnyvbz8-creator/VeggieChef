@@ -93,15 +93,33 @@ export const RecipeDetailPage: React.FC = () => {
   const [checkedIngredients, setCheckedIngredients] = useState<Record<string, boolean>>({});
   const [completedSteps, setCompletedSteps] = useState<Record<number, boolean>>({});
 
-  // Sticky header scroll detection
-  const [isScrolled, setIsScrolled] = useState(false);
+  // Sticky header scroll detection & scroll-coupled fade across the last ~80px of hero
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const isScrolled = scrollProgress > 0.5;
+
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 200);
+      const y = window.scrollY;
+      const start = 160;
+      const end = 240;
+      const progress = Math.min(1, Math.max(0, (y - start) / (end - start)));
+      setScrollProgress(progress);
     };
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Dynamische theme-color für RecipeDetailPage:
+  // Oben auf dem Hero dunkel (#1c1917), gescrollt weiß (#FFFFFF), beim Verlassen zurück auf #F3DDBC
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    const color = isScrolled ? '#FFFFFF' : '#1c1917';
+    meta?.setAttribute('content', color);
+    return () => {
+      meta?.setAttribute('content', '#F3DDBC');
+    };
+  }, [isScrolled]);
 
   // Gallery & Image states
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -625,7 +643,7 @@ export const RecipeDetailPage: React.FC = () => {
   const hasBottomTimer = Boolean(cookingTimer || (cookingModeRecipe && isCookingMinimized));
 
   return (
-    <div className={`min-h-screen bg-surface text-text-main selection:bg-accent-tint selection:text-accent ${hasBottomTimer ? 'pb-44 sm:pb-48' : 'pb-28'}`}>
+    <div className={`min-h-screen bg-surface text-text-main selection:bg-accent-tint selection:text-accent overscroll-y-none ${hasBottomTimer ? 'pb-[calc(env(safe-area-inset-bottom)+11rem)]' : 'pb-[calc(env(safe-area-inset-bottom)+6.5rem)] md:pb-28'}`}>
       {/* Hidden file input for uploading user cover photos */}
       <input
         ref={fileInputRef}
@@ -649,47 +667,54 @@ export const RecipeDetailPage: React.FC = () => {
       {/* 1. LIQUID-GLASS STICKY APP BAR ON SCROLL & FLOATING TOP CONTROLS */}
       <nav
         aria-label="Rezept Navigation"
-        className={`fixed top-0 inset-x-0 z-30 transition-all duration-300 ${
-          isScrolled
-            ? 'bg-card/95 backdrop-blur-md border-b border-border shadow-xs py-2.5 px-4 text-text-main'
-            : 'bg-transparent py-4 px-4 text-on-accent pointer-events-none'
-        }`}
+        className="fixed top-0 inset-x-0 z-30 pointer-events-none"
+        style={{
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+          paddingBottom: '8px',
+          paddingLeft: '16px',
+          paddingRight: '16px',
+        }}
       >
-        <div className="max-w-4xl mx-auto flex items-center justify-between pointer-events-auto">
-          {/* Top Left: Back button (44px comfortable touch target) */}
+        {/* Full-width backdrop that extends to top:0 through the entire safe area */}
+        <div
+          className="absolute inset-0 bg-card/95 backdrop-blur-md border-b border-border shadow-xs pointer-events-none transition-opacity duration-150"
+          style={{ opacity: scrollProgress }}
+        />
+
+        <div className="relative max-w-4xl mx-auto flex items-center justify-between pointer-events-auto">
+          {/* Top Left: Back button (48px visible circle, 22px icon) */}
           <button
             id="recipe-back-floating-btn"
             type="button"
             onClick={handleGoBack}
-            className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
+            className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
               isScrolled
                 ? 'bg-accent-tint hover:bg-accent-tint text-text-main border border-border shadow-2xs'
                 : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-on-accent shadow-md'
             }`}
             aria-label="Zurück"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-[22px] h-[22px]" />
           </button>
 
           {/* Center: Truncated recipe title once scrolled past cover image */}
           <div
-            className={`flex-1 min-w-0 px-3 text-center transition-opacity duration-200 ${
-              isScrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
+            className="flex-1 min-w-0 px-3 text-center transition-opacity duration-200"
+            style={{ opacity: scrollProgress }}
           >
             <span className="font-bold text-base text-text-main truncate block">
               {recipe.title}
             </span>
           </div>
 
-          {/* Top Right: Photo Upload, Favorite, Overflow Menu */}
-          <div className="flex items-center gap-2">
+          {/* Top Right: Photo Upload, Favorite, Overflow Menu (48px visible circles, 22px icons, 8-10px gap) */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
             {/* Upload Recipe Cover Photo Button */}
             <button
               id="recipe-upload-photo-btn"
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
+              className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                 isScrolled
                   ? 'bg-accent-tint hover:bg-accent-tint text-text-main border border-border shadow-2xs'
                   : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-on-accent shadow-md'
@@ -697,16 +722,16 @@ export const RecipeDetailPage: React.FC = () => {
               title="Rezept-Titelbild / Foto hochladen"
               aria-label="Rezept-Titelbild / Foto hochladen"
             >
-              <Camera className="w-5 h-5" />
+              <Camera className="w-[22px] h-[22px]" />
             </button>
 
             {/* Favorite Toggle Button */}
             <HeartButton
+              size="lg"
               variant={isScrolled ? 'on-surface' : 'on-image'}
               isFavorite={isFavorite}
               onToggle={() => toggleFavorite(recipe.id)}
               id="recipe-fav-floating-btn"
-              className="w-11 h-11 min-w-[44px] min-h-[44px] [&>span]:!w-11 [&>span]:!h-11 [&>span]:!min-w-[44px] [&>span]:!min-h-[44px]"
             />
 
             {/* Overflow Menu Button */}
@@ -738,14 +763,14 @@ export const RecipeDetailPage: React.FC = () => {
                 id="recipe-overflow-menu-btn"
                 type="button"
                 onClick={() => setIsOverflowMenuOpen(!isOverflowMenuOpen)}
-                className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                   isScrolled
                     ? 'bg-accent-tint hover:bg-accent-tint text-text-main border border-border shadow-2xs'
                     : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-on-accent shadow-md'
                 }`}
                 aria-label="Weitere Optionen"
               >
-                <MoreVertical className="w-5 h-5" />
+                <MoreVertical className="w-[22px] h-[22px]" />
               </button>
 
               {/* Desktop Overflow Dropdown */}
@@ -824,9 +849,21 @@ export const RecipeDetailPage: React.FC = () => {
 
       {/* 2. EDGE-TO-EDGE MEDIA CONTAINER WITH TOUCH SWIPE & PAGINATION DOTS */}
       <header className="relative w-full overflow-hidden bg-stone-900 select-none">
+        {/* Rubber-band overscroll buffer layer: dark background extends above top:0 */}
+        <div className="absolute -top-40 inset-x-0 h-40 bg-stone-900 pointer-events-none" />
+
+        {/* Top subtle gradient overlay: keeps status bar and top buttons readable */}
+        <div
+          className="absolute top-0 inset-x-0 pointer-events-none z-10"
+          style={{
+            height: 'calc(env(safe-area-inset-top, 0px) + 48px)',
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0.35), transparent)',
+          }}
+        />
+
         {hasImages ? (
           <div 
-            className="relative h-80 sm:h-96 md:h-[420px] w-full cursor-pointer group touch-pan-y"
+            className="relative h-[calc(20rem+env(safe-area-inset-top,0px))] sm:h-[calc(24rem+env(safe-area-inset-top,0px))] md:h-[calc(26.25rem+env(safe-area-inset-top,0px))] w-full cursor-pointer group touch-pan-y"
             onClick={() => openLightbox(allImages, currentImageIndex)}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
@@ -839,7 +876,7 @@ export const RecipeDetailPage: React.FC = () => {
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.01]"
             />
             {/* Top & bottom subtle gradient shadows for high contrast floating controls */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-black/60 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/60 pointer-events-none" />
 
             {/* Subtle, semi-transparent pagination dots at bottom edge */}
             {allImages.length > 1 && (
@@ -866,7 +903,7 @@ export const RecipeDetailPage: React.FC = () => {
           </div>
         ) : (
           /* Fallback banner for text-only / AI recipes without image */
-          <div className="relative h-64 sm:h-72 w-full bg-gradient-to-br from-text-main to-[#1F2C2D] flex items-center justify-center p-6 text-on-accent text-center">
+          <div className="relative h-[calc(16rem+env(safe-area-inset-top,0px))] sm:h-[calc(18rem+env(safe-area-inset-top,0px))] w-full bg-gradient-to-br from-text-main to-[#1F2C2D] flex items-center justify-center p-6 text-on-accent text-center pt-[env(safe-area-inset-top,0px)]">
             <div className="space-y-2 max-w-md">
               <div className="w-14 h-14 rounded-2xl bg-card/10 mx-auto flex items-center justify-center">
                 <Leaf className="w-12 h-12 text-accent/40" />
@@ -928,7 +965,7 @@ export const RecipeDetailPage: React.FC = () => {
 
           {/* Calories */}
           <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
-            <div className="w-10 h-10 rounded-xl bg-accent-tint border border-accent/25 text-accent flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-stat-kcal-bg text-accent flex items-center justify-center shrink-0">
               <Flame className="w-5 h-5" />
             </div>
             <div>
@@ -950,7 +987,7 @@ export const RecipeDetailPage: React.FC = () => {
               <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
                 Protein
               </div>
-              <div className="font-bold text-text-main text-base tabular-nums">
+              <div className="font-bold text-accent text-base tabular-nums">
                 {recipe.nutrients.protein}g
               </div>
             </div>
@@ -974,14 +1011,15 @@ export const RecipeDetailPage: React.FC = () => {
 
         {/* 5. SERVINGS CARD & BALANCED 3-COLUMN ACTION ROW */}
         <section className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 flex-wrap">
-            <div className="inline-flex items-center justify-between bg-surface border border-border rounded-xl p-1 shadow-2xs w-[210px] h-11 min-h-[44px]">
+          <div className="flex items-center">
+            {/* Servings Stepper alone in Row 1: 210x54 px, Plus/Minus >= 48px */}
+            <div className="inline-flex items-center justify-between bg-surface border border-border rounded-xl p-1 shadow-2xs w-[210px] h-[54px]">
               <button
                 id="servings-step-decrease-btn"
                 type="button"
                 onClick={() => setServings(Math.max(1, servings - 1))}
                 disabled={servings <= 1}
-                className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="w-12 h-12 min-w-[48px] min-h-[48px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 aria-label="Portion verringern"
               >
                 <Minus className="w-4 h-4" />
@@ -1003,23 +1041,12 @@ export const RecipeDetailPage: React.FC = () => {
                 id="servings-step-increase-btn"
                 type="button"
                 onClick={() => setServings(Math.min(24, servings + 1))}
-                className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="w-12 h-12 min-w-[48px] min-h-[48px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 aria-label="Portion erhöhen"
               >
                 <Plus className="w-4 h-4" />
               </button>
             </div>
-
-            {!recipe.isVegan && (
-              <button
-                type="button"
-                onClick={handleVeganize}
-                className="ml-auto h-11 min-h-[44px] bg-accent text-on-accent hover:bg-accent-hover font-semibold px-4 rounded-xl flex items-center gap-2 transition-all active:scale-95 shadow-2xs cursor-pointer touch-manipulation"
-              >
-                <Leaf className="w-4 h-4" />
-                <span>{isVeganized ? '✓ Vegan' : 'Veganisieren'}</span>
-              </button>
-            )}
           </div>
 
           {/* Under servings counter: Clean 3-Column Action Row */}
@@ -1065,12 +1092,28 @@ export const RecipeDetailPage: React.FC = () => {
 
         {/* 6. INGREDIENTS LIST (Zutaten mit explizitem Anpassungs-Modus) */}
         <section ref={ingredientsSectionRef} className="space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <div>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-3">
               <h2 className="text-xl font-bold text-text-main flex items-center gap-2">
                 <span>Zutaten</span>
               </h2>
-              <span className="text-xs text-text-muted hidden sm:inline">
+              {!recipe.isVegan && (
+                <button
+                  id="veganize-ingredients-btn"
+                  type="button"
+                  onClick={handleVeganize}
+                  className={`h-10 px-3.5 rounded-xl border border-accent text-sm font-semibold flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                    isVeganized
+                      ? 'bg-transparent text-accent border-accent font-bold'
+                      : 'bg-transparent text-accent border-accent hover:bg-accent-tint'
+                  }`}
+                  title={isVeganized ? 'Zum Original zurückwechseln' : 'Rezept veganisieren'}
+                >
+                  <Leaf className="w-4 h-4" />
+                  <span>{isVeganized ? 'Vegan ✓' : 'Veganisieren'}</span>
+                </button>
+              )}
+              <span className="text-xs text-text-muted hidden md:inline">
                 {isCustomizingIngredients ? 'Tippe auf Ersetzen für Alternativen' : 'Tippe zum Abhaken'}
               </span>
             </div>
@@ -1578,11 +1621,11 @@ export const RecipeDetailPage: React.FC = () => {
       {/* 10. EXCLUSIVE PRIMARY CTA IN PERSISTENT STICKY BOTTOM BAR */}
       <aside
         aria-label="Koch-Modus Schnellzugriff"
-        className={`fixed ${hasBottomTimer ? 'bottom-16 sm:bottom-18' : 'bottom-0'} inset-x-0 z-30 bg-card/95 backdrop-blur-md border-t border-border px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] transition-all duration-200`}
+        className={`fixed ${hasBottomTimer ? 'bottom-16 sm:bottom-18' : 'bottom-0'} inset-x-0 z-30 pointer-events-none md:pointer-events-auto bg-gradient-to-t from-[var(--bg-page)] via-[var(--bg-page)]/90 to-transparent pt-6 pb-[calc(env(safe-area-inset-bottom)+12px)] px-4 md:bg-card/95 md:backdrop-blur-md md:border-t md:border-border md:px-4 md:py-3 md:shadow-[0_-4px_20px_rgba(0,0,0,0.06)] transition-all duration-200`}
       >
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
-          {/* Quick portions stepper in sticky bar */}
-          <div className="flex items-center gap-2">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 sm:gap-4 pointer-events-auto">
+          {/* Quick portions stepper in sticky bar: hidden on mobile (<768px), visible on md+ */}
+          <div className="hidden md:flex items-center gap-2">
             <div className="inline-flex items-center bg-surface border border-border rounded-xl p-1 h-11 min-h-[44px]">
               <button
                 id="sticky-servings-decrease-btn"
@@ -1612,12 +1655,12 @@ export const RecipeDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Primary CTA: Start Cooking Mode (Exclusive prominent trigger) */}
+          {/* Primary CTA: Start Cooking Mode (Full width & 56px on mobile, max-w-sm on md+) */}
           <button
             id="sticky-start-cooking-mode-btn"
             type="button"
             onClick={handleLaunchCookingMode}
-            className="flex-1 max-w-sm h-12 flex items-center justify-center gap-2.5 px-6 rounded-xl text-base font-bold bg-accent hover:bg-accent-hover active:bg-[#34553C] text-on-accent shadow-md transition-all cursor-pointer active:scale-[0.99] touch-manipulation"
+            className="w-full md:flex-1 md:max-w-sm h-14 min-h-[56px] md:h-12 md:min-h-[48px] flex items-center justify-center gap-2.5 px-6 rounded-xl text-base font-bold bg-accent hover:bg-accent-hover active:bg-[#34553C] text-on-accent shadow-md transition-all cursor-pointer active:scale-[0.99] touch-manipulation"
           >
             <Play className="w-4 h-4 fill-on-accent" />
             <span>Koch-Modus starten</span>
