@@ -10,6 +10,7 @@ import {
   ShoppingCart, 
   CalendarPlus, 
   Leaf, 
+  Salad, 
   ChefHat, 
   Users, 
   Play, 
@@ -21,7 +22,6 @@ import {
   Trash2,
   Camera,
   CheckCircle2,
-  FileText,
   ThumbsDown,
   ChevronDown,
   ChevronUp,
@@ -31,8 +31,10 @@ import {
   X,
   Eye,
   EyeOff,
-  Share2
+  Share2,
+  Star
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Recipe, RecipeIngredient, RecipeStep } from '../types';
 import { formatIngredientAmount, generateRecipeIngredientsText, calculateMealSavings, safeCopyToClipboard, compressImageToDataUrl } from '../utils/helpers';
 import { useRecipes } from '../context/RecipeContext';
@@ -138,10 +140,33 @@ export const RecipeDetailPage: React.FC = () => {
   // Contextual ingredient substitute modal
   const [substitutingIngredient, setSubstitutingIngredient] = useState<RecipeIngredient | null>(null);
 
-  // Personal notes - default collapsed
-  const [isNotesExpanded, setIsNotesExpanded] = useState(false);
-  const [personalNoteText, setPersonalNoteText] = useState(recipe?.userNotes || '');
-  const [isNotesSaved, setIsNotesSaved] = useState(false);
+  // User review & comment states
+  const [userRating, setUserRating] = useState<number>(recipe?.rating || 0);
+  const [hoverRating, setHoverRating] = useState<number>(0);
+  const [userComment, setUserComment] = useState<string>(recipe?.userNotes || '');
+  const [isCommentSaved, setIsCommentSaved] = useState(false);
+
+  // Sync review & comment when recipe changes or from localStorage
+  useEffect(() => {
+    if (!recipe?.id) return;
+    try {
+      const stored = localStorage.getItem(`veggiechef_review_${recipe.id}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (typeof parsed?.rating === 'number') {
+          setUserRating(parsed.rating);
+        }
+        if (typeof parsed?.comment === 'string') {
+          setUserComment(parsed.comment);
+        }
+      } else {
+        if (recipe.rating !== undefined) setUserRating(recipe.rating);
+        if (recipe.userNotes !== undefined) setUserComment(recipe.userNotes);
+      }
+    } catch {
+      // ignore
+    }
+  }, [recipe?.id, recipe?.rating, recipe?.userNotes]);
 
   // Micronutrients accordion state
   const [isMicronutrientsOpen, setIsMicronutrientsOpen] = useState(false);
@@ -154,8 +179,8 @@ export const RecipeDetailPage: React.FC = () => {
   if (!recipe) {
     return (
       <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-accent-tint text-accent flex items-center justify-center text-3xl font-bold">
-          🥗
+        <div className="w-16 h-16 rounded-2xl bg-accent-tint text-accent flex items-center justify-center font-bold">
+          <Salad className="w-8 h-8 text-accent" />
         </div>
         <h2 className="text-2xl font-bold text-text-main">Rezept nicht gefunden</h2>
         <p className="text-sm text-text-muted max-w-sm">
@@ -402,16 +427,45 @@ export const RecipeDetailPage: React.FC = () => {
     navigate('/');
   };
 
-  // Save personal notes
-  const handleSaveNotes = () => {
+  // Review and comment handlers
+  const handleRate = (rating: number) => {
+    const nextRating = userRating === rating ? 0 : rating;
+    setUserRating(nextRating);
+    if (recipe) {
+      try {
+        localStorage.setItem(
+          `veggiechef_review_${recipe.id}`,
+          JSON.stringify({ rating: nextRating, comment: userComment.trim() })
+        );
+      } catch {
+        // ignore
+      }
+      updateRecipe({
+        ...recipe,
+        rating: nextRating,
+      });
+    }
+  };
+
+  const handleSaveReview = () => {
+    if (!recipe) return;
+    try {
+      localStorage.setItem(
+        `veggiechef_review_${recipe.id}`,
+        JSON.stringify({ rating: userRating, comment: userComment.trim() })
+      );
+    } catch {
+      // ignore
+    }
     const updated: Recipe = {
       ...recipe,
-      userNotes: personalNoteText.trim(),
+      rating: userRating,
+      userNotes: userComment.trim(),
     };
     updateRecipe(updated);
-    setIsNotesSaved(true);
-    showToast('Notiz gespeichert!');
-    setTimeout(() => setIsNotesSaved(false), 2500);
+    setIsCommentSaved(true);
+    showToast('Bewertung & Notiz gespeichert!');
+    setTimeout(() => setIsCommentSaved(false), 2500);
   };
 
   // Apply contextual ingredient substitution
@@ -481,7 +535,7 @@ export const RecipeDetailPage: React.FC = () => {
     };
     updateRecipe(updated);
     setShowStepImages(true);
-    showToast(newUrls.length > 1 ? `${newUrls.length} Fotos zu Schritt ${stepNumTarget} hinzugefügt! 📸` : `Foto zu Schritt ${stepNumTarget} hinzugefügt! 📸`);
+    showToast(newUrls.length > 1 ? `${newUrls.length} Fotos zu Schritt ${stepNumTarget} hinzugefügt!` : `Foto zu Schritt ${stepNumTarget} hinzugefügt!`);
     setTargetStepForPhoto(null);
     e.target.value = '';
   };
@@ -556,7 +610,7 @@ export const RecipeDetailPage: React.FC = () => {
 
     logCooked(recipe, servings, cookedNotes);
     setShowCookedDialog(false);
-    showToast('🎉 Großartig! Als gekocht in deiner Statistik erfasst!');
+    showToast('Als gekocht erfasst!');
   };
 
   // Open lightbox with specific images
@@ -602,12 +656,12 @@ export const RecipeDetailPage: React.FC = () => {
         }`}
       >
         <div className="max-w-4xl mx-auto flex items-center justify-between pointer-events-auto">
-          {/* Top Left: Back button (48x48px comfortable touch target) */}
+          {/* Top Left: Back button (44px comfortable touch target) */}
           <button
             id="recipe-back-floating-btn"
             type="button"
             onClick={handleGoBack}
-            className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
+            className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
               isScrolled
                 ? 'bg-accent-tint hover:bg-accent-tint text-text-main border border-border shadow-2xs'
                 : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-on-accent shadow-md'
@@ -635,7 +689,7 @@ export const RecipeDetailPage: React.FC = () => {
               id="recipe-upload-photo-btn"
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
+              className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                 isScrolled
                   ? 'bg-accent-tint hover:bg-accent-tint text-text-main border border-border shadow-2xs'
                   : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-on-accent shadow-md'
@@ -652,6 +706,7 @@ export const RecipeDetailPage: React.FC = () => {
               isFavorite={isFavorite}
               onToggle={() => toggleFavorite(recipe.id)}
               id="recipe-fav-floating-btn"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] [&>span]:!w-11 [&>span]:!h-11 [&>span]:!min-w-[44px] [&>span]:!min-h-[44px]"
             />
 
             {/* Overflow Menu Button */}
@@ -672,18 +727,18 @@ export const RecipeDetailPage: React.FC = () => {
                 className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
               >
                 <option value="" disabled>Rezept-Optionen...</option>
-                <option value="share">📤 Rezept teilen</option>
-                <option value="edit">✏️ Rezept bearbeiten</option>
-                <option value="cooked">🍳 Als gekocht erfassen</option>
-                <option value="dislike">{isDisliked ? '👍 Wieder öfter anzeigen' : '👎 Seltener anzeigen'}</option>
-                <option value="delete">🗑️ Rezept löschen</option>
+                <option value="share">Rezept teilen</option>
+                <option value="edit">Rezept bearbeiten</option>
+                <option value="cooked">Als gekocht erfassen</option>
+                <option value="dislike">{isDisliked ? 'Wieder öfter anzeigen' : 'Seltener anzeigen'}</option>
+                <option value="delete">Rezept löschen</option>
               </select>
 
               <button
                 id="recipe-overflow-menu-btn"
                 type="button"
                 onClick={() => setIsOverflowMenuOpen(!isOverflowMenuOpen)}
-                className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                   isScrolled
                     ? 'bg-accent-tint hover:bg-accent-tint text-text-main border border-border shadow-2xs'
                     : 'bg-black/35 hover:bg-black/55 backdrop-blur-md text-on-accent shadow-md'
@@ -813,8 +868,8 @@ export const RecipeDetailPage: React.FC = () => {
           /* Fallback banner for text-only / AI recipes without image */
           <div className="relative h-64 sm:h-72 w-full bg-gradient-to-br from-text-main to-[#1F2C2D] flex items-center justify-center p-6 text-on-accent text-center">
             <div className="space-y-2 max-w-md">
-              <div className="w-14 h-14 rounded-2xl bg-card/10 mx-auto flex items-center justify-center text-3xl">
-                🌱
+              <div className="w-14 h-14 rounded-2xl bg-card/10 mx-auto flex items-center justify-center">
+                <Leaf className="w-12 h-12 text-accent/40" />
               </div>
               <h2 className="text-2xl font-bold tracking-tight">{recipe.title}</h2>
               <p className="text-xs text-stone-300">Vegetarisches Chef-Rezept</p>
@@ -873,7 +928,7 @@ export const RecipeDetailPage: React.FC = () => {
 
           {/* Calories */}
           <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
-            <div className="w-10 h-10 rounded-xl bg-[#FDF6F0] text-[#E67E22] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-accent-tint border border-accent/25 text-accent flex items-center justify-center shrink-0">
               <Flame className="w-5 h-5" />
             </div>
             <div>
@@ -895,7 +950,7 @@ export const RecipeDetailPage: React.FC = () => {
               <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
                 Protein
               </div>
-              <div className="font-bold text-accent text-base tabular-nums">
+              <div className="font-bold text-text-main text-base tabular-nums">
                 {recipe.nutrients.protein}g
               </div>
             </div>
@@ -920,30 +975,38 @@ export const RecipeDetailPage: React.FC = () => {
         {/* 5. SERVINGS CARD & BALANCED 3-COLUMN ACTION ROW */}
         <section className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
           <div className="flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 flex-wrap">
-            <div className="inline-flex items-center justify-between bg-surface border border-border rounded-xl p-1 shadow-2xs w-[210px] h-[54px]">
+            <div className="inline-flex items-center justify-between bg-surface border border-border rounded-xl p-1 shadow-2xs w-[210px] h-11 min-h-[44px]">
               <button
                 id="servings-step-decrease-btn"
                 type="button"
                 onClick={() => setServings(Math.max(1, servings - 1))}
                 disabled={servings <= 1}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 aria-label="Portion verringern"
               >
-                <Minus className="w-5 h-5" />
+                <Minus className="w-4 h-4" />
               </button>
-              <div className="h-6 w-[1px] bg-border shrink-0" />
-              <span className="px-2 text-[16px] font-bold text-text-main tabular-nums flex-1 text-center select-none whitespace-nowrap">
-                {servings} {servings === 1 ? 'Portion' : 'Portionen'}
+              <div className="h-5 w-[1px] bg-border shrink-0" />
+              <span className="px-2 text-[16px] font-bold text-text-main tabular-nums flex-1 text-center select-none whitespace-nowrap overflow-hidden">
+                <motion.span
+                  key={servings}
+                  initial={{ scale: 1.25 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                  className="inline-block"
+                >
+                  {servings} {servings === 1 ? 'Portion' : 'Portionen'}
+                </motion.span>
               </span>
-              <div className="h-6 w-[1px] bg-border shrink-0" />
+              <div className="h-5 w-[1px] bg-border shrink-0" />
               <button
                 id="servings-step-increase-btn"
                 type="button"
                 onClick={() => setServings(Math.min(24, servings + 1))}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                 aria-label="Portion erhöhen"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
               </button>
             </div>
 
@@ -951,13 +1014,9 @@ export const RecipeDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleVeganize}
-                className={`h-11 px-3.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                  isVeganized
-                    ? 'bg-accent text-on-accent border-accent'
-                    : 'bg-surface text-accent border-border hover:border-accent/40'
-                }`}
+                className="ml-auto h-11 min-h-[44px] bg-accent text-on-accent hover:bg-accent-hover font-semibold px-4 rounded-xl flex items-center gap-2 transition-all active:scale-95 shadow-2xs cursor-pointer touch-manipulation"
               >
-                <Leaf className="w-3.5 h-3.5" />
+                <Leaf className="w-4 h-4" />
                 <span>{isVeganized ? '✓ Vegan' : 'Veganisieren'}</span>
               </button>
             )}
@@ -1079,14 +1138,26 @@ export const RecipeDetailPage: React.FC = () => {
                             : 'border-[#D1D5DB] bg-card group-hover:border-accent'
                         }`}
                       >
-                        {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                        <AnimatePresence>
+                          {isChecked && (
+                            <motion.span
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0, opacity: 0 }}
+                              transition={{ duration: 0.15, ease: 'easeOut' }}
+                              className="flex items-center justify-center"
+                            >
+                              <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span
-                            className={`text-base font-medium break-words leading-normal transition-all ${
-                              isChecked ? 'line-through text-text-muted opacity-60' : 'text-text-main'
+                            className={`text-base font-medium break-words leading-normal transition-all duration-200 ${
+                              isChecked ? 'line-through text-text-muted opacity-50' : 'text-text-main'
                             }`}
                           >
                             {ing.name}
@@ -1105,8 +1176,8 @@ export const RecipeDetailPage: React.FC = () => {
                     {/* Right: Quantity + Action */}
                     <div className="flex items-center gap-2.5 shrink-0 pl-2">
                       <span
-                        className={`text-base font-semibold text-right tabular-nums whitespace-nowrap ${
-                          isChecked ? 'line-through text-text-muted opacity-60' : 'text-accent'
+                        className={`text-base font-semibold text-right tabular-nums whitespace-nowrap transition-all duration-200 ${
+                          isChecked ? 'line-through text-text-muted opacity-50' : 'text-accent'
                         }`}
                       >
                         {amountStr}
@@ -1150,7 +1221,7 @@ export const RecipeDetailPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3.5 bg-card rounded-xl border border-border text-center shadow-2xs">
               <div className="text-[16px] font-semibold text-text-muted">Protein</div>
-              <div className="text-lg font-bold text-accent mt-0.5 tabular-nums">
+              <div className="text-lg font-bold text-text-main mt-0.5 tabular-nums">
                 {recipe.nutrients.protein}g
               </div>
             </div>
@@ -1192,48 +1263,58 @@ export const RecipeDetailPage: React.FC = () => {
               )}
             </button>
 
-            {isMicronutrientsOpen && (
-              <div className="px-4 pb-4 pt-1 border-t border-border bg-surface/50 animate-in fade-in duration-150">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
-                  <div className="p-2.5 bg-card rounded-lg border border-border">
-                    <div className="text-[12px] text-text-muted">Eisen</div>
-                    <div className="font-bold text-sm text-text-main tabular-nums">
-                      {recipe.nutrients.iron ?? (Math.round((recipe.nutrients.calories / 100) * 0.9 * 10) / 10)} mg
+            <AnimatePresence initial={false}>
+              {isMicronutrientsOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-4 pb-4 pt-1 border-t border-border bg-surface/50">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
+                      <div className="p-2.5 bg-card rounded-lg border border-border">
+                        <div className="text-[12px] text-text-muted">Eisen</div>
+                        <div className="font-bold text-sm text-text-main tabular-nums">
+                          {recipe.nutrients.iron ?? (Math.round((recipe.nutrients.calories / 100) * 0.9 * 10) / 10)} mg
+                        </div>
+                      </div>
+                      <div className="p-2.5 bg-card rounded-lg border border-border">
+                        <div className="text-[12px] text-text-muted">Vitamin B12</div>
+                        <div className="font-bold text-sm text-text-main tabular-nums">
+                          {recipe.nutrients.b12 ?? (recipe.isVegan ? '0 µg (pflanzl.)' : '0.5 µg')}
+                        </div>
+                      </div>
+                      <div className="p-2.5 bg-card rounded-lg border border-border">
+                        <div className="text-[12px] text-text-muted">Calcium</div>
+                        <div className="font-bold text-sm text-text-main tabular-nums">
+                          {recipe.nutrients.calcium ?? Math.round((recipe.nutrients.calories / 100) * 38)} mg
+                        </div>
+                      </div>
+                      <div className="p-2.5 bg-card rounded-lg border border-border">
+                        <div className="text-[12px] text-text-muted">Zink</div>
+                        <div className="font-bold text-sm text-text-main tabular-nums">
+                          {recipe.nutrients.zinc ?? (Math.round((recipe.nutrients.calories / 100) * 0.7 * 10) / 10)} mg
+                        </div>
+                      </div>
+                      <div className="p-2.5 bg-card rounded-lg border border-border">
+                        <div className="text-[12px] text-text-muted">Vitamin C</div>
+                        <div className="font-bold text-sm text-text-main tabular-nums">
+                          {recipe.nutrients.vitaminC ?? 26} mg
+                        </div>
+                      </div>
+                      <div className="p-2.5 bg-card rounded-lg border border-border">
+                        <div className="text-[12px] text-text-muted">Magnesium</div>
+                        <div className="font-bold text-sm text-text-main tabular-nums">
+                          {recipe.nutrients.magnesium ?? 68} mg
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="p-2.5 bg-card rounded-lg border border-border">
-                    <div className="text-[12px] text-text-muted">Vitamin B12</div>
-                    <div className="font-bold text-sm text-text-main tabular-nums">
-                      {recipe.nutrients.b12 ?? (recipe.isVegan ? '0 µg (pflanzl.)' : '0.5 µg')}
-                    </div>
-                  </div>
-                  <div className="p-2.5 bg-card rounded-lg border border-border">
-                    <div className="text-[12px] text-text-muted">Calcium</div>
-                    <div className="font-bold text-sm text-text-main tabular-nums">
-                      {recipe.nutrients.calcium ?? Math.round((recipe.nutrients.calories / 100) * 38)} mg
-                    </div>
-                  </div>
-                  <div className="p-2.5 bg-card rounded-lg border border-border">
-                    <div className="text-[12px] text-text-muted">Zink</div>
-                    <div className="font-bold text-sm text-text-main tabular-nums">
-                      {recipe.nutrients.zinc ?? (Math.round((recipe.nutrients.calories / 100) * 0.7 * 10) / 10)} mg
-                    </div>
-                  </div>
-                  <div className="p-2.5 bg-card rounded-lg border border-border">
-                    <div className="text-[12px] text-text-muted">Vitamin C</div>
-                    <div className="font-bold text-sm text-text-main tabular-nums">
-                      {recipe.nutrients.vitaminC ?? 26} mg
-                    </div>
-                  </div>
-                  <div className="p-2.5 bg-card rounded-lg border border-border">
-                    <div className="text-[12px] text-text-muted">Magnesium</div>
-                    <div className="font-bold text-sm text-text-main tabular-nums">
-                      {recipe.nutrients.magnesium ?? 68} mg
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </section>
 
@@ -1438,65 +1519,59 @@ export const RecipeDetailPage: React.FC = () => {
           )}
         </section>
 
-        {/* 9. USER NOTES SECTION (Default Collapsed with Clean Trigger) */}
-        <section className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
+        {/* 9. REVIEW & COMMENT SECTION */}
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-accent" />
-              <h3 className="text-base font-bold text-text-main">
-                Persönliche Notizen
-              </h3>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsNotesExpanded(!isNotesExpanded)}
-              className="text-[16px] text-[#57534d] hover:text-accent font-semibold cursor-pointer"
-            >
-              {isNotesExpanded ? 'Schließen' : personalNoteText.trim() ? 'Bearbeiten' : '+ Notiz hinzufügen'}
-            </button>
+            <h3 className="text-base font-bold text-text-main">
+              Bewertung & Notizen
+            </h3>
           </div>
 
-          {/* Collapsed view with preview or placeholder */}
-          {!isNotesExpanded && personalNoteText.trim() && (
-            <div 
-              onClick={() => setIsNotesExpanded(true)}
-              className="p-3 bg-surface border border-border rounded-xl text-base text-text-main cursor-pointer hover:border-accent/40 transition-colors italic"
-            >
-              "{personalNoteText}"
-            </div>
-          )}
-
-          {/* Expanded view for editing */}
-          {isNotesExpanded && (
-            <div className="space-y-3 pt-1 animate-in fade-in duration-150">
-              <textarea
-                value={personalNoteText}
-                onChange={(e) => setPersonalNoteText(e.target.value)}
-                placeholder="z.B. 'Etwas weniger Salz nehmen, mit gerösteten Pinienkernen toppen. Hat der ganzen Familie geschmeckt!'"
-                rows={3}
-                className="w-full text-base p-3 bg-surface border border-border rounded-xl focus:border-accent focus:outline-hidden text-text-main"
-              />
-
-              <div className="flex items-center justify-end gap-2.5 pt-1">
+          <div
+            className="flex items-center gap-1"
+            onMouseLeave={() => setHoverRating(0)}
+          >
+            {[1, 2, 3, 4, 5].map((star) => {
+              const isFilled = (hoverRating || userRating) >= star;
+              return (
                 <button
-                  id="cancel-personal-notes-btn"
+                  key={star}
                   type="button"
-                  onClick={() => setIsNotesExpanded(false)}
-                  className="h-11 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-semibold text-[#57534d] hover:text-accent hover:bg-surface border border-transparent hover:border-border transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                  onClick={() => handleRate(star)}
+                  onMouseEnter={() => setHoverRating(star)}
+                  className="p-1 cursor-pointer transition-transform active:scale-90 touch-manipulation"
+                  aria-label={`${star} von 5 Sternen`}
                 >
-                  Abbrechen
+                  <Star
+                    className={`w-6 h-6 transition-colors ${
+                      isFilled
+                        ? 'fill-[#E67E22] text-[#E67E22]'
+                        : 'text-border fill-transparent'
+                    }`}
+                  />
                 </button>
-                <button
-                  id="save-personal-notes-btn"
-                  type="button"
-                  onClick={handleSaveNotes}
-                  className="h-11 min-h-[44px] px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-sm font-bold transition-all shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-                >
-                  {isNotesSaved ? '✓ Gespeichert' : 'Notiz speichern'}
-                </button>
-              </div>
+              );
+            })}
+          </div>
+
+          <div className="space-y-3">
+            <textarea
+              value={userComment}
+              onChange={(e) => setUserComment(e.target.value)}
+              placeholder="Notizen oder Feedback..."
+              className="w-full bg-surface border border-border focus:border-accent text-base text-text-main rounded-xl p-3.5 min-h-[90px] placeholder:text-text-muted resize-y focus:outline-hidden"
+            />
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleSaveReview}
+                className="h-10 px-4 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-sm font-semibold transition-all shadow-2xs active:scale-95 cursor-pointer touch-manipulation"
+              >
+                {isCommentSaved ? '✓ Gespeichert' : 'Speichern'}
+              </button>
             </div>
-          )}
+          </div>
         </section>
       </main>
 

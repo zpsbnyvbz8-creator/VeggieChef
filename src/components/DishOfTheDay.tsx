@@ -63,7 +63,6 @@ const DishOfTheDayComponent: React.FC = () => {
           <h2
             id="dish-of-the-day-title"
             className="text-[clamp(1.5rem,1vw+1.25rem,2.5rem)] font-extrabold tracking-tight text-on-accent leading-tight text-balance line-clamp-2"
-            style={{ color: '#ffffff' }}
           >
             {recipe.title}
           </h2>
@@ -80,7 +79,7 @@ const DishOfTheDayComponent: React.FC = () => {
             </span>
             {hasRating && (
               <span className="inline-flex items-center gap-1.5">
-                <Star className="w-4 h-4 fill-[#F2B33D] text-[#F2B33D]" aria-hidden="true" />
+                <Star className="w-4 h-4 fill-[#E67E22] text-[#E67E22]" aria-hidden="true" />
                 {recipe.rating.toFixed(1).replace('.', ',')} ({recipe.reviewCount})
               </span>
             )}

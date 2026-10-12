@@ -1491,15 +1491,79 @@ export function filterAndSortRecipes(
           return (a.totalTimeMinutes || 0) - (b.totalTimeMinutes || 0);
         case 'proteinDesc':
           return (bNutrients.protein || 0) - (aNutrients.protein || 0);
-        case 'caloriesAsc':
-          return (aNutrients.calories || 0) - (bNutrients.calories || 0);
+        case 'caloriesDesc':
+          return (b.caloriesPerServing ?? bNutrients.calories ?? 0) - (a.caloriesPerServing ?? aNutrients.calories ?? 0);
         case 'fiberDesc':
           return (bNutrients.fiber || 0) - (aNutrients.fiber || 0);
         case 'ratingDesc':
-          return (b.rating || 0) - (a.rating || 0);
+          return (b.rating ?? 0) - (a.rating ?? 0) || (b.reviewCount ?? 0) - (a.reviewCount ?? 0);
         case 'featured':
         default:
           return (b.rating || 0) * (b.reviewCount || 1) - (a.rating || 0) * (a.reviewCount || 1);
       }
     });
+}
+
+/**
+ * Sorts an array of recipes based on the chosen sort option.
+ */
+export function sortRecipes(
+  recipes: Recipe[],
+  sortBy: FilterState['sortBy'],
+  cookedLogs?: CookedLog[]
+): Recipe[] {
+  return [...recipes].sort((a, b) => {
+    const aNutrients = a.nutrients || { calories: 0, protein: 0, fiber: 0 };
+    const bNutrients = b.nutrients || { calories: 0, protein: 0, fiber: 0 };
+
+    switch (sortBy) {
+      case 'recentlyCooked': {
+        if (!cookedLogs || cookedLogs.length === 0) {
+          return (b.rating || 0) - (a.rating || 0);
+        }
+        const getLatestCookedTime = (recId: string) => {
+          let maxTime = 0;
+          for (const log of cookedLogs) {
+            if (log.recipeId === recId) {
+              const t = new Date(log.date).getTime();
+              if (t > maxTime) maxTime = t;
+            }
+          }
+          return maxTime;
+        };
+        const aTime = getLatestCookedTime(a.id);
+        const bTime = getLatestCookedTime(b.id);
+        if (bTime !== aTime) return bTime - aTime;
+        return (b.rating || 0) - (a.rating || 0);
+      }
+      case 'recentlyAdded': {
+        const getAddedTimestamp = (r: Recipe) => {
+          if (r.createdAt) {
+            return typeof r.createdAt === 'number' ? r.createdAt : new Date(r.createdAt).getTime();
+          }
+          const numMatch = r.id.match(/\d{10,}/);
+          if (numMatch) return parseInt(numMatch[0], 10);
+          const idNum = parseInt(r.id.replace(/\D/g, ''), 10);
+          return isNaN(idNum) ? 0 : idNum;
+        };
+        const aTime = getAddedTimestamp(a);
+        const bTime = getAddedTimestamp(b);
+        if (bTime !== aTime) return bTime - aTime;
+        return (b.rating || 0) - (a.rating || 0);
+      }
+      case 'timeAsc':
+        return (a.totalTimeMinutes || 0) - (b.totalTimeMinutes || 0);
+      case 'proteinDesc':
+        return (bNutrients.protein || 0) - (aNutrients.protein || 0);
+      case 'caloriesDesc':
+        return (b.caloriesPerServing ?? bNutrients.calories ?? 0) - (a.caloriesPerServing ?? aNutrients.calories ?? 0);
+      case 'fiberDesc':
+        return (bNutrients.fiber || 0) - (aNutrients.fiber || 0);
+      case 'ratingDesc':
+        return (b.rating ?? 0) - (a.rating ?? 0) || (b.reviewCount ?? 0) - (a.reviewCount ?? 0);
+      case 'featured':
+      default:
+        return (b.rating || 0) * (b.reviewCount || 1) - (a.rating || 0) * (a.reviewCount || 1);
+    }
+  });
 }

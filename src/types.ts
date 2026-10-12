@@ -78,6 +78,7 @@ export interface Recipe {
   rating: number;
   reviewCount: number;
   nutrients: RecipeNutrients;
+  caloriesPerServing?: number;
   tags: string[];
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
@@ -143,6 +144,16 @@ export interface ShoppingItem {
 
 export type ViewMode = 'recipes' | 'fridge' | 'planner' | 'shopping' | 'stats' | 'favorites' | 'bookmarks';
 
+export type SortOption =
+  | 'featured'
+  | 'timeAsc'
+  | 'proteinDesc'
+  | 'caloriesDesc'
+  | 'ratingDesc'
+  | 'fiberDesc'
+  | 'recentlyAdded'
+  | 'recentlyCooked';
+
 export interface FilterState {
   searchQuery: string;
   category: string;
@@ -153,7 +164,7 @@ export interface FilterState {
   minFiber: number; // 0, 8, 12
   difficulty: string; // 'all', 'Einfach', 'Mittel', 'Anspruchsvoll'
   selectedTags: string[];
-  sortBy: 'featured' | 'timeAsc' | 'proteinDesc' | 'caloriesAsc' | 'ratingDesc' | 'fiberDesc' | 'recentlyAdded' | 'recentlyCooked';
+  sortBy: SortOption;
 }
 
 export interface AISubstitutionResult {

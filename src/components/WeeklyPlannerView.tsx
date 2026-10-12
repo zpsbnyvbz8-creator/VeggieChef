@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  CalendarDays, 
   Sparkles, 
   ShoppingCart, 
   Plus, 
@@ -41,7 +40,6 @@ import { DayPlan, MealPlanSlot, Recipe, WeekPlan, FilterState } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { RecipeImage } from './RecipeImage';
 import { SyncConfig } from '../lib/syncService';
-import { Users, Cloud } from 'lucide-react';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 import { usePlanner } from '../context/PlannerContext';
 import { useRecipes } from '../context/RecipeContext';
@@ -53,12 +51,12 @@ import { safeStorage } from '../utils/helpers';
 
 const PICKER_SORT_OPTIONS: { label: string; value: FilterState['sortBy'] }[] = [
   { label: 'Standard-Sortierung', value: 'featured' },
-  { label: '✨ Zuletzt hinzugefügt', value: 'recentlyAdded' },
-  { label: '🍳 Zuletzt gekocht', value: 'recentlyCooked' },
-  { label: '⚡ Schnelligkeit (Zubereitung)', value: 'timeAsc' },
-  { label: '💪 Höchster Proteingehalt', value: 'proteinDesc' },
-  { label: '🥗 Kalorienarm', value: 'caloriesAsc' },
-  { label: '⭐ Beste Bewertung', value: 'ratingDesc' },
+  { label: 'Zuletzt hinzugefügt', value: 'recentlyAdded' },
+  { label: 'Zuletzt gekocht', value: 'recentlyCooked' },
+  { label: 'Schnelligkeit (Zubereitung)', value: 'timeAsc' },
+  { label: 'Höchster Proteingehalt', value: 'proteinDesc' },
+  { label: 'Meiste Kalorien', value: 'caloriesDesc' },
+  { label: 'Beste Bewertung', value: 'ratingDesc' },
 ];
 
 interface WeeklyPlannerViewProps {
@@ -360,10 +358,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           return (a.totalTimeMinutes || 0) - (b.totalTimeMinutes || 0);
         case 'proteinDesc':
           return (bNutrients.protein || 0) - (aNutrients.protein || 0);
-        case 'caloriesAsc':
-          return (aNutrients.calories || 0) - (bNutrients.calories || 0);
+        case 'caloriesDesc':
+          return (b.caloriesPerServing ?? bNutrients.calories ?? 0) - (a.caloriesPerServing ?? aNutrients.calories ?? 0);
         case 'ratingDesc':
-          return (b.rating || 0) - (a.rating || 0);
+          return (b.rating ?? 0) - (a.rating ?? 0) || (b.reviewCount ?? 0) - (a.reviewCount ?? 0);
         case 'featured':
         default:
           return 0;
@@ -830,8 +828,13 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     const isSwapTarget = isDragOverThis && draggingItem && (draggingItem.dayId !== day.dayId || draggingItem.mealType !== mealType);
 
     return (
-      <div
+      <motion.div
+        layout="position"
         key={`${day.dayId}-${mealType}`}
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.96 }}
+        transition={{ duration: 0.2 }}
         draggable={true}
         onDragStart={(e) => {
           e.dataTransfer.setData('text/plain', JSON.stringify({ dayId: day.dayId, mealType }));
@@ -963,7 +966,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         >
           <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
         </button>
-      </div>
+      </motion.div>
     );
   };
 
@@ -974,8 +977,13 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       : 'Abendessen planen';
 
     return (
-      <div
+      <motion.div
+        layout="position"
         key={`${day.dayId}-${mealType}-empty`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18 }}
         data-drop-slot="true"
         data-day-id={day.dayId}
         data-meal-type={mealType}
@@ -1015,7 +1023,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             {label}
           </span>
         </button>
-      </div>
+      </motion.div>
     );
   };
 
@@ -1025,41 +1033,6 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       <div className="bg-card rounded-2xl p-4 sm:p-6 border border-border shadow-xs space-y-3 sm:space-y-4">
         {/* Header Title & Subtitle */}
         <div className="space-y-1">
-          {/* Badges row: Status badge & Family sync button side by side */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent-tint text-accent text-xs font-semibold border border-border whitespace-nowrap">
-              <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-              <span>Wöchentliche Essensplanung</span>
-            </div>
-
-            {onOpenSyncModal && (
-              <button
-                type="button"
-                id="header-family-sync-btn"
-                onClick={onOpenSyncModal}
-                className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap ${
-                  syncConfig?.mode === 'family' && syncConfig?.groupId
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                    : 'bg-surface text-text-muted border-border hover:bg-accent-tint'
-                }`}
-                title="Synchronisationseinstellungen öffnen"
-              >
-                {syncConfig?.mode === 'family' && syncConfig?.groupId ? (
-                  <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                    <Users className="w-3 h-3 text-emerald-700" />
-                    <span>Familie: {syncConfig.groupName || syncConfig.groupId}</span>
-                  </>
-                ) : (
-                  <>
-                    <Cloud className="w-3 h-3 text-text-muted" />
-                    <span style={{ color: '#686e6a' }}>Lokal • Teilen</span>
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-
           {/* Title */}
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-main leading-tight">
             Dein Wochenplan
@@ -1114,8 +1087,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 value=""
                 onChange={(e) => {
                   const val = e.target.value;
-                  if (val === 'toggle-lunch') handleToggleAllLunch();
-                  else if (val === 'add-week') {
+                  if (val === 'add-week') {
                     setNewWeekTitleInput('');
                     setShowCreateWeekModal(true);
                   }
@@ -1126,13 +1098,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
               >
                 <option value="" disabled>Wochenplan-Optionen...</option>
-                <option value="toggle-lunch">
-                  {showLunchSlot ? '☀️ Mittags-Slots verbergen' : '☀️ Mittags-Slots anzeigen'}
-                </option>
-                <option value="add-week">➕ Woche hinzufügen</option>
-                <option value="all-weeks">📅 Alle Wochen anzeigen</option>
+                <option value="add-week">Woche hinzufügen</option>
+                <option value="all-weeks">Alle Wochen anzeigen</option>
                 {totalPlannedMeals > 0 && (
-                  <option value="clear-plan">🗑️ Plan leeren</option>
+                  <option value="clear-plan">Plan leeren</option>
                 )}
               </select>
 
@@ -1163,21 +1132,6 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
                   {/* Desktop Dropdown Popover (>= sm) */}
                   <div className="hidden sm:block absolute right-0 top-full mt-2 w-72 bg-card rounded-2xl border border-border shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 space-y-1">
-                    <button
-                      type="button"
-                      id="context-menu-toggle-lunch-btn"
-                      onClick={() => {
-                        setShowContextMenu(false);
-                        handleToggleAllLunch();
-                      }}
-                      className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-text-main hover:bg-surface active:bg-accent-tint flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-accent-tint flex items-center justify-center shrink-0 text-accent">
-                        <Sun className="w-4 h-4 shrink-0" />
-                      </div>
-                      <span className="truncate">{showLunchSlot ? 'Mittags-Slots verbergen' : 'Mittags-Slots anzeigen'}</span>
-                    </button>
-
                     <button
                       type="button"
                       id="context-menu-add-week-btn"
@@ -1267,7 +1221,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           const totalProtein = (day.lunch?.protein || 0) + (day.dinner?.protein || 0);
 
           return (
-            <div
+            <motion.div
+              layout="position"
               key={day.dayId}
               id={`meal-plan-day-${day.dayId}`}
               className="bg-card rounded-2xl border border-border overflow-hidden shadow-xs hover:border-accent/40 hover:shadow-sm transition-all flex flex-col justify-between"
@@ -1322,18 +1277,28 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               {/* Flat Interior: Clean white background, separated only by subtle hairline dividers */}
               <div className="divide-y divide-border flex-1 flex flex-col">
                 {/* Lunch Slot: Ein- und ausfahrbar per Klick auf den Tagesheader */}
-                {isLunchVisible && (
-                  day.lunch
-                    ? renderMealItem(day, 'lunch', day.lunch)
-                    : renderEmptySlot(day, 'lunch')
-                )}
+                <AnimatePresence>
+                  {isLunchVisible && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                      className="overflow-hidden"
+                    >
+                      {day.lunch
+                        ? renderMealItem(day, 'lunch', day.lunch)
+                        : renderEmptySlot(day, 'lunch')}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Dinner Slot */}
                 {day.dinner
                   ? renderMealItem(day, 'dinner', day.dinner)
                   : renderEmptySlot(day, 'dinner')}
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
@@ -1667,15 +1632,24 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       )}
 
       {/* AI Meal Plan Generator Modal - Reformed and Streamlined for PC without scrolling */}
-      {showAIGeneratorModal && (
-        <div 
-          onClick={() => setShowAIGeneratorModal(false)}
-          className="fixed inset-0 z-50 bg-text-main/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200 touch-none overscroll-contain"
-        >
-          <div 
-            onClick={(e) => e.stopPropagation()}
-            className="bg-card rounded-2xl sm:rounded-3xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-border animate-in zoom-in-95 duration-200 max-h-[94vh] sm:max-h-[90vh] overflow-y-auto overscroll-contain flex flex-col justify-between"
+      <AnimatePresence>
+        {showAIGeneratorModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => setShowAIGeneratorModal(false)}
+            className="fixed inset-0 z-50 bg-text-main/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 touch-none overscroll-contain"
           >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl sm:rounded-3xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-border max-h-[94vh] sm:max-h-[90vh] overflow-y-auto overscroll-contain flex flex-col justify-between"
+            >
             {/* Modal Header */}
             <div className="flex items-start justify-between border-b border-border pb-3">
               <div>
@@ -2101,9 +2075,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 )}
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+    </AnimatePresence>
 
       {/* Safety Confirmation Modal: ONLY for clearing entire week */}
       {showConfirmClearAll && (

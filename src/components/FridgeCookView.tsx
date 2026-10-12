@@ -13,8 +13,7 @@ import {
   RotateCcw,
   Sliders,
   Zap,
-  ChevronDown,
-  Leaf
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Recipe, FridgeCookIdea } from '../types';
@@ -66,7 +65,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   }, [selectedIngredients]);
 
   const [customInput, setCustomInput] = useState('');
-  const [isVegan, setIsVegan] = useState(true);
+  const isVegan = true;
   const [calorieFilter, setCalorieFilter] = useState<string>('all'); // 'all', 'high', 'low', 'moderate'
   const [proteinFilter, setProteinFilter] = useState<string>('all'); // 'all', 'high', 'very-high', 'medium'
   const [difficulty, setDifficulty] = useState<string>('all');
@@ -88,21 +87,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   const [attemptNumber, setAttemptNumber] = useState(1);
   const [showAllPantryItems, setShowAllPantryItems] = useState(false);
   const [showAllMatchedRecipes, setShowAllMatchedRecipes] = useState(false);
-  const [isTimeSliderActive, setIsTimeSliderActive] = useState(false);
   const [isExtraSliderActive, setIsExtraSliderActive] = useState(false);
-
-  useEffect(() => {
-    if (!isTimeSliderActive) return;
-    const handleRelease = () => setIsTimeSliderActive(false);
-    window.addEventListener('pointerup', handleRelease);
-    window.addEventListener('pointercancel', handleRelease);
-    window.addEventListener('touchend', handleRelease);
-    return () => {
-      window.removeEventListener('pointerup', handleRelease);
-      window.removeEventListener('pointercancel', handleRelease);
-      window.removeEventListener('touchend', handleRelease);
-    };
-  }, [isTimeSliderActive]);
 
   useEffect(() => {
     if (!isExtraSliderActive) return;
@@ -382,17 +367,14 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
     });
 
   const availablePantryItems = PANTRY_QUICK_ITEMS.filter((item) => !selectedIngredients.includes(item));
-  const displayedPantryItems = showAllPantryItems ? availablePantryItems : availablePantryItems.slice(0, 14);
+  const initialPantryItems = availablePantryItems.slice(0, 14);
+  const extraPantryItems = availablePantryItems.slice(14);
 
   return (
     <div className="space-y-5 sm:space-y-8 animate-in fade-in duration-300">
       {/* Intro Banner - clean neutral card matching app theme */}
       <div className="bg-card rounded-2xl p-4 sm:p-6 text-text-main shadow-xs border border-border">
         <div className="space-y-1.5 max-w-2xl">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent-tint text-accent border border-border text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5 text-accent" />
-            Vorratskammer &amp; KI-Rezeptsuche
-          </div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-main leading-tight">
             Was hast du im Kühlschrank?
           </h1>
@@ -485,7 +467,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           </button>
         </form>
 
-        {/* Quick Pantry Item Pills - leicht getönter Hintergrund, linksbündiges 'Mehr anzeigen' */}
+        {/* Quick Pantry Item Pills - leicht getönter Hintergrund, linksbündiges 'Mehr anzeigen' mit sanfter Animation */}
         <div className="space-y-2">
           <label className="block text-[16px] font-bold text-text-main">
             Häufige Vorräte &amp; Frischezutaten
@@ -495,7 +477,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             layout
             className="flex flex-wrap gap-2.5 py-0.5"
           >
-            {displayedPantryItems.map((item) => (
+            {initialPantryItems.map((item) => (
               <motion.button
                 layout="position"
                 layoutId={`ingredient-token-${item}`}
@@ -525,6 +507,51 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
               </motion.button>
             ))}
           </motion.div>
+
+          <AnimatePresence>
+            {showAllPantryItems && extraPantryItems.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-wrap gap-2.5 pt-1.5 pb-0.5">
+                  {extraPantryItems.map((item) => (
+                    <motion.button
+                      layout="position"
+                      layoutId={`ingredient-token-${item}`}
+                      key={item}
+                      type="button"
+                      onClick={() => togglePantryItem(item)}
+                      whileHover={{ scale: 1.04, y: -2 }}
+                      whileTap={{ scale: 0.94 }}
+                      transition={{
+                        layout: {
+                          type: 'spring',
+                          stiffness: 650,
+                          damping: 32,
+                          mass: 0.5,
+                        },
+                        default: {
+                          type: 'spring',
+                          stiffness: 500,
+                          damping: 30,
+                          mass: 0.6,
+                        },
+                      }}
+                      className="h-11 min-h-[44px] px-3.5 py-2 rounded-xl text-sm font-medium transition-colors select-none cursor-pointer touch-manipulation flex items-center gap-1.5 bg-surface text-text-muted hover:border-accent/50 hover:text-text-main border border-border group"
+                    >
+                      <span className="text-text-muted group-hover:text-accent font-bold">+</span>
+                      <span>{item}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {availablePantryItems.length > 14 && (
             <div className="pt-0.5">
               <button
@@ -542,113 +569,40 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
         {/* Dünne Trennlinie */}
         <div className="border-t border-border" />
 
-        {/* Zeile 1: Ernährungsweise als Segmented Control (links) & Schieberegler für Zeit (rechts) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-8 items-start">
-          {/* Ernährungsweise Segmented Control */}
-          <div>
-            <label className="block text-[16px] font-bold text-text-main mb-2">
-              Ernährungsweise
+        {/* Zubereitungszeit Schieberegler - volle Breite, feste Höhe ohne Layout-Shift */}
+        <div className="w-full">
+          <div className="flex items-center justify-between mb-2 h-7">
+            <label htmlFor="fridge-time-slider" className="text-[16px] font-bold text-text-main">
+              Max. Zeit
             </label>
-            <div className="bg-surface p-1 rounded-xl grid grid-cols-2 gap-1.5 h-12 min-h-[48px] items-center border border-border">
-              <button
-                type="button"
-                id="fridge-diet-veggie-btn"
-                onClick={() => setIsVegan(false)}
-                className={`h-10 min-h-[40px] px-3 text-[16px] rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none ${
-                  !isVegan
-                    ? 'bg-accent text-on-accent shadow-2xs font-semibold'
-                    : 'text-[#57534d] hover:text-text-main border-0 bg-transparent font-medium'
-                }`}
-              >
-                <span style={{ color: !isVegan ? '#ffffff' : '#57534d', fontSize: '16px' }}>Veggie</span>
-              </button>
-              <button
-                type="button"
-                id="fridge-diet-vegan-btn"
-                onClick={() => setIsVegan(true)}
-                className={`h-10 min-h-[40px] px-3 text-[16px] rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none ${
-                  isVegan
-                    ? 'bg-accent text-on-accent shadow-2xs font-semibold'
-                    : 'text-[#57534d] hover:text-text-main border-0 bg-transparent font-medium'
-                }`}
-              >
-                <Leaf className="w-4 h-4 shrink-0" />
-                <span style={{ color: isVegan ? '#ffffff' : '#57534d', fontSize: '16px' }}>Vegan</span>
-              </button>
-            </div>
+            <span className="px-2.5 py-0.5 rounded-full bg-accent-tint border border-border text-accent font-bold text-xs tabular-nums">
+              {maxTime} Min.
+            </span>
           </div>
-
-          {/* Schieberegler für Zeit - ohne Icon im Label, 22px Thumb & Track-Füllung */}
-          <div className="flex flex-col justify-center min-h-[48px]">
-            <div className="flex items-center justify-between mb-2 min-h-[26px]">
-              <label htmlFor="fridge-time-slider" className="text-[16px] font-bold text-text-main">
-                Max. Zeit:
-              </label>
-              <AnimatePresence>
-                {!isTimeSliderActive && (
-                  <motion.span
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.2 }}
-                    className="px-2 py-0.5 rounded-full bg-accent-tint border border-border text-accent font-bold text-xs tabular-nums"
-                  >
-                    {maxTime} Min.
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </div>
-            <div className="relative py-2.5 flex items-center">
-              {/* Dynamische iOS-Wert-Pille */}
-              <AnimatePresence>
-                {isTimeSliderActive && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 7, scale: 0.85 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 5, scale: 0.88 }}
-                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                    style={{
-                      left: `calc(${((maxTime - 15) / (50 - 15)) * 100}% + ${(0.5 - (maxTime - 15) / (50 - 15)) * 24}px)`,
-                    }}
-                    className="absolute bottom-[calc(50%+26px)] -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center select-none"
-                  >
-                    <div className="px-4 py-1 rounded-full bg-card border border-[#D3DCD5] shadow-lg text-[#355F40] font-extrabold text-[17px] tabular-nums whitespace-nowrap">
-                      {maxTime} Min.
-                    </div>
-                    <div className="w-3 h-3 bg-card border-r border-b border-[#D3DCD5] rotate-45 -mt-1.5 shadow-xs" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <input
-                id="fridge-time-slider"
-                type="range"
-                min="15"
-                max="50"
-                step="5"
-                value={maxTime}
-                onPointerDown={() => setIsTimeSliderActive(true)}
-                onPointerUp={() => setIsTimeSliderActive(false)}
-                onPointerCancel={() => setIsTimeSliderActive(false)}
-                onTouchStart={() => setIsTimeSliderActive(true)}
-                onTouchEnd={() => setIsTimeSliderActive(false)}
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  if (val !== maxTime && typeof window !== 'undefined' && 'vibrate' in navigator) {
-                    try { navigator.vibrate(8); } catch {}
-                  }
-                  setMaxTime(val);
-                }}
-                className="ios-slider"
-                style={{
-                  background: `linear-gradient(to right, #4A7856 ${((maxTime - 15) / (50 - 15)) * 100}%, #E3E8E5 ${((maxTime - 15) / (50 - 15)) * 100}%)`,
-                }}
-              />
-            </div>
-            <div className="flex justify-between text-[13px] text-text-muted font-medium tabular-nums px-0.5">
-              <span>15 Min.</span>
-              <span>50 Min.</span>
-            </div>
+          <div className="relative py-2 h-10 flex items-center">
+            <input
+              id="fridge-time-slider"
+              type="range"
+              min="15"
+              max="50"
+              step="5"
+              value={maxTime}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                if (val !== maxTime && typeof window !== 'undefined' && 'vibrate' in navigator) {
+                  try { navigator.vibrate(8); } catch {}
+                }
+                setMaxTime(val);
+              }}
+              className="ios-slider w-full cursor-pointer touch-manipulation"
+              style={{
+                background: `linear-gradient(to right, var(--accent) ${((maxTime - 15) / (50 - 15)) * 100}%, var(--border) ${((maxTime - 15) / (50 - 15)) * 100}%)`,
+              }}
+            />
+          </div>
+          <div className="flex justify-between text-[13px] text-text-muted font-medium tabular-nums px-0.5">
+            <span>15 Min.</span>
+            <span>50 Min.</span>
           </div>
         </div>
 

@@ -25,6 +25,10 @@ export const helmetMiddleware = helmet({
         "https://firestore.googleapis.com",
         "https://identitytoolkit.googleapis.com",
         "https://securetoken.googleapis.com",
+        "ws://localhost:*",
+        "ws://127.0.0.1:*",
+        "ws:",
+        "wss:",
       ],
       frameAncestors: [
         "'self'",

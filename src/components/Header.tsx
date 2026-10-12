@@ -6,7 +6,6 @@ import {
   Compass,
   Heart,
   ShoppingCart,
-  Bookmark,
   Search,
   X,
   Refrigerator,
@@ -207,7 +206,7 @@ const SearchField: React.FC<SearchFieldProps> = ({
 /* -------------------------------------------------------------------------- */
 interface TabNavProps {
   tabs: HeaderTab[];
-  active: NavTab;
+  active: NavTab | null;
   onNavigate: (path: string) => void;
   idPrefix: string;
   /** true → mobil (Zeile 2), false → Desktop (Zeile 1) */
@@ -223,6 +222,10 @@ const TabNav: React.FC<TabNavProps> = ({ tabs, active, onNavigate, idPrefix, mob
 
   const measure = useCallback(() => {
     const idx = tabs.findIndex((t) => t.id === active);
+    if (idx === -1) {
+      setInd({ left: 0, width: 0 });
+      return;
+    }
     const el = refs.current[idx];
     if (!el) return;
     const spanEl = labelRefs.current[idx];
@@ -250,7 +253,7 @@ const TabNav: React.FC<TabNavProps> = ({ tabs, active, onNavigate, idPrefix, mob
       } ${hidden ? 'opacity-0 -translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0'}`}
     >
       {tabs.map((tab, i) => {
-        const isActive = active === tab.id;
+        const isActive = active !== null && active === tab.id;
         return (
           <button
             key={tab.id}
@@ -282,7 +285,9 @@ const TabNav: React.FC<TabNavProps> = ({ tabs, active, onNavigate, idPrefix, mob
       })}
       <span
         aria-hidden="true"
-        className="absolute bottom-0 left-0 h-[3px] rounded-full bg-accent vc-underline pointer-events-none"
+        className={`absolute bottom-0 left-0 h-[3px] rounded-full bg-accent vc-underline pointer-events-none ${
+          active === null || ind.width === 0 ? 'opacity-0' : 'opacity-100'
+        }`}
         style={{ width: ind.width, transform: `translateX(${ind.left}px)` }}
       />
     </nav>
@@ -297,11 +302,8 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
   const syncCtx = useSync();
 
   const isExplorerRoute = location.pathname === '/' || location.pathname === '/favorites';
-  const activeTab: NavTab = location.pathname.startsWith('/fridge')
-    ? 'fridge'
-    : location.pathname.startsWith('/planner')
-      ? 'planner'
-      : 'recipes';
+  const isFavoritesRoute = location.pathname === '/favorites';
+  const isShoppingRoute = location.pathname.startsWith('/shopping');
 
   const handleNavigate = useCallback(
     (path: string) => {
@@ -316,7 +318,6 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
   );
 
   const favoritesCount = recipesCtx.favorites.length;
-  const bookmarksCount = recipesCtx.bookmarksCount;
   const shoppingCount = shoppingCtx.uncompletedCount;
   const searchQuery = recipesCtx.filters.searchQuery;
   const activeFilterCount = useMemo(() => getActiveSheetFilters(recipesCtx.filters).length, [recipesCtx.filters]);
@@ -351,6 +352,16 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
   const searchMobileRef = useRef<HTMLInputElement>(null);
   const searchDesktopRef = useRef<HTMLInputElement>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  const activeTab: NavTab | null = isSearchOpen
+    ? null
+    : location.pathname === '/'
+      ? 'recipes'
+      : location.pathname.startsWith('/fridge')
+        ? 'fridge'
+        : location.pathname.startsWith('/planner')
+          ? 'planner'
+          : null;
 
   const closeSearch = useCallback((clear: boolean) => {
     setIsSearchOpen(false);
@@ -529,6 +540,30 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
     };
   }, [isMenuOpen, closeMenu]);
 
+  // Klicks außerhalb des Menüs (#header-stage-menu) und Menü-Buttons (#header-menu-btn) schließen das Menü sofort
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+
+      const stageMenuEl = document.getElementById('header-stage-menu');
+      const menuBtnEl = document.getElementById('header-menu-btn');
+
+      if (stageMenuEl?.contains(target) || menuBtnEl?.contains(target)) {
+        return;
+      }
+
+      closeMenu();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [isMenuOpen, closeMenu]);
+
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
   };
@@ -566,7 +601,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
         icon: Compass,
         label: 'Entdecker',
         path: '/',
-        isActive: location.pathname === '/' || location.pathname === '/favorites',
+        isActive: location.pathname === '/',
         onClick: () => go('/'),
       },
       {
@@ -584,14 +619,6 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
         onClick: () => go('/planner'),
       },
       {
-        icon: Bookmark,
-        label: 'Merkliste',
-        path: '/bookmarks',
-        isActive: location.pathname.startsWith('/bookmarks'),
-        badge: bookmarksCount,
-        onClick: () => go('/bookmarks'),
-      },
-      {
         icon: ShoppingCart,
         label: 'Einkaufswagen',
         path: '/shopping',
@@ -600,7 +627,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
         onClick: () => go('/shopping'),
       },
     ],
-    [bookmarksCount, go, location.pathname, shoppingCount]
+    [go, location.pathname, shoppingCount]
   );
 
   const stageGroup2 = useMemo(
@@ -672,7 +699,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
                 hidden={isSearchOpen || isMenuOpen}
               />
               <div
-                className={`absolute inset-0 flex items-center vc-fade-swap transition-all ease-out ${
+                className={`absolute left-0 inset-y-0 w-[480px] lg:w-[560px] max-w-[calc(100vw-380px)] flex items-center vc-fade-swap transition-all ease-out z-10 ${
                   isSearchOpen && !isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
                 }`}
               >
@@ -721,9 +748,12 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
                 id="nav-tab-favorites"
                 type="button"
                 onClick={() => handleNavigate('/favorites')}
+                aria-current={isFavoritesRoute ? 'page' : undefined}
                 aria-label={favoritesCount > 0 ? `Favoriten, ${favoritesCount} gespeichert` : 'Favoriten'}
                 title="Favoriten"
-                className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation vc-press"
+                className={`relative w-11 h-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer touch-manipulation vc-press ${
+                  isFavoritesRoute ? 'bg-card/60 text-favorite' : 'text-header-icon hover:bg-card/40'
+                }`}
               >
                 <span
                   key={heartPulse}
@@ -737,9 +767,12 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
                 id="nav-tab-shopping-badge"
                 type="button"
                 onClick={() => handleNavigate('/shopping')}
+                aria-current={isShoppingRoute ? 'page' : undefined}
                 aria-label={shoppingCount > 0 ? `Einkaufswagen, ${shoppingCount} Artikel` : 'Einkaufswagen'}
                 title="Einkaufsliste"
-                className="relative w-11 h-11 rounded-xl flex items-center justify-center text-header-icon hover:bg-card/40 transition-colors cursor-pointer touch-manipulation vc-press"
+                className={`relative w-11 h-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer touch-manipulation vc-press ${
+                  isShoppingRoute ? 'bg-card/60 text-accent' : 'text-header-icon hover:bg-card/40'
+                }`}
               >
                 <ShoppingCart className="w-6 h-6" aria-hidden="true" />
                 {shoppingCount > 0 && (
@@ -792,7 +825,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
         <div
           className={`w-full overflow-hidden transition-[height] duration-[var(--dur-base)] ease-[var(--ease-standard)] ${
             isMenuOpen
-              ? 'flex justify-center bg-transparent pointer-events-auto'
+              ? 'flex justify-center bg-transparent pointer-events-none'
               : isDesktop
                 ? 'pointer-events-none md:h-0'
                 : 'bg-header-panel pointer-events-auto'
@@ -806,7 +839,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
           <div
             className={`w-full transition-[border-radius,box-shadow] duration-[var(--dur-base)] ease-[var(--ease-standard)] ${
               isMenuOpen
-                ? 'bg-header-panel rounded-b-[24px] shadow-2xl md:max-w-xl md:mx-auto'
+                ? 'bg-header-panel rounded-b-[24px] shadow-2xl md:max-w-xl md:mx-auto pointer-events-auto'
                 : 'bg-header-panel max-w-[1280px] mx-auto'
             }`}
           >
@@ -885,7 +918,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
                     <div
                       key={item.label}
                       className={isMenuOpen ? 'vc-menu-row' : ''}
-                      style={{ animationDelay: `${(i + 5) * 25}ms` }}
+                      style={{ animationDelay: `${(i + 4) * 25}ms` }}
                     >
                       <MenuRow
                         icon={item.icon}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, Star, ChefHat, Shuffle, Bookmark } from 'lucide-react';
+import { Clock, Star, ChefHat, Shuffle } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { Recipe } from '../types';
 import { useRecipes } from '../context/RecipeContext';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
@@ -34,8 +35,6 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
     recipes,
     favorites,
     toggleFavorite,
-    bookmarks,
-    toggleBookmark,
     dislikedIds,
     filters,
     onlyVegan,
@@ -96,6 +95,23 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
     return chosen;
   }, []);
 
+  const triggerConfetti = useCallback(() => {
+    try {
+      if (typeof window !== 'undefined' && (window as any).__onConfetti) {
+        (window as any).__onConfetti();
+      }
+      confetti({
+        particleCount: 35,
+        spread: 60,
+        origin: { y: 0.75, x: 0.5 },
+        colors: ['#4A7856', '#C86D3B', '#F8EAD3', '#2D3E40'],
+        disableForReducedMotion: true,
+      });
+    } catch {
+      // ignore
+    }
+  }, []);
+
   // Reveal-Animation beim Öffnen und bei "Nochmal":
   // kurzes Durchwürfeln von 4–6 Rezepten (verlangsamend, Intervalle ca. 75ms → 95ms → 125ms → 165ms → 240ms, gesamt ca. 700ms)
   const pickAndShuffle = useCallback(() => {
@@ -115,6 +131,7 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
     if (prefersReducedMotion || currentPool.length <= 1) {
       setDisplayedRecipe(targetRecipe);
       setIsShuffling(false);
+      triggerConfetti();
       return;
     }
 
@@ -145,6 +162,7 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
         if (isLast) {
           setDisplayedRecipe(targetRecipe);
           setIsShuffling(false);
+          triggerConfetti();
         } else {
           const nextDummy = pickDummy(prevDummy);
           prevDummy = nextDummy.id;
@@ -154,7 +172,7 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
 
       timeoutsRef.current.push(timerId);
     }
-  }, [clearTimers, pickRecipe]);
+  }, [clearTimers, pickRecipe, triggerConfetti]);
 
   // Dialog sync
   useEffect(() => {
@@ -191,7 +209,25 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
     };
   }, [isOpen, pickAndShuffle, clearTimers]);
 
-  const isBookmarked = displayedRecipe ? bookmarks.includes(displayedRecipe.id) : false;
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = useCallback(() => {
+    if (isClosing) return;
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+
+    if (prefersReducedMotion) {
+      onClose();
+      return;
+    }
+
+    setIsClosing(true);
+    window.setTimeout(() => {
+      onClose();
+    }, 200);
+  }, [isClosing, onClose]);
+
   const isFavorite = displayedRecipe ? favorites.includes(displayedRecipe.id) : false;
   const ratingText = displayedRecipe ? formatRating(displayedRecipe) : null;
   const diet = displayedRecipe ? getRecipeDiet(displayedRecipe) : 'vegan';
@@ -199,15 +235,20 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
   return (
     <dialog
       ref={dialogRef}
-      className="vc-sheet"
+      className={`vc-sheet !max-h-[92dvh] transition-all duration-200 ${
+        isClosing ? 'opacity-0 translate-y-8 sm:scale-95 pointer-events-none' : ''
+      }`}
       aria-labelledby="slot-sheet-title"
       {...({ closedby: 'any' } as Record<string, string>)}
-      onClose={onClose}
+      onCancel={(e) => {
+        e.preventDefault();
+        handleClose();
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) handleClose();
       }}
     >
-      <div className="flex flex-col max-h-[88dvh] overflow-hidden">
+      <div className="flex flex-col max-h-[92dvh] overflow-hidden">
         {/* Grab handle (mobile) */}
         <div className="sm:hidden pt-2.5 flex justify-center shrink-0" aria-hidden="true">
           <span className="w-10 h-1.5 rounded-full bg-border" />
@@ -216,17 +257,17 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
         {/* SheetHeader mit Titel "Überrasch mich" und Standard-CloseButton */}
         <SheetHeader
           title="Überrasch mich"
-          onClose={onClose}
+          onClose={handleClose}
           titleId="slot-sheet-title"
           className="shrink-0"
         />
 
-        {/* Content area */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-5 pt-1 pb-[max(1.25rem,env(safe-area-inset-bottom))] flex flex-col gap-4">
+        {/* Content area: gestrafft, auf Mobilgeräten ohne Scrollen sichtbar */}
+        <div className="flex-1 overflow-hidden px-5 py-2.5 sm:py-3 flex flex-col justify-between gap-2">
           {displayedRecipe ? (
-            <div className="flex flex-col">
-              {/* Bild 16:10 mit HeartButton */}
-              <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-surface">
+            <div className="flex flex-col gap-1 min-h-0">
+              {/* Bild 16:9 mit HeartButton */}
+              <div className="relative aspect-[16/9] max-h-[170px] sm:max-h-[220px] w-full rounded-2xl overflow-hidden bg-surface shrink-0">
                 <RecipeImage
                   recipe={displayedRecipe}
                   size="lg"
@@ -250,12 +291,12 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
               </div>
 
               {/* Titel */}
-              <h3 className="text-xl font-extrabold text-text-main line-clamp-2 mt-3 leading-snug">
+              <h3 className="text-lg sm:text-xl font-extrabold text-text-main line-clamp-2 leading-snug mt-1">
                 {displayedRecipe.title}
               </h3>
 
               {/* Standard-Infozeile: Zeit · Bewertung (Anzahl) · Schwierigkeit, 'Vegetarisch'-Label nur bei vegetarisch */}
-              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-card-info font-medium text-text-muted">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-card-info font-medium text-text-muted">
                 {diet === 'vegetarisch' && (
                   <>
                     <span>Vegetarisch</span>
@@ -284,7 +325,7 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
 
               {/* Beschreibung (subtitle) max. 2 Zeilen */}
               {displayedRecipe.subtitle && (
-                <p className="mt-2 text-sm text-text-muted line-clamp-2 leading-relaxed">
+                <p className="text-xs sm:text-sm text-text-muted line-clamp-2 leading-relaxed">
                   {displayedRecipe.subtitle}
                 </p>
               )}
@@ -295,56 +336,33 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
             </div>
           )}
 
-          {/* Aktionen unten */}
-          <div className="space-y-2.5 pt-1 mt-auto shrink-0">
+          {/* Aktionen unten: vertikal gestapelt, ohne Merken-Button */}
+          <div className="flex flex-col gap-2 pt-1 shrink-0">
             <button
               type="button"
               disabled={isShuffling || !displayedRecipe}
               onClick={() => {
                 if (isShuffling || !displayedRecipe) return;
-                onClose();
+                handleClose();
                 navigate(`/recipes/${displayedRecipe.id}`);
               }}
-              className="w-full h-12 min-h-[48px] bg-accent hover:bg-accent-hover text-on-accent font-bold rounded-xl flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+              className="h-11 sm:h-12 w-full bg-accent hover:bg-accent-hover text-on-accent font-bold rounded-xl flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
             >
               Rezept ansehen
             </button>
 
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                disabled={isShuffling}
-                onClick={() => {
-                  if (isShuffling) return;
-                  pickAndShuffle();
-                }}
-                className="h-12 min-h-[48px] flex-1 rounded-xl bg-card border border-border hover:bg-surface text-text-main font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
-              >
-                <Shuffle className={`w-5 h-5 text-accent ${isShuffling ? 'animate-spin' : ''}`} aria-hidden="true" />
-                <span>Nochmal</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={isShuffling || !displayedRecipe}
-                onClick={() => {
-                  if (isShuffling || !displayedRecipe) return;
-                  toggleBookmark(displayedRecipe.id);
-                }}
-                aria-label={isBookmarked ? 'Aus Merkliste entfernen' : 'Auf Merkliste speichern'}
-                title={isBookmarked ? 'Aus Merkliste entfernen' : 'Auf Merkliste speichern'}
-                className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl border border-border bg-card hover:bg-surface flex items-center justify-center text-text-main transition-all active:scale-95 cursor-pointer disabled:opacity-50 ${
-                  isBookmarked ? 'border-accent/40 bg-accent-tint/40 text-accent' : ''
-                }`}
-              >
-                <Bookmark
-                  className={`w-5 h-5 transition-colors ${
-                    isBookmarked ? 'fill-current text-accent' : 'text-text-main'
-                  }`}
-                  aria-hidden="true"
-                />
-              </button>
-            </div>
+            <button
+              type="button"
+              disabled={isShuffling}
+              onClick={() => {
+                if (isShuffling) return;
+                pickAndShuffle();
+              }}
+              className="h-11 sm:h-12 w-full bg-card border border-border hover:bg-surface font-semibold text-text-main flex items-center justify-center gap-2 rounded-xl transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+            >
+              <Shuffle className={`w-5 h-5 text-accent ${isShuffling ? 'animate-spin' : ''}`} aria-hidden="true" />
+              <span>Nochmal</span>
+            </button>
           </div>
         </div>
       </div>
