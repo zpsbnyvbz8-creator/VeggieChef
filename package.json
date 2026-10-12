@@ -14,6 +14,7 @@
   "dependencies": {
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
+    "@vercel/analytics": "^2.0.1",
     "@vitejs/plugin-react": "^5.0.4",
     "canvas-confetti": "^1.9.4",
     "cors": "^2.8.6",
@@ -29,6 +30,10 @@
     "react-router-dom": "^7.18.4",
     "vite": "^6.2.3",
     "zod": "^4.6.5"
+  },
+  "overrides": {
+    "protobufjs": "^7.6.6",
+    "@grpc/grpc-js": "^1.14.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
