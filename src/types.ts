@@ -248,5 +248,13 @@ export interface RecipeContextType {
   setCookingTimer: React.Dispatch<React.SetStateAction<CookingTimerState | null>>;
 }
 
-
-
+export interface RecipeReview {
+  id: string;
+  recipeId: string;
+  authorName: string;
+  rating: number; // 1 to 5
+  text?: string;
+  createdAt: number; // timestamp ms
+  helpfulCount: number;
+  isOwn?: boolean;
+}

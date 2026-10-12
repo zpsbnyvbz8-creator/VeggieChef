@@ -21,6 +21,7 @@ import RecipesExplorerPage from './pages/RecipesExplorerPage';
 
 // Lazy-loaded Views (Code Splitting)
 const RecipeDetailPage = lazy(() => import('./pages/RecipeDetailPage'));
+const AllReviewsPage = lazy(() => import('./pages/AllReviewsPage'));
 const FridgeCookView = lazy(() => import('./components/FridgeCookView').then((m) => ({ default: m.FridgeCookView })));
 const WeeklyPlannerView = lazy(() => import('./components/WeeklyPlannerView').then((m) => ({ default: m.WeeklyPlannerView })));
 const ShoppingListView = lazy(() => import('./components/ShoppingListView').then((m) => ({ default: m.ShoppingListView })));
@@ -89,6 +90,7 @@ function MainApp() {
             <Route path="/favorites" element={<RecipesExplorerPage isFavorites={true} />} />
             <Route path="/bookmarks" element={<RecipesExplorerPage isBookmarks={true} />} />
             <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+            <Route path="/recipes/:id/reviews" element={<AllReviewsPage />} />
             <Route path="/fridge" element={<FridgeCookView />} />
             <Route path="/planner" element={<WeeklyPlannerView />} />
             <Route path="/shopping" element={<ShoppingListView />} />

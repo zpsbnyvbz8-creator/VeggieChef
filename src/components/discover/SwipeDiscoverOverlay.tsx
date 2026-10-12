@@ -6,6 +6,7 @@ import { Recipe } from '../../types';
 import { RecipeImage } from '../RecipeImage';
 import { CloseButton } from '../ui/CloseButton';
 import { HeartButton } from '../ui/HeartButton';
+import { RecipePickerModal } from '../RecipePickerModal';
 import { useRecipes } from '../../context/RecipeContext';
 import { useToast } from '../../context/ToastContext';
 import { useLockBodyScroll } from '../../utils/useLockBodyScroll';
@@ -180,28 +181,30 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
           </span>
         </div>
 
-        {/* Beschreibung: line-clamp-2 text-sm text-text-muted */}
-        <p className="line-clamp-2 text-sm text-text-muted">
-          {recipe.subtitle || recipe.chefTip}
-        </p>
+        {/* Beschreibung: wenn viele Zutaten da sind, verkürzen oder weglassen damit alle Zutaten passen */}
+        {(recipe.subtitle || recipe.chefTip) && (recipe.ingredients?.length || 0) <= 8 && (
+          <p className={`${(recipe.ingredients?.length || 0) > 5 ? 'line-clamp-1' : 'line-clamp-2'} text-xs sm:text-sm text-text-muted`}>
+            {recipe.subtitle || recipe.chefTip}
+          </p>
+        )}
 
-        {/* Zutaten-Chips: alle Klammer-Inhalte entfernt */}
+        {/* Zutaten-Chips: alle Zutaten anzeigen, nicht künstlich auf 5 beschränken */}
         {recipe.ingredients && recipe.ingredients.length > 0 && (
-          <div className="max-h-[4rem] overflow-hidden flex flex-wrap gap-1.5 text-xs pt-0.5">
-            {recipe.ingredients.slice(0, 5).map((ing, idx) => {
+          <div className="overflow-hidden flex flex-wrap gap-1.5 text-xs pt-0.5 max-h-[5.5rem]">
+            {recipe.ingredients.slice(0, 10).map((ing, idx) => {
               const cleanName = ing.name.replace(/\s*\([^)]*\)/g, '').trim();
               return (
                 <span
                   key={idx}
-                  className="px-2.5 py-1 rounded-lg bg-surface border border-border text-xs font-medium text-text-main"
+                  className="px-2.5 py-0.5 sm:py-1 rounded-lg bg-surface border border-border text-xs font-medium text-text-main"
                 >
                   {cleanName}
                 </span>
               );
             })}
-            {recipe.ingredients.length > 5 && (
-              <span className="px-2 py-1 text-xs font-medium text-text-muted">
-                +{recipe.ingredients.length - 5}
+            {recipe.ingredients.length > 10 && (
+              <span className="px-2 py-0.5 sm:py-1 text-xs font-medium text-text-muted">
+                +{recipe.ingredients.length - 10}
               </span>
             )}
           </div>
@@ -226,6 +229,7 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
   const [history, setHistory] = useState<{ id: string; liked: boolean }[]>([]);
   const [sessionSaved, setSessionSaved] = useState<Recipe[]>([]);
   const [isSavedDrawerOpen, setIsSavedDrawerOpen] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const activeX = useMotionValue(0);
@@ -262,6 +266,23 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
     setSessionSaved([]);
     onClose();
   }, [sessionSaved, onClose]);
+
+  const requestClose = useCallback(() => {
+    if (sessionSaved.length > 0) {
+      setShowExitConfirm(true);
+    } else {
+      handleClose();
+    }
+  }, [sessionSaved.length, handleClose]);
+
+  const confirmExitAndDiscard = useCallback(() => {
+    lastSessionSavedBackup = [...sessionSaved];
+    const count = sessionSaved.length;
+    setSessionSaved([]);
+    setShowExitConfirm(false);
+    onClose();
+    showToast(`${count} ${count === 1 ? 'Rezept' : 'Rezepte'} verworfen. Beim nächsten Swipen wiederherstellbar.`);
+  }, [sessionSaved, onClose, showToast]);
 
   const swipe = useCallback(
     (dir: Direction) => {
@@ -317,18 +338,20 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
-      if (isSavedDrawerOpen) {
+      if (showExitConfirm) {
+        setShowExitConfirm(false);
+      } else if (isSavedDrawerOpen) {
         setIsSavedDrawerOpen(false);
       } else {
-        handleClose();
+        requestClose();
       }
-    } else if (e.key === 'ArrowRight' && !finished && !isSavedDrawerOpen) {
+    } else if (e.key === 'ArrowRight' && !finished && !isSavedDrawerOpen && !showExitConfirm) {
       swipe(1);
-    } else if (e.key === 'ArrowLeft' && !finished && !isSavedDrawerOpen) {
+    } else if (e.key === 'ArrowLeft' && !finished && !isSavedDrawerOpen && !showExitConfirm) {
       swipe(-1);
-    } else if (e.key === 'Enter' && active && !isSavedDrawerOpen) {
+    } else if (e.key === 'Enter' && active && !isSavedDrawerOpen && !showExitConfirm) {
       openDetails(active);
-    } else if ((e.key === 'Backspace' || e.key.toLowerCase() === 'z') && history.length > 0 && !isSavedDrawerOpen) {
+    } else if ((e.key === 'Backspace' || e.key.toLowerCase() === 'z') && history.length > 0 && !isSavedDrawerOpen && !showExitConfirm) {
       undo();
     }
   };
@@ -348,10 +371,10 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
-      className="fixed inset-0 z-[60] bg-[var(--page)] flex flex-col w-full h-[100lvh] min-h-[-webkit-fill-available] overscroll-contain select-none pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] outline-hidden"
+      className="fixed inset-0 z-[60] bg-[var(--page)] flex flex-col w-full h-[100dvh] max-h-[-webkit-fill-available] overflow-hidden overscroll-contain select-none pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] outline-hidden"
     >
       {/* Kopf: Titel "Swipen" mit Fortschritt "X von Y", rechts CloseButton */}
-      <header className="flex items-center justify-between gap-3 px-4 sm:px-6 pb-2">
+      <header className="flex items-center justify-between gap-3 px-4 sm:px-6 pb-2 shrink-0">
         <div className="min-w-0">
           <h2 className="text-lg font-extrabold tracking-tight text-text-main">
             Swipen
@@ -362,7 +385,7 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
             </p>
           )}
         </div>
-        <CloseButton onClick={handleClose} ariaLabel="Swipen beenden" />
+        <CloseButton onClick={requestClose} ariaLabel="Swipen beenden" />
       </header>
 
       {/* Fortschrittsbalken */}
@@ -426,7 +449,7 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
               </button>
               <button
                 type="button"
-                onClick={handleClose}
+                onClick={requestClose}
                 className="h-12 rounded-xl bg-card border border-border hover:bg-surface text-text-muted font-bold flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
               >
                 Swipen beenden
@@ -557,136 +580,73 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
         )}
       </main>
 
-      {/* Session Gemerkte Drawer/Modal */}
-      <AnimatePresence>
-        {isSavedDrawerOpen && (
-          <div className="fixed inset-0 z-70 flex items-end sm:items-center justify-center p-0 sm:p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setIsSavedDrawerOpen(false)}
-              className="fixed inset-0 bg-black/45 backdrop-blur-xs"
-              aria-hidden="true"
-            />
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-label="In dieser Session gemerkte Rezepte"
-              initial={{ y: '100%', opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-              className="relative z-10 w-full max-w-lg bg-card rounded-t-3xl sm:rounded-3xl border border-border shadow-2xl max-h-[85dvh] flex flex-col overflow-hidden"
-            >
-              <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between bg-surface shrink-0">
-                <div className="min-w-0">
-                  <h3 className="text-base sm:text-lg font-bold text-text-main flex items-center gap-2 truncate">
-                    <Bookmark className="w-5 h-5 text-accent fill-current shrink-0" />
-                    <span>In dieser Session gemerkt</span>
-                  </h3>
-                  <p className="text-xs text-text-muted mt-0.5">
-                    {sessionSaved.length} {sessionSaved.length === 1 ? 'Rezept' : 'Rezepte'} gesammelt
-                  </p>
-                </div>
-                <CloseButton onClick={() => setIsSavedDrawerOpen(false)} ariaLabel="Schließen" />
-              </div>
+      {/* Globales RecipePickerModal für Gemerkte (statt alter Drawer) */}
+      <RecipePickerModal
+        isOpen={isSavedDrawerOpen}
+        onClose={() => setIsSavedDrawerOpen(false)}
+        title="Merkliste"
+        recipes={sessionSaved}
+        onSelectRecipe={(recipe) => {
+          setIsSavedDrawerOpen(false);
+          openDetails(recipe);
+        }}
+        actionLabel="Rezept ansehen"
+        actionIcon="eye"
+      />
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-2.5 min-h-[160px]">
-                {sessionSaved.length === 0 ? (
-                  <div className="text-center py-10 px-4 space-y-3">
-                    <p className="text-sm text-text-muted">Noch keine Rezepte in dieser Session gemerkt.</p>
-                    <p className="text-xs text-text-muted">Wische eine Karte nach rechts, um sie hier zu sammeln.</p>
-                    {lastSessionSavedBackup.length > 0 && (
-                      <div className="pt-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSessionSaved([...lastSessionSavedBackup]);
-                          }}
-                          className="px-4 py-2 text-xs font-bold rounded-xl bg-accent-tint text-accent border border-accent/20 hover:bg-accent-tint/80 transition-colors cursor-pointer"
-                        >
-                          Zuletzt Gemerkte wiederherstellen ({lastSessionSavedBackup.length})
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  sessionSaved.map((r) => (
-                    <div
-                      key={r.id}
-                      className="flex items-center gap-3 p-2.5 rounded-2xl bg-surface border border-border hover:border-accent/30 transition-colors"
-                    >
-                      <div className="w-14 h-14 rounded-xl overflow-hidden bg-card shrink-0">
-                        <RecipeImage recipe={r} size="sm" imgClassName="w-full h-full object-cover" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-bold text-text-main truncate">{r.title}</h4>
-                        <div className="flex items-center gap-2 text-xs text-text-muted mt-0.5">
-                          <span className="inline-flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-accent" /> {r.totalTimeMinutes} Min
-                          </span>
-                          {getRecipeDiet(r) === 'vegetarisch' && <span>· Vegetarisch</span>}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsSavedDrawerOpen(false);
-                            openDetails(r);
-                          }}
-                          className="h-8 px-3 rounded-lg bg-accent text-on-accent text-xs font-semibold hover:bg-accent-hover transition-colors cursor-pointer"
-                        >
-                          Ansehen
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSessionSaved((prev) => prev.filter((item) => item.id !== r.id));
-                          }}
-                          aria-label={`${r.title} entfernen`}
-                          className="w-8 h-8 rounded-lg border border-border bg-card text-text-muted hover:text-favorite hover:border-favorite/30 flex items-center justify-center transition-colors cursor-pointer"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {sessionSaved.length > 0 && (
-                <div className="p-4 border-t border-border bg-surface flex items-center justify-between gap-3 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sessionSaved.forEach((r) => {
-                        if (!bookmarks.includes(r.id)) {
-                          toggleBookmark(r.id);
-                        }
-                      });
-                      showToast(`${sessionSaved.length} Rezepte auf Merkliste übernommen`);
-                    }}
-                    className="flex-1 h-10 px-3 rounded-xl border border-accent/30 bg-card hover:bg-accent-tint text-accent font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Bookmark className="w-4 h-4" />
-                    <span>In Merkliste übernehmen</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsSavedDrawerOpen(false)}
-                    className="h-10 px-4 rounded-xl bg-accent text-on-accent font-bold text-xs sm:text-sm hover:bg-accent-hover transition-colors cursor-pointer"
-                  >
-                    Fertig
-                  </button>
-                </div>
-              )}
-            </motion.div>
+      {/* Bestätigungs-Dialog beim Schließen mit gemerkten Rezepten */}
+      {showExitConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Swipen beenden bestätigen"
+          className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setShowExitConfirm(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-card rounded-2xl sm:rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-border flex flex-col gap-4 text-center animate-in zoom-in-95 duration-150"
+          >
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-favorite/10 text-favorite flex items-center justify-center">
+              <Bookmark className="w-7 h-7 fill-current" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-lg sm:text-xl font-extrabold text-text-main">
+                Swipen beenden?
+              </h3>
+              <p className="text-sm text-text-muted leading-relaxed">
+                Es werden <span className="font-bold text-text-main">{sessionSaved.length} {sessionSaved.length === 1 ? 'Rezept' : 'Rezepte'}</span> von deiner Merkliste verworfen. Du kannst sie beim nächsten Mal rückgängig machen.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowExitConfirm(false);
+                  setIsSavedDrawerOpen(true);
+                }}
+                className="w-full h-11 min-h-[44px] rounded-xl bg-accent text-on-accent font-bold text-sm shadow-xs hover:bg-accent-hover transition-colors cursor-pointer"
+              >
+                Gemerkte erst ansehen ({sessionSaved.length})
+              </button>
+              <button
+                type="button"
+                onClick={confirmExitAndDiscard}
+                className="w-full h-11 min-h-[44px] rounded-xl bg-surface hover:bg-border text-favorite font-semibold text-sm transition-colors cursor-pointer"
+              >
+                Trotzdem beenden & verwerfen
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowExitConfirm(false)}
+                className="w-full h-11 min-h-[44px] rounded-xl bg-transparent hover:bg-surface text-text-muted font-medium text-sm transition-colors cursor-pointer"
+              >
+                Weiterswipen
+              </button>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </motion.div>
   );
 };

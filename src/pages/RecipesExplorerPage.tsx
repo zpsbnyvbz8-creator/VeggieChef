@@ -148,7 +148,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
               {favorites.length} gespeichert
             </p>
           ) : null}
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-main leading-tight">
+          <h1 className="text-[20px] sm:text-4xl font-bold tracking-tight text-text-main leading-tight">
             {isBookmarks ? 'Merkliste' : isFavorites ? 'Deine Favoriten' : 'Was kochen wir heute?'}
           </h1>
         </div>
@@ -158,7 +158,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
           onClick={() => setIsAddRecipeOpen(true)}
           aria-label="Rezept hinzufügen"
           title="Rezept per KI, Foto oder manuell hinzufügen"
-          className="h-10 px-3.5 sm:px-4 rounded-full text-sm font-bold bg-accent hover:bg-accent-hover text-on-accent shrink-0 flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
+          className="h-11 min-h-[44px] px-4 rounded-full text-sm font-bold bg-accent hover:bg-accent-hover text-on-accent shrink-0 flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
         >
           <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
           <span className="sm:hidden text-sm">Rezept</span>

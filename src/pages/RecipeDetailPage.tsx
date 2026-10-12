@@ -49,6 +49,15 @@ import { FullscreenImageViewer } from '../components/recipe/FullscreenImageViewe
 import { EditRecipeModal } from '../components/recipe/EditRecipeModal';
 import { StepImageSwiper } from '../components/recipe/StepImageSwiper';
 import { HeartButton } from '../components/ui/HeartButton';
+import { ReviewCard } from '../components/reviews/ReviewCard';
+import { WriteReviewSheet } from '../components/reviews/WriteReviewSheet';
+import {
+  getReviewsForRecipe,
+  toggleReviewHelpful,
+  deleteReview,
+  getHelpfulReviewsSet,
+} from '../data/reviews';
+import { RecipeReview } from '../types';
 
 export const RecipeDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -93,6 +102,10 @@ export const RecipeDetailPage: React.FC = () => {
   const [checkedIngredients, setCheckedIngredients] = useState<Record<string, boolean>>({});
   const [completedSteps, setCompletedSteps] = useState<Record<number, boolean>>({});
 
+  // Hero header and reviews section refs
+  const heroHeaderRef = useRef<HTMLElement | null>(null);
+  const reviewsSectionRef = useRef<HTMLElement | null>(null);
+
   // Sticky header scroll detection & scroll-coupled fade across the last ~80px of hero
   const [scrollProgress, setScrollProgress] = useState(0);
   const isScrolled = scrollProgress > 0.5;
@@ -100,9 +113,10 @@ export const RecipeDetailPage: React.FC = () => {
   useEffect(() => {
     const handleScroll = () => {
       const y = window.scrollY;
-      const start = 160;
-      const end = 240;
-      const progress = Math.min(1, Math.max(0, (y - start) / (end - start)));
+      const heroHeight = heroHeaderRef.current?.offsetHeight || 340;
+      const start = Math.max(0, heroHeight - 80);
+      const end = heroHeight;
+      const progress = Math.min(1, Math.max(0, (y - start) / Math.max(1, end - start)));
       setScrollProgress(progress);
     };
     handleScroll();
@@ -110,16 +124,22 @@ export const RecipeDetailPage: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Dynamische theme-color für RecipeDetailPage:
-  // Oben auf dem Hero dunkel (#1c1917), gescrollt weiß (#FFFFFF), beim Verlassen zurück auf #F3DDBC
+  // Dynamische theme-color & body background für RecipeDetailPage:
+  // Oben auf dem Hero dunkel (#1c1917), damit Gummiband-Überscrollen oben dunkel bleibt
+  // gescrollt weiß (#FFFFFF), beim Verlassen zurück auf #F3DDBC
   useEffect(() => {
+    const originalBodyBg = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = isScrolled ? 'var(--page)' : '#1c1917';
+
     const meta = document.querySelector('meta[name="theme-color"]');
-    const color = isScrolled ? '#FFFFFF' : '#1c1917';
+    const color = scrollProgress >= 0.8 ? '#FFFFFF' : '#1c1917';
     meta?.setAttribute('content', color);
+
     return () => {
+      document.body.style.backgroundColor = originalBodyBg;
       meta?.setAttribute('content', '#F3DDBC');
     };
-  }, [isScrolled]);
+  }, [isScrolled, scrollProgress]);
 
   // Gallery & Image states
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -158,33 +178,98 @@ export const RecipeDetailPage: React.FC = () => {
   // Contextual ingredient substitute modal
   const [substitutingIngredient, setSubstitutingIngredient] = useState<RecipeIngredient | null>(null);
 
-  // User review & comment states
-  const [userRating, setUserRating] = useState<number>(recipe?.rating || 0);
-  const [hoverRating, setHoverRating] = useState<number>(0);
-  const [userComment, setUserComment] = useState<string>(recipe?.userNotes || '');
-  const [isCommentSaved, setIsCommentSaved] = useState(false);
+  // Public reviews state
+  const [recipeReviews, setRecipeReviews] = useState<RecipeReview[]>([]);
+  const [isWriteReviewOpen, setIsWriteReviewOpen] = useState(false);
+  const [editingReview, setEditingReview] = useState<RecipeReview | null>(null);
+  const [helpfulSet, setHelpfulSet] = useState<Set<string>>(new Set());
 
-  // Sync review & comment when recipe changes or from localStorage
+  // Private note state (preserves existing notes)
+  const [userNote, setUserNote] = useState<string>(recipe?.userNotes || '');
+  const [isNoteSaved, setIsNoteSaved] = useState(false);
+
+  // Sync reviews and private note on mount/change
   useEffect(() => {
     if (!recipe?.id) return;
+    const loaded = getReviewsForRecipe(recipe.id);
+    setRecipeReviews(loaded);
+    setHelpfulSet(getHelpfulReviewsSet());
+
     try {
-      const stored = localStorage.getItem(`veggiechef_review_${recipe.id}`);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (typeof parsed?.rating === 'number') {
-          setUserRating(parsed.rating);
-        }
-        if (typeof parsed?.comment === 'string') {
-          setUserComment(parsed.comment);
-        }
-      } else {
-        if (recipe.rating !== undefined) setUserRating(recipe.rating);
-        if (recipe.userNotes !== undefined) setUserComment(recipe.userNotes);
+      const storedNote = localStorage.getItem(`veggiechef_note_${recipe.id}`);
+      if (storedNote !== null) {
+        setUserNote(storedNote);
+      } else if (recipe.userNotes) {
+        setUserNote(recipe.userNotes);
       }
     } catch {
       // ignore
     }
-  }, [recipe?.id, recipe?.rating, recipe?.userNotes]);
+  }, [recipe?.id, recipe?.userNotes]);
+
+  // Dynamically calculate average rating and count
+  const { avgRating, totalReviewsCount } = useMemo(() => {
+    if (recipeReviews.length === 0) {
+      return {
+        avgRating: recipe?.rating || 0,
+        totalReviewsCount: recipe?.reviewCount || 0,
+      };
+    }
+    const sum = recipeReviews.reduce((acc, r) => acc + r.rating, 0);
+    return {
+      avgRating: sum / recipeReviews.length,
+      totalReviewsCount: Math.max(recipeReviews.length, recipe?.reviewCount || recipeReviews.length),
+    };
+  }, [recipeReviews, recipe]);
+
+  const handleToggleHelpful = (reviewId: string) => {
+    const res = toggleReviewHelpful(reviewId);
+    setHelpfulSet((prev) => {
+      const next = new Set(prev);
+      if (res.isHelpful) next.add(reviewId);
+      else next.delete(reviewId);
+      return next;
+    });
+    setRecipeReviews((prev) =>
+      prev.map((r) => (r.id === reviewId ? { ...r, helpfulCount: res.helpfulCount } : r))
+    );
+  };
+
+  const handleDeleteReview = (reviewId: string) => {
+    deleteReview(reviewId);
+    setRecipeReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    showToast('Bewertung gelöscht');
+  };
+
+  const handleEditReview = (rev: RecipeReview) => {
+    setEditingReview(rev);
+    setIsWriteReviewOpen(true);
+  };
+
+  const handleReviewSuccess = (saved: RecipeReview) => {
+    if (editingReview) {
+      setRecipeReviews((prev) => prev.map((r) => (r.id === saved.id ? saved : r)));
+      showToast('Bewertung aktualisiert');
+    } else {
+      setRecipeReviews((prev) => [saved, ...prev.filter((r) => r.id !== saved.id)]);
+      showToast('Bewertung veröffentlicht');
+    }
+    setEditingReview(null);
+  };
+
+  const handleSaveNote = () => {
+    if (!recipe) return;
+    try {
+      localStorage.setItem(`veggiechef_note_${recipe.id}`, userNote.trim());
+    } catch {}
+    updateRecipe({
+      ...recipe,
+      userNotes: userNote.trim(),
+    });
+    setIsNoteSaved(true);
+    showToast('Notiz gespeichert!');
+    setTimeout(() => setIsNoteSaved(false), 2500);
+  };
 
   // Micronutrients accordion state
   const [isMicronutrientsOpen, setIsMicronutrientsOpen] = useState(false);
@@ -443,47 +528,6 @@ export const RecipeDetailPage: React.FC = () => {
     deleteRecipe(recipe.id);
     setIsDeleteConfirmOpen(false);
     navigate('/');
-  };
-
-  // Review and comment handlers
-  const handleRate = (rating: number) => {
-    const nextRating = userRating === rating ? 0 : rating;
-    setUserRating(nextRating);
-    if (recipe) {
-      try {
-        localStorage.setItem(
-          `veggiechef_review_${recipe.id}`,
-          JSON.stringify({ rating: nextRating, comment: userComment.trim() })
-        );
-      } catch {
-        // ignore
-      }
-      updateRecipe({
-        ...recipe,
-        rating: nextRating,
-      });
-    }
-  };
-
-  const handleSaveReview = () => {
-    if (!recipe) return;
-    try {
-      localStorage.setItem(
-        `veggiechef_review_${recipe.id}`,
-        JSON.stringify({ rating: userRating, comment: userComment.trim() })
-      );
-    } catch {
-      // ignore
-    }
-    const updated: Recipe = {
-      ...recipe,
-      rating: userRating,
-      userNotes: userComment.trim(),
-    };
-    updateRecipe(updated);
-    setIsCommentSaved(true);
-    showToast('Bewertung & Notiz gespeichert!');
-    setTimeout(() => setIsCommentSaved(false), 2500);
   };
 
   // Apply contextual ingredient substitution
@@ -848,16 +892,16 @@ export const RecipeDetailPage: React.FC = () => {
       </nav>
 
       {/* 2. EDGE-TO-EDGE MEDIA CONTAINER WITH TOUCH SWIPE & PAGINATION DOTS */}
-      <header className="relative w-full overflow-hidden bg-stone-900 select-none">
+      <header ref={heroHeaderRef} className="relative w-full overflow-hidden bg-stone-900 select-none">
         {/* Rubber-band overscroll buffer layer: dark background extends above top:0 */}
-        <div className="absolute -top-40 inset-x-0 h-40 bg-stone-900 pointer-events-none" />
+        <div className="absolute -top-96 inset-x-0 h-96 bg-stone-900 pointer-events-none" />
 
-        {/* Top subtle gradient overlay: keeps status bar and top buttons readable */}
+        {/* Top gradient overlay: keeps status bar and top buttons readable on light and dark photos */}
         <div
           className="absolute top-0 inset-x-0 pointer-events-none z-10"
           style={{
-            height: 'calc(env(safe-area-inset-top, 0px) + 48px)',
-            background: 'linear-gradient(to bottom, rgba(0,0,0,0.35), transparent)',
+            height: 'calc(env(safe-area-inset-top, 0px) + 64px)',
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.35) 60%, transparent 100%)',
           }}
         />
 
@@ -938,6 +982,23 @@ export const RecipeDetailPage: React.FC = () => {
             {recipe.title}
           </h1>
 
+          {/* Jump to Reviews Link */}
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                reviewsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              className="inline-flex items-center gap-1.5 text-sm sm:text-base font-semibold text-text-main hover:text-accent transition-colors cursor-pointer group py-0.5"
+              aria-label={`Bewertung ${avgRating.toFixed(1).replace('.', ',')} von 5 Sternen (${totalReviewsCount}). Zu den Bewertungen springen.`}
+            >
+              <Star className="w-4 h-4 fill-[#E67E22] text-[#E67E22] shrink-0" />
+              <span>{avgRating.toFixed(1).replace('.', ',')}</span>
+              <span className="text-text-muted font-normal">({totalReviewsCount})</span>
+              <span className="text-text-muted group-hover:translate-x-0.5 transition-transform">›</span>
+            </button>
+          </div>
+
           {/* Subtitle */}
           {recipe.subtitle && (
             <p id="recipe-detail-subtitle" className="text-base text-text-muted leading-relaxed max-w-3xl">
@@ -963,9 +1024,9 @@ export const RecipeDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Calories */}
-          <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
-            <div className="w-10 h-10 rounded-xl bg-stat-kcal-bg text-accent flex items-center justify-center shrink-0">
+          {/* Calories (bg-stat-kcal-bg #FDF6F0, border-0) */}
+          <div className="p-3.5 bg-stat-kcal-bg rounded-2xl border-0 flex items-center gap-3 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-stat-kcal-bg text-accent flex items-center justify-center shrink-0 border-0">
               <Flame className="w-5 h-5" />
             </div>
             <div>
@@ -1097,15 +1158,20 @@ export const RecipeDetailPage: React.FC = () => {
               <h2 className="text-xl font-bold text-text-main flex items-center gap-2">
                 <span>Zutaten</span>
               </h2>
+              <span className="text-xs text-text-muted hidden md:inline">
+                {isCustomizingIngredients ? 'Tippe auf Ersetzen für Alternativen' : 'Tippe zum Abhaken'}
+              </span>
+            </div>
+
+            {/* Actions rechts: Veganisieren (links) + Zutaten anpassen (rechts) */}
+            <div className="flex items-center gap-2 shrink-0">
               {!recipe.isVegan && (
                 <button
                   id="veganize-ingredients-btn"
                   type="button"
                   onClick={handleVeganize}
-                  className={`h-10 px-3.5 rounded-xl border border-accent text-sm font-semibold flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                    isVeganized
-                      ? 'bg-transparent text-accent border-accent font-bold'
-                      : 'bg-transparent text-accent border-accent hover:bg-accent-tint'
+                  className={`h-10 px-3.5 rounded-xl border border-accent/25 bg-accent-tint hover:border-accent/50 text-accent font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs ${
+                    isVeganized ? 'ring-2 ring-accent/30' : ''
                   }`}
                   title={isVeganized ? 'Zum Original zurückwechseln' : 'Rezept veganisieren'}
                 >
@@ -1113,35 +1179,32 @@ export const RecipeDetailPage: React.FC = () => {
                   <span>{isVeganized ? 'Vegan ✓' : 'Veganisieren'}</span>
                 </button>
               )}
-              <span className="text-xs text-text-muted hidden md:inline">
-                {isCustomizingIngredients ? 'Tippe auf Ersetzen für Alternativen' : 'Tippe zum Abhaken'}
-              </span>
-            </div>
 
-            {/* Explicit Ingredient Customization Mode Toggle Button */}
-            <button
-              id="toggle-ingredient-customize-btn"
-              type="button"
-              onClick={() => setIsCustomizingIngredients(!isCustomizingIngredients)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[16px] font-semibold transition-all cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
-                isCustomizingIngredients
-                  ? 'bg-accent text-on-accent border-accent shadow-xs hover:bg-accent-hover'
-                  : 'bg-card hover:bg-accent-tint border-border text-[#57534d] shadow-2xs'
-              }`}
-              title={isCustomizingIngredients ? 'Zutatenanpassung beenden' : 'Zutaten anpassen'}
-            >
-              {isCustomizingIngredients ? (
-                <>
-                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span className="text-[16px]">Fertig</span>
-                </>
-              ) : (
-                <>
-                  <ArrowLeftRight className="w-3.5 h-3.5 text-accent" />
-                  <span className="text-[16px]">Zutaten anpassen</span>
-                </>
-              )}
-            </button>
+              {/* Explicit Ingredient Customization Mode Toggle Button */}
+              <button
+                id="toggle-ingredient-customize-btn"
+                type="button"
+                onClick={() => setIsCustomizingIngredients(!isCustomizingIngredients)}
+                className={`inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl border text-xs sm:text-sm font-semibold transition-all cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
+                  isCustomizingIngredients
+                    ? 'bg-accent text-on-accent border-accent shadow-xs hover:bg-accent-hover'
+                    : 'bg-card hover:bg-accent-tint border-border text-[#57534d] shadow-2xs'
+                }`}
+                title={isCustomizingIngredients ? 'Zutatenanpassung beenden' : 'Zutaten anpassen'}
+              >
+                {isCustomizingIngredients ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Fertig</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowLeftRight className="w-3.5 h-3.5 text-accent" />
+                    <span>Zutaten anpassen</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Flat List with Dividers; Clean in Default State, Explicit Replace Buttons in Edit State */}
@@ -1264,7 +1327,7 @@ export const RecipeDetailPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3.5 bg-card rounded-xl border border-border text-center shadow-2xs">
               <div className="text-[16px] font-semibold text-text-muted">Protein</div>
-              <div className="text-lg font-bold text-text-main mt-0.5 tabular-nums">
+              <div className="text-lg font-bold text-accent mt-0.5 tabular-nums">
                 {recipe.nutrients.protein}g
               </div>
             </div>
@@ -1376,7 +1439,7 @@ export const RecipeDetailPage: React.FC = () => {
                     <h3 className="text-xl font-bold text-text-main">
                       Zubereitung Schritt für Schritt
                     </h3>
-                    <span className="text-xs text-text-muted">Tippe zum Abhaken</span>
+                    <span className="text-xs text-text-muted hidden sm:inline">Tippe zum Abhaken</span>
                   </div>
 
                   {/* Header Actions for Step Photos */}
@@ -1562,56 +1625,109 @@ export const RecipeDetailPage: React.FC = () => {
           )}
         </section>
 
-        {/* 9. REVIEW & COMMENT SECTION */}
-        <section className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-text-main">
-              Bewertung & Notizen
-            </h3>
-          </div>
+        {/* 9. PUBLIC REVIEWS SECTION & PRIVATE NOTE */}
+        <section ref={reviewsSectionRef} className="space-y-4">
+          <div className="p-5 sm:p-6 rounded-3xl bg-card border border-border shadow-2xs space-y-5">
+            {/* Header: Durchschnitt, Sterne, Zähler & Button "Bewertung schreiben" */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+              <div className="flex items-center gap-4">
+                <div className="text-4xl sm:text-5xl font-black text-text-main tracking-tight">
+                  {avgRating.toFixed(1).replace('.', ',')}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-1" aria-label={`${avgRating.toFixed(1)} von 5 Sternen`}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-5 h-5 ${
+                          star <= Math.round(avgRating)
+                            ? 'fill-[#E67E22] text-[#E67E22]'
+                            : 'fill-border text-border'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-xs sm:text-sm text-text-muted font-medium">
+                    {totalReviewsCount} {totalReviewsCount === 1 ? 'Bewertung' : 'Bewertungen'}
+                  </span>
+                </div>
+              </div>
 
-          <div
-            className="flex items-center gap-1"
-            onMouseLeave={() => setHoverRating(0)}
-          >
-            {[1, 2, 3, 4, 5].map((star) => {
-              const isFilled = (hoverRating || userRating) >= star;
-              return (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => handleRate(star)}
-                  onMouseEnter={() => setHoverRating(star)}
-                  className="p-1 cursor-pointer transition-transform active:scale-90 touch-manipulation"
-                  aria-label={`${star} von 5 Sternen`}
-                >
-                  <Star
-                    className={`w-6 h-6 transition-colors ${
-                      isFilled
-                        ? 'fill-[#E67E22] text-[#E67E22]'
-                        : 'text-border fill-transparent'
-                    }`}
+              {/* Primärer Button: Bewertung schreiben */}
+              <button
+                id="write-review-open-btn"
+                type="button"
+                onClick={() => {
+                  setEditingReview(null);
+                  setIsWriteReviewOpen(true);
+                }}
+                className="h-11 min-h-[44px] px-4 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-sm font-bold flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer self-start sm:self-auto"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Bewertung schreiben</span>
+              </button>
+            </div>
+
+            {/* Die 3 neuesten Bewertungen */}
+            {recipeReviews.length === 0 ? (
+              <div className="text-center py-6 px-4 space-y-2">
+                <p className="text-sm font-medium text-text-muted">
+                  Noch keine Bewertungen für dieses Rezept.
+                </p>
+                <p className="text-xs text-text-muted">
+                  Koche es nach und teile deine Erfahrung als Erste/r!
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recipeReviews.slice(0, 3).map((review) => (
+                  <ReviewCard
+                    key={review.id}
+                    review={review}
+                    isHelpful={helpfulSet.has(review.id)}
+                    onToggleHelpful={handleToggleHelpful}
+                    onEdit={handleEditReview}
+                    onDelete={handleDeleteReview}
                   />
-                </button>
-              );
-            })}
+                ))}
+              </div>
+            )}
+
+            {/* Sekundärer Button: Alle Bewertungen ansehen (N) */}
+            <div className="pt-1">
+              <button
+                id="view-all-reviews-btn"
+                type="button"
+                onClick={() => navigate(`/recipes/${recipe.id}/reviews`)}
+                className="w-full h-12 min-h-[44px] rounded-xl border border-border bg-surface hover:bg-card text-text-main font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer shadow-2xs"
+              >
+                <span>Alle Bewertungen ansehen ({totalReviewsCount})</span>
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-3">
+          {/* Meine Notiz (nur für dich) - Vorhandene Notizen bleiben erhalten */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-text-main flex items-center gap-1.5">
+                <Pencil className="w-4 h-4 text-accent" />
+                <span>Meine Notiz (nur für dich)</span>
+              </h3>
+            </div>
             <textarea
-              value={userComment}
-              onChange={(e) => setUserComment(e.target.value)}
-              placeholder="Notizen oder Feedback..."
-              className="w-full bg-surface border border-border focus:border-accent text-base text-text-main rounded-xl p-3.5 min-h-[90px] placeholder:text-text-muted resize-y focus:outline-hidden"
+              id="private-recipe-note"
+              value={userNote}
+              onChange={(e) => setUserNote(e.target.value)}
+              placeholder="Deine privaten Koch-Notizen (z. B. 'Mehr Salz', 'Nur 15 Min backen')..."
+              className="w-full bg-surface border border-border focus:border-accent text-sm sm:text-base text-text-main rounded-xl p-3 min-h-[80px] placeholder:text-text-muted resize-y focus:outline-hidden"
             />
-
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={handleSaveReview}
-                className="h-10 px-4 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-sm font-semibold transition-all shadow-2xs active:scale-95 cursor-pointer touch-manipulation"
+                onClick={handleSaveNote}
+                className="h-10 min-h-[40px] px-4 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-sm font-semibold transition-all shadow-2xs active:scale-95 cursor-pointer touch-manipulation"
               >
-                {isCommentSaved ? '✓ Gespeichert' : 'Speichern'}
+                {isNoteSaved ? '✓ Gespeichert' : 'Notiz speichern'}
               </button>
             </div>
           </div>
@@ -1621,7 +1737,7 @@ export const RecipeDetailPage: React.FC = () => {
       {/* 10. EXCLUSIVE PRIMARY CTA IN PERSISTENT STICKY BOTTOM BAR */}
       <aside
         aria-label="Koch-Modus Schnellzugriff"
-        className={`fixed ${hasBottomTimer ? 'bottom-16 sm:bottom-18' : 'bottom-0'} inset-x-0 z-30 pointer-events-none md:pointer-events-auto bg-gradient-to-t from-[var(--bg-page)] via-[var(--bg-page)]/90 to-transparent pt-6 pb-[calc(env(safe-area-inset-bottom)+12px)] px-4 md:bg-card/95 md:backdrop-blur-md md:border-t md:border-border md:px-4 md:py-3 md:shadow-[0_-4px_20px_rgba(0,0,0,0.06)] transition-all duration-200`}
+        className={`fixed ${hasBottomTimer ? 'bottom-16 sm:bottom-18' : 'bottom-0'} inset-x-0 z-30 pointer-events-none md:pointer-events-auto bg-gradient-to-t from-[var(--bg-page)] via-[var(--bg-page)]/90 to-transparent pt-6 pb-[max(6px,env(safe-area-inset-bottom))] px-4 md:bg-card/95 md:backdrop-blur-md md:border-t md:border-border md:px-4 md:py-3 md:shadow-[0_-4px_20px_rgba(0,0,0,0.06)] transition-all duration-200`}
       >
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 sm:gap-4 pointer-events-auto">
           {/* Quick portions stepper in sticky bar: hidden on mobile (<768px), visible on md+ */}
@@ -1819,6 +1935,18 @@ export const RecipeDetailPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Write / Edit Review Bottom Sheet */}
+      <WriteReviewSheet
+        isOpen={isWriteReviewOpen}
+        onClose={() => {
+          setIsWriteReviewOpen(false);
+          setEditingReview(null);
+        }}
+        recipeId={recipe.id}
+        initialReview={editingReview}
+        onSuccess={handleReviewSuccess}
+      />
     </div>
   );
 };

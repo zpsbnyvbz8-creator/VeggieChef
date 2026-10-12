@@ -40,8 +40,10 @@ export const HeartButton: React.FC<HeartButtonProps> = ({
 
   const variantCircleClasses =
     variant === 'on-surface'
-      ? 'bg-card/95 hover:bg-accent-tint border border-border text-text-muted'
-      : 'bg-black/35 hover:bg-black/55 backdrop-blur-md border border-white/10 text-on-accent';
+      ? 'bg-accent-tint hover:bg-accent-tint border border-border text-text-main shadow-2xs'
+      : 'bg-black/35 hover:bg-black/55 backdrop-blur-md border border-white/10 text-on-accent shadow-md';
+
+  const isLg = size === 'lg';
 
   return (
     <button
@@ -55,17 +57,25 @@ export const HeartButton: React.FC<HeartButtonProps> = ({
       aria-pressed={isFavorite}
       aria-label={label}
       title={title ?? label}
-      className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 ${className}`}
+      className={`${
+        isLg
+          ? 'w-12 h-12 min-w-[48px] min-h-[48px]'
+          : 'w-11 h-11 min-w-[44px] min-h-[44px]'
+      } rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-90 ${className}`}
     >
       <span
         className={`${
-          size === 'lg' ? 'w-12 h-12 min-w-[48px] min-h-[48px]' : 'w-10 h-10'
+          isLg
+            ? 'w-12 h-12 min-w-[48px] min-h-[48px]'
+            : 'w-11 h-11 min-w-[44px] min-h-[44px]'
         } rounded-full flex items-center justify-center transition-colors ${variantCircleClasses}`}
       >
         <Heart
-          className={`w-[22px] h-[22px] transition-colors ${
+          className={`${
+            isLg ? 'w-[22px] h-[22px]' : 'w-5 h-5'
+          } transition-colors ${
             isPulsing ? 'vc-icon-pulse' : ''
-          } ${isFavorite ? 'fill-favorite text-favorite' : variant === 'on-surface' ? 'text-text-muted' : 'text-on-accent'}`}
+          } ${isFavorite ? 'fill-favorite text-favorite' : variant === 'on-surface' ? 'text-text-main' : 'text-on-accent'}`}
           aria-hidden="true"
         />
       </span>

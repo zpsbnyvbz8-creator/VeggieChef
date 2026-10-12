@@ -35,8 +35,8 @@ export const CloseButton: React.FC<CloseButtonProps> = ({
     >
       <span
         className={`${
-          isLg ? 'w-12 h-12' : 'w-10 h-10'
-        } rounded-full border border-border bg-card/90 hover:bg-card text-text-muted hover:text-text-main flex items-center justify-center transition-colors`}
+          isLg ? 'w-12 h-12 min-w-[48px] min-h-[48px]' : 'w-11 h-11 min-w-[44px] min-h-[44px]'
+        } rounded-full border border-border bg-card/90 hover:bg-card text-text-muted hover:text-text-main flex items-center justify-center transition-colors shadow-2xs`}
       >
         <X className={`${isLg ? 'w-[22px] h-[22px]' : 'w-5 h-5'} stroke-[2]`} aria-hidden="true" />
       </span>
