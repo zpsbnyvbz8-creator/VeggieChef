@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Leaf } from 'lucide-react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { 
   ToastProvider, 
   SyncProvider, 
@@ -156,6 +157,7 @@ export function App() {
           <PlannerProvider>
             <ShoppingProvider>
               <MainApp />
+              <SpeedInsights />
             </ShoppingProvider>
           </PlannerProvider>
         </RecipeProvider>
