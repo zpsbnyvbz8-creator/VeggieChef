@@ -25,6 +25,9 @@
   --sheet: #FFFFFF;
   --border: #ECEBE8;
 
+  /* Stat-Kacheln */
+  --stat-kcal-bg: #FDF6F0;
+
   /* Text */
   --text-main: #2D3E40;
   --text-muted: #686E6A;
@@ -105,6 +108,7 @@
   --color-card: var(--card);
   --color-sheet: var(--sheet);
   --color-border: var(--border);
+  --color-stat-kcal-bg: var(--stat-kcal-bg);
   --color-text-main: var(--text-main);
   --color-text-muted: var(--text-muted);
   --color-on-accent: var(--on-accent);

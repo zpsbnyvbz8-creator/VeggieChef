@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Star, ChefHat, Flame, Dumbbell } from 'lucide-react';
+import { Clock, Star, ChefHat } from 'lucide-react';
 import { Recipe } from '../../types';
 import { RecipeImage } from '../RecipeImage';
 import { HeartButton } from './HeartButton';
@@ -69,7 +69,7 @@ export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe, in
       </div>
 
       {/* Textbereich */}
-      <div className="flex flex-col justify-center flex-1 min-w-0 py-2.5 pl-3 pr-12 sm:py-3 sm:pl-4 sm:pr-14 gap-1.5 sm:gap-2">
+      <div className="flex flex-col justify-between flex-1 min-w-0 py-2.5 pl-3 pr-12 sm:py-3 sm:pl-4 sm:pr-14">
         <h3 className="font-bold text-card-title leading-snug line-clamp-2 text-text-main group-hover:text-accent transition-colors">
           <Link
             to={detailPath}
@@ -79,7 +79,7 @@ export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe, in
           </Link>
         </h3>
 
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-card-info font-medium leading-snug text-text-muted">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-card-info font-medium leading-snug text-text-muted mt-auto pt-2">
           {diet === 'vegetarisch' && <span>Vegetarisch</span>}
           <span className="inline-flex items-center gap-1">
             <Clock className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
@@ -94,17 +94,6 @@ export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe, in
           <span className="inline-flex items-center gap-1">
             <ChefHat className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
             {DIFFICULTY_LABEL[recipe.difficulty]}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-3.5 text-xs font-semibold text-text-main">
-          <span className="inline-flex items-center gap-1">
-            <Flame className="w-3.5 h-3.5 text-[#E67E22]" aria-hidden="true" />
-            {recipe.nutrients.calories} kcal
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Dumbbell className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
-            {recipe.nutrients.protein} g Protein
           </span>
         </div>
       </div>
