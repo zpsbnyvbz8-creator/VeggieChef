@@ -18,20 +18,47 @@ import { CookingTimerBar } from './components/CookingTimerBar';
 import { ExplorerLoadingSkeleton } from './components/ui/ExplorerLoadingSkeleton';
 
 import RecipesExplorerPage from './pages/RecipesExplorerPage';
+import { AddRecipeModal } from './components/AddRecipeModal';
 
-// Lazy-loaded Views (Code Splitting)
-const RecipeDetailPage = lazy(() => import('./pages/RecipeDetailPage'));
-const AllReviewsPage = lazy(() => import('./pages/AllReviewsPage'));
-const FridgeCookView = lazy(() => import('./components/FridgeCookView').then((m) => ({ default: m.FridgeCookView })));
-const WeeklyPlannerView = lazy(() => import('./components/WeeklyPlannerView').then((m) => ({ default: m.WeeklyPlannerView })));
-const ShoppingListView = lazy(() => import('./components/ShoppingListView').then((m) => ({ default: m.ShoppingListView })));
-const StatsView = lazy(() => import('./components/StatsView').then((m) => ({ default: m.StatsView })));
+// Resilient dynamic importer that retries chunk downloads if network or dev server momentarily drops
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T } | { [key: string]: any }>
+) {
+  return lazy(async () => {
+    try {
+      const module = await factory();
+      if ('default' in module && module.default) {
+        return { default: module.default as T };
+      }
+      const keys = Object.keys(module);
+      const named = keys.find((k) => typeof module[k] === 'function');
+      return { default: (named ? module[named] : module) as T };
+    } catch (error) {
+      console.warn('Dynamic chunk load failed, retrying once...', error);
+      await new Promise((r) => setTimeout(r, 400));
+      const retryModule = await factory();
+      if ('default' in retryModule && retryModule.default) {
+        return { default: retryModule.default as T };
+      }
+      const keys = Object.keys(retryModule);
+      const named = keys.find((k) => typeof retryModule[k] === 'function');
+      return { default: (named ? retryModule[named] : retryModule) as T };
+    }
+  });
+}
 
-// Lazy-loaded Modals (On-demand Chunking)
-const CookingModeModal = lazy(() => import('./components/CookingModeModal').then((m) => ({ default: m.CookingModeModal })));
-const AddRecipeModal = lazy(() => import('./components/AddRecipeModal').then((m) => ({ default: m.AddRecipeModal })));
-const AddToMealPlanModal = lazy(() => import('./components/AddToMealPlanModal').then((m) => ({ default: m.AddToMealPlanModal })));
-const FamilySyncModal = lazy(() => import('./components/FamilySyncModal').then((m) => ({ default: m.FamilySyncModal })));
+// Lazy-loaded Views (Code Splitting with auto-retry)
+const RecipeDetailPage = lazyWithRetry(() => import('./pages/RecipeDetailPage'));
+const AllReviewsPage = lazyWithRetry(() => import('./pages/AllReviewsPage'));
+const FridgeCookView = lazyWithRetry(() => import('./components/FridgeCookView').then((m) => ({ default: m.FridgeCookView })));
+const WeeklyPlannerView = lazyWithRetry(() => import('./components/WeeklyPlannerView').then((m) => ({ default: m.WeeklyPlannerView })));
+const ShoppingListView = lazyWithRetry(() => import('./components/ShoppingListView').then((m) => ({ default: m.ShoppingListView })));
+const StatsView = lazyWithRetry(() => import('./components/StatsView').then((m) => ({ default: m.StatsView })));
+
+// Lazy-loaded Modals
+const CookingModeModal = lazyWithRetry(() => import('./components/CookingModeModal').then((m) => ({ default: m.CookingModeModal })));
+const AddToMealPlanModal = lazyWithRetry(() => import('./components/AddToMealPlanModal').then((m) => ({ default: m.AddToMealPlanModal })));
+const FamilySyncModal = lazyWithRetry(() => import('./components/FamilySyncModal').then((m) => ({ default: m.FamilySyncModal })));
 
 /**
  * Subtle, brand-consistent loading indicator during asynchronous route transitions
@@ -110,12 +137,8 @@ function MainApp() {
         </Suspense>
       )}
 
-      {/* Add Recipe Modal (Manual, AI Generator & Photo Scan - loaded on demand) */}
-      {isAddRecipeOpen && (
-        <Suspense fallback={null}>
-          <AddRecipeModal />
-        </Suspense>
-      )}
+      {/* Add Recipe Modal (Single-tab All-in-One field with optional photo) */}
+      {isAddRecipeOpen && <AddRecipeModal />}
 
       {/* Add To Meal Plan Modal (Day & Time selection - loaded on demand) */}
       {recipeToAddToPlan && (

@@ -348,9 +348,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
       </section>
 
       {isSlotOpen && <SlotMachineModal isOpen onClose={closeSlot} />}
-      <AnimatePresence>
-        {isSwipeOpen && <SwipeDiscoverOverlay recipes={filteredRecipes} onClose={closeSwipe} />}
-      </AnimatePresence>
+      {isSwipeOpen && <SwipeDiscoverOverlay recipes={filteredRecipes} onClose={closeSwipe} />}
 
       {/* Filter-Sheet: wird vom Header (Filter-Icon im Suchfeld) geöffnet */}
       <FilterSheet

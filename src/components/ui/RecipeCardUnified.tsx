@@ -72,6 +72,12 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
           imgClassName="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           alt=""
         />
+        {/* Vegetarisch-Badge oben links (identisch aufgebaut wie der Badge vom Tagesgericht) */}
+        {diet === 'vegetarisch' && (
+          <span className="absolute top-2.5 left-2.5 z-10 inline-flex items-center h-8 px-3 rounded-full bg-card/95 backdrop-blur-xs text-text-main text-xs font-bold shadow-xs pointer-events-none">
+            Vegetarisch
+          </span>
+        )}
         {/* Herz: 48px Tippfläche, sichtbarer 40px-Kreis, Icon 22px, 8px Randabstand (überall gleich) */}
         <HeartButton
           id={`fav-btn-${recipe.id}`}
@@ -97,7 +103,6 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
 
         {/* Infozeile: bricht bei wenig Platz in 2 Zeilen um, Mindesthöhe hält alle Karten gleich hoch */}
         <div className="mt-auto pt-2.5 flex flex-wrap content-start items-start gap-x-2.5 gap-y-1 text-card-info font-medium leading-snug min-h-[2.65rem] text-text-muted">
-          {diet === 'vegetarisch' && <span>Vegetarisch</span>}
           <span className="inline-flex items-center gap-1">
             <Clock className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
             {recipe.totalTimeMinutes} Min

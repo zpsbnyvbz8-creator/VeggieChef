@@ -1559,7 +1559,14 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                             alt={recipe.title}
                           />
                           
-                          {/* Badges oben links (Liquid Glass) - nur Vegan anzeigen */}
+                          {/* Badges oben links */}
+                          {!recipe.isVegan && recipe.diet !== 'vegan' && (
+                            <div className="absolute top-2.5 left-2.5 pointer-events-none z-10">
+                              <span className="inline-flex items-center h-8 px-3 rounded-full bg-card/95 backdrop-blur-xs text-text-main text-xs font-bold shadow-xs">
+                                Vegetarisch
+                              </span>
+                            </div>
+                          )}
                           {recipe.isVegan && (
                             <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap pointer-events-none">
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/35 backdrop-blur-md text-on-accent text-xs font-semibold border border-on-accent/20 shadow-xs">

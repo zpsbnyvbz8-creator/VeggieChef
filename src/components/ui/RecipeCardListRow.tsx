@@ -59,13 +59,19 @@ export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe, in
       }`}
     >
       {/* Bild links: quadratisch auf Mobile (110px), 4:3 auf grösseren Screens */}
-      <div className="relative aspect-square sm:aspect-[4/3] w-[110px] sm:w-[132px] shrink-0 bg-surface">
+      <div className="relative aspect-square sm:aspect-[4/3] w-[110px] sm:w-[132px] shrink-0 bg-surface overflow-hidden">
         <RecipeImage
           recipe={recipe}
           size="sm"
           imgClassName="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           alt=""
         />
+        {/* Vegetarisch-Badge oben links (im Stil vom Tagesgericht) */}
+        {diet === 'vegetarisch' && (
+          <span className="absolute top-1.5 left-1.5 z-10 inline-flex items-center h-6 px-2 rounded-full bg-card/95 backdrop-blur-xs text-text-main text-[10px] sm:text-[11px] font-bold shadow-xs pointer-events-none">
+            Vegetarisch
+          </span>
+        )}
       </div>
 
       {/* Textbereich */}
@@ -80,7 +86,6 @@ export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe, in
         </h3>
 
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-card-info font-medium leading-snug text-text-muted mt-auto pt-2">
-          {diet === 'vegetarisch' && <span>Vegetarisch</span>}
           <span className="inline-flex items-center gap-1">
             <Clock className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
             {recipe.totalTimeMinutes} Min

@@ -45,9 +45,16 @@ const DishOfTheDayComponent: React.FC = () => {
 
         {/* Top row: badge + favorite */}
         <div className="absolute top-3 sm:top-4 inset-x-3 sm:inset-x-4 z-20 flex items-start justify-between gap-2 pointer-events-none">
-          <span className="inline-flex items-center h-8 px-3 rounded-full bg-card/95 backdrop-blur-xs text-text-main text-xs font-bold shadow-xs">
-            Tagesrezept
-          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center h-8 px-3 rounded-full bg-card/95 backdrop-blur-xs text-text-main text-xs font-bold shadow-xs">
+              Tagesrezept
+            </span>
+            {diet === 'vegetarisch' && (
+              <span className="inline-flex items-center h-8 px-3 rounded-full bg-card/95 backdrop-blur-xs text-text-main text-xs font-bold shadow-xs">
+                Vegetarisch
+              </span>
+            )}
+          </div>
           <HeartButton
             id="dish-of-the-day-fav-btn"
             variant="on-image"
@@ -68,11 +75,6 @@ const DishOfTheDayComponent: React.FC = () => {
           </h2>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-semibold text-on-accent/95">
-            {diet === 'vegetarisch' && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-card/15 border border-on-accent/20 px-2.5 py-0.5 text-xs font-semibold text-on-accent/95">
-                Vegetarisch
-              </span>
-            )}
             <span className="inline-flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-on-accent/80" aria-hidden="true" />
               {recipe.totalTimeMinutes} Min.

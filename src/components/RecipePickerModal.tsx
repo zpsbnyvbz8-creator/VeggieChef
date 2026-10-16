@@ -262,10 +262,10 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
                         alt={recipe.title}
                       />
 
-                      {/* Dezent Vegetarisch Label falls vegetarisch */}
+                      {/* Vegetarisch-Badge oben links (im Stil vom Tagesgericht) */}
                       {diet === 'vegetarisch' && (
-                        <div className="absolute top-2.5 left-2.5 pointer-events-none">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md text-on-accent text-xs font-semibold border border-white/20 shadow-xs">
+                        <div className="absolute top-2.5 left-2.5 pointer-events-none z-10">
+                          <span className="inline-flex items-center h-8 px-3 rounded-full bg-card/95 backdrop-blur-xs text-text-main text-xs font-bold shadow-xs">
                             Vegetarisch
                           </span>
                         </div>

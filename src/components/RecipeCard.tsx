@@ -38,9 +38,13 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = ({ recipe }) => {
         />
         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/45 to-transparent pointer-events-none" />
 
-        {recipe.isVegan && (
+        {recipe.isVegan ? (
           <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 h-7 rounded-full bg-card/95 backdrop-blur-xs text-accent text-xs font-bold shadow-2xs">
             🌱 Vegan
+          </span>
+        ) : (
+          <span className="absolute top-3 left-3 z-10 inline-flex items-center h-8 px-3 rounded-full bg-card/95 backdrop-blur-xs text-text-main text-xs font-bold shadow-xs pointer-events-none">
+            Vegetarisch
           </span>
         )}
 
