@@ -5,6 +5,7 @@ let originalBodyOverflow = '';
 let originalHtmlOverflow = '';
 let originalBodyOverscroll = '';
 let originalHtmlOverscroll = '';
+let originalBodyPaddingRight = '';
 
 export function lockBodyScroll() {
   if (typeof document === 'undefined') return;
@@ -13,6 +14,13 @@ export function lockBodyScroll() {
     originalHtmlOverflow = document.documentElement.style.overflow;
     originalBodyOverscroll = document.body.style.overscrollBehavior;
     originalHtmlOverscroll = document.documentElement.style.overscrollBehavior;
+    originalBodyPaddingRight = document.body.style.paddingRight;
+
+    // Prevent horizontal shift by compensating scrollbar width
+    const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+    if (scrollBarWidth > 0) {
+      document.body.style.paddingRight = `${scrollBarWidth}px`;
+    }
 
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
@@ -30,6 +38,7 @@ export function unlockBodyScroll() {
     document.documentElement.style.overflow = originalHtmlOverflow;
     document.body.style.overscrollBehavior = originalBodyOverscroll;
     document.documentElement.style.overscrollBehavior = originalHtmlOverscroll;
+    document.body.style.paddingRight = originalBodyPaddingRight;
   }
 }
 

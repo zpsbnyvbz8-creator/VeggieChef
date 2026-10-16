@@ -161,61 +161,29 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
           {recipe.title}
         </h2>
 
-        {/* Standard-Infozeile wie auf der Main Page: Zeit · Bewertung (Anzahl) · Schwierigkeit, dezent Vegetarisch */}
-        <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs sm:text-card-info font-medium text-text-muted">
-          {diet === 'vegetarisch' && (
-            <>
-              <span>Vegetarisch</span>
-              <span className="text-text-muted/50" aria-hidden="true">·</span>
-            </>
-          )}
+        {/* Infozeile exakt wie auf der Startseite bei Alle Rezepte (keine Punkte dazwischen) */}
+        <div className="flex items-center flex-wrap gap-x-2.5 gap-y-1 text-card-info font-medium text-text-muted">
           <span className="inline-flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-accent" />
+            <Clock className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
             <span>{recipe.totalTimeMinutes} Min</span>
           </span>
           {ratingText && (
-            <>
-              <span className="text-text-muted/50" aria-hidden="true">·</span>
-              <span className="inline-flex items-center gap-1">
-                <Star className="w-3.5 h-3.5 fill-[#E67E22] text-[#E67E22]" />
-                <span>{ratingText}</span>
-              </span>
-            </>
+            <span className="inline-flex items-center gap-1">
+              <Star className="w-3.5 h-3.5 fill-[#E67E22] text-[#E67E22]" aria-hidden="true" />
+              <span>{ratingText}</span>
+            </span>
           )}
-          <span className="text-text-muted/50" aria-hidden="true">·</span>
           <span className="inline-flex items-center gap-1">
-            <ChefHat className="w-3.5 h-3.5 text-text-muted" />
+            <ChefHat className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
             <span>{DIFFICULTY_LABEL[recipe.difficulty] || recipe.difficulty}</span>
           </span>
         </div>
 
-        {/* Beschreibung: 1 Zeile auf kleinen Bildschirmen */}
+        {/* Beschreibung: max 1-2 Zeilen */}
         {(recipe.subtitle || recipe.chefTip) && (
-          <p className="line-clamp-1 text-xs text-text-muted">
+          <p className="line-clamp-2 text-xs sm:text-sm text-text-muted">
             {recipe.subtitle || recipe.chefTip}
           </p>
-        )}
-
-        {/* Zutaten-Chips: kompakte Leiste */}
-        {recipe.ingredients && recipe.ingredients.length > 0 && (
-          <div className="overflow-hidden flex flex-wrap gap-1 text-xs pt-0.5 max-h-[1.85rem]">
-            {recipe.ingredients.slice(0, 5).map((ing, idx) => {
-              const cleanName = ing.name.replace(/\s*\([^)]*\)/g, '').trim();
-              return (
-                <span
-                  key={idx}
-                  className="px-2 py-0.5 rounded-md bg-surface border border-border text-[11px] font-medium text-text-main"
-                >
-                  {cleanName}
-                </span>
-              );
-            })}
-            {recipe.ingredients.length > 5 && (
-              <span className="px-1.5 py-0.5 text-[11px] font-medium text-text-muted">
-                +{recipe.ingredients.length - 5}
-              </span>
-            )}
-          </div>
         )}
       </div>
     </motion.article>
@@ -385,7 +353,6 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
       aria-label="Swipen"
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      onClick={requestClose}
       className="fixed inset-0 z-[75] bg-black/60 backdrop-blur-xs flex items-center justify-center sm:p-4 overscroll-contain select-none outline-hidden animate-in fade-in duration-200"
     >
       <div
@@ -498,34 +465,24 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
                     <h3 className="text-lg sm:text-xl font-extrabold tracking-tight text-text-main line-clamp-1 sm:line-clamp-2 leading-snug">
                       {next.title}
                     </h3>
-                    <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs sm:text-card-info font-medium text-text-muted">
-                      {nextDiet === 'vegetarisch' && (
-                        <>
-                          <span>Vegetarisch</span>
-                          <span className="text-text-muted/50" aria-hidden="true">·</span>
-                        </>
-                      )}
+                    <div className="flex items-center flex-wrap gap-x-2.5 gap-y-1 text-xs sm:text-card-info font-medium text-text-muted">
                       <span className="inline-flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-accent" />
+                        <Clock className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
                         <span>{next.totalTimeMinutes} Min</span>
                       </span>
                       {nextRatingText && (
-                        <>
-                          <span className="text-text-muted/50" aria-hidden="true">·</span>
-                          <span className="inline-flex items-center gap-1">
-                            <Star className="w-3.5 h-3.5 fill-[#E67E22] text-[#E67E22]" />
-                            <span>{nextRatingText}</span>
-                          </span>
-                        </>
+                        <span className="inline-flex items-center gap-1">
+                          <Star className="w-3.5 h-3.5 fill-[#E67E22] text-[#E67E22]" aria-hidden="true" />
+                          <span>{nextRatingText}</span>
+                        </span>
                       )}
-                      <span className="text-text-muted/50" aria-hidden="true">·</span>
                       <span className="inline-flex items-center gap-1">
-                        <ChefHat className="w-3.5 h-3.5 text-text-muted" />
+                        <ChefHat className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
                         <span>{DIFFICULTY_LABEL[next.difficulty] || next.difficulty}</span>
                       </span>
                     </div>
                     {(next.subtitle || next.chefTip) && (
-                      <p className="line-clamp-1 text-xs text-text-muted">
+                      <p className="line-clamp-2 text-xs sm:text-sm text-text-muted">
                         {next.subtitle || next.chefTip}
                       </p>
                     )}
@@ -552,7 +509,7 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
         {/* Buttons unter der Karte - fest verankert mit Safe Area */}
         {!finished && (
           <footer className="px-4 sm:px-5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-3.5 bg-surface/90 backdrop-blur-xs border-t border-border shrink-0 flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2.5">
               {/* Button "Zurück" */}
               <button
                 type="button"
@@ -560,22 +517,9 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
                 disabled={history.length === 0}
                 aria-label="Letzte Aktion zurücknehmen"
                 title="Zurück"
-                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl border border-border bg-card text-text-muted hover:text-text-main flex items-center justify-center shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl border border-border bg-card text-text-muted hover:text-text-main flex items-center justify-center shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
               >
                 <RotateCcw className="w-5 h-5" />
-              </button>
-
-              {/* Button "Weiter" */}
-              <button
-                id="swipe-skip-btn"
-                type="button"
-                onClick={() => swipe(-1)}
-                disabled={!active}
-                aria-label="Weiter"
-                title="Weiter"
-                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl border border-border bg-card text-text-main hover:bg-surface flex items-center justify-center shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
-              >
-                <X className="w-5 h-5 stroke-[2.5]" />
               </button>
 
               {/* Button "Rezept ansehen" */}
@@ -584,9 +528,9 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
                 type="button"
                 onClick={() => active && openDetails(active)}
                 disabled={!active}
-                className="flex-1 h-11 min-h-[44px] px-3 sm:px-4 rounded-xl border border-border bg-card text-text-main font-semibold flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:pointer-events-none text-sm sm:text-base truncate"
+                className="flex-1 h-12 min-h-[48px] px-4 rounded-xl border border-border bg-card text-text-main font-semibold flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:pointer-events-none text-sm sm:text-base truncate"
               >
-                <ChefHat className="w-4 h-4 text-text-muted shrink-0" />
+                <ChefHat className="w-5 h-5 text-text-muted shrink-0" />
                 <span className="truncate">Rezept ansehen</span>
               </button>
             </div>
@@ -596,9 +540,9 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({ reci
               id="swipe-saved-drawer-btn"
               type="button"
               onClick={() => setIsSavedDrawerOpen(true)}
-              className="w-full h-11 min-h-[44px] bg-accent text-on-accent font-bold px-4 py-2 rounded-xl shadow-xs hover:bg-accent-hover flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer text-sm sm:text-base"
+              className="w-full h-12 min-h-[48px] bg-accent text-on-accent font-bold px-4 py-2 rounded-xl shadow-xs hover:bg-accent-hover flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer text-sm sm:text-base"
             >
-              <Bookmark className="w-4.5 h-4.5 fill-current shrink-0" />
+              <Bookmark className="w-5 h-5 fill-current shrink-0" />
               <span>Gemerkte ansehen ({sessionSaved.length})</span>
             </button>
           </footer>

@@ -54,6 +54,7 @@ const FridgeCookView = lazyWithRetry(() => import('./components/FridgeCookView')
 const WeeklyPlannerView = lazyWithRetry(() => import('./components/WeeklyPlannerView').then((m) => ({ default: m.WeeklyPlannerView })));
 const ShoppingListView = lazyWithRetry(() => import('./components/ShoppingListView').then((m) => ({ default: m.ShoppingListView })));
 const StatsView = lazyWithRetry(() => import('./components/StatsView').then((m) => ({ default: m.StatsView })));
+const SwipePage = lazyWithRetry(() => import('./pages/SwipePage'));
 
 // Lazy-loaded Modals
 const CookingModeModal = lazyWithRetry(() => import('./components/CookingModeModal').then((m) => ({ default: m.CookingModeModal })));
@@ -79,6 +80,7 @@ function MainApp() {
   const [searchParams] = useSearchParams();
 
   const isRecipeDetailPage = location.pathname.startsWith('/recipes/');
+  const isSwipeRoute = location.pathname === '/swipen' || location.pathname === '/swipe';
 
   const {
     cookingModeRecipe,
@@ -106,16 +108,18 @@ function MainApp() {
       {/* Scroll to Top on every route transition */}
       <ScrollToTop />
 
-      {/* Top Main Navigation Header - only on non-detail pages */}
-      {!isRecipeDetailPage && <HeaderWithScroll />}
+      {/* Top Main Navigation Header - only on non-detail, non-swipe pages */}
+      {!isRecipeDetailPage && !isSwipeRoute && <HeaderWithScroll />}
 
       {/* Main Content Area rendered via React Router Routes with Suspense code-splitting */}
-      <main className={`flex-1 w-full ${isRecipeDetailPage ? '' : 'max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-[calc(148px_+_env(safe-area-inset-top))] md:pt-[calc(116px_+_env(safe-area-inset-top))] lg:pt-[calc(96px_+_env(safe-area-inset-top))] pb-[calc(env(safe-area-inset-bottom)_+_1rem)] space-y-5 sm:space-y-8'} ${showBottomTimerBar ? 'pb-40 sm:pb-44' : ''}`}>
+      <main className={`flex-1 w-full ${isRecipeDetailPage || isSwipeRoute ? '' : 'max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-[calc(148px_+_env(safe-area-inset-top))] md:pt-[calc(116px_+_env(safe-area-inset-top))] lg:pt-[calc(96px_+_env(safe-area-inset-top))] pb-[calc(env(safe-area-inset-bottom)_+_1rem)] space-y-5 sm:space-y-8'} ${showBottomTimerBar ? 'pb-40 sm:pb-44' : ''}`}>
         <Suspense fallback={isExplorerRoute ? <ExplorerLoadingSkeleton /> : <RouteLoadingFallback />}>
           <Routes>
             <Route path="/" element={<RecipesExplorerPage isFavorites={false} />} />
             <Route path="/favorites" element={<RecipesExplorerPage isFavorites={true} />} />
             <Route path="/bookmarks" element={<RecipesExplorerPage isBookmarks={true} />} />
+            <Route path="/swipen" element={<SwipePage />} />
+            <Route path="/swipe" element={<Navigate to="/swipen" replace />} />
             <Route path="/recipes/:id" element={<RecipeDetailPage />} />
             <Route path="/recipes/:id/reviews" element={<AllReviewsPage />} />
             <Route path="/fridge" element={<FridgeCookView />} />
@@ -154,8 +158,8 @@ function MainApp() {
         </Suspense>
       )}
 
-      {/* Footer - only on non-detail pages */}
-      {!isRecipeDetailPage && (
+      {/* Footer - only on non-detail, non-swipe pages */}
+      {!isRecipeDetailPage && !isSwipeRoute && (
         <footer className="mt-16 bg-card border-t border-border py-8 px-4 text-center text-xs text-text-muted">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 font-semibold text-text-main">

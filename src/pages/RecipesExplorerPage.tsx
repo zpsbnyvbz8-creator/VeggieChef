@@ -12,7 +12,6 @@ import { RecipeCardUnified } from '../components/ui/RecipeCardUnified';
 import { RecipeCardListRow } from '../components/ui/RecipeCardListRow';
 import { EmptyState } from '../components/ui/EmptyState';
 import { SlotMachineModal } from '../components/SlotMachineModal';
-import { SwipeDiscoverOverlay } from '../components/discover/SwipeDiscoverOverlay';
 import { FilterState } from '../types';
 import { loadFromLocalStorage, saveToLocalStorage } from '../utils/helpers';
 import {
@@ -42,7 +41,6 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
 
   const [visibleCount, setVisibleCount] = useState(restore?.count ?? RECIPES_PAGE_SIZE);
   const [isSlotOpen, setIsSlotOpen] = useState(false);
-  const [isSwipeOpen, setIsSwipeOpen] = useState(false);
 
   /* ---- Layout-Toggle Raster/Liste: Auswahl wird gemerkt (SSR-sicher, try/catch in helpers) ---- */
   const VIEW_MODE_KEY = 'veggiechef_explorer_view';
@@ -132,7 +130,6 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
   }, [hasMore, visibleCount]);
 
   const closeSlot = useCallback(() => setIsSlotOpen(false), []);
-  const closeSwipe = useCallback(() => setIsSwipeOpen(false), []);
 
   return (
     <div className="space-y-5 sm:space-y-7 animate-in fade-in duration-200">
@@ -185,7 +182,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
             <button
               id="explorer-swipe-deck-btn"
               type="button"
-              onClick={() => setIsSwipeOpen(true)}
+              onClick={() => navigate('/swipen')}
               className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-accent/25 bg-accent-tint hover:border-accent/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
             >
               <Layers className="w-7 h-7 sm:w-8 sm:h-8 text-accent group-hover:scale-110 transition-transform" aria-hidden="true" />
@@ -283,7 +280,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setIsSwipeOpen(true)}
+                  onClick={() => navigate('/swipen')}
                   className="h-12 px-6 rounded-xl bg-accent hover:bg-accent-hover text-on-accent font-bold transition-all active:scale-95 cursor-pointer min-w-[44px] min-h-[44px]"
                 >
                   Entdecken öffnen
@@ -348,7 +345,6 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
       </section>
 
       {isSlotOpen && <SlotMachineModal isOpen onClose={closeSlot} />}
-      {isSwipeOpen && <SwipeDiscoverOverlay recipes={filteredRecipes} onClose={closeSwipe} />}
 
       {/* Filter-Sheet: wird vom Header (Filter-Icon im Suchfeld) geöffnet */}
       <FilterSheet

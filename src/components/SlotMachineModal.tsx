@@ -153,8 +153,8 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
     setDisplayedRecipe(firstDummy);
     prevDummy = firstDummy.id;
 
-    // Intervalle: 75ms → 95ms → 125ms → 165ms → 240ms (gesamt ca. 700ms)
-    const intervals = [75, 95, 125, 165, 240];
+    // Intervalle: 60ms → 80ms → 110ms → 150ms → 200ms → 280ms (weich verlangsamend)
+    const intervals = [60, 80, 110, 150, 200, 280];
     let accumulatedTime = 0;
 
     for (let i = 0; i < intervals.length; i++) {
@@ -272,14 +272,14 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`relative bg-card border border-border rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[min(90dvh,720px)] transition-transform duration-200 ${
-          isClosing ? 'scale-95' : 'scale-100'
+        className={`relative bg-card border border-border rounded-2xl sm:rounded-3xl w-full max-w-lg h-[590px] sm:h-[610px] max-h-[92dvh] shadow-2xl overflow-hidden flex flex-col transition-all duration-200 ${
+          isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
         }`}
       >
         {/* Header with Title & 48px CloseButton */}
         <header className="px-4 sm:px-6 py-3.5 sm:py-4 bg-surface border-b border-border flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-season-autumn-bg text-season-autumn flex items-center justify-center shrink-0">
+            <div className={`w-9 h-9 rounded-xl bg-season-autumn-bg text-season-autumn flex items-center justify-center shrink-0 transition-transform duration-300 ${isShuffling ? 'rotate-180' : ''}`}>
               <Shuffle className="w-5 h-5" />
             </div>
             <h2 id="slot-modal-title" className="text-lg sm:text-xl font-extrabold tracking-tight text-text-main">
@@ -289,25 +289,23 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
           <CloseButton onClick={handleClose} ariaLabel="Schließen" size="md" />
         </header>
 
-        {/* Main Content Area */}
-        <main className="flex-1 min-h-0 w-full p-4 sm:p-6 flex flex-col gap-3.5 overflow-y-auto">
+        {/* Main Content Area - feste Höhe, kein Springen beim Würfeln */}
+        <main className="flex-1 min-h-0 w-full p-4 sm:p-6 flex flex-col justify-between overflow-hidden">
           {displayedRecipe ? (
-            <motion.div
-              key={displayedRecipe.id}
-              initial={{ opacity: 0.5, scale: 0.98, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-              className="flex flex-col gap-3 min-h-0"
+            <div
+              className={`flex flex-col h-full justify-between transition-all duration-200 ${
+                isShuffling ? 'opacity-85 scale-[0.99] blur-[0.4px]' : 'opacity-100 scale-100 blur-0'
+              }`}
             >
               {/* Bild 16:9 mit HeartButton */}
-              <div className="relative aspect-[16/9] max-h-[190px] sm:max-h-[220px] w-full rounded-2xl overflow-hidden bg-surface shrink-0">
+              <div className="relative aspect-[16/9] h-[180px] sm:h-[200px] w-full rounded-2xl overflow-hidden bg-surface shrink-0 shadow-inner">
                 <RecipeImage
                   recipe={displayedRecipe}
                   size="lg"
-                  imgClassName="w-full h-full object-cover"
+                  imgClassName="w-full h-full object-cover transition-opacity duration-150"
                   alt={displayedRecipe.title}
                 />
-                {/* Vegetarisch-Badge oben links (im Stil vom Tagesgericht) */}
+                {/* Vegetarisch-Badge oben links (identisch aufgebaut wie der Badge vom Tagesgericht) */}
                 {diet === 'vegetarisch' && (
                   <span className="absolute top-2.5 left-2.5 z-10 inline-flex items-center h-8 px-3 rounded-full bg-card/95 backdrop-blur-xs text-text-main text-xs font-bold shadow-xs pointer-events-none">
                     Vegetarisch
@@ -329,68 +327,62 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
                 />
               </div>
 
-              {/* Titel */}
-              <h3 className="text-lg sm:text-xl font-extrabold text-text-main line-clamp-2 leading-snug">
-                {displayedRecipe.title}
-              </h3>
+              {/* Titel mit fester Mindesthöhe gegen Grössen-Sprünge */}
+              <div className="min-h-[3rem] flex items-center">
+                <h3 className="text-lg sm:text-xl font-extrabold text-text-main line-clamp-2 leading-snug">
+                  {displayedRecipe.title}
+                </h3>
+              </div>
 
-              {/* Standard-Infozeile: Zeit · Bewertung (Anzahl) · Schwierigkeit, dezent Vegetarisch */}
+              {/* Infozeile: Exakt wie auf der Startseite bei Alle Rezepte (keine Punkte dazwischen) */}
               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-card-info font-medium text-text-muted">
-                {diet === 'vegetarisch' && (
-                  <>
-                    <span>Vegetarisch</span>
-                    <span className="text-text-muted/50" aria-hidden="true">·</span>
-                  </>
-                )}
                 <span className="inline-flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-accent" />
+                  <Clock className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
                   <span>{displayedRecipe.totalTimeMinutes} Min</span>
                 </span>
                 {ratingText && (
-                  <>
-                    <span className="text-text-muted/50" aria-hidden="true">·</span>
-                    <span className="inline-flex items-center gap-1">
-                      <Star className="w-3.5 h-3.5 fill-[#E67E22] text-[#E67E22]" />
-                      <span>{ratingText}</span>
-                    </span>
-                  </>
+                  <span className="inline-flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-[#E67E22] text-[#E67E22]" aria-hidden="true" />
+                    <span>{ratingText}</span>
+                  </span>
                 )}
-                <span className="text-text-muted/50" aria-hidden="true">·</span>
                 <span className="inline-flex items-center gap-1">
-                  <ChefHat className="w-3.5 h-3.5 text-text-muted" />
+                  <ChefHat className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
                   <span>{DIFFICULTY_LABEL[displayedRecipe.difficulty] || displayedRecipe.difficulty}</span>
                 </span>
               </div>
 
-              {/* Beschreibung (subtitle) max. 2 Zeilen */}
-              {displayedRecipe.subtitle && (
+              {/* Beschreibung (subtitle) mit fester Höhe */}
+              <div className="h-10 flex items-center">
                 <p className="text-xs sm:text-sm text-text-muted line-clamp-2 leading-relaxed">
-                  {displayedRecipe.subtitle}
+                  {displayedRecipe.subtitle || displayedRecipe.chefTip || ''}
                 </p>
-              )}
+              </div>
 
-              {/* Zutaten-Chips */}
-              {displayedRecipe.ingredients && displayedRecipe.ingredients.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 text-xs pt-0.5 overflow-hidden max-h-[3.8rem]">
-                  {displayedRecipe.ingredients.slice(0, 6).map((ing, idx) => {
-                    const cleanName = ing.name.replace(/\s*\([^)]*\)/g, '').trim();
-                    return (
-                      <span
-                        key={idx}
-                        className="px-2.5 py-1 rounded-lg bg-surface border border-border text-xs font-medium text-text-main"
-                      >
-                        {cleanName}
+              {/* Zutaten-Chips: feste Höhe */}
+              <div className="h-8 overflow-hidden flex items-center flex-wrap gap-1.5 text-xs">
+                {displayedRecipe.ingredients && displayedRecipe.ingredients.length > 0 && (
+                  <>
+                    {displayedRecipe.ingredients.slice(0, 5).map((ing, idx) => {
+                      const cleanName = ing.name.replace(/\s*\([^)]*\)/g, '').trim();
+                      return (
+                        <span
+                          key={idx}
+                          className="px-2.5 py-1 rounded-lg bg-surface border border-border text-xs font-medium text-text-main truncate max-w-[140px]"
+                        >
+                          {cleanName}
+                        </span>
+                      );
+                    })}
+                    {displayedRecipe.ingredients.length > 5 && (
+                      <span className="px-2 py-1 text-xs font-medium text-text-muted">
+                        +{displayedRecipe.ingredients.length - 5}
                       </span>
-                    );
-                  })}
-                  {displayedRecipe.ingredients.length > 6 && (
-                    <span className="px-2 py-1 text-xs font-medium text-text-muted">
-                      +{displayedRecipe.ingredients.length - 6}
-                    </span>
-                  )}
-                </div>
-              )}
-            </motion.div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center p-8 text-center text-text-muted m-auto">
               <p className="text-base font-semibold">Keine passenden Rezepte gefunden</p>
@@ -422,7 +414,7 @@ export const SlotMachineModal: React.FC<SlotMachineModalProps> = ({ isOpen, onCl
             }}
             className="h-12 px-5 bg-card border border-border hover:bg-surface font-semibold text-text-main flex items-center justify-center gap-2 rounded-xl transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 text-base min-h-[48px]"
           >
-            <Shuffle className={`w-5 h-5 text-accent ${isShuffling ? 'animate-spin' : ''}`} aria-hidden="true" />
+            <Shuffle className={`w-5 h-5 text-accent transition-transform duration-500 ${isShuffling ? 'rotate-180 scale-110' : ''}`} aria-hidden="true" />
             <span>Nochmal</span>
           </button>
         </footer>
