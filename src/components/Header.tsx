@@ -301,7 +301,11 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
   const shoppingCtx = useShopping();
   const syncCtx = useSync();
 
-  const isExplorerRoute = location.pathname === '/' || location.pathname === '/favorites';
+  const isExplorerRoute =
+    location.pathname === '/' ||
+    location.pathname === '/favorites' ||
+    location.pathname === '/bookmarks' ||
+    location.pathname === '/cooked';
   const isFavoritesRoute = location.pathname === '/favorites';
   const isShoppingRoute = location.pathname.startsWith('/shopping');
 
@@ -322,7 +326,13 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
   const searchQuery = recipesCtx.filters.searchQuery;
   const activeFilterCount = useMemo(() => getActiveSheetFilters(recipesCtx.filters).length, [recipesCtx.filters]);
   const searchPlaceholder =
-    location.pathname === '/favorites' ? 'In Favoriten suchen …' : 'Rezept oder Zutat suchen …';
+    location.pathname === '/favorites'
+      ? 'In Favoriten suchen …'
+      : location.pathname === '/bookmarks'
+      ? 'In Merkliste suchen …'
+      : location.pathname === '/cooked'
+      ? 'In zuletzt gekocht suchen …'
+      : 'Rezept oder Zutat suchen …';
 
   /* ----- Badge-Aktionen: Herz-Puls bei neuem Favoriten, Cart-Bump bei Zunahme ----- */
   const [heartPulse, setHeartPulse] = useState(0);

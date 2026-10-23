@@ -101,7 +101,11 @@ function MainApp() {
   }, [searchParams, navigate]);
 
   const showBottomTimerBar = Boolean(cookingTimer || (cookingModeRecipe && isCookingMinimized));
-  const isExplorerRoute = location.pathname === '/' || location.pathname === '/favorites' || location.pathname === '/bookmarks';
+  const isExplorerRoute =
+    location.pathname === '/' ||
+    location.pathname === '/favorites' ||
+    location.pathname === '/bookmarks' ||
+    location.pathname === '/cooked';
 
   return (
     <div className="min-h-dvh bg-[var(--bg-page)] text-[var(--text-main)] flex flex-col font-sans selection:bg-accent-tint selection:text-accent">
@@ -118,6 +122,9 @@ function MainApp() {
             <Route path="/" element={<RecipesExplorerPage isFavorites={false} />} />
             <Route path="/favorites" element={<RecipesExplorerPage isFavorites={true} />} />
             <Route path="/bookmarks" element={<RecipesExplorerPage isBookmarks={true} />} />
+            <Route path="/cooked" element={<RecipesExplorerPage isCooked={true} />} />
+            <Route path="/gekocht" element={<Navigate to="/cooked" replace />} />
+            <Route path="/zuletzt-gekocht" element={<Navigate to="/cooked" replace />} />
             <Route path="/swipen" element={<SwipePage />} />
             <Route path="/swipe" element={<Navigate to="/swipen" replace />} />
             <Route path="/recipes/:id" element={<RecipeDetailPage />} />

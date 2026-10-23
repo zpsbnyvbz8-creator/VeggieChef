@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate, useNavigationType } from 'react-router-dom';
-import { ArrowUpDown, ChevronDown, Layers, LayoutGrid, List, Plus, Bookmark, Shuffle } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, Layers, LayoutGrid, List, Plus, Bookmark, History } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { useRecipes } from '../context/RecipeContext';
 import { DishOfTheDay } from '../components/DishOfTheDay';
@@ -11,8 +11,7 @@ import { FilterSheet } from '../components/discover/FilterSheet';
 import { RecipeCardUnified } from '../components/ui/RecipeCardUnified';
 import { RecipeCardListRow } from '../components/ui/RecipeCardListRow';
 import { EmptyState } from '../components/ui/EmptyState';
-import { SlotMachineModal } from '../components/SlotMachineModal';
-import { FilterState } from '../types';
+import { Recipe, FilterState } from '../types';
 import { loadFromLocalStorage, saveToLocalStorage } from '../utils/helpers';
 import {
   RECIPES_PAGE_SIZE,
@@ -29,18 +28,35 @@ const listMemory: Record<string, { count: number; scrollY: number }> = {};
 interface RecipesExplorerPageProps {
   isFavorites?: boolean;
   isBookmarks?: boolean;
+  isCooked?: boolean;
 }
 
-export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavorites = false, isBookmarks = false }) => {
+export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({
+  isFavorites = false,
+  isBookmarks = false,
+  isCooked = false,
+}) => {
   const navigate = useNavigate();
   const navType = useNavigationType();
-  const { favorites, bookmarks, filters, setFilters, resetFilters, filteredRecipes, dishOfTheDay, setIsAddRecipeOpen, isFilterSheetOpen, closeFilterSheet } = useRecipes();
+  const {
+    favorites,
+    bookmarks,
+    cookedLogs,
+    recipes: allRecipes,
+    filters,
+    setFilters,
+    resetFilters,
+    filteredRecipes,
+    dishOfTheDay,
+    setIsAddRecipeOpen,
+    isFilterSheetOpen,
+    closeFilterSheet,
+  } = useRecipes();
 
-  const memoryKey = isBookmarks ? 'bookmarks' : isFavorites ? 'favorites' : 'explore';
+  const memoryKey = isBookmarks ? 'bookmarks' : isFavorites ? 'favorites' : isCooked ? 'cooked' : 'explore';
   const restore = navType === 'POP' ? listMemory[memoryKey] : undefined;
 
   const [visibleCount, setVisibleCount] = useState(restore?.count ?? RECIPES_PAGE_SIZE);
-  const [isSlotOpen, setIsSlotOpen] = useState(false);
 
   /* ---- Layout-Toggle Raster/Liste: Auswahl wird gemerkt (SSR-sicher, try/catch in helpers) ---- */
   const VIEW_MODE_KEY = 'veggiechef_explorer_view';
@@ -63,20 +79,36 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
   };
 
   /* ---- data ---- */
-  const recipes = useMemo(
-    () => {
-      if (isBookmarks) {
-        return filteredRecipes.filter((r) => bookmarks.includes(r.id));
+  const recipes = useMemo(() => {
+    if (isBookmarks) {
+      return filteredRecipes.filter((r) => bookmarks.includes(r.id));
+    }
+    if (isFavorites) {
+      return filteredRecipes.filter((r) => favorites.includes(r.id));
+    }
+    if (isCooked) {
+      const sortedLogs = [...cookedLogs].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      const seenIds = new Set<string>();
+      const orderedRecipes: Recipe[] = [];
+
+      for (const log of sortedLogs) {
+        if (!seenIds.has(log.recipeId)) {
+          seenIds.add(log.recipeId);
+          const found = allRecipes.find((r) => r.id === log.recipeId);
+          if (found) {
+            orderedRecipes.push(found);
+          }
+        }
       }
-      if (isFavorites) {
-        return filteredRecipes.filter((r) => favorites.includes(r.id));
-      }
-      return filteredRecipes;
-    },
-    [isBookmarks, isFavorites, filteredRecipes, bookmarks, favorites]
-  );
+      return orderedRecipes.filter((r) => filteredRecipes.some((fr) => fr.id === r.id));
+    }
+    return filteredRecipes;
+  }, [isBookmarks, isFavorites, isCooked, filteredRecipes, bookmarks, favorites, cookedLogs, allRecipes]);
+
   const isNarrowed = hasAnyNarrowingFilter(filters);
-  const isBrowsing = !isFavorites && !isBookmarks && !isNarrowed;
+  const isBrowsing = !isFavorites && !isBookmarks && !isCooked && !isNarrowed;
   const visible = recipes.slice(0, visibleCount);
   const hasMore = recipes.length > visibleCount;
 
@@ -89,7 +121,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
       return;
     }
     setVisibleCount(RECIPES_PAGE_SIZE);
-  }, [filterKey, isFavorites, isBookmarks]);
+  }, [filterKey, isFavorites, isBookmarks, isCooked]);
 
   /* ---- scroll memory ---- */
   useLayoutEffect(() => {
@@ -129,24 +161,13 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
     return () => observer.disconnect();
   }, [hasMore, visibleCount]);
 
-  const closeSlot = useCallback(() => setIsSlotOpen(false), []);
-
   return (
     <div className="space-y-5 sm:space-y-7 animate-in fade-in duration-200">
       {/* Page header */}
       <header className="flex items-center justify-between gap-3 sm:gap-4">
         <div className="min-w-0 flex-1">
-          {isBookmarks ? (
-            <p className="text-xs sm:text-sm font-medium text-text-muted">
-              {bookmarks.length} gemerkt
-            </p>
-          ) : isFavorites ? (
-            <p className="text-xs sm:text-sm font-medium text-text-muted">
-              {favorites.length} gespeichert
-            </p>
-          ) : null}
           <h1 className="text-[20px] sm:text-4xl font-bold tracking-tight text-text-main leading-tight">
-            {isBookmarks ? 'Merkliste' : isFavorites ? 'Deine Favoriten' : 'Was kochen wir heute?'}
+            {isBookmarks ? 'Merkliste' : isFavorites ? 'Deine Favoriten' : isCooked ? 'Zuletzt gekocht' : 'Was kochen wir heute?'}
           </h1>
         </div>
         <button
@@ -171,13 +192,13 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
         <>
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             <button
-              id="explorer-slot-machine-btn"
+              id="explorer-cooked-recipes-btn"
               type="button"
-              onClick={() => setIsSlotOpen(true)}
+              onClick={() => navigate('/cooked')}
               className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-season-autumn/25 bg-season-autumn-bg hover:border-season-autumn/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
             >
-              <Shuffle className="w-6 h-6 text-season-autumn group-hover:rotate-12 transition-transform" aria-hidden="true" />
-              <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Überrasch mich</span>
+              <History className="w-6 h-6 text-season-autumn group-hover:-rotate-12 transition-transform" aria-hidden="true" />
+              <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Zuletzt gekocht</span>
             </button>
             <button
               id="explorer-swipe-deck-btn"
@@ -193,7 +214,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
       )}
 
       {/* Editorial blocks (browse mode only) */}
-      {isBrowsing && dishOfTheDay && <DishOfTheDay />}
+      {isBrowsing && <DishOfTheDay />}
       {isBrowsing && <SeasonHighlights />}
 
       {/* Results */}
@@ -201,7 +222,15 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h2 id="results-title" className="text-xl sm:text-2xl font-extrabold tracking-tight text-text-main truncate">
-              {isBookmarks ? 'Gemerkte Rezepte' : isFavorites ? 'Gespeicherte Rezepte' : isNarrowed ? 'Ergebnisse' : 'Alle Rezepte'}
+              {isBookmarks
+                ? 'Gemerkte Rezepte'
+                : isFavorites
+                ? 'Gespeicherte Rezepte'
+                : isCooked
+                ? 'Zuletzt gekochte Rezepte'
+                : isNarrowed
+                ? 'Ergebnisse'
+                : 'Alle Rezepte'}
             </h2>
             <p className="text-sm text-text-muted" aria-live="polite">
               {recipes.length} {recipes.length === 1 ? 'Rezept' : 'Rezepte'}
@@ -294,6 +323,29 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
                 </button>
               </div>
             </div>
+          ) : isCooked && !isNarrowed ? (
+            <div className="bg-card rounded-3xl border border-border shadow-2xs px-6 py-12 text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-season-autumn-bg text-season-autumn flex items-center justify-center mx-auto" aria-hidden="true">
+                <History className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-text-main">
+                  Noch keine Gerichte gekocht
+                </h3>
+                <p className="text-sm text-text-muted max-w-sm mx-auto leading-relaxed">
+                  Sobald du ein Rezept zubereitest oder im Kochmodus abschließt, erscheint es hier in deinem Verlauf.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate('/')}
+                  className="h-12 px-6 rounded-xl bg-accent hover:bg-accent-hover text-on-accent font-bold transition-all active:scale-95 cursor-pointer min-w-[44px] min-h-[44px]"
+                >
+                  Rezepte entdecken
+                </button>
+              </div>
+            </div>
           ) : (
             <EmptyState
               isFavorites={isFavorites}
@@ -343,8 +395,6 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({ isFavo
           </>
         )}
       </section>
-
-      {isSlotOpen && <SlotMachineModal isOpen onClose={closeSlot} />}
 
       {/* Filter-Sheet: wird vom Header (Filter-Icon im Suchfeld) geöffnet */}
       <FilterSheet
