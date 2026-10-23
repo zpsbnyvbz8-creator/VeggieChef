@@ -52,15 +52,9 @@ aiRouter.post("/substitute", async (req: Request, res: Response) => {
   try {
     const ai = getGenAI();
     if (!ai) {
-      return res.json({
-        success: true,
-        isFallback: true,
-        ...buildFallbackSubstitutions({
-          recipeTitle,
-          missingIngredients,
-          availableIngredients,
-          userWish,
-        }),
+      return res.status(503).json({
+        success: false,
+        error: "KI-Funktion gerade nicht verfügbar",
       });
     }
 
@@ -80,7 +74,7 @@ Für jede Alternative:
 - replacement: Konkreter Name der Ersatz-Zutat
 - ratio: Mengenangabe bzw. Umrechnungsverhältnis (z.B. "1:1", "80g statt 100g", "2 EL Kichererbsenmehl + 2 EL Wasser")
 - reason: Fachliche Begründung (warum es bzgl. Textur, Bindung, Umami oder Nährwerten ideal passt)
-- usageTip: Konkreter Zubereitungstipp für dieses Rezept
+- usageTip: Gib hier NUR DANN einen Zubereitungstipp an, wenn er für das Gelingen in diesem Gericht wirklich nötig und nicht-trivial ist (z.B. spezielle Einweich- oder Bindeweise). Ist kein spezieller Tipp zwingend nötig, gib einen leeren String "" zurück.
 
 Gib deine Antwort als valides JSON zurück.`;
 
@@ -108,16 +102,10 @@ Gib deine Antwort als valides JSON zurück.`;
     res.json({ success: true, ...parsed });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    logAiEvent("warn", "/api/ai/substitute", "Fallback triggered for substitute", { error: errMsg });
-    res.json({
-      success: true,
-      isFallback: true,
-      ...buildFallbackSubstitutions({
-        recipeTitle,
-        missingIngredients,
-        availableIngredients,
-        userWish,
-      }),
+    logAiEvent("warn", "/api/ai/substitute", "Substitute failed", { error: errMsg });
+    res.status(503).json({
+      success: false,
+      error: "KI-Funktion gerade nicht verfügbar",
     });
   }
 });

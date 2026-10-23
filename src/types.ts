@@ -256,5 +256,7 @@ export interface RecipeReview {
   text?: string;
   createdAt: number; // timestamp ms
   helpfulCount: number;
+  unhelpfulCount?: number;
   isOwn?: boolean;
 }
+

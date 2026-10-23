@@ -32,7 +32,8 @@ import {
   Eye,
   EyeOff,
   Share2,
-  Star
+  Star,
+  Mail,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Recipe, RecipeIngredient, RecipeStep } from '../types';
@@ -51,11 +52,14 @@ import { StepImageSwiper } from '../components/recipe/StepImageSwiper';
 import { HeartButton } from '../components/ui/HeartButton';
 import { ReviewCard } from '../components/reviews/ReviewCard';
 import { WriteReviewSheet } from '../components/reviews/WriteReviewSheet';
+import { PrivateNoteCard } from '../components/reviews/PrivateNoteCard';
 import {
   getReviewsForRecipe,
   toggleReviewHelpful,
+  toggleReviewUnhelpful,
   deleteReview,
   getHelpfulReviewsSet,
+  getUnhelpfulReviewsSet,
 } from '../data/reviews';
 import { RecipeReview } from '../types';
 
@@ -183,10 +187,16 @@ export const RecipeDetailPage: React.FC = () => {
   const [isWriteReviewOpen, setIsWriteReviewOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<RecipeReview | null>(null);
   const [helpfulSet, setHelpfulSet] = useState<Set<string>>(new Set());
+  const [unhelpfulSet, setUnhelpfulSet] = useState<Set<string>>(new Set());
+
+  // Note view toggle state in reviews section
+  const [isNoteViewOpen, setIsNoteViewOpen] = useState(false);
 
   // Private note state (preserves existing notes)
   const [userNote, setUserNote] = useState<string>(recipe?.userNotes || '');
-  const [isNoteSaved, setIsNoteSaved] = useState(false);
+  const [noteUpdatedAt, setNoteUpdatedAt] = useState<string | null>(null);
+  const [draftNote, setDraftNote] = useState<string>(recipe?.userNotes || '');
+  const [isEditingNote, setIsEditingNote] = useState(false);
 
   // Sync reviews and private note on mount/change
   useEffect(() => {
@@ -194,13 +204,20 @@ export const RecipeDetailPage: React.FC = () => {
     const loaded = getReviewsForRecipe(recipe.id);
     setRecipeReviews(loaded);
     setHelpfulSet(getHelpfulReviewsSet());
+    setUnhelpfulSet(getUnhelpfulReviewsSet());
 
     try {
       const storedNote = localStorage.getItem(`veggiechef_note_${recipe.id}`);
+      const storedDate = localStorage.getItem(`veggiechef_note_date_${recipe.id}`);
       if (storedNote !== null) {
         setUserNote(storedNote);
+        setDraftNote(storedNote);
       } else if (recipe.userNotes) {
         setUserNote(recipe.userNotes);
+        setDraftNote(recipe.userNotes);
+      }
+      if (storedDate) {
+        setNoteUpdatedAt(storedDate);
       }
     } catch {
       // ignore
@@ -230,8 +247,41 @@ export const RecipeDetailPage: React.FC = () => {
       else next.delete(reviewId);
       return next;
     });
+    setUnhelpfulSet((prev) => {
+      const next = new Set(prev);
+      if (res.isUnhelpful) next.add(reviewId);
+      else next.delete(reviewId);
+      return next;
+    });
     setRecipeReviews((prev) =>
-      prev.map((r) => (r.id === reviewId ? { ...r, helpfulCount: res.helpfulCount } : r))
+      prev.map((r) =>
+        r.id === reviewId
+          ? { ...r, helpfulCount: res.helpfulCount, unhelpfulCount: res.unhelpfulCount }
+          : r
+      )
+    );
+  };
+
+  const handleToggleUnhelpful = (reviewId: string) => {
+    const res = toggleReviewUnhelpful(reviewId);
+    setHelpfulSet((prev) => {
+      const next = new Set(prev);
+      if (res.isHelpful) next.add(reviewId);
+      else next.delete(reviewId);
+      return next;
+    });
+    setUnhelpfulSet((prev) => {
+      const next = new Set(prev);
+      if (res.isUnhelpful) next.add(reviewId);
+      else next.delete(reviewId);
+      return next;
+    });
+    setRecipeReviews((prev) =>
+      prev.map((r) =>
+        r.id === reviewId
+          ? { ...r, helpfulCount: res.helpfulCount, unhelpfulCount: res.unhelpfulCount }
+          : r
+      )
     );
   };
 
@@ -257,18 +307,60 @@ export const RecipeDetailPage: React.FC = () => {
     setEditingReview(null);
   };
 
+  // Scroll locking helper: prevents page jump across all note/review state transitions
+  const lockScrollAcrossUpdates = (callback: () => void) => {
+    const targetY = window.scrollY;
+    callback();
+
+    // Lock scroll across immediate frame, next frames and post-transition
+    const frames = [0, 16, 50, 100, 180, 250, 350];
+    frames.forEach((delay) => {
+      setTimeout(() => {
+        if (Math.abs(window.scrollY - targetY) > 1) {
+          window.scrollTo({ top: targetY, behavior: 'instant' });
+        }
+      }, delay);
+    });
+  };
+
   const handleSaveNote = () => {
     if (!recipe) return;
-    try {
-      localStorage.setItem(`veggiechef_note_${recipe.id}`, userNote.trim());
-    } catch {}
-    updateRecipe({
-      ...recipe,
-      userNotes: userNote.trim(),
+    const trimmed = draftNote.trim();
+    if (!trimmed) return;
+    const now = new Date().toISOString();
+    lockScrollAcrossUpdates(() => {
+      try {
+        localStorage.setItem(`veggiechef_note_${recipe.id}`, trimmed);
+        localStorage.setItem(`veggiechef_note_date_${recipe.id}`, now);
+      } catch {}
+      updateRecipe({
+        ...recipe,
+        userNotes: trimmed,
+      });
+      setUserNote(trimmed);
+      setNoteUpdatedAt(now);
+      setIsEditingNote(false);
     });
-    setIsNoteSaved(true);
     showToast('Notiz gespeichert!');
-    setTimeout(() => setIsNoteSaved(false), 2500);
+  };
+
+  const handleDeleteNote = () => {
+    if (!recipe) return;
+    lockScrollAcrossUpdates(() => {
+      try {
+        localStorage.removeItem(`veggiechef_note_${recipe.id}`);
+        localStorage.removeItem(`veggiechef_note_date_${recipe.id}`);
+      } catch {}
+      updateRecipe({
+        ...recipe,
+        userNotes: '',
+      });
+      setUserNote('');
+      setDraftNote('');
+      setNoteUpdatedAt(null);
+      setIsEditingNote(true);
+    });
+    showToast('Notiz gelöscht');
   };
 
   // Micronutrients accordion state
@@ -347,11 +439,7 @@ export const RecipeDetailPage: React.FC = () => {
 
   // Handlers
   const handleGoBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate('/');
-    }
+    navigate('/');
   };
 
   const toggleCheckIngredient = (name: string) => {
@@ -1024,10 +1112,10 @@ export const RecipeDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Calories (bg-stat-kcal-bg #FDF6F0, border-0) */}
-          <div className="p-3.5 bg-stat-kcal-bg rounded-2xl border-0 flex items-center gap-3 shadow-2xs">
-            <div className="w-10 h-10 rounded-xl bg-stat-kcal-bg text-accent flex items-center justify-center shrink-0 border-0">
-              <Flame className="w-5 h-5" />
+          {/* Calories (bg-card with border and dark orange flame) */}
+          <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-[#FFF4EC] text-[#D96B27] flex items-center justify-center shrink-0">
+              <Flame className="w-5 h-5 text-[#D96B27]" />
             </div>
             <div>
               <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
@@ -1653,82 +1741,248 @@ export const RecipeDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Primärer Button: Bewertung schreiben */}
-              <button
-                id="write-review-open-btn"
-                type="button"
-                onClick={() => {
-                  setEditingReview(null);
-                  setIsWriteReviewOpen(true);
-                }}
-                className="h-11 min-h-[44px] px-4 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-sm font-bold flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer self-start sm:self-auto"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Bewertung schreiben</span>
-              </button>
-            </div>
+              {/* Aktionen rechts: Notiz-Button (Brief) + morphing Action-Button */}
+              <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
+                <button
+                  id="toggle-recipe-note-btn"
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    lockScrollAcrossUpdates(() => {
+                      setIsNoteViewOpen((prev) => {
+                        const next = !prev;
+                        if (next && !userNote.trim()) {
+                          setIsEditingNote(true);
+                          setDraftNote('');
+                        }
+                        return next;
+                      });
+                    });
+                  }}
+                  aria-label={isNoteViewOpen ? 'Bewertungen anzeigen' : 'Meine Notiz anzeigen'}
+                  title={isNoteViewOpen ? 'Bewertungen anzeigen' : 'Meine Notiz anzeigen'}
+                  className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl border flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 relative ${
+                    isNoteViewOpen
+                      ? 'bg-accent border-accent text-on-accent shadow-xs'
+                      : 'bg-surface border-border text-text-muted hover:text-text-main hover:bg-card shadow-2xs'
+                  }`}
+                >
+                  <Mail className="w-5 h-5" />
+                  {userNote.trim().length > 0 && !isNoteViewOpen && (
+                    <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-accent ring-2 ring-card" />
+                  )}
+                </button>
 
-            {/* Die 3 neuesten Bewertungen */}
-            {recipeReviews.length === 0 ? (
-              <div className="text-center py-6 px-4 space-y-2">
-                <p className="text-sm font-medium text-text-muted">
-                  Noch keine Bewertungen für dieses Rezept.
-                </p>
-                <p className="text-xs text-text-muted">
-                  Koche es nach und teile deine Erfahrung als Erste/r!
-                </p>
+                {/* Dynamisch morphender Button: Wenn Notiz aktiv -> dezentes Grau "Zu den Bewertungen"; sonst -> Primärgrün "+ Bewertung schreiben" */}
+                <motion.button
+                  layout
+                  id={isNoteViewOpen ? 'back-to-reviews-btn' : 'write-review-open-btn'}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (isNoteViewOpen) {
+                      lockScrollAcrossUpdates(() => {
+                        setIsNoteViewOpen(false);
+                      });
+                    } else {
+                      setEditingReview(null);
+                      setIsWriteReviewOpen(true);
+                    }
+                  }}
+                  className={`h-12 min-h-[48px] px-4 rounded-xl text-sm sm:text-base font-bold flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer touch-manipulation ${
+                    isNoteViewOpen
+                      ? 'bg-surface border border-border text-text-main hover:bg-card shadow-2xs'
+                      : 'bg-accent hover:bg-accent-hover text-on-accent shadow-xs'
+                  }`}
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    {isNoteViewOpen ? (
+                      <motion.span
+                        key="btn-to-reviews"
+                        initial={{ opacity: 0, y: 3 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -3 }}
+                        transition={{ duration: 0.16 }}
+                        className="flex items-center gap-2"
+                      >
+                        <span>Zu den Bewertungen</span>
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="btn-write-review"
+                        initial={{ opacity: 0, y: 3 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -3 }}
+                        transition={{ duration: 0.16 }}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="w-4 h-4 stroke-[2.5]" />
+                        <span>Bewertung schreiben</span>
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {recipeReviews.slice(0, 3).map((review) => (
-                  <ReviewCard
-                    key={review.id}
-                    review={review}
-                    isHelpful={helpfulSet.has(review.id)}
-                    onToggleHelpful={handleToggleHelpful}
-                    onEdit={handleEditReview}
-                    onDelete={handleDeleteReview}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Sekundärer Button: Alle Bewertungen ansehen (N) */}
-            <div className="pt-1">
-              <button
-                id="view-all-reviews-btn"
-                type="button"
-                onClick={() => navigate(`/recipes/${recipe.id}/reviews`)}
-                className="w-full h-12 min-h-[44px] rounded-xl border border-border bg-surface hover:bg-card text-text-main font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer shadow-2xs"
-              >
-                <span>Alle Bewertungen ansehen ({totalReviewsCount})</span>
-              </button>
             </div>
-          </div>
 
-          {/* Meine Notiz (nur für dich) - Vorhandene Notizen bleiben erhalten */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border shadow-2xs space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-text-main flex items-center gap-1.5">
-                <Pencil className="w-4 h-4 text-accent" />
-                <span>Meine Notiz (nur für dich)</span>
-              </h3>
-            </div>
-            <textarea
-              id="private-recipe-note"
-              value={userNote}
-              onChange={(e) => setUserNote(e.target.value)}
-              placeholder="Deine privaten Koch-Notizen (z. B. 'Mehr Salz', 'Nur 15 Min backen')..."
-              className="w-full bg-surface border border-border focus:border-accent text-sm sm:text-base text-text-main rounded-xl p-3 min-h-[80px] placeholder:text-text-muted resize-y focus:outline-hidden"
-            />
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={handleSaveNote}
-                className="h-10 min-h-[40px] px-4 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-sm font-semibold transition-all shadow-2xs active:scale-95 cursor-pointer touch-manipulation"
-              >
-                {isNoteSaved ? '✓ Gespeichert' : 'Notiz speichern'}
-              </button>
+            {/* Dynamischer Wechsel: Bewertungen vs. Meine Notiz */}
+            <div
+              className="relative"
+              style={{ overflowAnchor: 'none' }}
+            >
+              <AnimatePresence initial={false} mode="wait">
+                {isNoteViewOpen ? (
+                  <motion.div
+                    key="note-view"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                    className="w-full space-y-3.5 pt-1"
+                  >
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-bold text-text-main flex items-center gap-2">
+                        <Mail className="w-4.5 h-4.5 text-accent" />
+                        <span>Meine Notiz (nur für dich)</span>
+                      </h3>
+                    </div>
+
+                    {/* Wenn bereits eine Notiz existiert und nicht bearbeitet wird: Als Notiz-Karte darstellen */}
+                    <AnimatePresence initial={false} mode="wait">
+                      {userNote.trim().length > 0 && !isEditingNote ? (
+                        <motion.div
+                          key="note-card-container"
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.18 }}
+                          className="w-full space-y-3"
+                        >
+                          <PrivateNoteCard
+                            note={userNote}
+                            updatedAt={noteUpdatedAt}
+                            onEdit={() => {
+                              lockScrollAcrossUpdates(() => {
+                                setDraftNote(userNote);
+                                setIsEditingNote(true);
+                              });
+                            }}
+                            onDelete={handleDeleteNote}
+                          />
+                        </motion.div>
+                      ) : (
+                        /* Eingabebereich für neue oder zu bearbeitende Notiz */
+                        <motion.div
+                          key="note-edit-container"
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.18 }}
+                          className="w-full space-y-3"
+                        >
+                          <textarea
+                            id="private-recipe-note"
+                            value={draftNote}
+                            onChange={(e) => setDraftNote(e.target.value)}
+                            placeholder="Deine privaten Koch-Notizen (z. B. 'Mehr Salz', 'Nur 15 Min backen')..."
+                            className="w-full bg-surface border border-border focus:border-accent text-base text-text-main rounded-xl p-3.5 min-h-[110px] placeholder:text-text-muted resize-y focus:outline-hidden transition-colors leading-relaxed"
+                          />
+
+                          <div className="flex items-center justify-between gap-3 pt-1">
+                            <span className="text-xs text-text-muted">
+                              Wird privat für dieses Rezept gespeichert
+                            </span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <motion.button
+                                layout
+                                whileTap={{ scale: 0.96 }}
+                                type="button"
+                                onClick={handleSaveNote}
+                                disabled={!draftNote.trim() || draftNote.trim() === userNote.trim()}
+                                className={`h-11 min-h-[44px] px-5 rounded-xl font-bold text-sm transition-all shadow-2xs touch-manipulation flex items-center gap-1.5 ${
+                                  draftNote.trim() && draftNote.trim() !== userNote.trim()
+                                    ? 'bg-accent hover:bg-accent-hover text-on-accent active:scale-95 cursor-pointer shadow-xs'
+                                    : 'bg-surface border border-border text-text-muted opacity-40 cursor-not-allowed pointer-events-none'
+                                }`}
+                              >
+                                <Check className="w-4 h-4 stroke-[2.5]" />
+                                <span>Notiz</span>
+                              </motion.button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="reviews-view"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                    className="w-full space-y-3"
+                  >
+                    {/* Angeheftete eigene Notiz: Immer ganz oben über allen Bewertungen */}
+                    {userNote.trim().length > 0 && (
+                      <div className="space-y-1.5">
+                        <PrivateNoteCard
+                          note={userNote}
+                          updatedAt={noteUpdatedAt}
+                          isPinnedInReviews={true}
+                          onEdit={() => {
+                            lockScrollAcrossUpdates(() => {
+                              setIsNoteViewOpen(true);
+                              setIsEditingNote(true);
+                              setDraftNote(userNote);
+                            });
+                          }}
+                          onDelete={handleDeleteNote}
+                        />
+                      </div>
+                    )}
+
+                    {/* Die neuesten 3 Bewertungen */}
+                    {recipeReviews.length === 0 ? (
+                      <div className="text-center py-6 px-4 space-y-2">
+                        <p className="text-base font-medium text-text-muted">
+                          Noch keine öffentlichen Bewertungen für dieses Rezept.
+                        </p>
+                        <p className="text-xs text-text-muted">
+                          Koche es nach und teile deine Erfahrung als Erste/r!
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {recipeReviews.slice(0, 3).map((review) => (
+                          <ReviewCard
+                            key={review.id}
+                            review={review}
+                            isHelpful={helpfulSet.has(review.id)}
+                            isUnhelpful={unhelpfulSet.has(review.id)}
+                            onToggleHelpful={handleToggleHelpful}
+                            onToggleUnhelpful={handleToggleUnhelpful}
+                            onEdit={handleEditReview}
+                            onDelete={handleDeleteReview}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Sekundärer Button: Alle Bewertungen ansehen (N) */}
+                    <div className="pt-1">
+                      <button
+                        id="view-all-reviews-btn"
+                        type="button"
+                        onClick={() => navigate(`/recipes/${recipe.id}/reviews`)}
+                        className="w-full h-12 min-h-[48px] rounded-xl border border-border bg-surface hover:bg-card text-text-main font-bold text-base flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer shadow-2xs"
+                      >
+                        <span>Alle Bewertungen ansehen ({totalReviewsCount})</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </section>

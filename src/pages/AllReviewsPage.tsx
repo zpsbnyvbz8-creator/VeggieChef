@@ -1,24 +1,28 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, Plus, ThumbsUp, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Star, Plus, ThumbsUp, MessageSquare, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useRecipes } from '../context/RecipeContext';
 import { useToast } from '../context/ToastContext';
 import { RecipeReview } from '../types';
 import {
   getReviewsForRecipe,
   toggleReviewHelpful,
+  toggleReviewUnhelpful,
   deleteReview,
   getHelpfulReviewsSet,
+  getUnhelpfulReviewsSet,
 } from '../data/reviews';
 import { ReviewCard } from '../components/reviews/ReviewCard';
 import { WriteReviewSheet } from '../components/reviews/WriteReviewSheet';
+import { PrivateNoteCard } from '../components/reviews/PrivateNoteCard';
 
 const PAGE_SIZE = 10;
 
 export const AllReviewsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { recipes } = useRecipes();
+  const { recipes, updateRecipe } = useRecipes();
   const { showToast } = useToast();
 
   const recipe = useMemo(() => recipes.find((r) => r.id === id), [recipes, id]);
@@ -28,12 +32,19 @@ export const AllReviewsPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'newest' | 'helpful'>('newest');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [helpfulSet, setHelpfulSet] = useState<Set<string>>(new Set());
+  const [unhelpfulSet, setUnhelpfulSet] = useState<Set<string>>(new Set());
+
+  // Private note state
+  const [userNote, setUserNote] = useState<string>(recipe?.userNotes || '');
+  const [noteUpdatedAt, setNoteUpdatedAt] = useState<string | null>(null);
+  const [draftNote, setDraftNote] = useState<string>(recipe?.userNotes || '');
+  const [isEditingNote, setIsEditingNote] = useState(false);
 
   // Sheet state
   const [isWriteSheetOpen, setIsWriteSheetOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<RecipeReview | null>(null);
 
-  // Load reviews on mount
+  // Load reviews & note on mount
   useEffect(() => {
     if (!id) return;
     setIsLoading(true);
@@ -41,10 +52,27 @@ export const AllReviewsPage: React.FC = () => {
       const loaded = getReviewsForRecipe(id);
       setReviews(loaded);
       setHelpfulSet(getHelpfulReviewsSet());
+      setUnhelpfulSet(getUnhelpfulReviewsSet());
+
+      try {
+        const stored = localStorage.getItem(`veggiechef_note_${id}`);
+        const storedDate = localStorage.getItem(`veggiechef_note_date_${id}`);
+        if (stored !== null) {
+          setUserNote(stored);
+          setDraftNote(stored);
+        } else if (recipe?.userNotes) {
+          setUserNote(recipe.userNotes);
+          setDraftNote(recipe.userNotes);
+        }
+        if (storedDate) {
+          setNoteUpdatedAt(storedDate);
+        }
+      } catch {}
+
       setIsLoading(false);
     }, 150);
     return () => clearTimeout(timer);
-  }, [id]);
+  }, [id, recipe?.userNotes]);
 
   // Average & count calculation
   const { avgRating, totalCount } = useMemo(() => {
@@ -84,8 +112,41 @@ export const AllReviewsPage: React.FC = () => {
       else next.delete(reviewId);
       return next;
     });
+    setUnhelpfulSet((prev) => {
+      const next = new Set(prev);
+      if (res.isUnhelpful) next.add(reviewId);
+      else next.delete(reviewId);
+      return next;
+    });
     setReviews((prev) =>
-      prev.map((r) => (r.id === reviewId ? { ...r, helpfulCount: res.helpfulCount } : r))
+      prev.map((r) =>
+        r.id === reviewId
+          ? { ...r, helpfulCount: res.helpfulCount, unhelpfulCount: res.unhelpfulCount }
+          : r
+      )
+    );
+  };
+
+  const handleToggleUnhelpful = (reviewId: string) => {
+    const res = toggleReviewUnhelpful(reviewId);
+    setHelpfulSet((prev) => {
+      const next = new Set(prev);
+      if (res.isHelpful) next.add(reviewId);
+      else next.delete(reviewId);
+      return next;
+    });
+    setUnhelpfulSet((prev) => {
+      const next = new Set(prev);
+      if (res.isUnhelpful) next.add(reviewId);
+      else next.delete(reviewId);
+      return next;
+    });
+    setReviews((prev) =>
+      prev.map((r) =>
+        r.id === reviewId
+          ? { ...r, helpfulCount: res.helpfulCount, unhelpfulCount: res.unhelpfulCount }
+          : r
+      )
     );
   };
 
@@ -111,11 +172,47 @@ export const AllReviewsPage: React.FC = () => {
     setEditingReview(null);
   };
 
+  const handleSaveNote = () => {
+    if (!recipe || !id) return;
+    const trimmed = draftNote.trim();
+    if (!trimmed) return;
+    const now = new Date().toISOString();
+    try {
+      localStorage.setItem(`veggiechef_note_${id}`, trimmed);
+      localStorage.setItem(`veggiechef_note_date_${id}`, now);
+    } catch {}
+    updateRecipe({
+      ...recipe,
+      userNotes: trimmed,
+    });
+    setUserNote(trimmed);
+    setNoteUpdatedAt(now);
+    setIsEditingNote(false);
+    showToast('Notiz gespeichert!');
+  };
+
+  const handleDeleteNote = () => {
+    if (!recipe || !id) return;
+    try {
+      localStorage.removeItem(`veggiechef_note_${id}`);
+      localStorage.removeItem(`veggiechef_note_date_${id}`);
+    } catch {}
+    updateRecipe({
+      ...recipe,
+      userNotes: '',
+    });
+    setUserNote('');
+    setDraftNote('');
+    setNoteUpdatedAt(null);
+    setIsEditingNote(false);
+    showToast('Notiz gelöscht');
+  };
+
   const handleBack = () => {
     if (id) {
-      navigate(`/recipes/${id}`);
+      navigate(`/recipes/${id}`, { replace: true });
     } else {
-      navigate(-1);
+      navigate('/');
     }
   };
 
@@ -129,7 +226,7 @@ export const AllReviewsPage: React.FC = () => {
               type="button"
               onClick={handleBack}
               aria-label="Zurück zum Rezept"
-              className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl border border-border bg-card text-text-main hover:bg-surface flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0"
+              className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl border border-border bg-card text-text-main hover:bg-surface flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -147,7 +244,7 @@ export const AllReviewsPage: React.FC = () => {
               setEditingReview(null);
               setIsWriteSheetOpen(true);
             }}
-            className="h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
+            className="h-12 min-h-[48px] px-3.5 sm:px-4 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden xs:inline">Bewertung schreiben</span>
@@ -210,6 +307,70 @@ export const AllReviewsPage: React.FC = () => {
           </div>
         </section>
 
+        {/* Angeheftete private Notiz: Immer ganz oben über allen Bewertungen */}
+        {userNote.trim().length > 0 && (
+          <div className="mb-4">
+            <AnimatePresence mode="wait" initial={false}>
+              {isEditingNote ? (
+                <motion.div
+                  key="note-edit-box"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="p-4 sm:p-5 rounded-2xl bg-card border border-border shadow-2xs space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-text-main">Meine Notiz bearbeiten</span>
+                  </div>
+                  <textarea
+                    value={draftNote}
+                    onChange={(e) => setDraftNote(e.target.value)}
+                    placeholder="Deine privaten Koch-Notizen..."
+                    className="w-full bg-surface border border-border focus:border-accent text-base text-text-main rounded-xl p-3.5 min-h-[100px] placeholder:text-text-muted resize-y focus:outline-hidden transition-colors"
+                  />
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <motion.button
+                      layout
+                      whileTap={{ scale: 0.96 }}
+                      type="button"
+                      onClick={handleSaveNote}
+                      disabled={!draftNote.trim() || draftNote.trim() === userNote.trim()}
+                      className={`h-11 min-h-[44px] px-5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-1.5 ${
+                        draftNote.trim() && draftNote.trim() !== userNote.trim()
+                          ? 'bg-accent hover:bg-accent-hover text-on-accent active:scale-95 cursor-pointer shadow-xs'
+                          : 'bg-surface border border-border text-text-muted opacity-40 cursor-not-allowed pointer-events-none'
+                      }`}
+                    >
+                      <Check className="w-4 h-4 stroke-[2.5]" />
+                      <span>Notiz</span>
+                    </motion.button>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="note-card-view"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <PrivateNoteCard
+                    note={userNote}
+                    updatedAt={noteUpdatedAt}
+                    isPinnedInReviews={true}
+                    onEdit={() => {
+                      setDraftNote(userNote);
+                      setIsEditingNote(true);
+                    }}
+                    onDelete={handleDeleteNote}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
         {/* Bewertungen Liste */}
         {isLoading ? (
           /* Skeleton Loader */
@@ -261,7 +422,9 @@ export const AllReviewsPage: React.FC = () => {
                 key={review.id}
                 review={review}
                 isHelpful={helpfulSet.has(review.id)}
+                isUnhelpful={unhelpfulSet.has(review.id)}
                 onToggleHelpful={handleToggleHelpful}
+                onToggleUnhelpful={handleToggleUnhelpful}
                 onEdit={handleEditReview}
                 onDelete={handleDeleteReview}
               />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Check, Lightbulb, ChefHat, RefreshCw, ArrowRight, AlertCircle } from 'lucide-react';
+import { Sparkles, Check, ChefHat, RefreshCw } from 'lucide-react';
 import { CloseButton } from '../ui/CloseButton';
 import { RecipeIngredient } from '../../types';
 
@@ -15,78 +15,9 @@ interface IngredientSubstituteModalProps {
 interface SubstituteOption {
   name: string;
   ratio: string;
-  reason: string;
+  reason?: string;
   tip?: string;
   isVegan?: boolean;
-}
-
-function getCulinarySubstitutes(name: string): SubstituteOption[] {
-  const lower = name.toLowerCase();
-
-  if (lower.includes('milch') || lower.includes('kuhmilch')) {
-    return [
-      { name: 'Hafermilch (Barista)', ratio: '1:1', reason: 'Cremig & neutral im Kochgericht', tip: 'Hervorragend für Saucen und Teige.', isVegan: true },
-      { name: 'Sojamilch ungesüßt', ratio: '1:1', reason: 'Hoher Proteingehalt und gute Bindung', tip: 'Ideal für herzhafte Gerichte.', isVegan: true },
-      { name: 'Mandelmilch', ratio: '1:1', reason: 'Leicht nussige feine Note', tip: 'Perfekt für Currys und Frühstück.', isVegan: true },
-    ];
-  }
-
-  if (lower.includes('sahne') || lower.includes('rahm')) {
-    return [
-      { name: 'Hafer-Cuisine (Pflanzensahne)', ratio: '1:1', reason: 'Gleiche Bindung und Sämigkeit ohne Cholesterin', tip: 'Einfach wie normale Sahne einrühren.', isVegan: true },
-      { name: 'Kokosmilch (Vollfett)', ratio: '1:1', reason: 'Exotisch-sämig mit satter Textur', tip: 'Besonders harmonisch in Currys & Suppen.', isVegan: true },
-      { name: 'Cashew-Sahne (pürierte Cashews)', ratio: '1:1', reason: 'Ultra-cremig mit feinem Geschmack', tip: 'Cashews 15 Min. einweichen und mixen.', isVegan: true },
-    ];
-  }
-
-  if (lower.includes('butter')) {
-    return [
-      { name: 'Vegane Blockbutter', ratio: '1:1', reason: 'Identisches Back- und Bratverhalten', isVegan: true },
-      { name: 'Rapsöl oder Olivenöl', ratio: '80g Öl pro 100g Butter', reason: 'Gesunde ungesättigte Fettsäuren', tip: 'Bei herzhaften Pfannengerichten die beste Wahl.', isVegan: true },
-    ];
-  }
-
-  if (lower.includes('parmesan') || lower.includes('käse')) {
-    return [
-      { name: 'Würzige Hefeflocken & gemahlene Mandeln', ratio: '1:1', reason: 'Liefert den intensiven, nussigen Umami-Kick', tip: 'Reich an Vitamin B12 und Zink.', isVegan: true },
-      { name: 'Veganer Reibegenuss (Gouda-Art)', ratio: '1:1', reason: 'Schmilzt gut beim Überbacken', isVegan: true },
-    ];
-  }
-
-  if (lower.includes('ei') || lower.includes('eier')) {
-    return [
-      { name: '1 EL geschrotete Leinsamen + 3 EL Wasser', ratio: 'Ersetzt 1 Ei', reason: 'Perfekter pflanzlicher Ei-Ersatz für Bindung', tip: '5 Minuten quellen lassen.', isVegan: true },
-      { name: '60 g Apfelmus oder Seidentofu', ratio: 'Ersetzt 1 Ei', reason: 'Hält Teige saftig und feucht', isVegan: true },
-      { name: '2 EL Kichererbsenmehl + 2 EL Wasser', ratio: 'Ersetzt 1 Ei', reason: 'Ideal für herzhafte Panaden & Quiches', isVegan: true },
-    ];
-  }
-
-  if (lower.includes('tofu') || lower.includes('fleisch') || lower.includes('hack')) {
-    return [
-      { name: 'Braune Berglinsen oder Kichererbsen', ratio: '1:1', reason: 'Sattmachende Ballaststoffe & Proteine', isVegan: true },
-      { name: 'Räuchertofu fein gewürfelt', ratio: '1:1', reason: 'Würziger Biss und hoher Eiweißanteil', isVegan: true },
-      { name: 'Braune Champignons oder Kräuterseitlinge', ratio: '1:1', reason: 'Dunkles herzhaftes Aroma & fleischige Textur', isVegan: true },
-    ];
-  }
-
-  if (lower.includes('honig')) {
-    return [
-      { name: 'Agavendicksaft', ratio: '1:1', reason: 'Mild süß und löst sich sofort auf', isVegan: true },
-      { name: 'Ahornsirup Grad A', ratio: '1:1', reason: 'Feine Karamellnote', isVegan: true },
-    ];
-  }
-
-  if (lower.includes('joghurt') || lower.includes('quark')) {
-    return [
-      { name: 'Soja-Joghurt ungesüßt', ratio: '1:1', reason: 'Gleiche Konsistenz & Proteinprofil', isVegan: true },
-      { name: 'Hafer-Joghurtalternative', ratio: '1:1', reason: 'Mild-cremig & regional', isVegan: true },
-    ];
-  }
-
-  return [
-    { name: `Pflanzliche Alternative zu ${name}`, ratio: '1:1', reason: 'Erhält Konsistenz und Geschmack des Rezepts', isVegan: true },
-    { name: 'Saisonales Gemüse nach Wahl', ratio: 'Nach Belieben', reason: 'Bringt Frische und Vitamine ins Gericht', isVegan: true },
-  ];
 }
 
 export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps> = ({
@@ -98,7 +29,6 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
   onApplySubstitute,
 }) => {
   const [customInput, setCustomInput] = useState('');
-  const [userWish, setUserWish] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [aiSubstitutes, setAiSubstitutes] = useState<SubstituteOption[]>([]);
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
@@ -124,43 +54,43 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
       });
 
       if (!res.ok) {
-        throw new Error(`Server antwortete mit Status ${res.status}`);
+        throw new Error('KI-Funktion nicht erreichbar');
       }
 
       const data = await res.json();
 
-      if (data.success && Array.isArray(data.substitutions) && data.substitutions.length > 0) {
+      if (data.success && Array.isArray(data.substitutions) && data.substitutions.length > 0 && !data.isFallback) {
         const mapped: SubstituteOption[] = data.substitutions.map((item: any) => ({
           name: item.replacement,
           ratio: item.ratio || '1:1',
           reason: item.reason,
-          tip: item.usageTip,
+          tip: item.usageTip?.trim() || undefined,
           isVegan: true,
         }));
         setAiSubstitutes(mapped);
-        setAiAdvice(data.advice || null);
-        setIsAiPowered(!data.isFallback);
+        setAiAdvice(data.advice?.trim() || null);
+        setIsAiPowered(true);
+        setErrorNotice(null);
       } else {
-        // Fallback to culinary heuristics
-        const fallback = getCulinarySubstitutes(ingredient.name);
-        setAiSubstitutes(fallback);
+        // Nicht halluzinieren: Wenn die KI nichts liefert, keine erfundenen Alternativen anzeigen
+        setAiSubstitutes([]);
+        setAiAdvice(null);
         setIsAiPowered(false);
+        setErrorNotice('Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.');
       }
-    } catch (err) {
-      console.warn('AI substitution error, using culinary fallbacks:', err);
-      const fallback = getCulinarySubstitutes(ingredient.name);
-      setAiSubstitutes(fallback);
+    } catch {
+      // Nicht halluzinieren: Keine erfundene Alternative anzeigen
+      setAiSubstitutes([]);
+      setAiAdvice(null);
       setIsAiPowered(false);
-      setErrorNotice('KI-Dienst momentan offline; zuverlässige kulinarische Alternativen geladen.');
+      setErrorNotice('Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch when opened or when ingredient changes
   useEffect(() => {
     if (isOpen && ingredient) {
-      setUserWish('');
       setCustomInput('');
       fetchSubstitutes();
     } else {
@@ -172,11 +102,16 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
 
   if (!isOpen || !ingredient) return null;
 
-  const handleCustomWishSubmit = (e: React.FormEvent) => {
+  const handleCustomSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userWish.trim()) return;
-    fetchSubstitutes(userWish);
+    if (!customInput.trim()) return;
+    fetchSubstitutes(customInput);
   };
+
+  const topSubstitute = aiSubstitutes[0];
+  const secondarySubstitutes = aiSubstitutes.slice(1);
+  const tip = topSubstitute?.tip || aiAdvice;
+  const hasTip = Boolean(tip && tip.trim().length > 0);
 
   return (
     <div
@@ -187,198 +122,196 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
       onClick={onClose}
     >
       <div
-        className="bg-card rounded-3xl max-w-lg w-full p-6 space-y-5 border border-border shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+        className="bg-card rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-5 border border-border shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center font-bold shadow-2xs">
-              <Sparkles className="w-5 h-5" />
+        {/* Header: Minimalistisch & ruhig */}
+        <div className="flex items-center justify-between pb-3.5 border-b border-border/60">
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 id="substitute-modal-title" className="text-lg font-bold text-text-main">
+                Zutat tauschen
+              </h3>
+              {isAiPowered && (
+                <span className="px-2 py-0.5 rounded-full bg-accent-tint text-accent text-[11px] font-semibold">
+                  KI
+                </span>
+              )}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 id="substitute-modal-title" className="text-lg font-bold text-text-main">
-                  Zutat tauschen
-                </h3>
-                {isAiPowered && (
-                  <span className="px-2 py-0.5 rounded-full bg-accent-tint text-accent text-[10px] font-bold tracking-wide">
-                    KI-Aktiv
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-text-muted">
-                Alternative für: <strong className="text-text-main">{ingredient.name}</strong>
-              </p>
-            </div>
+            <p className="text-xs text-text-muted mt-0.5">
+              Alternative für: <strong className="text-text-main font-semibold">{ingredient.name}</strong>
+            </p>
           </div>
           <CloseButton onClick={onClose} />
         </div>
 
-        {/* AI Vorräte-Abfrage & Custom Wish */}
-        <form onSubmit={handleCustomWishSubmit} className="space-y-2">
-          <label className="block text-xs font-semibold text-text-main">
-            Bestimmte Vorräte vorhanden oder spezielle Wünsche?
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="z.B. habe nur Hafermilch da / nussfrei / proteinreich..."
-              value={userWish}
-              onChange={(e) => setUserWish(e.target.value)}
-              className="flex-1 h-10 px-3 bg-surface border border-border rounded-xl text-[16px] text-text-main focus:border-accent focus:outline-hidden"
-            />
-            <button
-              type="submit"
-              disabled={isLoading || !userWish.trim()}
-              className="h-10 min-h-[40px] px-3.5 rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-40 text-on-accent text-sm font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5"
-            >
-              {isLoading ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Sparkles className="w-3.5 h-3.5" />
-              )}
-              <span>KI fragen</span>
-            </button>
-          </div>
-        </form>
-
         {/* Loading State */}
         {isLoading && (
-          <div className="p-6 rounded-2xl bg-surface border border-border flex flex-col items-center justify-center gap-3 text-center animate-pulse">
-            <div className="w-10 h-10 rounded-full bg-[#EBF5EE] text-accent flex items-center justify-center">
-              <RefreshCw className="w-5 h-5 animate-spin text-accent" />
-            </div>
+          <div className="py-10 flex flex-col items-center justify-center gap-3 text-center">
+            <RefreshCw className="w-6 h-6 animate-spin text-accent" />
             <div>
               <p className="text-sm font-bold text-text-main">
-                KI-Küchenchef ermittelt Alternativen...
+                Alternative wird ermittelt...
               </p>
               <p className="text-xs text-text-muted mt-0.5">
-                Passend abgestimmt auf Textur, Geschmack und Nährwerte in &bdquo;{recipeTitle}&ldquo;
+                Passend abgestimmt auf „{recipeTitle}“
               </p>
             </div>
           </div>
         )}
 
-        {/* Notice if offline */}
+        {/* Dezent: Wenn KI nicht geht, keine erfundenen Alternativen anzeigen */}
         {errorNotice && !isLoading && (
-          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>{errorNotice}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => fetchSubstitutes(userWish)}
-              className="px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 font-semibold text-[11px] cursor-pointer"
-            >
-              Erneut versuchen
-            </button>
+          <div className="py-8 text-center space-y-1">
+            <p className="text-sm text-text-muted font-medium">
+              Die KI-Funktion ist gerade nicht verfügbar.
+            </p>
+            <p className="text-xs text-text-muted/70">
+              Bitte versuche es später noch einmal.
+            </p>
           </div>
         )}
 
-        {/* List of recommended substitutes */}
-        {!isLoading && aiSubstitutes.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-xs text-text-muted">
-              <span className="font-semibold text-text-main">
-                {isAiPowered ? 'Empfohlene KI-Tauschoptionen:' : 'Kulinarische Alternativen:'}
+        {/* HERO-VORSCHLAG: Das visuelle Zentrum */}
+        {!isLoading && topSubstitute && (
+          <div className="space-y-4">
+            {/* Großer, fetter Titel */}
+            <div className="space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-accent block">
+                Empfohlener Tausch
               </span>
+              <h4 className="text-xl sm:text-2xl font-extrabold text-text-main tracking-tight leading-snug">
+                {topSubstitute.name}
+              </h4>
+
+              {/* Dezente moderne Badges: Grün für "Pflanzlich", Grau für "Menge: 1:1" */}
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
+                {topSubstitute.isVegan !== false && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent-tint text-accent text-xs font-semibold">
+                    <Check className="w-3 h-3 stroke-[2.5]" />
+                    <span>Pflanzlich</span>
+                  </span>
+                )}
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-surface border border-border text-text-muted text-xs font-medium">
+                  Menge: {topSubstitute.ratio}
+                </span>
+              </div>
+            </div>
+
+            {/* Action-Buttons: links kompakte "Alternative" zum Weitersuchen, rechts Primary "Übernehmen" */}
+            <div className="flex items-center gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => fetchSubstitutes(userWish)}
-                className="hover:text-accent flex items-center gap-1 cursor-pointer transition-colors"
-                title="Neu laden"
+                onClick={() => fetchSubstitutes(customInput || undefined)}
+                disabled={isLoading}
+                title="Nach einer anderen Alternative suchen"
+                aria-label="Nach einer anderen Alternative suchen"
+                className="h-12 min-h-[48px] px-4 rounded-xl bg-surface border border-border hover:bg-card hover:border-accent/40 text-text-main font-semibold text-sm transition-all active:scale-95 cursor-pointer shrink-0 flex items-center justify-center gap-1.5 shadow-2xs"
               >
-                <RefreshCw className="w-3 h-3" />
-                <span>Neu berechnen</span>
+                <RefreshCw className={`w-3.5 h-3.5 text-text-muted ${isLoading ? 'animate-spin' : ''}`} />
+                <span>Alternative</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onApplySubstitute(ingredient.name, topSubstitute.name);
+                  onClose();
+                }}
+                className="flex-1 h-12 min-h-[48px] rounded-xl bg-accent hover:bg-accent-hover text-on-accent font-bold text-base shadow-sm transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Check className="w-4 h-4 stroke-[2.5]" />
+                <span>Übernehmen</span>
               </button>
             </div>
 
-            <div className="space-y-2.5">
-              {aiSubstitutes.map((opt, idx) => (
-                <div
-                  key={idx}
-                  className="p-3.5 rounded-2xl bg-surface border border-border hover:border-accent/40 transition-all flex flex-col justify-between gap-2.5"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-1 flex-1">
-                      <div className="text-sm font-bold text-text-main flex items-center gap-2">
-                        <span>{opt.name}</span>
-                        {opt.isVegan && (
-                          <span className="text-[10px] bg-[#EBF5EE] text-accent px-1.5 py-0.5 rounded-md font-semibold">
-                            Pflanzlich
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-text-muted leading-relaxed">
-                        {opt.reason}
-                      </div>
-                      <div className="text-[11px] text-accent font-semibold flex items-center gap-1">
-                        <span>Verhältnis: {opt.ratio}</span>
-                      </div>
-                      {opt.tip && (
-                        <div className="text-[11px] text-[#D35400] flex items-start gap-1.5 mt-1 font-medium bg-[#FFF9F5] p-2 rounded-xl border border-[#FEE7D6]">
-                          <Lightbulb className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                          <span>{opt.tip}</span>
-                        </div>
-                      )}
+            {/* Tipp: Nur anzeigen wenn von der KI als wirklich nötig bewertet */}
+            {hasTip && (
+              <div className="flex items-center gap-2 text-xs text-text-muted pt-1">
+                <ChefHat className="w-4 h-4 text-accent shrink-0" aria-hidden="true" />
+                <span className="truncate">
+                  <strong className="text-text-main font-semibold">Tipp:</strong> {tip}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Weitere Optionen (ohne Boxen, nur feine Trennlinien) */}
+        {!isLoading && secondarySubstitutes.length > 0 && (
+          <div className="pt-4 border-t border-border/60 space-y-2">
+            <span className="text-xs font-semibold text-text-muted block">
+              Weitere Optionen
+            </span>
+            <div className="divide-y divide-border/50">
+              {secondarySubstitutes.map((opt, idx) => (
+                <div key={idx} className="py-2.5 flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-sm text-text-main truncate">
+                        {opt.name}
+                      </span>
+                      <span className="text-xs text-text-muted">
+                        ({opt.ratio})
+                      </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onApplySubstitute(ingredient.name, opt.name);
-                        onClose();
-                      }}
-                      className="px-4 py-2 min-h-[40px] rounded-xl bg-card border border-border hover:bg-accent hover:text-on-accent hover:border-accent text-sm font-bold text-[#57534d] shadow-2xs transition-all shrink-0 cursor-pointer active:scale-95"
-                    >
-                      Übernehmen
-                    </button>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onApplySubstitute(ingredient.name, opt.name);
+                      onClose();
+                    }}
+                    className="h-9 px-3.5 rounded-lg border border-border hover:border-accent hover:text-accent text-xs font-bold text-text-main transition-colors shrink-0 cursor-pointer"
+                  >
+                    Wählen
+                  </button>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* AI Chef's Culinary Advice Note */}
-        {!isLoading && aiAdvice && (
-          <div className="p-3.5 rounded-2xl bg-[#F0F7F2] border border-[#D5E8DA] flex items-start gap-2.5">
-            <ChefHat className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-            <div className="text-xs text-[#57534d] leading-relaxed">
-              <strong className="text-accent block mb-0.5">Tipp vom Chefkoch:</strong>
-              {aiAdvice}
-            </div>
-          </div>
-        )}
-
-        {/* Custom manual substitution option */}
-        <div className="pt-2 border-t border-border space-y-2">
-          <label className="block text-xs font-semibold text-text-main">
-            Oder eigene Alternative manuell eintragen:
+        {/* ZUSAMMENFÜHRUNG DER INPUTS: Ein einziges elegantes Eingabefeld ganz unten */}
+        <div className="pt-4 border-t border-border/60 space-y-2">
+          <label htmlFor="unified-substitute-input" className="block text-xs font-semibold text-text-main">
+            Eigene Alternative oder Wunsch eingeben
           </label>
-          <div className="flex items-center gap-2">
+          <form onSubmit={handleCustomSubmit} className="flex items-center gap-2">
             <input
+              id="unified-substitute-input"
               type="text"
-              placeholder="z.B. Cashewmus, Räuchertofu, Kokosjoghurt..."
+              placeholder="z.B. Hafermilch da, nussfrei, Räuchertofu..."
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
-              className="flex-1 h-10 px-3 bg-surface border border-border rounded-xl text-[16px] text-text-main focus:border-accent focus:outline-hidden"
+              className="flex-1 h-11 min-h-[44px] px-3.5 bg-surface border border-border rounded-xl text-[16px] text-text-main placeholder:text-text-muted/60 focus:border-accent focus:bg-card focus:outline-hidden transition-colors"
             />
             <button
-              type="button"
-              disabled={!customInput.trim()}
-              onClick={() => {
-                if (customInput.trim()) {
+              type="submit"
+              disabled={isLoading || !customInput.trim()}
+              className="h-11 min-h-[44px] px-4 rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-40 text-on-accent text-sm font-bold transition-all active:scale-95 cursor-pointer shrink-0 flex items-center gap-1.5 shadow-2xs"
+            >
+              {isLoading ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5" />
+              )}
+              <span>Anpassen</span>
+            </button>
+          </form>
+          {customInput.trim() && (
+            <div className="flex justify-end pt-0.5">
+              <button
+                type="button"
+                onClick={() => {
                   onApplySubstitute(ingredient.name, customInput.trim());
                   onClose();
-                }
-              }}
-              className="h-10 min-h-[40px] px-4 rounded-xl bg-text-main hover:bg-[#1F2C2D] disabled:opacity-40 text-on-accent text-sm font-bold transition-all cursor-pointer shrink-0"
-            >
-              Setzen
-            </button>
-          </div>
+                }}
+                className="text-xs font-medium text-text-muted hover:text-accent transition-colors cursor-pointer"
+              >
+                Oder direkt als „{customInput.trim()}“ übernehmen →
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
