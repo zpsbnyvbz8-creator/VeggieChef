@@ -10,3 +10,20 @@ coverage/
 .env.local
 .env.*.local
 *.env
+# Temporäre Ordner & Scratchpads
+tmp/
+scratch/
+
+# Tooling, IDE & AI Caches
+.aistudio/
+assets/.aistudio/
+.opencode/
+
+# Test- & Audit-Screenshots
+audit-screenshots/
+audit-screenshots-v2/
+phase*-shots/
+*-shots/
+
+# Generierte Reports
+npm-audit-report.json
