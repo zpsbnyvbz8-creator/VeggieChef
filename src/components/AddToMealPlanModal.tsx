@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, Flame, Dumbbell, Sun, Moon, Check, ChevronDown } from 'lucide-react';
+import { Calendar, ChevronDown, Sun, Moon, Check } from 'lucide-react';
 import { Recipe, DayPlan, WeekPlan } from '../types';
-import { RecipeImage } from './RecipeImage';
+import { RecipeCardListRow } from './ui/RecipeCardListRow';
 import { CloseButton } from './ui/CloseButton';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
-
 import { usePlanner } from '../context/PlannerContext';
 
 interface AddToMealPlanModalProps {
@@ -55,10 +54,10 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
       <div
         id="add-to-meal-plan-modal"
         onClick={(e) => e.stopPropagation()}
-        className="bg-card rounded-2xl border border-border shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150 overscroll-contain"
+        className="bg-card rounded-2xl border border-border shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150 overscroll-contain max-h-[92vh] flex flex-col my-auto"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-accent-tint flex items-center justify-center text-accent">
               <Calendar className="w-4 h-4" />
@@ -71,45 +70,19 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
           <CloseButton onClick={onClose} ariaLabel="Planer schließen" />
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* Target Recipe Preview */}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-border">
-            <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0">
-              <RecipeImage
-                recipe={recipe}
-                imgClassName="w-full h-full object-cover"
-                alt={recipe.title}
-                size="sm"
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              {(!recipe.isVegan || recipe.diet === 'vegetarisch') && (
-                <span className="inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full mb-1 border border-border bg-accent-tint text-accent">
-                  Vegetarisch
-                </span>
-              )}
-              <h4 className="text-sm font-semibold text-text-main truncate">{recipe.title}</h4>
-              <div className="flex items-center gap-2.5 text-[11px] text-text-muted mt-0.5">
-                <span className="flex items-center gap-0.5">
-                  <Clock className="w-3 h-3" />
-                  {recipe.totalTimeMinutes} Min.
-                </span>
-                <span className="flex items-center gap-0.5">
-                  <Flame className="w-3 h-3 text-[#E67E22]" />
-                  {recipe.nutrients.calories} kcal
-                </span>
-                <span className="flex items-center gap-0.5 font-medium text-accent">
-                  <Dumbbell className="w-3 h-3" />
-                  {recipe.nutrients.protein}g Prot.
-                </span>
-              </div>
-            </div>
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto max-h-[calc(92vh-64px)]">
+          {/* Target Recipe Preview: EXACT RecipeCardListRow with existing grey tone (bg-page) for clear contrast against white modal */}
+          <div className="w-full overflow-hidden [&_a]:pointer-events-none">
+            <RecipeCardListRow
+              recipe={recipe}
+              className="bg-page border-border shadow-xs hover:border-accent/40"
+            />
           </div>
 
           {/* Week Selector (if multiple weeks available) */}
           {weeks && weeks.length > 1 && (
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-text-main">Woche auswählen</label>
+              <label className="text-sm font-bold text-text-main">Woche auswählen</label>
               <div className="relative">
                 <select
                   value={selectedWeekId}
@@ -128,14 +101,13 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
           )}
 
           {/* Day Selector */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-text-main">Wochentag wählen</label>
+          <div className="space-y-2">
+            <label className="text-base sm:text-lg font-bold text-text-main block">Wochentag wählen</label>
             <div className="grid grid-cols-7 gap-1.5">
               {targetDays.map((day) => {
                 const isSelected = day.dayId === selectedDayId;
                 const hasLunch = !!day.lunch;
                 const hasDinner = !!day.dinner;
-                const isFull = hasLunch && hasDinner;
 
                 return (
                   <button
@@ -148,87 +120,78 @@ export const AddToMealPlanModal: React.FC<AddToMealPlanModalProps> = (props) => 
                         : 'bg-card border-border hover:border-accent/50 text-[#57534d]'
                     }`}
                   >
-                    <span className="text-xs font-bold leading-none">
+                    <span className="text-sm font-bold leading-none">
                       {day.dayName.slice(0, 2)}
                     </span>
-                    <div className="flex gap-0.5 mt-1.5">
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          isSelected
-                            ? isFull
-                              ? 'bg-amber-300'
-                              : 'bg-card/70'
-                            : hasLunch || hasDinner
-                            ? 'bg-accent'
-                            : 'bg-transparent'
-                        }`}
-                      />
-                    </div>
+                    {!isSelected && (hasLunch || hasDinner) && (
+                      <div className="flex gap-0.5 mt-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+                      </div>
+                    )}
                   </button>
                 );
               })}
             </div>
-            <div className="text-[11px] text-text-muted flex items-center justify-between pt-0.5">
-              <span>Ausgewählt: <strong className="text-text-main">{targetDays.find((d) => d.dayId === selectedDayId)?.dayName}</strong></span>
-            </div>
           </div>
 
-          {/* Meal Slot Selector */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-text-main">Mahlzeit / Uhrzeit</label>
+          {/* Time / Slot Selector */}
+          <div className="space-y-2">
+            <label className="text-base sm:text-lg font-bold text-text-main block">Uhrzeit</label>
             <div className="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => setSelectedMealType('lunch')}
-                className={`min-h-[50px] p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer touch-manipulation active:scale-95 ${
+                className={`min-h-[52px] p-3 rounded-xl border text-left transition-all flex items-center gap-3 cursor-pointer touch-manipulation active:scale-95 ${
                   selectedMealType === 'lunch'
-                    ? 'bg-accent-tint border-accent text-[#57534d] ring-1 ring-accent'
+                    ? 'bg-accent-tint border-accent text-accent ring-1 ring-accent'
                     : 'bg-card border-border hover:border-accent/40 text-text-muted'
                 }`}
               >
-                <div className={`p-1.5 rounded-lg shrink-0 ${
+                <div className={`p-2 rounded-lg shrink-0 ${
                   selectedMealType === 'lunch' ? 'bg-accent text-on-accent' : 'bg-surface text-[#E67E22]'
                 }`}>
-                  <Sun className="w-4 h-4" />
+                  <Sun className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <span className="text-xs font-bold block text-text-main">Mittagessen</span>
-                  <span className="text-[10px] text-text-muted truncate block">
-                    {currentDay?.lunch ? `Belegt: ${currentDay.lunch.recipeTitle}` : 'Noch frei'}
-                  </span>
+                  <span className="text-base font-bold block text-text-main">Mittagessen</span>
                 </div>
               </button>
 
               <button
                 type="button"
                 onClick={() => setSelectedMealType('dinner')}
-                className={`min-h-[50px] p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer touch-manipulation active:scale-95 ${
+                className={`min-h-[52px] p-3 rounded-xl border text-left transition-all flex items-center gap-3 cursor-pointer touch-manipulation active:scale-95 ${
                   selectedMealType === 'dinner'
-                    ? 'bg-accent-tint border-accent text-[#57534d] ring-1 ring-accent'
+                    ? 'bg-accent-tint border-accent text-accent ring-1 ring-accent'
                     : 'bg-card border-border hover:border-accent/40 text-text-muted'
                 }`}
               >
-                <div className={`p-1.5 rounded-lg shrink-0 ${
+                <div className={`p-2 rounded-lg shrink-0 ${
                   selectedMealType === 'dinner' ? 'bg-accent text-on-accent' : 'bg-surface text-text-muted'
                 }`}>
-                  <Moon className="w-4 h-4" />
+                  <Moon className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <span className="text-xs font-bold block text-text-main">Abendessen</span>
-                  <span className="text-[10px] text-text-muted truncate block">
-                    {currentDay?.dinner ? `Belegt: ${currentDay.dinner.recipeTitle}` : 'Noch frei'}
-                  </span>
+                  <span className="text-base font-bold block text-text-main">Abendessen</span>
                 </div>
               </button>
             </div>
           </div>
 
-          {/* Conflict Notice if slot occupied */}
-          {existingSlot && (
-            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] leading-relaxed">
-              Hinweis: Dieser Slot enthält bereits <strong>"{existingSlot.recipeTitle}"</strong> und wird ersetzt.
-            </div>
-          )}
+          {/* Occupied Slot Notice - Fixed height container so the popup never changes vertical height when toggling meals */}
+          <div className="min-h-[46px] flex items-center">
+            {existingSlot ? (
+              <div className="w-full min-h-[46px] p-2.5 px-3 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-900 text-[14px] font-medium leading-normal flex items-center">
+                <span className="truncate">
+                  Belegt: <strong className="font-bold">{existingSlot.recipeTitle}</strong>
+                </span>
+              </div>
+            ) : (
+              <div className="w-full min-h-[46px] p-2.5 px-3 rounded-xl bg-surface/60 border border-border/70 text-text-muted text-[14px] font-medium leading-normal flex items-center">
+                <span>Slot noch frei</span>
+              </div>
+            )}
+          </div>
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2.5 pt-2">

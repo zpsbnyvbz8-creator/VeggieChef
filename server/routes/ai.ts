@@ -641,24 +641,10 @@ aiRouter.post("/create-recipe", async (req: Request, res: Response) => {
 
   const ai = getGenAI();
   if (!ai) {
-    const fallbackRecipe = buildFallbackCreatedRecipe({
-      dishTitleOrIdea,
-      category: safeCategory,
-      isVegan: Boolean(isVegan),
-      targetProtein: safeProtein,
-      targetCalories: safeCalories,
-      maxTimeMinutes: safeMaxTime,
-      includedIngredients: safeIncluded,
+    return res.status(503).json({
+      success: false,
+      error: "Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.",
     });
-    const resultRecipe = normalizeRecipeResponse(fallbackRecipe, {
-      id: `custom-${Date.now()}`,
-      image: "",
-      isCustomAi: true,
-      isFallback: true,
-      rating: 4.98,
-      reviewCount: 1,
-    });
-    return res.json({ success: true, recipe: resultRecipe, isFallback: true });
   }
 
   try {
@@ -720,25 +706,11 @@ Antworte als strukturiertes JSON-Objekt.`;
     res.json({ success: true, recipe: resultRecipe });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    logAiEvent("warn", "/api/ai/create-recipe", "Fallback triggered for create-recipe", { error: errMsg });
-    const fallbackRecipe = buildFallbackCreatedRecipe({
-      dishTitleOrIdea,
-      category: safeCategory,
-      isVegan: Boolean(isVegan),
-      targetProtein: safeProtein,
-      targetCalories: safeCalories,
-      maxTimeMinutes: safeMaxTime,
-      includedIngredients: safeIncluded,
+    logAiEvent("warn", "/api/ai/create-recipe", "AI create-recipe failed", { error: errMsg });
+    res.status(503).json({
+      success: false,
+      error: "Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.",
     });
-    const resultRecipe = normalizeRecipeResponse(fallbackRecipe, {
-      id: `custom-${Date.now()}`,
-      image: "",
-      isCustomAi: true,
-      isFallback: true,
-      rating: 4.98,
-      reviewCount: 1,
-    });
-    res.json({ success: true, recipe: resultRecipe, isFallback: true });
   }
 });
 
@@ -786,24 +758,10 @@ aiRouter.post("/scan-recipe", async (req: Request, res: Response) => {
 
   const ai = getGenAI();
   if (!ai) {
-    const title = safeNotes ? `Rezept-Kreation (${safeNotes.slice(0, 24)})` : "Pflanzliches Feinschmecker-Gericht";
-    const fallbackRecipe = buildFallbackCreatedRecipe({
-      dishTitleOrIdea: title,
-      category: "Pasta & Gnocchi",
-      isVegan: Boolean(isVegan),
-      maxTimeMinutes: 30,
+    return res.status(503).json({
+      success: false,
+      error: "Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.",
     });
-    const resultRecipe = normalizeRecipeResponse(fallbackRecipe, {
-      id: `custom-scan-${Date.now()}`,
-      image: imageBase64.startsWith("data:")
-        ? imageBase64
-        : getMatchingFoodImage(fallbackRecipe.title, fallbackRecipe.category, Boolean(isVegan)),
-      isCustomAi: true,
-      isFallback: true,
-      rating: 4.98,
-      reviewCount: 1,
-    });
-    return res.json({ success: true, recipe: resultRecipe, isFallback: true });
   }
 
   try {
@@ -856,24 +814,10 @@ Antworte als strukturiertes JSON-Objekt.`;
     res.json({ success: true, recipe: resultRecipe });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    logAiEvent("warn", "/api/ai/scan-recipe", "Fallback triggered for scan-recipe", { error: errMsg });
-    const title = safeNotes ? `Rezept-Kreation (${safeNotes.slice(0, 24)})` : "Pflanzliches Gourmet-Gericht";
-    const fallbackRecipe = buildFallbackCreatedRecipe({
-      dishTitleOrIdea: title,
-      category: "Pasta & Gnocchi",
-      isVegan: Boolean(isVegan),
-      maxTimeMinutes: 30,
+    logAiEvent("warn", "/api/ai/scan-recipe", "AI scan-recipe failed", { error: errMsg });
+    res.status(503).json({
+      success: false,
+      error: "Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.",
     });
-    const resultRecipe = normalizeRecipeResponse(fallbackRecipe, {
-      id: `custom-scan-${Date.now()}`,
-      image: imageBase64.startsWith("data:")
-        ? imageBase64
-        : getMatchingFoodImage(fallbackRecipe.title, fallbackRecipe.category, Boolean(isVegan)),
-      isCustomAi: true,
-      isFallback: true,
-      rating: 4.98,
-      reviewCount: 1,
-    });
-    res.json({ success: true, recipe: resultRecipe, isFallback: true });
   }
 });

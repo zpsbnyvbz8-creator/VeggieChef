@@ -174,13 +174,13 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({
           id="explorer-add-recipe-btn"
           type="button"
           onClick={() => setIsAddRecipeOpen(true)}
-          aria-label="Rezept hinzufügen"
-          title="Rezept per KI, Foto oder manuell hinzufügen"
+          aria-label="Gericht hinzufügen"
+          title="Gericht hinzufügen"
           className="h-11 min-h-[44px] px-4 rounded-full text-sm font-bold bg-accent hover:bg-accent-hover text-on-accent shrink-0 flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
         >
           <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
-          <span className="sm:hidden text-sm">Rezept</span>
-          <span className="hidden sm:inline text-sm">Rezept hinzufügen</span>
+          <span className="sm:hidden text-sm">Gericht</span>
+          <span className="hidden sm:inline text-sm">Gericht hinzufügen</span>
         </button>
       </header>
 

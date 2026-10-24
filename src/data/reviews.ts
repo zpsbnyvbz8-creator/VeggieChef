@@ -78,14 +78,15 @@ export function getReviewsForRecipe(recipeId: string): RecipeReview[] {
     const stored = localStorage.getItem(REVIEWS_STORAGE_KEY);
     if (stored) {
       const all: RecipeReview[] = JSON.parse(stored);
-      userReviews = all.filter((r) => r.recipeId === recipeId);
+      userReviews = all.filter((r) => r.recipeId === recipeId && r.text && r.text.trim().length > 0);
     }
   } catch (e) {
     console.error('Failed to read reviews from localStorage', e);
   }
 
-  // Check which reviews have been marked helpful by this user
+  // Check which reviews have been marked helpful/unhelpful by this user
   const helpfulSet = getHelpfulReviewsSet();
+  const unhelpfulSet = getUnhelpfulReviewsSet();
 
   const seeds = getSeedReviews(recipeId);
 
@@ -100,11 +101,15 @@ export function getReviewsForRecipe(recipeId: string): RecipeReview[] {
 
   const activeSeeds = seeds
     .filter((s) => !storedSeedOverrides[s.id]?.isDeleted)
-    .map((s) => ({
-      ...s,
-      helpfulCount: storedSeedOverrides[s.id]?.helpfulCount ?? s.helpfulCount,
-      unhelpfulCount: storedSeedOverrides[s.id]?.unhelpfulCount ?? s.unhelpfulCount ?? 0,
-    }));
+    .map((s) => {
+      const isH = helpfulSet.has(s.id);
+      const isU = unhelpfulSet.has(s.id);
+      return {
+        ...s,
+        helpfulCount: s.helpfulCount + (isH ? 1 : 0),
+        unhelpfulCount: (s.unhelpfulCount || 0) + (isU ? 1 : 0),
+      };
+    });
 
   // Combine user reviews and seeds, user reviews on top
   const combined = [...userReviews.map((r) => ({ ...r, isOwn: true })), ...activeSeeds];
@@ -144,6 +149,25 @@ export function getUnhelpfulReviewsSet(): Set<string> {
   return new Set();
 }
 
+export function getInitialSeedCounts(reviewId: string): { helpfulCount: number; unhelpfulCount: number } {
+  if (!reviewId.startsWith('seed_')) {
+    return { helpfulCount: 0, unhelpfulCount: 0 };
+  }
+  const lastUnderscore = reviewId.lastIndexOf('_');
+  if (lastUnderscore > 5) {
+    const recipeId = reviewId.substring(5, lastUnderscore);
+    const seeds = getSeedReviews(recipeId);
+    const found = seeds.find((s) => s.id === reviewId);
+    if (found) {
+      return {
+        helpfulCount: found.helpfulCount || 0,
+        unhelpfulCount: found.unhelpfulCount || 0,
+      };
+    }
+  }
+  return { helpfulCount: 0, unhelpfulCount: 0 };
+}
+
 export function toggleReviewHelpful(reviewId: string): {
   helpfulCount: number;
   unhelpfulCount: number;
@@ -176,19 +200,32 @@ export function toggleReviewHelpful(reviewId: string): {
     localStorage.setItem(UNHELPFUL_STORAGE_KEY, JSON.stringify(Array.from(unhelpfulSet)));
   } catch {}
 
-  const helpfulDelta = isHelpful ? 1 : isCurrentlyHelpful ? -1 : 0;
-  const unhelpfulDelta = isCurrentlyUnhelpful && !isUnhelpful ? -1 : 0;
-
   let finalHelpfulCount = 0;
   let finalUnhelpfulCount = 0;
 
-  if (!reviewId.startsWith('seed_')) {
+  if (reviewId.startsWith('seed_')) {
+    const initial = getInitialSeedCounts(reviewId);
+    finalHelpfulCount = Math.max(0, initial.helpfulCount + (isHelpful ? 1 : 0));
+    finalUnhelpfulCount = Math.max(0, initial.unhelpfulCount + (isUnhelpful ? 1 : 0));
+    try {
+      const raw = localStorage.getItem(`${REVIEWS_STORAGE_KEY}_seed_overrides`);
+      const overrides: Record<string, { helpfulCount?: number; unhelpfulCount?: number }> = raw ? JSON.parse(raw) : {};
+      overrides[reviewId] = {
+        ...overrides[reviewId],
+        helpfulCount: finalHelpfulCount,
+        unhelpfulCount: finalUnhelpfulCount,
+      };
+      localStorage.setItem(`${REVIEWS_STORAGE_KEY}_seed_overrides`, JSON.stringify(overrides));
+    } catch {}
+  } else {
     try {
       const stored = localStorage.getItem(REVIEWS_STORAGE_KEY);
       if (stored) {
         const all: RecipeReview[] = JSON.parse(stored);
         const idx = all.findIndex((r) => r.id === reviewId);
         if (idx !== -1) {
+          const helpfulDelta = isHelpful ? 1 : isCurrentlyHelpful ? -1 : 0;
+          const unhelpfulDelta = isCurrentlyUnhelpful && !isUnhelpful ? -1 : 0;
           all[idx].helpfulCount = Math.max(0, (all[idx].helpfulCount || 0) + helpfulDelta);
           all[idx].unhelpfulCount = Math.max(0, (all[idx].unhelpfulCount || 0) + unhelpfulDelta);
           finalHelpfulCount = all[idx].helpfulCount;
@@ -196,21 +233,6 @@ export function toggleReviewHelpful(reviewId: string): {
           localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(all));
         }
       }
-    } catch {}
-  } else {
-    try {
-      const raw = localStorage.getItem(`${REVIEWS_STORAGE_KEY}_seed_overrides`);
-      const overrides: Record<string, { helpfulCount?: number; unhelpfulCount?: number }> = raw ? JSON.parse(raw) : {};
-      const curH = overrides[reviewId]?.helpfulCount ?? 0;
-      const curU = overrides[reviewId]?.unhelpfulCount ?? 0;
-      finalHelpfulCount = Math.max(0, curH + helpfulDelta);
-      finalUnhelpfulCount = Math.max(0, curU + unhelpfulDelta);
-      overrides[reviewId] = {
-        ...overrides[reviewId],
-        helpfulCount: finalHelpfulCount,
-        unhelpfulCount: finalUnhelpfulCount,
-      };
-      localStorage.setItem(`${REVIEWS_STORAGE_KEY}_seed_overrides`, JSON.stringify(overrides));
     } catch {}
   }
 
@@ -254,19 +276,32 @@ export function toggleReviewUnhelpful(reviewId: string): {
     localStorage.setItem(UNHELPFUL_STORAGE_KEY, JSON.stringify(Array.from(unhelpfulSet)));
   } catch {}
 
-  const unhelpfulDelta = isUnhelpful ? 1 : isCurrentlyUnhelpful ? -1 : 0;
-  const helpfulDelta = isCurrentlyHelpful && !isHelpful ? -1 : 0;
-
   let finalHelpfulCount = 0;
   let finalUnhelpfulCount = 0;
 
-  if (!reviewId.startsWith('seed_')) {
+  if (reviewId.startsWith('seed_')) {
+    const initial = getInitialSeedCounts(reviewId);
+    finalHelpfulCount = Math.max(0, initial.helpfulCount + (isHelpful ? 1 : 0));
+    finalUnhelpfulCount = Math.max(0, initial.unhelpfulCount + (isUnhelpful ? 1 : 0));
+    try {
+      const raw = localStorage.getItem(`${REVIEWS_STORAGE_KEY}_seed_overrides`);
+      const overrides: Record<string, { helpfulCount?: number; unhelpfulCount?: number }> = raw ? JSON.parse(raw) : {};
+      overrides[reviewId] = {
+        ...overrides[reviewId],
+        helpfulCount: finalHelpfulCount,
+        unhelpfulCount: finalUnhelpfulCount,
+      };
+      localStorage.setItem(`${REVIEWS_STORAGE_KEY}_seed_overrides`, JSON.stringify(overrides));
+    } catch {}
+  } else {
     try {
       const stored = localStorage.getItem(REVIEWS_STORAGE_KEY);
       if (stored) {
         const all: RecipeReview[] = JSON.parse(stored);
         const idx = all.findIndex((r) => r.id === reviewId);
         if (idx !== -1) {
+          const unhelpfulDelta = isUnhelpful ? 1 : isCurrentlyUnhelpful ? -1 : 0;
+          const helpfulDelta = isCurrentlyHelpful && !isHelpful ? -1 : 0;
           all[idx].helpfulCount = Math.max(0, (all[idx].helpfulCount || 0) + helpfulDelta);
           all[idx].unhelpfulCount = Math.max(0, (all[idx].unhelpfulCount || 0) + unhelpfulDelta);
           finalHelpfulCount = all[idx].helpfulCount;
@@ -274,21 +309,6 @@ export function toggleReviewUnhelpful(reviewId: string): {
           localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(all));
         }
       }
-    } catch {}
-  } else {
-    try {
-      const raw = localStorage.getItem(`${REVIEWS_STORAGE_KEY}_seed_overrides`);
-      const overrides: Record<string, { helpfulCount?: number; unhelpfulCount?: number }> = raw ? JSON.parse(raw) : {};
-      const curH = overrides[reviewId]?.helpfulCount ?? 0;
-      const curU = overrides[reviewId]?.unhelpfulCount ?? 0;
-      finalHelpfulCount = Math.max(0, curH + helpfulDelta);
-      finalUnhelpfulCount = Math.max(0, curU + unhelpfulDelta);
-      overrides[reviewId] = {
-        ...overrides[reviewId],
-        helpfulCount: finalHelpfulCount,
-        unhelpfulCount: finalUnhelpfulCount,
-      };
-      localStorage.setItem(`${REVIEWS_STORAGE_KEY}_seed_overrides`, JSON.stringify(overrides));
     } catch {}
   }
 
@@ -409,4 +429,76 @@ export function getInitials(name: string): string {
   if (parts.length === 0 || !parts[0]) return 'VC';
   if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+const STAR_RATINGS_STORAGE_KEY = 'veggiechef_user_star_ratings';
+
+export function getUserStarRating(recipeId: string): number | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(STAR_RATINGS_STORAGE_KEY);
+    if (!raw) return null;
+    const map: Record<string, { rating: number; timestamp: number }> = JSON.parse(raw);
+    return map[recipeId]?.rating ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveUserStarRating(recipeId: string, rating: number): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(STAR_RATINGS_STORAGE_KEY);
+    const map: Record<string, { rating: number; timestamp: number }> = raw ? JSON.parse(raw) : {};
+    map[recipeId] = { rating, timestamp: Date.now() };
+    localStorage.setItem(STAR_RATINGS_STORAGE_KEY, JSON.stringify(map));
+  } catch (e) {
+    console.error('Failed to save star rating', e);
+  }
+}
+
+export function removeUserStarRating(recipeId: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(STAR_RATINGS_STORAGE_KEY);
+    if (!raw) return;
+    const map: Record<string, { rating: number; timestamp: number }> = JSON.parse(raw);
+    delete map[recipeId];
+    localStorage.setItem(STAR_RATINGS_STORAGE_KEY, JSON.stringify(map));
+  } catch {}
+}
+
+export function calculateRecipeRatingAndCount(
+  recipe: { rating: number; reviewCount: number; baseRating?: number; baseReviewCount?: number } | undefined,
+  userReviews: RecipeReview[],
+  userStarRating: number | null
+): { avgRating: number; totalCount: number; totalReviewsCount: number } {
+  if (!recipe) {
+    return { avgRating: 5.0, totalCount: 0, totalReviewsCount: 0 };
+  }
+
+  const baseCount = recipe.baseReviewCount ?? recipe.reviewCount ?? 0;
+  const baseRating = recipe.baseRating ?? recipe.rating ?? 5.0;
+
+  // Filter own reviews with comment text
+  const ownTextReviews = userReviews.filter((r) => r.isOwn && r.text && r.text.trim().length > 0);
+  const hasStarOnly = userStarRating !== null && ownTextReviews.length === 0;
+  const ownRatingsCount = ownTextReviews.length + (hasStarOnly ? 1 : 0);
+
+  const totalCount = baseCount + ownRatingsCount;
+
+  if (totalCount === 0) {
+    return { avgRating: 5.0, totalCount: 0, totalReviewsCount: 0 };
+  }
+
+  let sum = baseRating * baseCount;
+  for (const rev of ownTextReviews) {
+    sum += rev.rating;
+  }
+  if (hasStarOnly && userStarRating !== null) {
+    sum += userStarRating;
+  }
+
+  const avgRating = Number((sum / totalCount).toFixed(1));
+  return { avgRating, totalCount, totalReviewsCount: totalCount };
 }

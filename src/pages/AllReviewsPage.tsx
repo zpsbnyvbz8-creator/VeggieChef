@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, Plus, ThumbsUp, MessageSquare, Check } from 'lucide-react';
+import { ArrowLeft, Star, Plus, ThumbsUp, MessageSquare, Check, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRecipes } from '../context/RecipeContext';
 import { useToast } from '../context/ToastContext';
@@ -12,10 +12,14 @@ import {
   deleteReview,
   getHelpfulReviewsSet,
   getUnhelpfulReviewsSet,
+  getUserStarRating,
+  removeUserStarRating,
+  calculateRecipeRatingAndCount,
 } from '../data/reviews';
 import { ReviewCard } from '../components/reviews/ReviewCard';
 import { WriteReviewSheet } from '../components/reviews/WriteReviewSheet';
 import { PrivateNoteCard } from '../components/reviews/PrivateNoteCard';
+import { forceUnlockBodyScroll } from '../utils/useLockBodyScroll';
 
 const PAGE_SIZE = 10;
 
@@ -28,6 +32,7 @@ export const AllReviewsPage: React.FC = () => {
   const recipe = useMemo(() => recipes.find((r) => r.id === id), [recipes, id]);
 
   const [reviews, setReviews] = useState<RecipeReview[]>([]);
+  const [userStarRating, setUserStarRating] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'newest' | 'helpful'>('newest');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -44,6 +49,13 @@ export const AllReviewsPage: React.FC = () => {
   const [isWriteSheetOpen, setIsWriteSheetOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<RecipeReview | null>(null);
 
+  // Safety unlock: Ensure page navigation or unmount leaves body scroll completely free
+  useEffect(() => {
+    return () => {
+      forceUnlockBodyScroll();
+    };
+  }, []);
+
   // Load reviews & note on mount
   useEffect(() => {
     if (!id) return;
@@ -51,6 +63,7 @@ export const AllReviewsPage: React.FC = () => {
     const timer = setTimeout(() => {
       const loaded = getReviewsForRecipe(id);
       setReviews(loaded);
+      setUserStarRating(getUserStarRating(id));
       setHelpfulSet(getHelpfulReviewsSet());
       setUnhelpfulSet(getUnhelpfulReviewsSet());
 
@@ -74,31 +87,44 @@ export const AllReviewsPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [id, recipe?.userNotes]);
 
-  // Average & count calculation
+  // Average & count calculation (single source of truth)
   const { avgRating, totalCount } = useMemo(() => {
-    if (reviews.length === 0) {
-      return {
-        avgRating: recipe?.rating || 0,
-        totalCount: recipe?.reviewCount || 0,
-      };
-    }
-    const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
-    return {
-      avgRating: sum / reviews.length,
-      totalCount: Math.max(reviews.length, recipe?.reviewCount || reviews.length),
-    };
-  }, [reviews, recipe]);
+    return calculateRecipeRatingAndCount(recipe, reviews, userStarRating);
+  }, [recipe, reviews, userStarRating]);
+
+  const syncRecipeRating = (newReviews: RecipeReview[], newStarRating: number | null) => {
+    if (!recipe) return;
+    const { avgRating: newAvg, totalCount: newCount } = calculateRecipeRatingAndCount(
+      recipe,
+      newReviews,
+      newStarRating
+    );
+    const baseCount = recipe.baseReviewCount ?? recipe.reviewCount ?? 0;
+    const baseRating = recipe.baseRating ?? recipe.rating ?? 5.0;
+    updateRecipe({
+      ...recipe,
+      baseReviewCount: baseCount,
+      baseRating: baseRating,
+      rating: newAvg,
+      reviewCount: newCount,
+    });
+  };
+
+  // Only reviews with text count as public comments
+  const textReviews = useMemo(() => {
+    return reviews.filter((r) => r.text && r.text.trim().length > 0);
+  }, [reviews]);
 
   // Sorted reviews
   const sortedReviews = useMemo(() => {
-    const list = [...reviews];
+    const list = [...textReviews];
     if (sortBy === 'newest') {
       list.sort((a, b) => b.createdAt - a.createdAt);
     } else {
       list.sort((a, b) => (b.helpfulCount || 0) - (a.helpfulCount || 0) || b.createdAt - a.createdAt);
     }
     return list;
-  }, [reviews, sortBy]);
+  }, [textReviews, sortBy]);
 
   const displayedReviews = useMemo(() => {
     return sortedReviews.slice(0, visibleCount);
@@ -152,7 +178,9 @@ export const AllReviewsPage: React.FC = () => {
 
   const handleDeleteReview = (reviewId: string) => {
     deleteReview(reviewId);
-    setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    const updated = reviews.filter((r) => r.id !== reviewId);
+    setReviews(updated);
+    syncRecipeRating(updated, userStarRating);
     showToast('Bewertung gelöscht');
   };
 
@@ -161,15 +189,34 @@ export const AllReviewsPage: React.FC = () => {
     setIsWriteSheetOpen(true);
   };
 
-  const handleReviewSuccess = (saved: RecipeReview) => {
-    if (editingReview) {
-      setReviews((prev) => prev.map((r) => (r.id === saved.id ? saved : r)));
-      showToast('Bewertung aktualisiert');
-    } else {
-      setReviews((prev) => [saved, ...prev.filter((r) => r.id !== saved.id)]);
-      showToast('Bewertung veröffentlicht');
+  const handleReviewSuccess = (saved?: RecipeReview, isStarOnly?: boolean, ratingGiven?: number) => {
+    if (isStarOnly) {
+      const star = ratingGiven || 5;
+      setUserStarRating(star);
+      syncRecipeRating(reviews, star);
+      showToast('Bewertung gespeichert!');
+    } else if (saved) {
+      setUserStarRating(null);
+      let updated: RecipeReview[];
+      if (editingReview) {
+        updated = reviews.map((r) => (r.id === saved.id ? saved : r));
+        showToast('Bewertung aktualisiert');
+      } else {
+        updated = [saved, ...reviews.filter((r) => r.id !== saved.id)];
+        showToast('Bewertung veröffentlicht');
+      }
+      setReviews(updated);
+      syncRecipeRating(updated, null);
     }
     setEditingReview(null);
+  };
+
+  const handleUndoStarRating = () => {
+    if (!id || !recipe) return;
+    removeUserStarRating(id);
+    setUserStarRating(null);
+    syncRecipeRating(reviews, null);
+    showToast('Bewertung rückgängig gemacht');
   };
 
   const handleSaveNote = () => {
@@ -371,6 +418,48 @@ export const AllReviewsPage: React.FC = () => {
           </div>
         )}
 
+        {/* Eigene reine Sterne-Bewertung (ohne Textkommentar) mit Rückgängig-Button */}
+        {userStarRating !== null && !textReviews.some((r) => r.isOwn) && (
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-card border border-accent/30 bg-accent-tint/30 flex items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-accent text-on-accent flex items-center justify-center shrink-0">
+                <Star className="w-5 h-5 fill-current" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm sm:text-base font-bold text-text-main">
+                    Deine Bewertung: {userStarRating} von 5 Sternen
+                  </span>
+                  <div className="flex items-center gap-0.5 shrink-0" aria-label={`${userStarRating} von 5 Sternen`}>
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star
+                        key={s}
+                        className={`w-3.5 h-3.5 ${
+                          s <= userStarRating
+                            ? 'fill-[#E67E22] text-[#E67E22]'
+                            : 'fill-border text-border'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <p className="text-xs text-text-muted mt-0.5">
+                  Einfluss in die Gesamtwertung erfasst (ohne Kommentar).
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleUndoStarRating}
+              aria-label="Bewertung rückgängig machen"
+              className="h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl border border-border bg-surface hover:bg-card text-text-main font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer touch-manipulation shrink-0 shadow-2xs"
+            >
+              <RotateCcw className="w-4 h-4 text-[#C0392B]" />
+              <span>Rückgängig machen</span>
+            </button>
+          </div>
+        )}
+
         {/* Bewertungen Liste */}
         {isLoading ? (
           /* Skeleton Loader */
@@ -399,9 +488,13 @@ export const AllReviewsPage: React.FC = () => {
               <MessageSquare className="w-8 h-8" />
             </div>
             <div className="space-y-1 max-w-sm mx-auto">
-              <h3 className="text-lg font-bold text-text-main">Noch keine Bewertungen</h3>
+              <h3 className="text-lg font-bold text-text-main">
+                {userStarRating !== null ? 'Noch keine schriftlichen Kommentare' : 'Noch keine Bewertungen'}
+              </h3>
               <p className="text-sm text-text-muted">
-                Sei die erste Person, die dieses Rezept kocht und bewertet!
+                {userStarRating !== null
+                  ? 'Deine Sterne-Bewertung ist oben erfasst. Du kannst jederzeit noch einen schriftlichen Kommentar hinzufügen!'
+                  : 'Sei die erste Person, die dieses Rezept kocht und bewertet!'}
               </p>
             </div>
             <button

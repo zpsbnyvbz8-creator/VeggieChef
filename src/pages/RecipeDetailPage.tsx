@@ -34,14 +34,17 @@ import {
   Share2,
   Star,
   Mail,
+  RotateCcw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Recipe, RecipeIngredient, RecipeStep } from '../types';
 import { formatIngredientAmount, generateRecipeIngredientsText, calculateMealSavings, safeCopyToClipboard, compressImageToDataUrl } from '../utils/helpers';
+import { INITIAL_RECIPES } from '../data/recipes';
 import { useRecipes } from '../context/RecipeContext';
 import { useShopping } from '../context/ShoppingContext';
 import { usePlanner } from '../context/PlannerContext';
 import { useToast } from '../context/ToastContext';
+import { useLockBodyScroll, forceUnlockBodyScroll } from '../utils/useLockBodyScroll';
 
 // Subcomponents
 import { EcoImpactModal } from '../components/recipe/EcoImpactModal';
@@ -60,6 +63,9 @@ import {
   deleteReview,
   getHelpfulReviewsSet,
   getUnhelpfulReviewsSet,
+  getUserStarRating,
+  removeUserStarRating,
+  calculateRecipeRatingAndCount,
 } from '../data/reviews';
 import { RecipeReview } from '../types';
 
@@ -86,11 +92,27 @@ export const RecipeDetailPage: React.FC = () => {
     logCooked
   } = useRecipes();
 
-  const { addToShoppingList } = useShopping();
-  const { setRecipeToAddToPlan } = usePlanner();
+  const { addToShoppingList, shoppingItems } = useShopping();
+  const { setRecipeToAddToPlan, weeks, mealPlan } = usePlanner();
   const { showToast } = useToast();
 
   const recipe = recipes.find((r) => r.id === id);
+
+  // Check if current recipe is planned in any day/slot across weeks or mealPlan
+  const isPlanned = useMemo(() => {
+    if (!recipe?.id) return false;
+    const allDays = weeks && weeks.length > 0 ? weeks.flatMap((w) => w.days) : (mealPlan || []);
+    return allDays.some((d) => d.lunch?.recipeId === recipe.id || d.dinner?.recipeId === recipe.id);
+  }, [recipe?.id, weeks, mealPlan]);
+
+  // Check if recipe is on shopping list (as long as uncompleted items exist)
+  const isOnShoppingList = useMemo(() => {
+    if (!recipe?.title) return false;
+    const titleLower = recipe.title.toLowerCase();
+    return shoppingItems.some(
+      (item) => !item.completed && item.recipeSource && item.recipeSource.toLowerCase() === titleLower
+    );
+  }, [recipe?.title, shoppingItems]);
 
   // Local interactive states
   const [servings, setServings] = useState<number>(recipe?.servings || 4);
@@ -102,7 +124,19 @@ export const RecipeDetailPage: React.FC = () => {
     }
   }, [recipe?.servings]);
 
-  const [addedShopping, setAddedShopping] = useState(false);
+  // Copied & shopping confirmation states
+  const [isCopied, setIsCopied] = useState(false);
+  const copiedTimerRef = useRef<number | null>(null);
+  const [showConfirmDuplicateShopping, setShowConfirmDuplicateShopping] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) {
+        window.clearTimeout(copiedTimerRef.current);
+      }
+    };
+  }, []);
+
   const [checkedIngredients, setCheckedIngredients] = useState<Record<string, boolean>>({});
   const [completedSteps, setCompletedSteps] = useState<Record<number, boolean>>({});
 
@@ -165,6 +199,8 @@ export const RecipeDetailPage: React.FC = () => {
   // Explicit Ingredient Customization Mode
   const [isCustomizingIngredients, setIsCustomizingIngredients] = useState(false);
   const [customizedIngredientNames, setCustomizedIngredientNames] = useState<Record<string, boolean>>({});
+  // Track substituted ingredients: mapping current substitute name (lowercase) -> original ingredient name
+  const [substitutedIngredientsMap, setSubstitutedIngredientsMap] = useState<Record<string, string>>({});
 
   // Modals & Menu states
   const [isOverflowMenuOpen, setIsOverflowMenuOpen] = useState(false);
@@ -184,6 +220,7 @@ export const RecipeDetailPage: React.FC = () => {
 
   // Public reviews state
   const [recipeReviews, setRecipeReviews] = useState<RecipeReview[]>([]);
+  const [userStarRating, setUserStarRating] = useState<number | null>(null);
   const [isWriteReviewOpen, setIsWriteReviewOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<RecipeReview | null>(null);
   const [helpfulSet, setHelpfulSet] = useState<Set<string>>(new Set());
@@ -203,6 +240,7 @@ export const RecipeDetailPage: React.FC = () => {
     if (!recipe?.id) return;
     const loaded = getReviewsForRecipe(recipe.id);
     setRecipeReviews(loaded);
+    setUserStarRating(getUserStarRating(recipe.id));
     setHelpfulSet(getHelpfulReviewsSet());
     setUnhelpfulSet(getUnhelpfulReviewsSet());
 
@@ -224,20 +262,53 @@ export const RecipeDetailPage: React.FC = () => {
     }
   }, [recipe?.id, recipe?.userNotes]);
 
-  // Dynamically calculate average rating and count
-  const { avgRating, totalReviewsCount } = useMemo(() => {
-    if (recipeReviews.length === 0) {
-      return {
-        avgRating: recipe?.rating || 0,
-        totalReviewsCount: recipe?.reviewCount || 0,
-      };
+  // Detect and track any already substituted ingredients against the base recipes
+  useEffect(() => {
+    if (!recipe?.id) return;
+    const init = INITIAL_RECIPES.find((r) => r.id === recipe.id);
+    if (!init) return;
+
+    const map: Record<string, string> = {};
+    const names: Record<string, boolean> = {};
+
+    recipe.ingredients.forEach((currIng, idx) => {
+      const initIng = init.ingredients[idx];
+      if (initIng && initIng.name.toLowerCase() !== currIng.name.toLowerCase()) {
+        map[currIng.name.toLowerCase()] = initIng.name;
+        names[currIng.name.toLowerCase()] = true;
+      }
+    });
+
+    if (Object.keys(map).length > 0) {
+      setSubstitutedIngredientsMap((prev) => ({ ...map, ...prev }));
+      setCustomizedIngredientNames((prev) => ({ ...names, ...prev }));
     }
-    const sum = recipeReviews.reduce((acc, r) => acc + r.rating, 0);
-    return {
-      avgRating: sum / recipeReviews.length,
-      totalReviewsCount: Math.max(recipeReviews.length, recipe?.reviewCount || recipeReviews.length),
-    };
-  }, [recipeReviews, recipe]);
+  }, [recipe?.id, recipe?.ingredients]);
+
+  // Dynamically calculate average rating and count (single source of truth)
+  const { avgRating, totalCount, totalReviewsCount: rawTotalReviewsCount } = useMemo(() => {
+    return calculateRecipeRatingAndCount(recipe, recipeReviews, userStarRating);
+  }, [recipeReviews, recipe, userStarRating]);
+
+  const totalReviewsCount = rawTotalReviewsCount ?? totalCount ?? recipe?.reviewCount ?? 0;
+
+  const syncRecipeRating = (newReviews: RecipeReview[], newStarRating: number | null) => {
+    if (!recipe) return;
+    const { avgRating: newAvg, totalCount: newCount } = calculateRecipeRatingAndCount(
+      recipe,
+      newReviews,
+      newStarRating
+    );
+    const baseCount = recipe.baseReviewCount ?? recipe.reviewCount ?? 0;
+    const baseRating = recipe.baseRating ?? recipe.rating ?? 5.0;
+    updateRecipe({
+      ...recipe,
+      baseReviewCount: baseCount,
+      baseRating: baseRating,
+      rating: newAvg,
+      reviewCount: newCount,
+    });
+  };
 
   const handleToggleHelpful = (reviewId: string) => {
     const res = toggleReviewHelpful(reviewId);
@@ -287,7 +358,9 @@ export const RecipeDetailPage: React.FC = () => {
 
   const handleDeleteReview = (reviewId: string) => {
     deleteReview(reviewId);
-    setRecipeReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    const updated = recipeReviews.filter((r) => r.id !== reviewId);
+    setRecipeReviews(updated);
+    syncRecipeRating(updated, userStarRating);
     showToast('Bewertung gelöscht');
   };
 
@@ -296,31 +369,34 @@ export const RecipeDetailPage: React.FC = () => {
     setIsWriteReviewOpen(true);
   };
 
-  const handleReviewSuccess = (saved: RecipeReview) => {
-    if (editingReview) {
-      setRecipeReviews((prev) => prev.map((r) => (r.id === saved.id ? saved : r)));
-      showToast('Bewertung aktualisiert');
-    } else {
-      setRecipeReviews((prev) => [saved, ...prev.filter((r) => r.id !== saved.id)]);
-      showToast('Bewertung veröffentlicht');
+  const handleReviewSuccess = (saved?: RecipeReview, isStarOnly?: boolean, ratingGiven?: number) => {
+    if (isStarOnly) {
+      const star = ratingGiven || 5;
+      setUserStarRating(star);
+      syncRecipeRating(recipeReviews, star);
+      showToast('Bewertung gespeichert!');
+    } else if (saved) {
+      setUserStarRating(null);
+      let updated: RecipeReview[];
+      if (editingReview) {
+        updated = recipeReviews.map((r) => (r.id === saved.id ? saved : r));
+        showToast('Bewertung aktualisiert');
+      } else {
+        updated = [saved, ...recipeReviews.filter((r) => r.id !== saved.id)];
+        showToast('Bewertung veröffentlicht');
+      }
+      setRecipeReviews(updated);
+      syncRecipeRating(updated, null);
     }
     setEditingReview(null);
   };
 
-  // Scroll locking helper: prevents page jump across all note/review state transitions
-  const lockScrollAcrossUpdates = (callback: () => void) => {
-    const targetY = window.scrollY;
-    callback();
-
-    // Lock scroll across immediate frame, next frames and post-transition
-    const frames = [0, 16, 50, 100, 180, 250, 350];
-    frames.forEach((delay) => {
-      setTimeout(() => {
-        if (Math.abs(window.scrollY - targetY) > 1) {
-          window.scrollTo({ top: targetY, behavior: 'instant' });
-        }
-      }, delay);
-    });
+  const handleUndoStarRating = () => {
+    if (!recipe) return;
+    removeUserStarRating(recipe.id);
+    setUserStarRating(null);
+    syncRecipeRating(recipeReviews, null);
+    showToast('Bewertung rückgängig gemacht');
   };
 
   const handleSaveNote = () => {
@@ -328,38 +404,34 @@ export const RecipeDetailPage: React.FC = () => {
     const trimmed = draftNote.trim();
     if (!trimmed) return;
     const now = new Date().toISOString();
-    lockScrollAcrossUpdates(() => {
-      try {
-        localStorage.setItem(`veggiechef_note_${recipe.id}`, trimmed);
-        localStorage.setItem(`veggiechef_note_date_${recipe.id}`, now);
-      } catch {}
-      updateRecipe({
-        ...recipe,
-        userNotes: trimmed,
-      });
-      setUserNote(trimmed);
-      setNoteUpdatedAt(now);
-      setIsEditingNote(false);
+    try {
+      localStorage.setItem(`veggiechef_note_${recipe.id}`, trimmed);
+      localStorage.setItem(`veggiechef_note_date_${recipe.id}`, now);
+    } catch {}
+    updateRecipe({
+      ...recipe,
+      userNotes: trimmed,
     });
+    setUserNote(trimmed);
+    setNoteUpdatedAt(now);
+    setIsEditingNote(false);
     showToast('Notiz gespeichert!');
   };
 
   const handleDeleteNote = () => {
     if (!recipe) return;
-    lockScrollAcrossUpdates(() => {
-      try {
-        localStorage.removeItem(`veggiechef_note_${recipe.id}`);
-        localStorage.removeItem(`veggiechef_note_date_${recipe.id}`);
-      } catch {}
-      updateRecipe({
-        ...recipe,
-        userNotes: '',
-      });
-      setUserNote('');
-      setDraftNote('');
-      setNoteUpdatedAt(null);
-      setIsEditingNote(true);
+    try {
+      localStorage.removeItem(`veggiechef_note_${recipe.id}`);
+      localStorage.removeItem(`veggiechef_note_date_${recipe.id}`);
+    } catch {}
+    updateRecipe({
+      ...recipe,
+      userNotes: '',
     });
+    setUserNote('');
+    setDraftNote('');
+    setNoteUpdatedAt(null);
+    setIsEditingNote(true);
     showToast('Notiz gelöscht');
   };
 
@@ -451,17 +523,33 @@ export const RecipeDetailPage: React.FC = () => {
   };
 
   const handleCopyIngredients = async () => {
+    if (!recipe) return;
     const text = generateRecipeIngredientsText(recipe, servings);
     await safeCopyToClipboard(text);
     setIsOverflowMenuOpen(false);
+    setIsCopied(true);
     showToast(`Zutaten für ${servings} Portionen kopiert! 📋`);
+
+    if (copiedTimerRef.current) {
+      window.clearTimeout(copiedTimerRef.current);
+    }
+    copiedTimerRef.current = window.setTimeout(() => {
+      setIsCopied(false);
+    }, 2500);
   };
 
-  const handleAddShopping = () => {
+  const handleShoppingClick = () => {
+    if (isOnShoppingList) {
+      setShowConfirmDuplicateShopping(true);
+    } else {
+      executeAddShopping();
+    }
+  };
+
+  const executeAddShopping = () => {
+    if (!recipe) return;
     addToShoppingList(recipe, servings);
-    setAddedShopping(true);
     showToast(`Zutaten für ${servings} Portionen auf der Einkaufsliste!`);
-    setTimeout(() => setAddedShopping(false), 2500);
   };
 
   // Global click-outside dismissal for overflow menu, step photos edit mode & ingredient replace mode
@@ -507,18 +595,19 @@ export const RecipeDetailPage: React.FC = () => {
     isEditModalOpen ||
     isDeleteConfirmOpen ||
     showCookedDialog ||
-    isEcoModalOpen
+    isEcoModalOpen ||
+    isWriteReviewOpen ||
+    showConfirmDuplicateShopping
   );
 
+  useLockBodyScroll(isAnyModalOpen);
+
+  // Safety unlock: Ensure page navigation or unmount leaves body scroll completely free
   useEffect(() => {
-    if (isAnyModalOpen) {
-      const prevOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = prevOverflow;
-      };
-    }
-  }, [isAnyModalOpen]);
+    return () => {
+      forceUnlockBodyScroll();
+    };
+  }, []);
 
   // Recipe Cover Photo Upload Handler (supports multiple files)
   const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -620,6 +709,9 @@ export const RecipeDetailPage: React.FC = () => {
 
   // Apply contextual ingredient substitution
   const handleApplySubstitute = (originalName: string, substituteName: string) => {
+    // If original was already substituted, keep the root original
+    const rootOriginal = substitutedIngredientsMap[originalName.toLowerCase()] || originalName;
+
     const activeList = (isVeganized && veganizedIngredients) ? veganizedIngredients : recipe.ingredients;
     const modified = activeList.map((ing) => {
       if (ing.name.toLowerCase() === originalName.toLowerCase()) {
@@ -628,11 +720,18 @@ export const RecipeDetailPage: React.FC = () => {
       return ing;
     });
 
-    // Track customized ingredient name so "(angepasst)" hint displays
+    // Track substitution mapping: current new name -> root original name
+    setSubstitutedIngredientsMap((prev) => {
+      const next = { ...prev };
+      delete next[originalName.toLowerCase()];
+      next[substituteName.toLowerCase()] = rootOriginal;
+      return next;
+    });
+
+    // Track customized ingredient name so "(angepasst)" hint and styling apply
     setCustomizedIngredientNames((prev) => ({
       ...prev,
       [substituteName.toLowerCase()]: true,
-      [originalName.toLowerCase()]: true,
     }));
 
     if (isVeganized) {
@@ -645,6 +744,55 @@ export const RecipeDetailPage: React.FC = () => {
       updateRecipe(updatedRecipe);
     }
     showToast(`"${originalName}" durch "${substituteName}" ersetzt.`);
+  };
+
+  // Revert a substituted ingredient back to its original recipe ingredient
+  const handleResetIngredient = (currentName: string) => {
+    // Look up root original in state or fallback to INITIAL_RECIPES
+    const rootOriginal =
+      substitutedIngredientsMap[currentName.toLowerCase()] ||
+      (() => {
+        const init = INITIAL_RECIPES.find((r) => r.id === recipe.id);
+        const idx = recipe.ingredients.findIndex((i) => i.name.toLowerCase() === currentName.toLowerCase());
+        return idx !== -1 && init?.ingredients[idx] ? init.ingredients[idx].name : null;
+      })();
+
+    if (!rootOriginal) {
+      showToast(`Originalzutat konnte nicht ermittelt werden.`);
+      return;
+    }
+
+    const activeList = (isVeganized && veganizedIngredients) ? veganizedIngredients : recipe.ingredients;
+    const modified = activeList.map((ing) => {
+      if (ing.name.toLowerCase() === currentName.toLowerCase()) {
+        return { ...ing, name: rootOriginal };
+      }
+      return ing;
+    });
+
+    setSubstitutedIngredientsMap((prev) => {
+      const next = { ...prev };
+      delete next[currentName.toLowerCase()];
+      return next;
+    });
+
+    setCustomizedIngredientNames((prev) => {
+      const next = { ...prev };
+      delete next[currentName.toLowerCase()];
+      delete next[rootOriginal.toLowerCase()];
+      return next;
+    });
+
+    if (isVeganized) {
+      setVeganizedIngredients(modified);
+    } else {
+      const updatedRecipe: Recipe = {
+        ...recipe,
+        ingredients: modified,
+      };
+      updateRecipe(updatedRecipe);
+    }
+    showToast(`"${currentName}" wieder zu "${rootOriginal}" zurückgesetzt.`);
   };
 
   // Step Photo Handlers: trigger file input for a specific step
@@ -1096,67 +1244,69 @@ export const RecipeDetailPage: React.FC = () => {
         </section>
 
         {/* 4. QUICK-FACTS GRID (2x2 Mobile Hierarchy with Schwierigkeit Metric) */}
-        <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {/* Total Time */}
-          <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
-            <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center shrink-0">
-              <Clock className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
-                Gesamtzeit
+        {(recipe.totalTimeMinutes > 0 || (recipe.nutrients && recipe.nutrients.calories > 0)) && (
+          <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* Total Time */}
+            <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5" />
               </div>
-              <div className="font-bold text-text-main text-base tabular-nums">
-                {recipe.totalTimeMinutes} Min.
+              <div>
+                <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
+                  Gesamtzeit
+                </div>
+                <div className="font-bold text-text-main text-base tabular-nums">
+                  {recipe.totalTimeMinutes} Min.
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Calories (bg-card with border and dark orange flame) */}
-          <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
-            <div className="w-10 h-10 rounded-xl bg-[#FFF4EC] text-[#D96B27] flex items-center justify-center shrink-0">
-              <Flame className="w-5 h-5 text-[#D96B27]" />
-            </div>
-            <div>
-              <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
-                Kalorien
+            {/* Calories (bg-card with border and dark orange flame) */}
+            <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-[#FFF4EC] text-[#D96B27] flex items-center justify-center shrink-0">
+                <Flame className="w-5 h-5 text-[#D96B27]" />
               </div>
-              <div className="font-bold text-text-main text-base tabular-nums">
-                {recipe.nutrients.calories} kcal
+              <div>
+                <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
+                  Kalorien
+                </div>
+                <div className="font-bold text-text-main text-base tabular-nums">
+                  {recipe.nutrients.calories} kcal
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Protein */}
-          <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
-            <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center shrink-0">
-              <Dumbbell className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
-                Protein
+            {/* Protein */}
+            <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center shrink-0">
+                <Dumbbell className="w-5 h-5" />
               </div>
-              <div className="font-bold text-accent text-base tabular-nums">
-                {recipe.nutrients.protein}g
+              <div>
+                <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
+                  Protein
+                </div>
+                <div className="font-bold text-accent text-base tabular-nums">
+                  {recipe.nutrients.protein}g
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Schwierigkeit (Replaces Eco-Score with matching typography and weight) */}
-          <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
-            <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center shrink-0">
-              <ChefHat className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
-                Schwierigkeit
+            {/* Schwierigkeit (Replaces Eco-Score with matching typography and weight) */}
+            <div className="p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center shrink-0">
+                <ChefHat className="w-5 h-5" />
               </div>
-              <div className="font-bold text-text-main text-base truncate">
-                {recipe.difficulty || 'Einfach'}
+              <div>
+                <div className="text-[14px] font-semibold text-text-muted uppercase tracking-wider">
+                  Schwierigkeit
+                </div>
+                <div className="font-bold text-text-main text-base truncate">
+                  {recipe.difficulty || 'Einfach'}
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* 5. SERVINGS CARD & BALANCED 3-COLUMN ACTION ROW */}
         <section className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
@@ -1200,41 +1350,61 @@ export const RecipeDetailPage: React.FC = () => {
 
           {/* Under servings counter: Clean 3-Column Action Row */}
           <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-1 border-t border-border/70">
-            {/* 1. [ + Planer ] */}
+            {/* 1. [ + Planer ] / [ Eingeplant ] */}
             <button
               id="servings-add-to-plan-btn"
               type="button"
               onClick={() => setRecipeToAddToPlan(recipe)}
-              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-surface border border-border hover:bg-accent-tint hover:border-accent/40 text-[#57534d] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              className={`h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold border flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0 ${
+                isPlanned
+                  ? 'bg-accent-tint border-accent/40 text-accent font-bold'
+                  : 'bg-surface border-border hover:bg-accent-tint hover:border-accent/40 text-[#57534d]'
+              }`}
             >
-              <CalendarPlus className="w-4 h-4 text-accent shrink-0" />
-              <span className="text-[16px] truncate">+ Planer</span>
+              {isPlanned ? (
+                <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
+              ) : (
+                <CalendarPlus className="w-4 h-4 text-accent shrink-0" />
+              )}
+              <span className="text-[16px] truncate">{isPlanned ? 'Eingeplant' : '+ Planer'}</span>
             </button>
 
-            {/* 2. [ + Liste ] */}
+            {/* 2. [ + Liste ] / [ Auf Liste ] */}
             <button
               id="servings-add-to-shopping-btn"
               type="button"
-              onClick={handleAddShopping}
-              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-surface border border-border hover:bg-accent-tint hover:border-accent/40 text-[#57534d] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              onClick={handleShoppingClick}
+              className={`h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold border flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0 ${
+                isOnShoppingList
+                  ? 'bg-accent-tint border-accent/40 text-accent font-bold'
+                  : 'bg-surface border-border hover:bg-accent-tint hover:border-accent/40 text-[#57534d]'
+              }`}
             >
-              {addedShopping ? (
-                <Check className="w-4 h-4 text-accent shrink-0" />
+              {isOnShoppingList ? (
+                <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
               ) : (
                 <ShoppingCart className="w-4 h-4 text-accent shrink-0" />
               )}
-              <span className="text-[16px] truncate">{addedShopping ? 'Auf Liste' : '+ Liste'}</span>
+              <span className="text-[16px] truncate">{isOnShoppingList ? 'Auf Liste' : '+ Liste'}</span>
             </button>
 
-            {/* 3. [ Kopieren ] */}
+            {/* 3. [ Kopieren ] / [ Kopiert ] */}
             <button
               id="servings-copy-ingredients-btn"
               type="button"
               onClick={handleCopyIngredients}
-              className="h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold bg-surface border border-border hover:bg-accent-tint hover:border-accent/40 text-[#57534d] flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0"
+              className={`h-11 px-2 sm:px-3 rounded-xl text-[16px] font-semibold border flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 text-center min-w-0 ${
+                isCopied
+                  ? 'bg-accent-tint border-accent/40 text-accent font-bold'
+                  : 'bg-surface border-border hover:bg-accent-tint hover:border-accent/40 text-[#57534d]'
+              }`}
             >
-              <Copy className="w-4 h-4 text-accent shrink-0" />
-              <span className="text-[16px] truncate">Kopieren</span>
+              {isCopied ? (
+                <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
+              ) : (
+                <Copy className="w-4 h-4 text-accent shrink-0" />
+              )}
+              <span className="text-[16px] truncate">{isCopied ? 'Kopiert' : 'Kopieren'}</span>
             </button>
           </div>
         </section>
@@ -1242,11 +1412,11 @@ export const RecipeDetailPage: React.FC = () => {
         {/* 6. INGREDIENTS LIST (Zutaten mit explizitem Anpassungs-Modus) */}
         <section ref={ingredientsSectionRef} className="space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-3">
+            <div>
               <h2 className="text-xl font-bold text-text-main flex items-center gap-2">
                 <span>Zutaten</span>
               </h2>
-              <span className="text-xs text-text-muted hidden md:inline">
+              <span className="text-xs text-text-muted hidden sm:inline">
                 {isCustomizingIngredients ? 'Tippe auf Ersetzen für Alternativen' : 'Tippe zum Abhaken'}
               </span>
             </div>
@@ -1301,7 +1471,10 @@ export const RecipeDetailPage: React.FC = () => {
               {activeIngredients.map((ing) => {
                 const isChecked = !!checkedIngredients[ing.name];
                 const amountStr = formatIngredientAmount(ing, recipe.servings, servings);
-                const isCustomized = !!customizedIngredientNames[ing.name.toLowerCase()];
+                const isCustomized = Boolean(
+                  customizedIngredientNames[ing.name.toLowerCase()] ||
+                  substitutedIngredientsMap[ing.name.toLowerCase()]
+                );
 
                 return (
                   <li
@@ -1311,8 +1484,12 @@ export const RecipeDetailPage: React.FC = () => {
                         toggleCheckIngredient(ing.name);
                       }
                     }}
-                    className={`flex items-center justify-between py-3.5 px-4 sm:px-5 hover:bg-surface transition-colors select-none group ${
+                    className={`flex items-center justify-between py-3.5 px-4 sm:px-5 transition-colors select-none group ${
                       isCustomizingIngredients ? 'cursor-default' : 'cursor-pointer'
+                    } ${
+                      isCustomized
+                        ? 'bg-accent-tint hover:bg-accent-tint/90 border-l-4 border-l-accent'
+                        : 'hover:bg-surface'
                     }`}
                   >
                     {/* Left: Custom Checkbox + Natural Wrapping Ingredient Name + "(angepasst)" hint */}
@@ -1348,22 +1525,13 @@ export const RecipeDetailPage: React.FC = () => {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span
-                            className={`text-base font-medium break-words leading-normal transition-all duration-200 ${
-                              isChecked ? 'line-through text-text-muted opacity-50' : 'text-text-main'
-                            }`}
-                          >
-                            {ing.name}
-                          </span>
-
-                          {/* Non-intrusive inline adaptation hint */}
-                          {isCustomized && (
-                            <span className="inline-flex items-center text-[10px] font-bold text-accent bg-accent-tint px-1.5 py-0.5 rounded-md shrink-0">
-                              (angepasst)
-                            </span>
-                          )}
-                        </div>
+                        <span
+                          className={`text-base font-medium break-words leading-normal transition-all duration-200 ${
+                            isChecked ? 'line-through text-text-muted opacity-50' : 'text-text-main'
+                          }`}
+                        >
+                          {ing.name}
+                        </span>
                       </div>
                     </div>
 
@@ -1377,6 +1545,23 @@ export const RecipeDetailPage: React.FC = () => {
                         {amountStr}
                       </span>
 
+                      {/* Subtle Reset Button if ingredient was replaced (restores original) */}
+                      {isCustomized && (
+                        <button
+                          type="button"
+                          id={`reset-ingredient-${ing.name.toLowerCase().replace(/\s+/g, '-')}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleResetIngredient(ing.name);
+                          }}
+                          aria-label="Auf Originalzutat zurücksetzen"
+                          title="Auf Originalzutat zurücksetzen"
+                          className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl bg-card hover:bg-surface border border-accent/30 text-accent hover:text-accent-hover flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs"
+                        >
+                          <RotateCcw className="w-4 h-4 stroke-[2.2]" />
+                        </button>
+                      )}
+
                       {/* Explicit [ Ersetzen ] Button only shown during customization mode */}
                       {isCustomizingIngredients && (
                         <button
@@ -1386,7 +1571,7 @@ export const RecipeDetailPage: React.FC = () => {
                             e.stopPropagation();
                             setSubstitutingIngredient(ing);
                           }}
-                          className={`inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-xl bg-surface hover:bg-accent-tint border border-border hover:border-accent/40 text-[14px] font-semibold text-accent transition-all cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
+                          className={`inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[48px] rounded-xl bg-surface hover:bg-accent-tint border border-border hover:border-accent/40 text-[14px] font-semibold text-accent transition-all cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
                             isChecked ? 'opacity-40 hover:opacity-80' : ''
                           }`}
                           title={`${ing.name} ersetzen`}
@@ -1404,116 +1589,119 @@ export const RecipeDetailPage: React.FC = () => {
         </section>
 
         {/* 7. NUTRITION MACROS & EXPANDABLE MICRONUTRIENTS ACCORDION */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[16px] font-bold text-[#57534d] uppercase tracking-wider">
-              Nährwerte pro Portion ({recipe.nutrients.calories} kcal)
-            </h3>
-          </div>
+        {recipe.nutrients && recipe.nutrients.calories > 0 && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[16px] font-bold text-[#57534d] uppercase tracking-wider">
+                Nährwerte pro Portion ({recipe.nutrients.calories} kcal)
+              </h3>
+            </div>
 
-          {/* Primary Macro Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3.5 bg-card rounded-xl border border-border text-center shadow-2xs">
-              <div className="text-[16px] font-semibold text-text-muted">Protein</div>
-              <div className="text-lg font-bold text-accent mt-0.5 tabular-nums">
-                {recipe.nutrients.protein}g
+            {/* Primary Macro Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3.5 bg-card rounded-xl border border-border text-center shadow-2xs">
+                <div className="text-[16px] font-semibold text-text-muted">Protein</div>
+                <div className="text-lg font-bold text-accent mt-0.5 tabular-nums">
+                  {recipe.nutrients.protein}g
+                </div>
+              </div>
+              <div className="p-3.5 bg-card rounded-xl border border-border text-center shadow-2xs">
+                <div className="text-[16px] font-semibold text-text-muted">Kohlenhydrate</div>
+                <div className="text-lg font-bold text-text-main mt-0.5 tabular-nums">
+                  {recipe.nutrients.carbs}g
+                </div>
+              </div>
+              <div className="p-3.5 bg-card rounded-xl border border-border text-center shadow-2xs">
+                <div className="text-[16px] font-semibold text-text-muted">Fett</div>
+                <div className="text-lg font-bold text-text-main mt-0.5 tabular-nums">
+                  {recipe.nutrients.fat}g
+                </div>
+              </div>
+              <div className="p-3.5 bg-card rounded-xl border border-border text-center shadow-2xs">
+                <div className="text-[16px] font-semibold text-text-muted">Ballaststoffe</div>
+                <div className="text-lg font-bold text-text-main mt-0.5 tabular-nums">
+                  {recipe.nutrients.fiber}g
+                </div>
               </div>
             </div>
-            <div className="p-3.5 bg-card rounded-xl border border-border text-center shadow-2xs">
-              <div className="text-[16px] font-semibold text-text-muted">Kohlenhydrate</div>
-              <div className="text-lg font-bold text-text-main mt-0.5 tabular-nums">
-                {recipe.nutrients.carbs}g
-              </div>
-            </div>
-            <div className="p-3.5 bg-card rounded-xl border border-border text-center shadow-2xs">
-              <div className="text-[16px] font-semibold text-text-muted">Fett</div>
-              <div className="text-lg font-bold text-text-main mt-0.5 tabular-nums">
-                {recipe.nutrients.fat}g
-              </div>
-            </div>
-            <div className="p-3.5 bg-card rounded-xl border border-border text-center shadow-2xs">
-              <div className="text-[16px] font-semibold text-text-muted">Ballaststoffe</div>
-              <div className="text-lg font-bold text-text-main mt-0.5 tabular-nums">
-                {recipe.nutrients.fiber}g
-              </div>
-            </div>
-          </div>
 
-          {/* Expandable Micronutrients Accordion */}
-          <div className="bg-card rounded-xl border border-border overflow-hidden shadow-2xs">
-            <button
-              type="button"
-              onClick={() => setIsMicronutrientsOpen(!isMicronutrientsOpen)}
-              className="w-full px-4 py-3 flex items-center justify-between text-[14px] font-semibold text-[#57534d] hover:bg-surface transition-colors cursor-pointer"
-            >
-              <span className="flex items-center gap-2">
-                <Leaf className="w-3.5 h-3.5 text-accent" />
-                <span className="text-[14px]">Mikronährstoffe, Vitamine & Mineralien</span>
-              </span>
-              {isMicronutrientsOpen ? (
-                <ChevronUp className="w-4 h-4 text-text-muted" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-text-muted" />
-              )}
-            </button>
+            {/* Expandable Micronutrients Accordion */}
+            <div className="bg-card rounded-xl border border-border overflow-hidden shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setIsMicronutrientsOpen(!isMicronutrientsOpen)}
+                className="w-full px-4 py-3 flex items-center justify-between text-[14px] font-semibold text-[#57534d] hover:bg-surface transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <Leaf className="w-3.5 h-3.5 text-accent" />
+                  <span className="text-[14px]">Mikronährstoffe, Vitamine & Mineralien</span>
+                </span>
+                {isMicronutrientsOpen ? (
+                  <ChevronUp className="w-4 h-4 text-text-muted" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-text-muted" />
+                )}
+              </button>
 
-            <AnimatePresence initial={false}>
-              {isMicronutrientsOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.22, ease: 'easeOut' }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-4 pb-4 pt-1 border-t border-border bg-surface/50">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
-                      <div className="p-2.5 bg-card rounded-lg border border-border">
-                        <div className="text-[12px] text-text-muted">Eisen</div>
-                        <div className="font-bold text-sm text-text-main tabular-nums">
-                          {recipe.nutrients.iron ?? (Math.round((recipe.nutrients.calories / 100) * 0.9 * 10) / 10)} mg
+              <AnimatePresence initial={false}>
+                {isMicronutrientsOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.22, ease: 'easeOut' }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-4 pb-4 pt-1 border-t border-border bg-surface/50">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
+                        <div className="p-2.5 bg-card rounded-lg border border-border">
+                          <div className="text-[12px] text-text-muted">Eisen</div>
+                          <div className="font-bold text-sm text-text-main tabular-nums">
+                            {recipe.nutrients.iron ?? (Math.round((recipe.nutrients.calories / 100) * 0.9 * 10) / 10)} mg
+                          </div>
                         </div>
-                      </div>
-                      <div className="p-2.5 bg-card rounded-lg border border-border">
-                        <div className="text-[12px] text-text-muted">Vitamin B12</div>
-                        <div className="font-bold text-sm text-text-main tabular-nums">
-                          {recipe.nutrients.b12 ?? (recipe.isVegan ? '0 µg (pflanzl.)' : '0.5 µg')}
+                        <div className="p-2.5 bg-card rounded-lg border border-border">
+                          <div className="text-[12px] text-text-muted">Vitamin B12</div>
+                          <div className="font-bold text-sm text-text-main tabular-nums">
+                            {recipe.nutrients.b12 ?? (recipe.isVegan ? '0 µg (pflanzl.)' : '0.5 µg')}
+                          </div>
                         </div>
-                      </div>
-                      <div className="p-2.5 bg-card rounded-lg border border-border">
-                        <div className="text-[12px] text-text-muted">Calcium</div>
-                        <div className="font-bold text-sm text-text-main tabular-nums">
-                          {recipe.nutrients.calcium ?? Math.round((recipe.nutrients.calories / 100) * 38)} mg
+                        <div className="p-2.5 bg-card rounded-lg border border-border">
+                          <div className="text-[12px] text-text-muted">Calcium</div>
+                          <div className="font-bold text-sm text-text-main tabular-nums">
+                            {recipe.nutrients.calcium ?? Math.round((recipe.nutrients.calories / 100) * 38)} mg
+                          </div>
                         </div>
-                      </div>
-                      <div className="p-2.5 bg-card rounded-lg border border-border">
-                        <div className="text-[12px] text-text-muted">Zink</div>
-                        <div className="font-bold text-sm text-text-main tabular-nums">
-                          {recipe.nutrients.zinc ?? (Math.round((recipe.nutrients.calories / 100) * 0.7 * 10) / 10)} mg
+                        <div className="p-2.5 bg-card rounded-lg border border-border">
+                          <div className="text-[12px] text-text-muted">Zink</div>
+                          <div className="font-bold text-sm text-text-main tabular-nums">
+                            {recipe.nutrients.zinc ?? (Math.round((recipe.nutrients.calories / 100) * 0.7 * 10) / 10)} mg
+                          </div>
                         </div>
-                      </div>
-                      <div className="p-2.5 bg-card rounded-lg border border-border">
-                        <div className="text-[12px] text-text-muted">Vitamin C</div>
-                        <div className="font-bold text-sm text-text-main tabular-nums">
-                          {recipe.nutrients.vitaminC ?? 26} mg
+                        <div className="p-2.5 bg-card rounded-lg border border-border">
+                          <div className="text-[12px] text-text-muted">Vitamin C</div>
+                          <div className="font-bold text-sm text-text-main tabular-nums">
+                            {recipe.nutrients.vitaminC ?? 26} mg
+                          </div>
                         </div>
-                      </div>
-                      <div className="p-2.5 bg-card rounded-lg border border-border">
-                        <div className="text-[12px] text-text-muted">Magnesium</div>
-                        <div className="font-bold text-sm text-text-main tabular-nums">
-                          {recipe.nutrients.magnesium ?? 68} mg
+                        <div className="p-2.5 bg-card rounded-lg border border-border">
+                          <div className="text-[12px] text-text-muted">Magnesium</div>
+                          <div className="font-bold text-sm text-text-main tabular-nums">
+                            {recipe.nutrients.magnesium ?? 68} mg
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </section>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </section>
+        )}
 
         {/* 8. PREPARATION STEPS & TIMELINE WITH DYNAMIC STEP-BY-STEP MEDIA */}
-        <section ref={stepsSectionRef} className="space-y-4">
+        {recipe.steps && recipe.steps.length > 0 && (
+          <section ref={stepsSectionRef} className="space-y-4">
           {(() => {
             const hasStepPhotos = recipe.steps.some((s) => {
               if (typeof s === 'string') return false;
@@ -1696,22 +1884,23 @@ export const RecipeDetailPage: React.FC = () => {
               </>
             );
           })()}
-
-          {/* Smart Chef Tip Callout */}
-          {recipe.chefTip && (
-            <div className="p-4 bg-[#FDF6F0] border-l-4 border-[#BD4800] rounded-r-2xl flex items-start gap-3 mt-4">
-              <ChefHat className="w-5 h-5 text-[#BD4800] shrink-0 mt-0.5" />
-              <div>
-                <h4 id="chef-tip-heading" className="text-[16px] leading-[24px] font-bold text-[#BD4800] uppercase tracking-wider">
-                  Profi-Tipp vom Veggie-Chef
-                </h4>
-                <p className="text-[16px] leading-[26px] text-text-main mt-1">
-                  {recipe.chefTip}
-                </p>
-              </div>
-            </div>
-          )}
         </section>
+        )}
+
+        {/* Smart Chef Tip Callout */}
+        {recipe.chefTip && (
+          <div className="p-4 bg-[#FDF6F0] border-l-4 border-[#BD4800] rounded-r-2xl flex items-start gap-3 mt-4">
+            <ChefHat className="w-5 h-5 text-[#BD4800] shrink-0 mt-0.5" />
+            <div>
+              <h4 id="chef-tip-heading" className="text-[16px] leading-[24px] font-bold text-[#BD4800] uppercase tracking-wider">
+                Profi-Tipp vom Veggie-Chef
+              </h4>
+              <p className="text-[16px] leading-[26px] text-text-main mt-1">
+                {recipe.chefTip}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* 9. PUBLIC REVIEWS SECTION & PRIVATE NOTE */}
         <section ref={reviewsSectionRef} className="space-y-4">
@@ -1748,15 +1937,13 @@ export const RecipeDetailPage: React.FC = () => {
                   type="button"
                   onClick={(e) => {
                     e.preventDefault();
-                    lockScrollAcrossUpdates(() => {
-                      setIsNoteViewOpen((prev) => {
-                        const next = !prev;
-                        if (next && !userNote.trim()) {
-                          setIsEditingNote(true);
-                          setDraftNote('');
-                        }
-                        return next;
-                      });
+                    setIsNoteViewOpen((prev) => {
+                      const next = !prev;
+                      if (next && !userNote.trim()) {
+                        setIsEditingNote(true);
+                        setDraftNote('');
+                      }
+                      return next;
                     });
                   }}
                   aria-label={isNoteViewOpen ? 'Bewertungen anzeigen' : 'Meine Notiz anzeigen'}
@@ -1781,9 +1968,7 @@ export const RecipeDetailPage: React.FC = () => {
                   onClick={(e) => {
                     e.preventDefault();
                     if (isNoteViewOpen) {
-                      lockScrollAcrossUpdates(() => {
-                        setIsNoteViewOpen(false);
-                      });
+                      setIsNoteViewOpen(false);
                     } else {
                       setEditingReview(null);
                       setIsWriteReviewOpen(true);
@@ -1826,10 +2011,7 @@ export const RecipeDetailPage: React.FC = () => {
             </div>
 
             {/* Dynamischer Wechsel: Bewertungen vs. Meine Notiz */}
-            <div
-              className="relative"
-              style={{ overflowAnchor: 'none' }}
-            >
+            <div className="relative">
               <AnimatePresence initial={false} mode="wait">
                 {isNoteViewOpen ? (
                   <motion.div
@@ -1862,10 +2044,8 @@ export const RecipeDetailPage: React.FC = () => {
                             note={userNote}
                             updatedAt={noteUpdatedAt}
                             onEdit={() => {
-                              lockScrollAcrossUpdates(() => {
-                                setDraftNote(userNote);
-                                setIsEditingNote(true);
-                              });
+                              setDraftNote(userNote);
+                              setIsEditingNote(true);
                             }}
                             onDelete={handleDeleteNote}
                           />
@@ -1931,22 +2111,64 @@ export const RecipeDetailPage: React.FC = () => {
                           updatedAt={noteUpdatedAt}
                           isPinnedInReviews={true}
                           onEdit={() => {
-                            lockScrollAcrossUpdates(() => {
-                              setIsNoteViewOpen(true);
-                              setIsEditingNote(true);
-                              setDraftNote(userNote);
-                            });
+                            setIsNoteViewOpen(true);
+                            setIsEditingNote(true);
+                            setDraftNote(userNote);
                           }}
                           onDelete={handleDeleteNote}
                         />
                       </div>
                     )}
 
-                    {/* Die neuesten 3 Bewertungen */}
-                    {recipeReviews.length === 0 ? (
+                    {/* Eigene reine Sterne-Bewertung (ohne Textkommentar) mit Rückgängig-Button */}
+                    {userStarRating !== null && !recipeReviews.filter((r) => r.text && r.text.trim().length > 0).some((r) => r.isOwn) && (
+                      <div className="p-3.5 sm:p-4 rounded-2xl bg-card border border-accent/30 bg-accent-tint/30 flex items-center justify-between gap-3 shadow-2xs">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-accent text-on-accent flex items-center justify-center shrink-0">
+                            <Star className="w-5 h-5 fill-current" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm sm:text-base font-bold text-text-main">
+                                Deine Bewertung: {userStarRating} von 5 Sternen
+                              </span>
+                              <div className="flex items-center gap-0.5 shrink-0" aria-label={`${userStarRating} von 5 Sternen`}>
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <Star
+                                    key={s}
+                                    className={`w-3.5 h-3.5 ${
+                                      s <= userStarRating
+                                        ? 'fill-[#E67E22] text-[#E67E22]'
+                                        : 'fill-border text-border'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <p className="text-xs text-text-muted mt-0.5">
+                              Einfluss in die Gesamtwertung erfasst (ohne Kommentar).
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleUndoStarRating}
+                          aria-label="Bewertung rückgängig machen"
+                          className="h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl border border-border bg-surface hover:bg-card text-text-main font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer touch-manipulation shrink-0 shadow-2xs"
+                        >
+                          <RotateCcw className="w-4 h-4 text-[#C0392B]" />
+                          <span>Rückgängig machen</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Die neuesten schriftlichen Kommentare */}
+                    {recipeReviews.filter((r) => r.text && r.text.trim().length > 0).length === 0 ? (
                       <div className="text-center py-6 px-4 space-y-2">
                         <p className="text-base font-medium text-text-muted">
-                          Noch keine öffentlichen Bewertungen für dieses Rezept.
+                          {userStarRating !== null
+                            ? 'Noch keine schriftlichen Kommentare für dieses Rezept.'
+                            : 'Noch keine öffentlichen Bewertungen für dieses Rezept.'}
                         </p>
                         <p className="text-xs text-text-muted">
                           Koche es nach und teile deine Erfahrung als Erste/r!
@@ -1954,18 +2176,21 @@ export const RecipeDetailPage: React.FC = () => {
                       </div>
                     ) : (
                       <div className="space-y-2.5">
-                        {recipeReviews.slice(0, 3).map((review) => (
-                          <ReviewCard
-                            key={review.id}
-                            review={review}
-                            isHelpful={helpfulSet.has(review.id)}
-                            isUnhelpful={unhelpfulSet.has(review.id)}
-                            onToggleHelpful={handleToggleHelpful}
-                            onToggleUnhelpful={handleToggleUnhelpful}
-                            onEdit={handleEditReview}
-                            onDelete={handleDeleteReview}
-                          />
-                        ))}
+                        {recipeReviews
+                          .filter((r) => r.text && r.text.trim().length > 0)
+                          .slice(0, 3)
+                          .map((review) => (
+                            <ReviewCard
+                              key={review.id}
+                              review={review}
+                              isHelpful={helpfulSet.has(review.id)}
+                              isUnhelpful={unhelpfulSet.has(review.id)}
+                              onToggleHelpful={handleToggleHelpful}
+                              onToggleUnhelpful={handleToggleUnhelpful}
+                              onEdit={handleEditReview}
+                              onDelete={handleDeleteReview}
+                            />
+                          ))}
                       </div>
                     )}
 
@@ -1989,54 +2214,25 @@ export const RecipeDetailPage: React.FC = () => {
       </main>
 
       {/* 10. EXCLUSIVE PRIMARY CTA IN PERSISTENT STICKY BOTTOM BAR */}
-      <aside
-        aria-label="Koch-Modus Schnellzugriff"
-        className={`fixed ${hasBottomTimer ? 'bottom-16 sm:bottom-18' : 'bottom-0'} inset-x-0 z-30 pointer-events-none md:pointer-events-auto bg-gradient-to-t from-[var(--bg-page)] via-[var(--bg-page)]/90 to-transparent pt-6 pb-[max(6px,env(safe-area-inset-bottom))] px-4 md:bg-card/95 md:backdrop-blur-md md:border-t md:border-border md:px-4 md:py-3 md:shadow-[0_-4px_20px_rgba(0,0,0,0.06)] transition-all duration-200`}
-      >
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 sm:gap-4 pointer-events-auto">
-          {/* Quick portions stepper in sticky bar: hidden on mobile (<768px), visible on md+ */}
-          <div className="hidden md:flex items-center gap-2">
-            <div className="inline-flex items-center bg-surface border border-border rounded-xl p-1 h-11 min-h-[44px]">
-              <button
-                id="sticky-servings-decrease-btn"
-                type="button"
-                onClick={() => setServings(Math.max(1, servings - 1))}
-                disabled={servings <= 1}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
-                title="Portion verringern"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-              <div className="h-5 w-[1px] bg-border shrink-0" />
-              <span className="px-2.5 sm:px-3 text-[16px] font-bold text-[#57534d] tabular-nums min-w-[65px] sm:min-w-[95px] text-center select-none whitespace-nowrap">
-                <span className="inline sm:hidden">{servings} Port.</span>
-                <span className="hidden sm:inline">{servings} {servings === 1 ? 'Portion' : 'Portionen'}</span>
-              </span>
-              <div className="h-5 w-[1px] bg-border shrink-0" />
-              <button
-                id="sticky-servings-increase-btn"
-                type="button"
-                onClick={() => setServings(Math.min(24, servings + 1))}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
-                title="Portion erhöhen"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
+      {recipe.steps && recipe.steps.length > 0 && (
+        <aside
+          aria-label="Koch-Modus Schnellzugriff"
+          className={`fixed ${hasBottomTimer ? 'bottom-16 sm:bottom-18' : 'bottom-0'} inset-x-0 z-30 pointer-events-none md:pointer-events-auto bg-gradient-to-t from-[var(--bg-page)] via-[var(--bg-page)]/90 to-transparent pt-6 pb-[max(6px,env(safe-area-inset-bottom))] px-4 md:bg-card/95 md:backdrop-blur-md md:border-t md:border-border md:px-4 md:py-2.5 md:shadow-[0_-4px_20px_rgba(0,0,0,0.06)] transition-all duration-200`}
+        >
+          <div className="max-w-md mx-auto flex items-center justify-center pointer-events-auto">
+            {/* Primary CTA: Start Cooking Mode (Full width on mobile, sleek & compact on md+) */}
+            <button
+              id="sticky-start-cooking-mode-btn"
+              type="button"
+              onClick={handleLaunchCookingMode}
+              className="w-full max-w-sm h-14 min-h-[56px] md:h-12 md:min-h-[48px] flex items-center justify-center gap-2.5 px-6 rounded-xl text-base font-bold bg-accent hover:bg-accent-hover active:bg-[#34553C] text-on-accent shadow-md transition-all cursor-pointer active:scale-[0.99] touch-manipulation"
+            >
+              <Play className="w-4 h-4 fill-on-accent" />
+              <span>Koch-Modus starten</span>
+            </button>
           </div>
-
-          {/* Primary CTA: Start Cooking Mode (Full width & 56px on mobile, max-w-sm on md+) */}
-          <button
-            id="sticky-start-cooking-mode-btn"
-            type="button"
-            onClick={handleLaunchCookingMode}
-            className="w-full md:flex-1 md:max-w-sm h-14 min-h-[56px] md:h-12 md:min-h-[48px] flex items-center justify-center gap-2.5 px-6 rounded-xl text-base font-bold bg-accent hover:bg-accent-hover active:bg-[#34553C] text-on-accent shadow-md transition-all cursor-pointer active:scale-[0.99] touch-manipulation"
-          >
-            <Play className="w-4 h-4 fill-on-accent" />
-            <span>Koch-Modus starten</span>
-          </button>
-        </div>
-      </aside>
+        </aside>
+      )}
 
       {/* MODALS */}
       {/* 1. Eco Impact Modal */}
@@ -2184,6 +2380,50 @@ export const RecipeDetailPage: React.FC = () => {
                 className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-on-accent bg-accent hover:bg-accent-hover shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
               >
                 In Statistik speichern
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal: Duplicate Shopping List Addition */}
+      {showConfirmDuplicateShopping && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowConfirmDuplicateShopping(false)}
+          className="fixed inset-0 z-60 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-card rounded-2xl max-w-xs w-full p-5 space-y-3.5 border border-border shadow-xl text-center animate-in zoom-in-95 duration-150"
+          >
+            <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center mx-auto">
+              <ShoppingCart className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-base font-bold text-text-main">Bereits auf der Liste</h4>
+              <p className="text-sm text-text-muted leading-relaxed">
+                Dieses Rezept ist bereits auf der Einkaufsliste. Nochmal hinzufügen?
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowConfirmDuplicateShopping(false)}
+                className="flex-1 min-h-[44px] h-11 py-2.5 rounded-xl border border-border text-sm font-semibold text-text-muted hover:bg-surface transition-colors cursor-pointer active:scale-95 flex items-center justify-center"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowConfirmDuplicateShopping(false);
+                  executeAddShopping();
+                }}
+                className="flex-1 min-h-[44px] h-11 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-sm font-bold shadow-2xs transition-all cursor-pointer active:scale-95 flex items-center justify-center"
+              >
+                Hinzufügen
               </button>
             </div>
           </div>

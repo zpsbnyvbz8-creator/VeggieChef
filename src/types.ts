@@ -77,6 +77,8 @@ export interface Recipe {
   servings: number;
   rating: number;
   reviewCount: number;
+  baseRating?: number;
+  baseReviewCount?: number;
   nutrients: RecipeNutrients;
   caloriesPerServing?: number;
   tags: string[];

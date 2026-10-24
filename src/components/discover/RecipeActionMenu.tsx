@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { MoreHorizontal, CalendarPlus, ShoppingCart, Copy, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { MoreHorizontal, CalendarPlus, ShoppingCart, Copy, ThumbsDown, ThumbsUp, Check } from 'lucide-react';
 import { Recipe } from '../../types';
 import { generateRecipeIngredientsText, safeCopyToClipboard } from '../../utils/helpers';
 import { useRecipes } from '../../context/RecipeContext';
@@ -15,13 +15,17 @@ import { useToast } from '../../context/ToastContext';
 export function useRecipeActions(recipe: Recipe) {
   const { dislikedIds, toggleDislike } = useRecipes();
   const { addToShoppingList } = useShopping();
-  const { addToMealPlan } = usePlanner();
+  const { addToMealPlan, weeks, mealPlan } = usePlanner();
   const { showToast } = useToast();
 
   const isDisliked = dislikedIds.includes(recipe.id);
+  const isPlanned = (weeks && weeks.length > 0 ? weeks.flatMap((w) => w.days) : (mealPlan || [])).some(
+    (d) => d.lunch?.recipeId === recipe.id || d.dinner?.recipeId === recipe.id
+  );
 
   return {
     isDisliked,
+    isPlanned,
     addToPlan: () => addToMealPlan(recipe),
     addToList: () => {
       addToShoppingList(recipe, recipe.servings);
@@ -102,7 +106,12 @@ export const RecipeActionMenu: React.FC<RecipeActionMenuProps> = ({ recipe, vari
   };
 
   const items = [
-    { id: 'plan', icon: CalendarPlus, label: 'Zum Wochenplaner', onClick: actions.addToPlan },
+    {
+      id: 'plan',
+      icon: actions.isPlanned ? Check : CalendarPlus,
+      label: actions.isPlanned ? 'Im Wochenplan eingetragen' : 'Zum Wochenplaner',
+      onClick: actions.addToPlan,
+    },
     { id: 'list', icon: ShoppingCart, label: 'Auf die Einkaufsliste', onClick: actions.addToList },
     { id: 'copy', icon: Copy, label: 'Zutaten kopieren', onClick: actions.copyIngredients },
     {

@@ -23,6 +23,7 @@ const formatRating = (recipe: Recipe): string | null => {
 interface RecipeCardListRowProps {
   recipe: Recipe;
   index?: number;
+  className?: string;
 }
 
 /**
@@ -31,7 +32,7 @@ interface RecipeCardListRowProps {
  * (bewusst ohne Beschreibung). Herz-Button identisch zur Einheitskarte
  * (48/40/22/8px).
  */
-export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe, index }) => {
+export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe, index, className }) => {
   const { favorites, toggleFavorite, dislikedIds } = useRecipes();
   const isFavorite = favorites.includes(recipe.id);
   const isDisliked = dislikedIds.includes(recipe.id);
@@ -52,10 +53,12 @@ export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe, in
     <article
       id={`recipe-card-${recipe.id}`}
       style={cardStyle}
-      className={`group relative flex w-full h-full bg-card rounded-2xl border overflow-hidden transition-all duration-300 vc-card-stagger ${
-        isDisliked
-          ? 'border-border opacity-70 hover:opacity-100'
-          : 'border-border shadow-xs hover:border-accent/40 hover:shadow-md'
+      className={`group relative flex w-full h-full rounded-2xl border overflow-hidden transition-all duration-300 vc-card-stagger ${
+        className
+          ? className
+          : isDisliked
+          ? 'bg-card border-border opacity-70 hover:opacity-100'
+          : 'bg-card border-border shadow-xs hover:border-accent/40 hover:shadow-md'
       }`}
     >
       {/* Bild links: quadratisch auf Mobile (110px), 4:3 auf grösseren Screens */}

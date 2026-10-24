@@ -34,12 +34,24 @@ export function unlockBodyScroll() {
   if (typeof document === 'undefined') return;
   lockCount = Math.max(0, lockCount - 1);
   if (lockCount === 0) {
-    document.body.style.overflow = originalBodyOverflow;
-    document.documentElement.style.overflow = originalHtmlOverflow;
-    document.body.style.overscrollBehavior = originalBodyOverscroll;
-    document.documentElement.style.overscrollBehavior = originalHtmlOverscroll;
-    document.body.style.paddingRight = originalBodyPaddingRight;
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    document.body.style.overscrollBehavior = '';
+    document.documentElement.style.overscrollBehavior = '';
+    document.body.style.paddingRight = '';
+    document.body.style.touchAction = '';
   }
+}
+
+export function forceUnlockBodyScroll() {
+  if (typeof document === 'undefined') return;
+  lockCount = 0;
+  document.body.style.overflow = '';
+  document.documentElement.style.overflow = '';
+  document.body.style.overscrollBehavior = '';
+  document.documentElement.style.overscrollBehavior = '';
+  document.body.style.paddingRight = '';
+  document.body.style.touchAction = '';
 }
 
 export function useLockBodyScroll(isLocked: boolean = true) {

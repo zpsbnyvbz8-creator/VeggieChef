@@ -3,18 +3,15 @@ import {
   X,
   Sparkles,
   Camera,
-  Clock,
   Check,
   ChefHat,
   AlertCircle,
   Trash2,
-  Image as ImageIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Recipe, RecipeCategory, RecipeIngredient, RecipeStep, IngredientCategory } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 import { useRecipes } from '../context/RecipeContext';
-import { HybridPortionStepper } from './HybridPortionStepper';
 import { CloseButton } from './ui/CloseButton';
 
 interface AddRecipeModalProps {
@@ -354,6 +351,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
     try {
       let created: Recipe | null = null;
+      let apiErrorMessage: string | null = null;
 
       // Case 1: Photo attached -> use scan endpoint with user text as notes
       if (attachedImageBase64) {
@@ -364,28 +362,24 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
             body: JSON.stringify({
               imageBase64: attachedImageBase64,
               userNotes: textTrimmed,
-              isVegan: true
-            })
+              isVegan: true,
+            }),
           });
 
-          const contentType = res.headers.get('content-type') || '';
-          if (res.ok && contentType.includes('application/json')) {
-            const data = await res.json();
-            if (data && data.success && data.recipe) {
-              created = data.recipe;
-              // Ensure image is preserved
-              if (created && !created.image) {
-                created.image = attachedImageBase64;
-              }
+          const data = await res.json().catch(() => null);
+          if (res.ok && data?.success && data?.recipe) {
+            created = data.recipe;
+            if (!created.image) {
+              created.image = attachedImageBase64;
             }
+          } else {
+            apiErrorMessage = data?.error || 'Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.';
           }
-        } catch (scanErr) {
-          console.warn('API /api/ai/scan-recipe unavailable, falling back:', scanErr);
+        } catch {
+          apiErrorMessage = 'Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.';
         }
-      }
-
-      // Case 2: Only text or photo scan failed -> call recipe creation endpoint
-      if (!created && textTrimmed) {
+      } else if (textTrimmed) {
+        // Case 2: Only text -> call recipe creation endpoint
         try {
           const titleCandidate = extractTitleCandidate(textTrimmed);
           const res = await fetch('/api/ai/create-recipe', {
@@ -394,45 +388,36 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
             body: JSON.stringify({
               prompt: textTrimmed,
               title: titleCandidate,
-              isVegan: true
-            })
+              isVegan: true,
+            }),
           });
 
-          const contentType = res.headers.get('content-type') || '';
-          if (res.ok && contentType.includes('application/json')) {
-            const data = await res.json();
-            if (data && data.success && data.recipe) {
-              created = data.recipe;
-              if (attachedImageBase64 && created) {
-                created.image = attachedImageBase64;
-              }
+          const data = await res.json().catch(() => null);
+          if (res.ok && data?.success && data?.recipe) {
+            created = data.recipe;
+            if (attachedImageBase64 && created) {
+              created.image = attachedImageBase64;
             }
+          } else {
+            apiErrorMessage = data?.error || 'Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.';
           }
-        } catch (createErr) {
-          console.warn('API /api/ai/create-recipe unavailable, falling back:', createErr);
+        } catch {
+          apiErrorMessage = 'Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.';
         }
       }
 
-      // Case 3: Offline / Local Deterministic Parser Fallback
-      if (!created) {
-        created = parseRecipeFromDescription(
-          textTrimmed || 'Rezept aus Fotoaufnahme',
-          attachedImageBase64
-        );
-      }
-
       if (created) {
-        // Carry attached photo if user uploaded one
         if (attachedImageBase64 && !created.image) {
           created.image = attachedImageBase64;
         }
         setPreviewRecipe(created);
+        setErrorMsg(null);
       } else {
-        throw new Error('Das Rezept konnte nicht erstellt werden. Bitte versuche es erneut.');
+        setErrorMsg(apiErrorMessage || 'Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.');
       }
     } catch (err: any) {
       console.error('Error in handleCreateRecipe:', err);
-      setErrorMsg(err?.message || 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
+      setErrorMsg('Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.');
     } finally {
       setIsSubmitting(false);
     }
@@ -507,321 +492,248 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                 </div>
               )}
 
-              {/* LOADING SKELETON */}
-              {isSubmitting ? (
-                <div className="py-12 px-4 flex flex-col items-center justify-center space-y-6 text-center animate-in fade-in duration-200">
-                  <div className="relative">
-                    <div className="w-16 h-16 rounded-2xl bg-accent-tint border border-accent/20 flex items-center justify-center text-accent animate-pulse">
-                      <Sparkles className="w-8 h-8" />
+              <AnimatePresence mode="wait" initial={false}>
+                {isSubmitting ? (
+                  <motion.div
+                    key="add-recipe-submitting"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.18 }}
+                    className="py-12 px-4 flex flex-col items-center justify-center space-y-6 text-center"
+                  >
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-2xl bg-accent-tint border border-accent/20 flex items-center justify-center text-accent animate-pulse">
+                        <Sparkles className="w-8 h-8" />
+                      </div>
+                      <div className="absolute -inset-1 rounded-2xl border-2 border-accent/30 animate-ping pointer-events-none" />
                     </div>
-                    <div className="absolute -inset-1 rounded-2xl border-2 border-accent/30 animate-ping pointer-events-none" />
-                  </div>
 
-                  <div className="space-y-1.5 max-w-md">
-                    <h3 className="text-lg font-bold text-text-main">
-                      Rezept wird analysiert & strukturiert...
-                    </h3>
-                    <p className="text-xs text-text-muted">
-                      Mengen, Zutaten und verständliche Schritte werden automatisch für dich aufbereitet.
-                    </p>
-                  </div>
+                    <div className="space-y-1.5 max-w-md">
+                      <h3 className="text-lg font-bold text-text-main">
+                        Rezept wird analysiert & strukturiert...
+                      </h3>
+                      <p className="text-xs text-text-muted">
+                        Titel, Beschreibung und Zutaten mit Mengen werden für dich aufbereitet.
+                      </p>
+                    </div>
 
-                  <div className="w-full max-w-md p-4 bg-surface rounded-2xl border border-border space-y-3.5 text-left">
-                    <div className="h-5 bg-accent/20 rounded-md w-3/4 animate-pulse" />
-                    <div className="h-3.5 bg-border rounded-md w-1/2 animate-pulse" />
-                    <div className="grid grid-cols-4 gap-2 pt-1">
-                      <div className="h-10 bg-card rounded-xl border border-border animate-pulse" />
-                      <div className="h-10 bg-card rounded-xl border border-border animate-pulse" />
-                      <div className="h-10 bg-card rounded-xl border border-border animate-pulse" />
-                      <div className="h-10 bg-card rounded-xl border border-border animate-pulse" />
-                    </div>
-                    <div className="space-y-2 pt-1">
-                      <div className="h-8 bg-card rounded-lg border border-border animate-pulse" />
-                      <div className="h-8 bg-card rounded-lg border border-border animate-pulse" />
-                      <div className="h-8 bg-card rounded-lg border border-border animate-pulse" />
-                    </div>
-                  </div>
-                </div>
-              ) : previewRecipe ? (
-                /* PREVIEW & REVIEW VIEW */
-                <div className="space-y-6">
-                  {/* Image / Header Banner */}
-                  {previewRecipe.image ? (
-                    <div className="relative rounded-2xl overflow-hidden border border-border aspect-21/9 bg-surface">
-                      <img
-                        src={previewRecipe.image}
-                        alt={previewRecipe.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-5 text-white">
-                        <span className="text-xs bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full font-medium w-fit mb-2">
-                          {previewRecipe.category || 'Rezept'}
-                        </span>
-                        <h3 className="text-2xl font-bold leading-tight">
-                          {previewRecipe.title}
-                        </h3>
-                        {previewRecipe.subtitle && (
-                          <p className="text-sm text-white/80 line-clamp-1 mt-1">
-                            {previewRecipe.subtitle}
-                          </p>
-                        )}
+                    <div className="w-full max-w-md p-4 bg-surface rounded-2xl border border-border space-y-3 text-left">
+                      <div className="h-5 bg-accent/20 rounded-md w-3/4 animate-pulse" />
+                      <div className="h-3.5 bg-border rounded-md w-1/2 animate-pulse" />
+                      <div className="space-y-2 pt-1">
+                        <div className="h-8 bg-card rounded-lg border border-border animate-pulse" />
+                        <div className="h-8 bg-card rounded-lg border border-border animate-pulse" />
+                        <div className="h-8 bg-card rounded-lg border border-border animate-pulse" />
                       </div>
                     </div>
-                  ) : (
-                    <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6 flex flex-col justify-between">
+                  </motion.div>
+                ) : previewRecipe ? (
+                  /* DEUTLICH VERKÜRZTE REZEPT-VORSCHAU: NUR TITEL, BESCHREIBUNG & ZUTATEN (UNGEFÄHRE MENGE) */
+                  <motion.div
+                    key="add-recipe-preview"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.18 }}
+                    className="space-y-5"
+                  >
+                    {/* Titel & Beschreibung */}
+                    <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6 space-y-3">
+                      {previewRecipe.image ? (
+                        <div className="relative rounded-xl overflow-hidden border border-border aspect-21/9 bg-card max-h-48">
+                          <img
+                            src={previewRecipe.image}
+                            alt={previewRecipe.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : null}
+
+                      <div>
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-accent-tint text-accent border border-accent/20 inline-block mb-2">
+                          {previewRecipe.category || 'Rezept'}
+                        </span>
+                        <h3 className="text-xl sm:text-2xl font-bold text-text-main leading-tight">
+                          {previewRecipe.title}
+                        </h3>
+                        {previewRecipe.subtitle ? (
+                          <p className="text-sm sm:text-base text-text-muted leading-relaxed mt-1.5">
+                            {previewRecipe.subtitle}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {/* Zutaten mit ungefähren Mengen */}
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-accent-tint text-accent border border-accent/20">
-                          {previewRecipe.category || 'Rezept'}
+                        <h4 className="text-sm sm:text-base font-bold text-text-main">
+                          Zutaten <span className="text-xs font-normal text-text-muted">(ungefähre Mengen)</span>
+                        </h4>
+                        <span className="text-xs text-text-muted font-medium">
+                          {previewRecipe.ingredients.length} {previewRecipe.ingredients.length === 1 ? 'Zutat' : 'Zutaten'}
                         </span>
-                        <div className="w-8 h-8 rounded-xl bg-card border border-border flex items-center justify-center text-accent">
-                          <ChefHat className="w-4 h-4" />
-                        </div>
                       </div>
-                      <div className="mt-3">
-                        <h3 className="text-2xl font-bold text-text-main leading-tight">
-                          {previewRecipe.title}
-                        </h3>
-                        {previewRecipe.subtitle && (
-                          <p className="text-sm text-text-muted line-clamp-2 mt-1">
-                            {previewRecipe.subtitle}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Nutrients Row */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 bg-surface rounded-2xl border border-border">
-                    <div className="text-center p-2 bg-card rounded-xl border border-border">
-                      <span className="text-[11px] text-text-muted font-medium block">Kalorien</span>
-                      <span className="text-base font-bold text-text-main">
-                        {previewRecipe.nutrients?.calories > 0 ? `${previewRecipe.nutrients.calories} kcal` : '–'}
-                      </span>
-                    </div>
-                    <div className="text-center p-2 bg-card rounded-xl border border-border">
-                      <span className="text-[11px] text-text-muted font-medium block">Protein</span>
-                      <span className="text-base font-bold text-accent">
-                        {previewRecipe.nutrients?.protein > 0 ? `${previewRecipe.nutrients.protein} g` : '–'}
-                      </span>
-                    </div>
-                    <div className="text-center p-2 bg-card rounded-xl border border-border">
-                      <span className="text-[11px] text-text-muted font-medium block">Kochzeit</span>
-                      <span className="text-base font-bold text-text-main">
-                        {previewRecipe.totalTimeMinutes ? `${previewRecipe.totalTimeMinutes} Min.` : '–'}
-                      </span>
-                    </div>
-                    <div className="text-center p-2 bg-card rounded-xl border border-border">
-                      <span className="text-[11px] text-text-muted font-medium block">Portionen</span>
-                      <span className="text-base font-bold text-text-main">
-                        {previewRecipe.servings || 2} Pers.
-                      </span>
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {previewRecipe.ingredients.map((ing, idx) => {
+                          const rawAmount = ing.amount !== undefined && ing.amount !== null ? String(ing.amount).trim() : '';
+                          const unit = ing.unit ? ing.unit.trim() : '';
+                          let formattedAmount = '';
 
-                  {/* Portion Adjuster in Preview */}
-                  <div className="p-3.5 bg-surface border border-border rounded-2xl space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-text-main uppercase tracking-wide">
-                        Portionen anpassen
-                      </span>
-                      <span className="text-xs text-text-muted">
-                        {previewRecipe.servings || 2} {(previewRecipe.servings || 2) === 1 ? 'Portion' : 'Portionen'}
-                      </span>
-                    </div>
-                    <HybridPortionStepper
-                      value={previewRecipe.servings || 2}
-                      onChange={(newServings) => {
-                        setPreviewRecipe((prev) => prev ? { ...prev, servings: newServings } : null);
-                      }}
-                      idPrefix="preview-recipe-servings"
-                    />
-                  </div>
+                          if (rawAmount) {
+                            if (rawAmount.toLowerCase().startsWith('ca.') || rawAmount.toLowerCase().startsWith('etwa')) {
+                              formattedAmount = `${rawAmount} ${unit}`.trim();
+                            } else {
+                              formattedAmount = `ca. ${rawAmount} ${unit}`.trim();
+                            }
+                          } else if (unit) {
+                            formattedAmount = `ca. 1 ${unit}`;
+                          } else {
+                            formattedAmount = 'nach Geschmack';
+                          }
 
-                  {/* Ingredients */}
-                  <div className="space-y-2.5">
-                    <h4 className="text-sm font-bold text-text-main flex items-center justify-between">
-                      <span>Zutaten ({previewRecipe.ingredients.length})</span>
-                      <span className="text-xs text-text-muted font-normal">
-                        abgestimmt für {previewRecipe.servings || 2} Portionen
-                      </span>
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {previewRecipe.ingredients.map((ing, idx) => (
-                        <div
-                          key={idx}
-                          className="p-2.5 bg-surface border border-border rounded-xl flex items-center justify-between text-sm"
-                        >
-                          <span className="font-medium text-text-main">{ing.name}</span>
-                          {(ing.amount || ing.unit) ? (
-                            <span className="text-accent font-semibold bg-card px-2 py-0.5 rounded-md border border-border">
-                              {ing.amount ? `${ing.amount} ` : ''}{ing.unit || ''}
-                            </span>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Steps */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-bold text-text-main">
-                      Zubereitungsschritte ({previewRecipe.steps.length})
-                    </h4>
-                    <div className="space-y-2.5">
-                      {previewRecipe.steps.map((step, idx) => (
-                        <div
-                          key={idx}
-                          className="p-3.5 bg-card border border-border rounded-xl space-y-1.5 shadow-2xs"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="w-5 h-5 rounded-full bg-accent text-white text-[11px] font-bold flex items-center justify-center">
-                                {step.stepNumber || idx + 1}
-                              </span>
-                              <span className="text-sm font-bold text-text-main">
-                                {step.title || `Schritt ${idx + 1}`}
+                          return (
+                            <div
+                              key={idx}
+                              className="p-3 bg-surface border border-border rounded-xl flex items-center justify-between text-sm gap-2"
+                            >
+                              <span className="font-medium text-text-main truncate">{ing.name}</span>
+                              <span className="text-accent font-semibold bg-card px-2.5 py-1 rounded-lg border border-border shrink-0 text-xs sm:text-sm">
+                                {formattedAmount}
                               </span>
                             </div>
-                            {step.timerMinutes ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded-md">
-                                <Clock className="w-3 h-3" />
-                                {step.timerMinutes} Min.
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="text-sm text-text-muted leading-relaxed pl-7">
-                            {step.text}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Chef Tip if available */}
-                  {previewRecipe.chefTip && (
-                    <div className="p-3.5 bg-accent-tint rounded-2xl border border-accent/20 text-sm text-text-main">
-                      <strong className="text-accent block mb-1">Tipp des Küchenchefs:</strong>
-                      {previewRecipe.chefTip}
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="pt-3 border-t border-border flex items-center justify-between gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewRecipe(null)}
-                      className="min-h-[48px] h-12 px-5 py-2.5 rounded-xl border border-border hover:bg-surface text-base font-semibold text-text-main transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-                    >
-                      Zurück & Anpassen
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleConfirmPreview}
-                      className="min-h-[48px] h-12 px-6 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-base font-bold shadow-md shadow-accent/20 flex items-center justify-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95"
-                    >
-                      <Check className="w-5 h-5" />
-                      <span>Ins Rezeptbuch speichern</span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                /* REFORMED SINGLE-TAB VIEW: BESCHREIBE DEIN GERICHT */
-                <div className="space-y-5 animate-in fade-in duration-150">
-                  {/* Text Input Field */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-text-main block">
-                      Beschreibe dein Gericht
-                    </label>
-
-                    <textarea
-                      value={recipeText}
-                      onChange={(e) => setRecipeText(e.target.value)}
-                      placeholder="Rezept, Zutaten oder Idee eingeben..."
-                      className="w-full min-h-[160px] sm:min-h-[200px] p-4 rounded-2xl bg-surface border border-border focus:border-accent text-base text-text-main resize-y focus:outline-none leading-relaxed transition-colors placeholder:text-text-muted/60"
-                    />
-                  </div>
-
-                  {/* Photo Attachment Section */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-text-main uppercase tracking-wider block">
-                      Foto beifügen
-                    </label>
-
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleImageFileChange}
-                      accept="image/*"
-                      className="hidden"
-                    />
-
-                    {attachedImageBase64 ? (
-                      /* Attached image preview card */
-                      <div className="relative rounded-2xl border border-border bg-surface p-3 sm:p-4 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <img
-                            src={attachedImageBase64}
-                            alt="Angehängtes Foto"
-                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-border shadow-2xs shrink-0"
-                          />
-                          <div className="min-w-0">
-                            <span className="inline-flex items-center gap-1 text-xs font-bold text-accent bg-accent-tint px-2.5 py-0.5 rounded-full mb-1">
-                              <Check className="w-3.5 h-3.5" /> Foto beigefügt
-                            </span>
-                            <p className="text-xs text-text-muted truncate">
-                              Wird für die Rezeptanalyse & als Titelbild verwendet
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="h-12 min-h-[48px] px-4 rounded-xl border border-border bg-card hover:bg-surface text-sm font-semibold text-text-main transition-colors cursor-pointer touch-manipulation flex items-center justify-center"
-                          >
-                            Ändern
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setAttachedImageBase64(null)}
-                            className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl border border-border bg-card hover:bg-rose-50 text-text-muted hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer touch-manipulation"
-                            title="Foto entfernen"
-                            aria-label="Foto entfernen"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
+                          );
+                        })}
                       </div>
-                    ) : (
-                      /* Upload trigger button */
+                    </div>
+
+                    {/* Actions */}
+                    <div className="pt-3 border-t border-border flex items-center justify-between gap-3">
                       <button
                         type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full min-h-[48px] p-3.5 rounded-2xl border border-dashed border-border hover:border-accent/50 bg-surface hover:bg-card flex items-center justify-center gap-2.5 text-sm font-semibold text-text-main transition-all cursor-pointer touch-manipulation active:scale-98"
+                        onClick={() => setPreviewRecipe(null)}
+                        className="min-h-[48px] h-12 px-5 py-2.5 rounded-xl border border-border hover:bg-surface text-base font-semibold text-text-main transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
                       >
-                        <div className="w-8 h-8 rounded-xl bg-accent/10 text-accent flex items-center justify-center">
-                          <Camera className="w-4 h-4" />
-                        </div>
-                        <span>Foto aufnehmen oder hochladen</span>
+                        Zurück & Anpassen
                       </button>
-                    )}
-                  </div>
+                      <button
+                        type="button"
+                        onClick={handleConfirmPreview}
+                        className="min-h-[48px] h-12 px-6 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-base font-bold shadow-md shadow-accent/20 flex items-center justify-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95"
+                      >
+                        <Check className="w-5 h-5" />
+                        <span>Ins Rezeptbuch speichern</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                ) : (
+                  /* GERICHT HINZUFÜGEN EINGABE-ANSICHT */
+                  <motion.div
+                    key="add-recipe-input"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.18 }}
+                    className="space-y-5"
+                  >
+                    {/* Text Input Field */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-text-main block">
+                        Beschreibe dein Gericht
+                      </label>
 
-                  {/* Primary Submit Button */}
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      disabled={isSubmitting || (!recipeText.trim() && !attachedImageBase64)}
-                      onClick={handleCreateRecipe}
-                      className="w-full min-h-[48px] h-12 py-3 px-6 rounded-2xl bg-accent hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed text-white text-base font-bold shadow-md shadow-accent/20 flex items-center justify-center gap-2.5 transition-all cursor-pointer touch-manipulation active:scale-98"
-                    >
-                      <Sparkles className="w-5 h-5" />
-                      <span>Gericht erstellen</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+                      <textarea
+                        value={recipeText}
+                        onChange={(e) => setRecipeText(e.target.value)}
+                        placeholder="Rezept, Zutaten oder Idee eingeben..."
+                        className="w-full min-h-[160px] sm:min-h-[200px] p-4 rounded-2xl bg-surface border border-border focus:border-accent text-base text-text-main resize-y focus:outline-none leading-relaxed transition-colors placeholder:text-text-muted/60"
+                      />
+                    </div>
+
+                    {/* Photo Attachment Section */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-text-main uppercase tracking-wider block">
+                        Foto beifügen
+                      </label>
+
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageFileChange}
+                        accept="image/*"
+                        className="hidden"
+                      />
+
+                      {attachedImageBase64 ? (
+                        /* Attached image preview card */
+                        <div className="relative rounded-2xl border border-border bg-surface p-3 sm:p-4 flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <img
+                              src={attachedImageBase64}
+                              alt="Angehängtes Foto"
+                              className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-border shadow-2xs shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <span className="inline-flex items-center gap-1 text-xs font-bold text-accent bg-accent-tint px-2.5 py-0.5 rounded-full mb-1">
+                                <Check className="w-3.5 h-3.5" /> Foto beigefügt
+                              </span>
+                              <p className="text-xs text-text-muted truncate">
+                                Wird für die Rezeptanalyse & als Titelbild verwendet
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="h-12 min-h-[48px] px-4 rounded-xl border border-border bg-card hover:bg-surface text-sm font-semibold text-text-main transition-colors cursor-pointer touch-manipulation flex items-center justify-center"
+                            >
+                              Ändern
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAttachedImageBase64(null)}
+                              className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl border border-border bg-card hover:bg-rose-50 text-text-muted hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer touch-manipulation"
+                              title="Foto entfernen"
+                              aria-label="Foto entfernen"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Upload trigger button */
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-full min-h-[48px] p-3.5 rounded-2xl border border-dashed border-border hover:border-accent/50 bg-surface hover:bg-card flex items-center justify-center gap-2.5 text-sm font-semibold text-text-main transition-all cursor-pointer touch-manipulation active:scale-98"
+                        >
+                          <div className="w-8 h-8 rounded-xl bg-accent/10 text-accent flex items-center justify-center">
+                            <Camera className="w-4 h-4" />
+                          </div>
+                          <span>Foto aufnehmen oder hochladen</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Primary Submit Button */}
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        disabled={isSubmitting || (!recipeText.trim() && !attachedImageBase64)}
+                        onClick={handleCreateRecipe}
+                        className="w-full min-h-[48px] h-12 py-3 px-6 rounded-2xl bg-accent hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed text-white text-base font-bold shadow-md shadow-accent/20 flex items-center justify-center gap-2.5 transition-all cursor-pointer touch-manipulation active:scale-98"
+                      >
+                        <Sparkles className="w-5 h-5" />
+                        <span>Gericht erstellen</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         </motion.div>
