@@ -80,12 +80,27 @@ export function formatFractionOrSmartQuantity(value: number, unit: string): stri
 
 // Format ingredient text with scaled portion amount and smart kitchen fractions
 export function formatIngredientAmount(ingredient: RecipeIngredient, originalServings: number, currentServings: number): string {
-  if (typeof ingredient.amount === 'number') {
-    const scaled = (ingredient.amount / originalServings) * currentServings;
-    const formatted = formatFractionOrSmartQuantity(scaled, ingredient.unit);
-    return `${formatted} ${ingredient.unit}`.trim();
+  const raw = ingredient.amount;
+  const parsedNum =
+    typeof raw === 'number'
+      ? raw
+      : typeof raw === 'string'
+      ? parseFloat(raw.replace(',', '.'))
+      : NaN;
+
+  const validOriginal = originalServings > 0 ? originalServings : 2;
+  const validCurrent = currentServings > 0 ? currentServings : 2;
+
+  if (!isNaN(parsedNum) && parsedNum > 0) {
+    const scaled = (parsedNum / validOriginal) * validCurrent;
+    const formatted = formatFractionOrSmartQuantity(scaled, ingredient.unit || '');
+    return `${formatted} ${ingredient.unit || ''}`.trim();
   }
-  return `${ingredient.amount} ${ingredient.unit}`.trim();
+
+  if (raw !== undefined && raw !== null && String(raw).trim() !== '') {
+    return `${raw} ${ingredient.unit || ''}`.trim();
+  }
+  return ingredient.unit || '';
 }
 
 // Generate ready-to-share plain text shopping list for a recipe

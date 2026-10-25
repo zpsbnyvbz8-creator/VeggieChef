@@ -52,10 +52,13 @@ aiRouter.post("/substitute", async (req: Request, res: Response) => {
   try {
     const ai = getGenAI();
     if (!ai) {
-      return res.status(503).json({
-        success: false,
-        error: "KI-Funktion gerade nicht verfügbar",
+      const fallback = buildFallbackSubstitutions({
+        recipeTitle,
+        missingIngredients,
+        availableIngredients,
+        userWish,
       });
+      return res.json({ success: true, ...fallback, isFallback: true });
     }
 
     const prompt = `Du bist ein erfahrener vegetarischer & veganer Sternekoch und Ernährungswissenschaftler.
@@ -79,7 +82,7 @@ Für jede Alternative:
 Gib deine Antwort als valides JSON zurück.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -102,10 +105,17 @@ Gib deine Antwort als valides JSON zurück.`;
     res.json({ success: true, ...parsed });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    logAiEvent("warn", "/api/ai/substitute", "Substitute failed", { error: errMsg });
-    res.status(503).json({
-      success: false,
-      error: "KI-Funktion gerade nicht verfügbar",
+    logAiEvent("warn", "/api/ai/substitute", "Substitute AI call failed, using fallback", { error: errMsg });
+    const fallback = buildFallbackSubstitutions({
+      recipeTitle,
+      missingIngredients,
+      availableIngredients,
+      userWish,
+    });
+    res.json({
+      success: true,
+      ...fallback,
+      isFallback: true,
     });
   }
 });
@@ -197,14 +207,14 @@ ${additionalInstruction}
 Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: structuredRecipeIdeaSchema,
         temperature: 0.7,
       },
-      timeoutMs: 40000,
+      timeoutMs: 30000,
     });
 
     const parsed = safeExtractJson(response.text, null);
@@ -220,11 +230,17 @@ Antworte als strukturiertes JSON-Objekt.`;
     res.json({ success: true, idea: parsed });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    logAiEvent("warn", "/api/ai/fridge-cook-idea", "All AI models failed for fridge-cook-idea", { error: errMsg });
-    res.status(503).json({
-      success: false,
-      error: "Die KI-Server sind momentan stark ausgelastet. Bitte versuche es mit einem Klick auf „Erneut versuchen“ noch einmal.",
+    logAiEvent("warn", "/api/ai/fridge-cook-idea", "AI call failed for fridge-cook-idea, using fallback", { error: errMsg });
+    const fallbackIdea = buildFallbackFridgeIdea({
+      ingredients,
+      isVegan,
+      maxTimeMinutes,
+      calorieFilter,
+      proteinFilter,
+      excludeTitles,
+      maxAdditionalIngredients,
     });
+    res.json({ success: true, idea: fallbackIdea, isFallback: true });
   }
 });
 
@@ -378,14 +394,14 @@ ${pantryInstruction}
 Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: structuredRecipeResponseSchema,
         temperature: 0.6,
       },
-      timeoutMs: 45000,
+      timeoutMs: 35000,
     });
 
     const parsed = safeExtractJson(response.text, null);
@@ -414,11 +430,21 @@ Antworte als strukturiertes JSON-Objekt.`;
     res.json({ success: true, recipe: normalizedRecipe });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    logAiEvent("warn", "/api/ai/fridge-cook", "All AI models failed for fridge-cook", { error: errMsg });
-    res.status(503).json({
-      success: false,
-      error: "Das Rezept konnte wegen vorübergehender Auslastung der KI-Server nicht fertiggestellt werden. Bitte klicke auf „Erneut versuchen“.",
+    logAiEvent("warn", "/api/ai/fridge-cook", "AI model failed for fridge-cook, using fallback", { error: errMsg });
+    const fallbackRecipe = buildFallbackFridgeRecipe({
+      ingredients,
+      isVegan,
+      maxTimeMinutes,
+      difficulty,
+      mealType,
+      extraWishes,
+      maxAdditionalIngredients,
+      includeBasics,
+      nutritionGoal,
+      calorieFilter,
+      proteinFilter,
     });
+    res.json({ success: true, recipe: fallbackRecipe, isFallback: true });
   }
 });
 
@@ -479,7 +505,7 @@ Fokus: ${focus}
 Antworte als strukturiertes JSON.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -569,7 +595,7 @@ Original-Rezept: ${JSON.stringify(recipe)}
 Antworte als strukturiertes JSON.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -641,16 +667,25 @@ aiRouter.post("/create-recipe", async (req: Request, res: Response) => {
 
   const ai = getGenAI();
   if (!ai) {
-    return res.status(503).json({
-      success: false,
-      error: "Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.",
+    const fallbackRecipe = buildFallbackCreatedRecipe({
+      dishTitleOrIdea,
+      category: safeCategory,
+      isVegan,
+      maxTimeMinutes: safeMaxTime,
+      targetCalories: safeCalories,
+      targetProtein: safeProtein,
+      includedIngredients: safeIncluded,
+      styleTags: safeStyles,
     });
+    return res.json({ success: true, recipe: fallbackRecipe, isFallback: true });
   }
 
   try {
+    const userPromptDetail = prompt && prompt.trim() ? prompt.trim() : "";
     const aiPrompt = `Du bist ein preisgekrönter Küchenchef für moderne, pflanzliche Spitzenküche (vegan & vegetarisch).
-Erstelle ein vollständiges, authentisches und gelingsicheres Rezept für GENAU DIESES GERICHT:
-WUNSCHGERICHT: "${dishTitleOrIdea}"
+Erstelle ein vollständiges, authentisches und gelingsicheres Rezept für folgendes Gericht bzw. Vorlage:
+WUNSCHGERICHT / TITEL: "${dishTitleOrIdea}"
+${userPromptDetail ? `\nVOLLSTÄNDIGER TEXT / REZEPT-VORLAGE DES NUTZERS (bitte alle darin enthaltenen Zutaten und Zubereitungsschritte präzise übernehmen und verfeinern):\n"""\n${userPromptDetail}\n"""\n` : ""}
 ERNÄHRUNGSFORM: ${isVegan ? "100% VEGAN (streng rein pflanzlich, keine tierischen Zutaten)" : "100% VEGETARISCH (fleisch- und fischfrei, Milch/Käse/Ei erlaubt)"}
 ${safeCategory ? `Bevorzugte Kategorie: ${safeCategory}` : ""}
 ${safeProtein ? `Protein-Ziel: ca. ${safeProtein}g` : ""}
@@ -674,14 +709,14 @@ Zwinge das Rezept niemals künstlich in 4 Schritte!
 Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash-lite",
       contents: aiPrompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: structuredRecipeResponseSchema,
         temperature: 0.6,
       },
-      timeoutMs: 24000,
+      timeoutMs: 25000,
     });
 
     const parsed = safeExtractJson(response.text, null);
@@ -706,11 +741,18 @@ Antworte als strukturiertes JSON-Objekt.`;
     res.json({ success: true, recipe: resultRecipe });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    logAiEvent("warn", "/api/ai/create-recipe", "AI create-recipe failed", { error: errMsg });
-    res.status(503).json({
-      success: false,
-      error: "Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.",
+    logAiEvent("warn", "/api/ai/create-recipe", "AI create-recipe failed, using fallback", { error: errMsg });
+    const fallbackRecipe = buildFallbackCreatedRecipe({
+      dishTitleOrIdea,
+      category: safeCategory,
+      isVegan,
+      maxTimeMinutes: safeMaxTime,
+      targetCalories: safeCalories,
+      targetProtein: safeProtein,
+      includedIngredients: safeIncluded,
+      styleTags: safeStyles,
     });
+    res.json({ success: true, recipe: fallbackRecipe, isFallback: true });
   }
 });
 
@@ -758,10 +800,17 @@ aiRouter.post("/scan-recipe", async (req: Request, res: Response) => {
 
   const ai = getGenAI();
   if (!ai) {
-    return res.status(503).json({
-      success: false,
-      error: "Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.",
+    const title = safeNotes.trim() || "Gescannter kulinarischer Leckerbissen";
+    const fallbackRecipe = buildFallbackCreatedRecipe({
+      dishTitleOrIdea: title,
+      category: "Schnelle Küche",
+      isVegan: Boolean(isVegan),
+      maxTimeMinutes: 25,
     });
+    if (imageBase64.startsWith("data:")) {
+      fallbackRecipe.image = imageBase64;
+    }
+    return res.json({ success: true, recipe: fallbackRecipe, isFallback: true });
   }
 
   try {
@@ -773,7 +822,7 @@ WICHTIG ZUR ZUBEREITUNG: Wähle die Anzahl der Schritte (steps) völlig frei und
 Antworte als strukturiertes JSON-Objekt.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash-lite",
       contents: [
         {
           inlineData: {
@@ -814,10 +863,17 @@ Antworte als strukturiertes JSON-Objekt.`;
     res.json({ success: true, recipe: resultRecipe });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    logAiEvent("warn", "/api/ai/scan-recipe", "AI scan-recipe failed", { error: errMsg });
-    res.status(503).json({
-      success: false,
-      error: "Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.",
+    logAiEvent("warn", "/api/ai/scan-recipe", "AI scan-recipe failed, using fallback", { error: errMsg });
+    const title = safeNotes.trim() || "Gescannter kulinarischer Leckerbissen";
+    const fallbackRecipe = buildFallbackCreatedRecipe({
+      dishTitleOrIdea: title,
+      category: "Schnelle Küche",
+      isVegan: Boolean(isVegan),
+      maxTimeMinutes: 25,
     });
+    if (imageBase64.startsWith("data:")) {
+      fallbackRecipe.image = imageBase64;
+    }
+    res.json({ success: true, recipe: fallbackRecipe, isFallback: true });
   }
 });

@@ -497,6 +497,7 @@ export function buildFallbackCreatedRecipe(params: {
   targetCalories?: number;
   maxTimeMinutes?: number;
   includedIngredients?: string[];
+  styleTags?: string[];
 }) {
   const {
     dishTitleOrIdea,

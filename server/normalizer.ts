@@ -52,13 +52,27 @@ export function normalizeRecipeResponse(raw: any, overrides?: Partial<any>): any
     : [];
 
   const ingredients = Array.isArray(raw.ingredients)
-    ? raw.ingredients.map((ing: any) => ({
-        name: String(ing.name || "").trim(),
-        amount: ing.amount !== undefined ? String(ing.amount).trim() : "nach Bedarf",
-        unit: String(ing.unit || "").trim(),
-        category: ing.category || "gemuese",
-        origin: ing.origin || "pantry",
-      }))
+    ? raw.ingredients.map((ing: any) => {
+        let amountVal: number | string = "nach Bedarf";
+        if (typeof ing.amount === "number" && !isNaN(ing.amount)) {
+          amountVal = ing.amount;
+        } else if (typeof ing.amount === "string") {
+          const cleanStr = ing.amount.trim();
+          const parsed = parseFloat(cleanStr.replace(",", "."));
+          if (!isNaN(parsed) && parsed > 0 && !cleanStr.match(/[a-zA-Z]/)) {
+            amountVal = parsed;
+          } else if (cleanStr) {
+            amountVal = cleanStr;
+          }
+        }
+        return {
+          name: String(ing.name || "").trim(),
+          amount: amountVal,
+          unit: String(ing.unit || "").trim(),
+          category: ing.category || "gemuese",
+          origin: ing.origin || "pantry",
+        };
+      })
     : [];
 
   const chefTip = raw.chefTip || raw.chefTips || "Mit frischen Kräutern und etwas Zitrone verfeinern.";

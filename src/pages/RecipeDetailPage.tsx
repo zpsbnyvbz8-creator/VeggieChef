@@ -53,6 +53,7 @@ import { FullscreenImageViewer } from '../components/recipe/FullscreenImageViewe
 import { EditRecipeModal } from '../components/recipe/EditRecipeModal';
 import { StepImageSwiper } from '../components/recipe/StepImageSwiper';
 import { HeartButton } from '../components/ui/HeartButton';
+import { RecipePlaceholder } from '../components/RecipePlaceholder';
 import { ReviewCard } from '../components/reviews/ReviewCard';
 import { WriteReviewSheet } from '../components/reviews/WriteReviewSheet';
 import { PrivateNoteCard } from '../components/reviews/PrivateNoteCard';
@@ -1182,15 +1183,9 @@ export const RecipeDetailPage: React.FC = () => {
             )}
           </div>
         ) : (
-          /* Fallback banner for text-only / AI recipes without image */
-          <div className="relative h-[calc(16rem+env(safe-area-inset-top,0px))] sm:h-[calc(18rem+env(safe-area-inset-top,0px))] w-full bg-gradient-to-br from-text-main to-[#1F2C2D] flex items-center justify-center p-6 text-on-accent text-center pt-[env(safe-area-inset-top,0px)]">
-            <div className="space-y-2 max-w-md">
-              <div className="w-14 h-14 rounded-2xl bg-card/10 mx-auto flex items-center justify-center">
-                <Leaf className="w-12 h-12 text-accent/40" />
-              </div>
-              <h2 className="text-2xl font-bold tracking-tight">{recipe.title}</h2>
-              <p className="text-xs text-stone-300">Vegetarisches Chef-Rezept</p>
-            </div>
+          /* Modern visual placeholder banner: no text, rich botanical gradient, prominent emblem */
+          <div className="relative h-[calc(18rem+env(safe-area-inset-top,0px))] sm:h-[calc(22rem+env(safe-area-inset-top,0px))] md:h-[calc(25rem+env(safe-area-inset-top,0px))] w-full">
+            <RecipePlaceholder size="hero" className="w-full h-full pt-[env(safe-area-inset-top,0px)]" />
           </div>
         )}
       </header>

@@ -9,7 +9,7 @@ export const substituteRequestSchema = z.object({
   missingIngredients: z.array(z.string().min(1).max(100)).min(1).max(20),
   availableIngredients: z.array(z.string().max(100)).max(50).optional().default([]),
   currentIngredients: z.array(z.any()).max(50).optional().default([]),
-  userWish: z.string().max(300).optional().default(""),
+  userWish: z.string().max(3000).optional().default(""),
 });
 
 export const fridgeCookIdeaRequestSchema = z.object({
@@ -21,7 +21,7 @@ export const fridgeCookIdeaRequestSchema = z.object({
   maxTimeMinutes: z.number().int().min(10).max(180).optional().default(25),
   difficulty: z.string().max(40).optional().default("Einfach"),
   mealType: z.string().max(50).optional().default("Hauptgericht"),
-  extraWishes: z.string().max(200).optional().default(""),
+  extraWishes: z.string().max(3000).optional().default(""),
   maxAdditionalIngredients: z.number().int().min(0).max(10).optional().default(2),
   nutritionGoal: z.enum(["balanced", "high_protein", "high_calorie"]).optional().default("balanced"),
   calorieFilter: z.string().max(40).optional().default("all"),
@@ -38,7 +38,7 @@ export const fridgeCookRequestSchema = z.object({
   maxTimeMinutes: z.number().int().min(10).max(180).optional().default(25),
   difficulty: z.string().max(40).optional().default("Einfach"),
   mealType: z.string().max(50).optional().default("Hauptgericht"),
-  extraWishes: z.string().max(200).optional().default(""),
+  extraWishes: z.string().max(3000).optional().default(""),
   maxAdditionalIngredients: z.number().int().min(0).max(10).optional().default(2),
   includeBasics: z.boolean().optional().default(true),
   nutritionGoal: z.enum(["balanced", "high_protein", "high_calorie"]).optional().default("balanced"),
@@ -57,7 +57,7 @@ export const mealPlanRequestSchema = z.object({
   focus: z.string().max(100).optional().default("Ausgewogen & proteinreich"),
   maxMinutesPerMeal: z.number().int().min(10).max(120).optional().default(35),
   mealOption: z.enum(["lunch", "dinner", "both"]).optional().default("both"),
-  wishes: z.string().max(1000).optional().default(""),
+  wishes: z.string().max(5000).optional().default(""),
 });
 
 export const veganizeRequestSchema = z.object({
@@ -80,7 +80,7 @@ export const veganizeRequestSchema = z.object({
 
 export const createRecipeRequestSchema = z
   .object({
-    prompt: z.string().max(300).optional(),
+    prompt: z.string().max(10000).optional(),
     title: z.string().max(200).optional(),
     isVegan: z.boolean().optional().default(true),
     category: z.string().max(80).optional().default("Schnelle Küche"),
@@ -108,7 +108,7 @@ export const ALLOWED_SCAN_MIME_TYPES = [
 export const scanRecipeRequestSchema = z.object({
   imageBase64: z.string().min(1, "Kein Bild übermittelt"),
   mimeType: z.string().optional().default("image/jpeg"),
-  userNotes: z.string().max(300).optional().default(""),
+  userNotes: z.string().max(10000).optional().default(""),
   isVegan: z.boolean().optional().default(true),
 });
 

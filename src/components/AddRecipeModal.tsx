@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   X,
   Sparkles,
@@ -7,12 +8,16 @@ import {
   ChefHat,
   AlertCircle,
   Trash2,
+  Minus,
+  Plus,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Recipe, RecipeCategory, RecipeIngredient, RecipeStep, IngredientCategory } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 import { useRecipes } from '../context/RecipeContext';
+import { formatIngredientAmount } from '../utils/helpers';
 import { CloseButton } from './ui/CloseButton';
+import { RecipePlaceholder } from './RecipePlaceholder';
 
 interface AddRecipeModalProps {
   isOpen?: boolean;
@@ -245,12 +250,14 @@ function parseRecipeFromDescription(text: string, imageBase64?: string | null): 
 }
 
 export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
+  const navigate = useNavigate();
   const recipesCtx = useRecipes();
   const isOpen = props.isOpen !== undefined ? props.isOpen : recipesCtx.isAddRecipeOpen;
   const onClose = props.onClose ?? (() => recipesCtx.setIsAddRecipeOpen(false));
   const onRecipeAdded = props.onRecipeAdded ?? recipesCtx.addRecipe;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingFullRecipe, setIsSavingFullRecipe] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Single text field for everything (ideas, pasted recipes, notes, instructions)
@@ -262,14 +269,25 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
 
   // Preview step
   const [previewRecipe, setPreviewRecipe] = useState<Recipe | null>(null);
+  const [servings, setServings] = useState<number>(2);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   useLockBodyScroll(isOpen);
+
+  useEffect(() => {
+    if (previewRecipe) {
+      setServings(previewRecipe.servings || 2);
+      setShowDiscardConfirm(false);
+    }
+  }, [previewRecipe]);
 
   useEffect(() => {
     if (!isOpen) {
       setPreviewRecipe(null);
       setErrorMsg(null);
       setIsSubmitting(false);
+      setIsSavingFullRecipe(false);
+      setShowDiscardConfirm(false);
       setRecipeText('');
       setAttachedImageBase64(null);
     }
@@ -410,7 +428,21 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
         if (attachedImageBase64 && !created.image) {
           created.image = attachedImageBase64;
         }
-        setPreviewRecipe(created);
+        const recipeServings = Number(created.servings) > 0 ? Number(created.servings) : 2;
+        const normalizedRecipe: Recipe = {
+          ...created,
+          servings: recipeServings,
+          ingredients: (created.ingredients || []).map((ing: any) => {
+            const raw = ing.amount;
+            const parsed = typeof raw === 'number' ? raw : parseFloat(String(raw || '').replace(',', '.'));
+            return {
+              ...ing,
+              amount: !isNaN(parsed) && parsed > 0 ? parsed : ing.amount,
+            };
+          }),
+        };
+        setPreviewRecipe(normalizedRecipe);
+        setServings(recipeServings);
         setErrorMsg(null);
       } else {
         setErrorMsg(apiErrorMessage || 'Die KI-Funktion ist gerade nicht verfügbar. Bitte versuche es später noch einmal.');
@@ -423,12 +455,52 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
     }
   };
 
-  const handleConfirmPreview = () => {
+  const handleConfirmPreview = async () => {
     if (!previewRecipe) return;
-    onRecipeAdded(previewRecipe);
-    onClose();
+
+    setIsSavingFullRecipe(true);
+    setErrorMsg(null);
+
+    try {
+      const baseServings = previewRecipe.servings || 2;
+      const scaledIngredients = previewRecipe.ingredients.map((ing) => {
+        const raw = ing.amount;
+        const parsed = typeof raw === 'number' ? raw : parseFloat(String(raw || '').replace(',', '.'));
+        if (!isNaN(parsed) && parsed > 0 && baseServings > 0) {
+          const scaled = (parsed / baseServings) * servings;
+          return { ...ing, amount: Math.round(scaled * 10) / 10 };
+        }
+        return ing;
+      });
+
+      const finalRecipe: Recipe = {
+        ...previewRecipe,
+        servings,
+        ingredients: scaledIngredients,
+        createdAt: Date.now(),
+      };
+
+      // Loading animation delay for high perceived polish
+      await new Promise((resolve) => setTimeout(resolve, 1400));
+
+      onRecipeAdded(finalRecipe);
+      setIsSavingFullRecipe(false);
+      onClose();
+      navigate(`/recipes/${finalRecipe.id}`);
+    } catch (err: any) {
+      console.error('Error saving recipe:', err);
+      setIsSavingFullRecipe(false);
+      setErrorMsg('Das Rezept konnte nicht gespeichert werden. Bitte versuche es noch einmal.');
+    }
   };
 
+  const handleClose = () => {
+    if (previewRecipe) {
+      setShowDiscardConfirm(true);
+    } else {
+      onClose();
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -439,7 +511,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          onClick={onClose}
+          onClick={previewRecipe ? undefined : onClose}
           className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 touch-none overscroll-contain"
         >
           <motion.div
@@ -463,16 +535,49 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   </h2>
                   <p className="text-xs text-text-muted">
                     {previewRecipe
-                      ? 'Prüfe Zutaten und Zubereitung vor dem Speichern'
+                      ? 'Prüfe Zutaten und Portionen vor dem Speichern'
                       : 'Beschreibe dein Gericht oder lade ein Foto hoch'}
                   </p>
                 </div>
               </div>
-              <CloseButton onClick={onClose} ariaLabel="Schließen" size="lg" />
+              <CloseButton onClick={handleClose} ariaLabel="Schließen" size="lg" />
             </div>
 
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-5">
+              {/* Discreet Discard Confirmation */}
+              {showDiscardConfirm && (
+                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-text-main flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-text-main">Diese Rezeptidee verwerfen?</p>
+                      <p className="text-xs text-text-muted">Deine Vorschau wird nicht im Rezeptbuch gespeichert.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setShowDiscardConfirm(false)}
+                      className="min-h-[48px] h-12 px-4 rounded-xl border border-border bg-card hover:bg-surface text-sm font-semibold text-text-main transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                    >
+                      Weiter bearbeiten
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDiscardConfirm(false);
+                        setPreviewRecipe(null);
+                        onClose();
+                      }}
+                      className="min-h-[48px] h-12 px-4 rounded-xl bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 text-sm font-bold transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                    >
+                      Rezeptidee verwerfen
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Error Banner */}
               {errorMsg && (
                 <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 flex items-start gap-3 text-sm">
@@ -528,8 +633,43 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       </div>
                     </div>
                   </motion.div>
+                ) : isSavingFullRecipe ? (
+                  <motion.div
+                    key="add-recipe-saving-full"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.18 }}
+                    className="py-12 px-4 flex flex-col items-center justify-center space-y-6 text-center"
+                  >
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-2xl bg-accent-tint border border-accent/20 flex items-center justify-center text-accent animate-pulse">
+                        <ChefHat className="w-8 h-8" />
+                      </div>
+                      <div className="absolute -inset-1 rounded-2xl border-2 border-accent/30 animate-ping pointer-events-none" />
+                    </div>
+
+                    <div className="space-y-1.5 max-w-md">
+                      <h3 className="text-xl font-bold text-text-main">
+                        Vollständiges Rezept wird erstellt...
+                      </h3>
+                      <p className="text-sm text-text-muted">
+                        Zubereitungsschritte, Kochzeiten und Profi-Tipps werden finalisiert.
+                      </p>
+                    </div>
+
+                    <div className="w-full max-w-md p-4 bg-surface rounded-2xl border border-border space-y-3 text-left">
+                      <div className="h-5 bg-accent/20 rounded-md w-3/4 animate-pulse" />
+                      <div className="h-3.5 bg-border rounded-md w-1/2 animate-pulse" />
+                      <div className="space-y-2 pt-1">
+                        <div className="h-8 bg-card rounded-lg border border-border animate-pulse" />
+                        <div className="h-8 bg-card rounded-lg border border-border animate-pulse" />
+                        <div className="h-8 bg-card rounded-lg border border-border animate-pulse" />
+                      </div>
+                    </div>
+                  </motion.div>
                 ) : previewRecipe ? (
-                  /* DEUTLICH VERKÜRZTE REZEPT-VORSCHAU: NUR TITEL, BESCHREIBUNG & ZUTATEN (UNGEFÄHRE MENGE) */
+                  /* REZEPT-VORSCHAU: TITEL, BESCHREIBUNG & ZUTATEN MIT PORTIONEN STEPPER (EXAKT WIE REZEPT-DETAILANSICHT) */
                   <motion.div
                     key="add-recipe-preview"
                     initial={{ opacity: 0, y: 10 }}
@@ -548,7 +688,11 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                      ) : null}
+                      ) : (
+                        <div className="relative rounded-xl overflow-hidden border border-border aspect-21/9 max-h-48">
+                          <RecipePlaceholder size="md" className="w-full h-full" />
+                        </div>
+                      )}
 
                       <div>
                         <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-accent-tint text-accent border border-accent/20 inline-block mb-2">
@@ -565,47 +709,93 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                       </div>
                     </div>
 
-                    {/* Zutaten mit ungefähren Mengen */}
+                    {/* Zutaten mit Portionen-Stepper */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm sm:text-base font-bold text-text-main">
-                          Zutaten <span className="text-xs font-normal text-text-muted">(ungefähre Mengen)</span>
+                        <h4 className="text-base sm:text-lg font-bold text-text-main">
+                          Zutaten
                         </h4>
-                        <span className="text-xs text-text-muted font-medium">
+                        <span className="text-xs sm:text-sm text-text-muted font-medium">
                           {previewRecipe.ingredients.length} {previewRecipe.ingredients.length === 1 ? 'Zutat' : 'Zutaten'}
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {previewRecipe.ingredients.map((ing, idx) => {
-                          const rawAmount = ing.amount !== undefined && ing.amount !== null ? String(ing.amount).trim() : '';
-                          const unit = ing.unit ? ing.unit.trim() : '';
-                          let formattedAmount = '';
-
-                          if (rawAmount) {
-                            if (rawAmount.toLowerCase().startsWith('ca.') || rawAmount.toLowerCase().startsWith('etwa')) {
-                              formattedAmount = `${rawAmount} ${unit}`.trim();
-                            } else {
-                              formattedAmount = `ca. ${rawAmount} ${unit}`.trim();
-                            }
-                          } else if (unit) {
-                            formattedAmount = `ca. 1 ${unit}`;
-                          } else {
-                            formattedAmount = 'nach Geschmack';
-                          }
-
-                          return (
-                            <div
-                              key={idx}
-                              className="p-3 bg-surface border border-border rounded-xl flex items-center justify-between text-sm gap-2"
+                      {/* Interactive Portion Stepper Card */}
+                      <div className="bg-surface border border-accent-border/60 rounded-2xl p-3 sm:p-4 shadow-2xs flex items-center justify-between gap-3 flex-wrap">
+                        <span className="text-sm font-semibold text-text-main">Portionen anpassen:</span>
+                        <div className="inline-flex items-center justify-between bg-card border border-border rounded-xl p-1 shadow-2xs w-[210px] h-[54px]">
+                          <button
+                            type="button"
+                            onClick={() => setServings((prev) => Math.max(1, prev - 1))}
+                            disabled={servings <= 1}
+                            className="w-12 h-12 min-w-[48px] min-h-[48px] flex items-center justify-center rounded-lg hover:bg-surface active:bg-border disabled:opacity-30 text-text-muted hover:text-text-main transition-colors cursor-pointer touch-manipulation active:scale-95"
+                            aria-label="Portion verringern"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <div className="h-5 w-[1px] bg-border shrink-0" />
+                          <span className="px-2 text-[16px] font-bold text-text-main tabular-nums flex-1 text-center select-none whitespace-nowrap overflow-hidden">
+                            <motion.span
+                              key={servings}
+                              initial={{ scale: 1.2 }}
+                              animate={{ scale: 1 }}
+                              transition={{ duration: 0.18, ease: 'easeOut' }}
+                              className="inline-block"
                             >
-                              <span className="font-medium text-text-main truncate">{ing.name}</span>
-                              <span className="text-accent font-semibold bg-card px-2.5 py-1 rounded-lg border border-border shrink-0 text-xs sm:text-sm">
-                                {formattedAmount}
-                              </span>
-                            </div>
-                          );
-                        })}
+                              {servings} {servings === 1 ? 'Portion' : 'Portionen'}
+                            </motion.span>
+                          </span>
+                          <div className="h-5 w-[1px] bg-border shrink-0" />
+                          <button
+                            type="button"
+                            onClick={() => setServings((prev) => Math.min(24, prev + 1))}
+                            className="w-12 h-12 min-w-[48px] min-h-[48px] flex items-center justify-center rounded-lg hover:bg-surface active:bg-border text-text-muted hover:text-text-main transition-colors cursor-pointer touch-manipulation active:scale-95"
+                            aria-label="Portion erhöhen"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Flat List with High Contrast, no checkbox, no clickability, and ca. prefix */}
+                      <div className="border border-accent-border/70 rounded-2xl overflow-hidden bg-surface shadow-xs">
+                        <div className="px-4 sm:px-5 py-2.5 bg-accent-tint/90 border-b border-accent-border/50 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-text-main">
+                          <span>Zutat</span>
+                          <span>Richtwert</span>
+                        </div>
+                        <ul className="divide-y divide-border">
+                          {previewRecipe.ingredients.map((ing, idx) => {
+                            const key = `${ing.name}-${idx}`;
+                            const rawAmountStr = formatIngredientAmount(ing, previewRecipe.servings || 2, servings);
+                            let displayAmount = 'ca. nach Bedarf';
+                            if (rawAmountStr && rawAmountStr.trim()) {
+                              if (/^(ca\.|etwa)/i.test(rawAmountStr.trim())) {
+                                displayAmount = rawAmountStr.trim();
+                              } else {
+                                displayAmount = `ca. ${rawAmountStr.trim()}`;
+                              }
+                            }
+
+                            return (
+                              <li
+                                key={key}
+                                className="flex items-center justify-between py-3.5 px-4 sm:px-5 bg-card even:bg-surface/80 select-none cursor-default"
+                              >
+                                <div className="flex-1 min-w-0 pr-3">
+                                  <span className="text-base font-semibold text-text-main break-words leading-normal block">
+                                    {ing.name}
+                                  </span>
+                                </div>
+
+                                <div className="shrink-0 pl-2">
+                                  <span className="text-base font-bold text-accent tabular-nums text-right whitespace-nowrap block">
+                                    {displayAmount}
+                                  </span>
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
                       </div>
                     </div>
 

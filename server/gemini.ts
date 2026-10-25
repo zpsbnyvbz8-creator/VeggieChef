@@ -1,11 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 import { logAiEvent } from "./logger";
 
-// Verified Active Gemini Model Cascade - Prioritizing Gemini 2.5 Flash for culinary reasoning
+// Verified Active Gemini Model Cascade - Prioritizing Gemini 3.5 Flash Lite for fast culinary generation
 export const ACTIVE_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-2.0-flash",
-  "gemini-1.5-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-3.1-flash-lite",
 ] as const;
 
 let genAIClient: GoogleGenAI | null = null;
@@ -24,7 +24,7 @@ export function getGenAI(): GoogleGenAI | null {
       apiKey,
       httpOptions: {
         headers: {
-          "User-Agent": "aistudio-build-veggiechef",
+          "User-Agent": "aistudio-build",
         },
       },
     });
@@ -154,12 +154,12 @@ export async function callGeminiWithRetry(
 ): Promise<{ text: string }> {
   const maxTotalBudgetMs = options.timeoutMs || 45000;
   const startTime = Date.now();
-  const requestedModel = options.model || "gemini-2.5-flash";
+  const requestedModel = options.model || "gemini-3.5-flash-lite";
   const maxPreferredRetries = options.maxPreferredRetries ?? 2; // Up to 3 attempts total for primary model
 
   let lastError: unknown = null;
 
-  // Phase 1: Dedicated retry loop for Gemini 2.5 Flash upon high-demand spikes
+  // Phase 1: Dedicated retry loop for Gemini 3.5 Flash Lite upon high-demand spikes
   let preferredAttempt = 0;
   while (preferredAttempt <= maxPreferredRetries) {
     const elapsed = Date.now() - startTime;
