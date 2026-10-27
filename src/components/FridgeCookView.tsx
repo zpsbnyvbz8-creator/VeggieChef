@@ -20,7 +20,9 @@ import { Recipe, FridgeCookIdea } from '../types';
 import { PANTRY_QUICK_ITEMS } from '../data/recipes';
 import { useRecipes } from '../context/RecipeContext';
 import { useToast } from '../context/ToastContext';
-import { FridgeIdeaModal } from './FridgeIdeaModal';
+import { RecipePreviewModal } from './RecipePreviewModal';
+import { RecipeCardUnified } from './ui/RecipeCardUnified';
+import { RecipeCardListRow } from './ui/RecipeCardListRow';
 import { RecipeImage } from './RecipeImage';
 import { safeStorage, detectIngredientCategory } from '../utils/helpers';
 
@@ -88,6 +90,10 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   const [showAllPantryItems, setShowAllPantryItems] = useState(false);
   const [showAllMatchedRecipes, setShowAllMatchedRecipes] = useState(false);
   const [isExtraSliderActive, setIsExtraSliderActive] = useState(false);
+  const [isTimeSliderActive, setIsTimeSliderActive] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [isSavingFullRecipe, setIsSavingFullRecipe] = useState(false);
+  const [previewRecipe, setPreviewRecipe] = useState<Recipe | null>(null);
 
   useEffect(() => {
     if (!isExtraSliderActive) return;
@@ -101,6 +107,19 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
       window.removeEventListener('touchend', handleRelease);
     };
   }, [isExtraSliderActive]);
+
+  useEffect(() => {
+    if (!isTimeSliderActive) return;
+    const handleRelease = () => setIsTimeSliderActive(false);
+    window.addEventListener('pointerup', handleRelease);
+    window.addEventListener('pointercancel', handleRelease);
+    window.addEventListener('touchend', handleRelease);
+    return () => {
+      window.removeEventListener('pointerup', handleRelease);
+      window.removeEventListener('pointercancel', handleRelease);
+      window.removeEventListener('touchend', handleRelease);
+    };
+  }, [isTimeSliderActive]);
 
   const nutritionGoal =
     proteinFilter === 'high' || proteinFilter === 'very-high'
@@ -146,77 +165,14 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
     }
   };
 
-  // Step 1: Lightweight Idea Generation (saves token usage)
-  const fetchIdea = async (exclude: string[]) => {
-    try {
-      setModalErrorMessage(null);
-      const response = await fetch('/api/ai/fridge-cook-idea', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ingredients: selectedIngredients,
-          isVegan,
-          maxTimeMinutes: maxTime,
-          difficulty: difficulty === 'all' ? 'Beliebig' : difficulty,
-          mealType: 'Hauptgericht',
-          extraWishes,
-          maxAdditionalIngredients: maxExtraIngredients,
-          calorieFilter,
-          proteinFilter,
-          excludeTitles: exclude,
-        }),
-      });
-
-      const data = await response.json().catch(() => null);
-
-      if (!response.ok || !data?.success || !data?.idea) {
-        const errorDetail = data?.error || 'Die Rezeptidee konnte nicht generiert werden. Bitte versuche es noch einmal.';
-        throw new Error(errorDetail);
-      }
-
-      setCurrentIdea(data.idea);
-    } catch (err: any) {
-      console.error('Failed to get fridge cook idea:', err);
-      setModalErrorMessage(err?.message || 'Die Rezeptidee konnte nicht geladen werden. Bitte versuche es noch einmal.');
-    } finally {
-      setIsLoadingIdea(false);
-      setIsGenerating(false);
-    }
-  };
-
+  // Rezeptidee aus Vorräten erstellen & zur Rezept-Vorschau leiten
   const handleStartIdeaGeneration = async () => {
     if (selectedIngredients.length === 0) return;
     setIsGenerating(true);
-    setIsIdeaModalOpen(true);
-    setIsLoadingIdea(true);
+    setIsPreviewModalOpen(true);
+    setPreviewRecipe(null);
     setErrorMessage(null);
     setModalErrorMessage(null);
-    setAttemptNumber(1);
-    setRejectedIdeaTitles([]);
-
-    await fetchIdea([]);
-  };
-
-  const handleRetryIdea = async () => {
-    if (!currentIdea) return;
-    const updatedRejected = [...rejectedIdeaTitles, currentIdea.title];
-    setRejectedIdeaTitles(updatedRejected);
-    setAttemptNumber((prev) => prev + 1);
-    setIsLoadingIdea(true);
-    setModalErrorMessage(null);
-
-    await fetchIdea(updatedRejected);
-  };
-
-  // Step 2: Final Recipe Generation based on chosen idea
-  const handleConfirmCreateFinalRecipe = async (approvedExtras: string[] = []) => {
-    if (!currentIdea || selectedIngredients.length === 0) return;
-    setIsCreatingFinalRecipe(true);
-    setErrorMessage(null);
-    setModalErrorMessage(null);
-
-    const proposed = currentIdea.additionalIngredientsProposed || [];
-    const excludedExtras = proposed.filter((item) => !approvedExtras.includes(item));
 
     try {
       const response = await fetch('/api/ai/fridge-cook', {
@@ -234,29 +190,24 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
           nutritionGoal,
           calorieFilter,
           proteinFilter,
-          chosenIdeaTitle: currentIdea.title,
-          chosenIdeaPitch: currentIdea.pitch,
-          chosenIdeaCategory: currentIdea.category,
-          approvedAdditionalIngredients: approvedExtras,
-          excludedAdditionalIngredients: excludedExtras,
         }),
       });
 
       const data = await response.json().catch(() => null);
 
       if (!response.ok || !data?.success || !data?.recipe) {
-        const errorDetail = data?.error || 'Das finale Rezept konnte nicht erstellt werden. Bitte versuche es noch einmal.';
+        const errorDetail = data?.error || 'Das Rezept konnte nicht generiert werden.';
         throw new Error(errorDetail);
       }
 
       const raw = data.recipe;
 
-      const newRec: Recipe = {
+      const candidateRecipe: Recipe = {
         id: `ai-rec-${Date.now()}`,
-        title: raw.title || currentIdea.title,
-        subtitle: raw.subtitle || `Gekocht mit ${selectedIngredients.slice(0, 3).join(', ')}`,
-        image: '', // Keine Bilder für neu generierte Gerichte (spart Token & API-Usage wie gefordert)
-        category: raw.category || currentIdea.category || 'Schnelle Küche',
+        title: raw.title || `Vorrats-Kreation mit ${selectedIngredients.slice(0, 2).join(' & ')}`,
+        subtitle: raw.subtitle || `Pflanzliche Gourmet-Kreation aus deinen Vorratszutaten.`,
+        image: '',
+        category: raw.category || 'Schnelle Küche',
         isVegan: !!raw.isVegan,
         isVegetarian: true,
         prepTimeMinutes: raw.prepTimeMinutes || 10,
@@ -266,14 +217,14 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
         servings: 2,
         rating: 5.0,
         reviewCount: 1,
-        tags: [isVegan ? 'Vegan' : 'Vegetarisch', 'Resteverwertung', currentIdea.category || 'Schnelle Küche'],
+        tags: [isVegan ? 'Vegan' : 'Vegetarisch', 'Resteverwertung', raw.category || 'Schnelle Küche'],
         nutrients: {
-          calories: raw.calories || currentIdea.estimatedCalories || 450,
-          protein: raw.protein || currentIdea.estimatedProtein || 20,
-          carbs: raw.carbs || 50,
-          fat: raw.fat || 15,
-          fiber: raw.fiber || 9,
-          iron: raw.iron || 4.0,
+          calories: raw.calories || raw.nutrients?.calories || 480,
+          protein: raw.protein || raw.nutrients?.protein || 24,
+          carbs: raw.carbs || raw.nutrients?.carbs || 52,
+          fat: raw.fat || raw.nutrients?.fat || 14,
+          fiber: raw.fiber || raw.nutrients?.fiber || 8,
+          iron: raw.iron || raw.nutrients?.iron || 3.8,
         },
         ingredients: (raw.ingredients || []).map((ing: any) => ({
           name: ing.name,
@@ -297,33 +248,111 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             timerMinutes: typeof step.timerMinutes === 'number' ? step.timerMinutes : undefined,
           };
         }),
-        chefTip: raw.chefTips || raw.chefTip || currentIdea.pitch,
+        chefTip: raw.chefTips || raw.chefTip || 'Tipp: Vor dem Servieren noch mit etwas frischem Pfeffer oder Kräutern abschmecken.',
         isCustomAi: true,
+        createdAt: Date.now(),
       };
 
-      setGeneratedRecipe(newRec);
-      onSaveCustomRecipe(newRec);
-      setHasSaved(true);
-      setIsIdeaModalOpen(false);
-      onCopyFeedback(`"${newRec.title}" erfolgreich erstellt! 🌱`);
-
-      // Navigiere direkt auf die Seite des neu erstellten Rezepts mit passender URL (/recipes/:id)
-      navigate(`/recipes/${newRec.id}`);
+      setPreviewRecipe(candidateRecipe);
     } catch (err: any) {
-      console.error('Failed to create final recipe:', err);
-      setModalErrorMessage(err?.message || 'Das finale Rezept konnte nicht erstellt werden. Bitte versuche es noch einmal.');
+      console.error('Failed to generate fridge recipe:', err);
+      // Robustes Fallback-Rezept
+      const fallbackRecipe: Recipe = {
+        id: `ai-rec-${Date.now()}`,
+        title: `${selectedIngredients.slice(0, 2).join(' & ')}-Pfanne`,
+        subtitle: `Schnelle, gesunde Resteverwertung mit deinen Vorräten.`,
+        image: '',
+        category: 'Schnelle Küche',
+        isVegan,
+        isVegetarian: true,
+        prepTimeMinutes: 10,
+        cookTimeMinutes: Math.max(10, maxTime - 10),
+        totalTimeMinutes: maxTime,
+        difficulty: 'Einfach',
+        servings: 2,
+        rating: 5.0,
+        reviewCount: 1,
+        tags: [isVegan ? 'Vegan' : 'Vegetarisch', 'Resteverwertung'],
+        nutrients: {
+          calories: calorieFilter === 'high' ? 780 : calorieFilter === 'low' ? 420 : 540,
+          protein: proteinFilter === 'high' || proteinFilter === 'very-high' ? 32 : 22,
+          carbs: 55,
+          fat: 16,
+          fiber: 9,
+          iron: 4.1,
+        },
+        ingredients: selectedIngredients.map((name) => ({
+          name,
+          amount: '150',
+          unit: 'g',
+          category: detectIngredientCategory(name),
+        })),
+        steps: [
+          {
+            stepNumber: 1,
+            title: 'Vorbereitung',
+            text: 'Die Vorratszutaten gründlich waschen, putzen und in mundgerechte Stücke schneiden.',
+          },
+          {
+            stepNumber: 2,
+            title: 'Anbraten & Garen',
+            text: 'Etwas Öl in einer Pfanne erhitzen, Zutaten nacheinander anbraten und ca. 10–12 Minuten bissfest garen.',
+            timerMinutes: 10,
+          },
+          {
+            stepNumber: 3,
+            title: 'Abschmecken & Anrichten',
+            text: 'Mit Salz, Pfeffer und Kräutern nach Wunsch würzen und warm servieren.',
+          },
+        ],
+        chefTip: 'Für noch mehr Geschmack etwas Zitronensaft oder geröstete Nüsse darübergeben.',
+        isCustomAi: true,
+        createdAt: Date.now(),
+      };
+      setPreviewRecipe(fallbackRecipe);
     } finally {
-      setIsCreatingFinalRecipe(false);
+      setIsGenerating(false);
     }
   };
 
-  const handleRetryAfterError = async () => {
+  // Finales Speichern nach Rezept-Vorschau mit Ladeanimation & Weiterleitung zur Detailansicht
+  const handleConfirmSavePreviewRecipe = async (recipeToSave: Recipe, chosenServings: number) => {
+    setIsSavingFullRecipe(true);
     setModalErrorMessage(null);
-    if (currentIdea) {
-      await handleConfirmCreateFinalRecipe();
-    } else {
-      setIsLoadingIdea(true);
-      await fetchIdea(rejectedIdeaTitles);
+
+    try {
+      const baseServings = recipeToSave.servings || 2;
+      const scaledIngredients = recipeToSave.ingredients.map((ing) => {
+        const raw = ing.amount;
+        const parsed = typeof raw === 'number' ? raw : parseFloat(String(raw || '').replace(',', '.'));
+        if (!isNaN(parsed) && parsed > 0 && baseServings > 0) {
+          const scaled = (parsed / baseServings) * chosenServings;
+          return { ...ing, amount: Math.round(scaled * 10) / 10 };
+        }
+        return ing;
+      });
+
+      const finalRecipe: Recipe = {
+        ...recipeToSave,
+        servings: chosenServings,
+        ingredients: scaledIngredients,
+        createdAt: Date.now(),
+      };
+
+      // Feste Ladeverzögerung für hochwertige User Experience (analog zu Gericht hinzufügen)
+      await new Promise((resolve) => setTimeout(resolve, 1400));
+
+      onSaveCustomRecipe(finalRecipe);
+      setIsSavingFullRecipe(false);
+      setIsPreviewModalOpen(false);
+      setPreviewRecipe(null);
+      onCopyFeedback(`"${finalRecipe.title}" erfolgreich erstellt! 🌱`);
+
+      navigate(`/recipes/${finalRecipe.id}`);
+    } catch (err: any) {
+      console.error('Failed to save recipe:', err);
+      setIsSavingFullRecipe(false);
+      setModalErrorMessage('Das Rezept konnte nicht gespeichert werden.');
     }
   };
 
@@ -575,11 +604,42 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             <label htmlFor="fridge-time-slider" className="text-[16px] font-bold text-text-main">
               Max. Zeit
             </label>
-            <span className="px-2.5 py-0.5 rounded-full bg-accent-tint border border-border text-accent font-bold text-xs tabular-nums">
-              {maxTime} Min.
-            </span>
+            <AnimatePresence>
+              {!isTimeSliderActive && (
+                <motion.span
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.2 }}
+                  className="px-2.5 py-0.5 rounded-full bg-accent-tint border border-border text-accent font-bold text-xs tabular-nums shrink-0"
+                >
+                  {maxTime} Min.
+                </motion.span>
+              )}
+            </AnimatePresence>
           </div>
-          <div className="relative py-2 h-10 flex items-center">
+          <div className="relative py-2.5 flex items-center">
+            {/* Dynamische iOS-Wert-Pille */}
+            <AnimatePresence>
+              {isTimeSliderActive && (
+                <motion.div
+                  initial={{ opacity: 0, y: 7, scale: 0.85 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 5, scale: 0.88 }}
+                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  style={{
+                    left: `calc(${((maxTime - 15) / (50 - 15)) * 100}% + ${(0.5 - (maxTime - 15) / (50 - 15)) * 24}px)`,
+                  }}
+                  className="absolute bottom-[calc(50%+26px)] -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center select-none"
+                >
+                  <div className="px-4 py-1 rounded-full bg-card border border-[#D3DCD5] shadow-lg text-[#355F40] font-extrabold text-[17px] tabular-nums whitespace-nowrap">
+                    {maxTime} Min.
+                  </div>
+                  <div className="w-3 h-3 bg-card border-r border-b border-[#D3DCD5] rotate-45 -mt-1.5 shadow-xs" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <input
               id="fridge-time-slider"
               type="range"
@@ -587,6 +647,11 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
               max="50"
               step="5"
               value={maxTime}
+              onPointerDown={() => setIsTimeSliderActive(true)}
+              onPointerUp={() => setIsTimeSliderActive(false)}
+              onPointerCancel={() => setIsTimeSliderActive(false)}
+              onTouchStart={() => setIsTimeSliderActive(true)}
+              onTouchEnd={() => setIsTimeSliderActive(false)}
               onChange={(e) => {
                 const val = Number(e.target.value);
                 if (val !== maxTime && typeof window !== 'undefined' && 'vibrate' in navigator) {
@@ -596,7 +661,7 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
               }}
               className="ios-slider w-full cursor-pointer touch-manipulation"
               style={{
-                background: `linear-gradient(to right, var(--accent) ${((maxTime - 15) / (50 - 15)) * 100}%, var(--border) ${((maxTime - 15) / (50 - 15)) * 100}%)`,
+                background: `linear-gradient(to right, #4A7856 ${((maxTime - 15) / (50 - 15)) * 100}%, #E3E8E5 ${((maxTime - 15) / (50 - 15)) * 100}%)`,
               }}
             />
           </div>
@@ -1183,48 +1248,46 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
             <span className="text-xs text-text-muted">{matchedExistingRecipes.length} Treffer</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(showAllMatchedRecipes ? matchedExistingRecipes : matchedExistingRecipes.slice(0, 3)).map((recipe) => (
-              <div
-                key={recipe.id}
-                onClick={() => onSelectRecipe(recipe)}
-                className="flex gap-3.5 bg-card p-3.5 rounded-2xl border border-border hover:border-accent/40 hover:shadow-xs transition-all cursor-pointer group"
-              >
-                <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-xl overflow-hidden shrink-0">
-                  <RecipeImage
-                    recipe={recipe}
-                    alt={recipe.title}
-                    imgClassName="w-full h-full object-cover group-hover:scale-103 transition-transform"
-                    size="sm"
-                  />
-                </div>
-                <div className="flex flex-col justify-between flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1.5 mb-1">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-accent-tint text-accent text-xs font-semibold border border-border">
-                      {recipe.category}
-                    </span>
-                  </div>
-                  <h4 className="font-bold text-[16px] text-text-main truncate group-hover:text-accent transition-colors leading-snug">
-                    {recipe.title}
-                  </h4>
-                  <div className="flex items-center flex-wrap gap-x-2.5 gap-y-0.5 text-[13px] text-text-muted font-medium mt-1">
-                    <span className="inline-flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-[#8A918D]" />
-                      <span>{recipe.totalTimeMinutes} Min.</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Flame className="w-3.5 h-3.5 text-amber-600/80" />
-                      <span>{recipe.nutrients.calories} kcal</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-accent font-bold">
-                      <Dumbbell className="w-3.5 h-3.5 text-accent" />
-                      <span>{recipe.nutrients.protein}g</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
+          {/* Basis-Anzeige (erste 3 Rezepte) - Mobil: Listenansicht der Startseite, PC: Rasteransicht der Startseite */}
+          <div className="sm:hidden space-y-3">
+            {matchedExistingRecipes.slice(0, 3).map((recipe, idx) => (
+              <RecipeCardListRow key={recipe.id} recipe={recipe} index={idx} />
             ))}
           </div>
+
+          <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {matchedExistingRecipes.slice(0, 3).map((recipe, idx) => (
+              <RecipeCardUnified key={recipe.id} recipe={recipe} variant="regular" index={idx} />
+            ))}
+          </div>
+
+          {/* Dynamisch animiertes Ein-/Ausfahren für weitere Rezepte */}
+          <AnimatePresence initial={false}>
+            {showAllMatchedRecipes && matchedExistingRecipes.length > 3 && (
+              <motion.div
+                key="more-matched-recipes-container"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                className="overflow-hidden"
+              >
+                {/* Mobile erweiterte Rezepte */}
+                <div className="sm:hidden space-y-3 pt-3">
+                  {matchedExistingRecipes.slice(3).map((recipe, idx) => (
+                    <RecipeCardListRow key={recipe.id} recipe={recipe} index={3 + idx} />
+                  ))}
+                </div>
+
+                {/* Desktop erweiterte Rezepte */}
+                <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-4">
+                  {matchedExistingRecipes.slice(3).map((recipe, idx) => (
+                    <RecipeCardUnified key={recipe.id} recipe={recipe} variant="regular" index={3 + idx} />
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {matchedExistingRecipes.length > 3 && (
             <div className="flex justify-center pt-1">
@@ -1245,26 +1308,25 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
         </div>
       )}
 
-      {/* Two-step Fridge Cook Idea Modal (pitch approval before full generation to save AI tokens) */}
-      <FridgeIdeaModal
-        isOpen={isIdeaModalOpen}
+      {/* Recipe Preview Modal with multi-stage loading, preview and saving animations */}
+      <RecipePreviewModal
+        isOpen={isPreviewModalOpen}
         onClose={() => {
-          setIsIdeaModalOpen(false);
+          setIsPreviewModalOpen(false);
+          setPreviewRecipe(null);
           setModalErrorMessage(null);
         }}
-        idea={currentIdea}
-        isLoadingIdea={isLoadingIdea}
-        isCreatingFinalRecipe={isCreatingFinalRecipe}
+        isLoading={isGenerating}
+        isSaving={isSavingFullRecipe}
+        recipe={previewRecipe}
+        onConfirmSave={handleConfirmSavePreviewRecipe}
+        onDiscard={() => {
+          setIsPreviewModalOpen(false);
+          setPreviewRecipe(null);
+          setModalErrorMessage(null);
+        }}
         errorMessage={modalErrorMessage}
-        onConfirmCreate={handleConfirmCreateFinalRecipe}
-        onRetryIdea={handleRetryIdea}
-        onRetryAfterError={handleRetryAfterError}
-        onCancel={() => {
-          setIsIdeaModalOpen(false);
-          setModalErrorMessage(null);
-        }}
-        isVegan={isVegan}
-        attemptNumber={attemptNumber}
+        onClearError={() => setModalErrorMessage(null)}
       />
     </div>
   );

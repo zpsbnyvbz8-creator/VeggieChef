@@ -67,6 +67,7 @@ import {
   getUserStarRating,
   removeUserStarRating,
   calculateRecipeRatingAndCount,
+  FEATURE_COMMENTS_AND_REVIEWS_ENABLED,
 } from '../data/reviews';
 import { RecipeReview } from '../types';
 
@@ -1899,7 +1900,25 @@ export const RecipeDetailPage: React.FC = () => {
 
         {/* 9. PUBLIC REVIEWS SECTION & PRIVATE NOTE */}
         <section ref={reviewsSectionRef} className="space-y-4">
-          <div className="p-5 sm:p-6 rounded-3xl bg-card border border-border shadow-2xs space-y-5">
+          <div
+            className={`p-5 sm:p-6 rounded-3xl bg-card border border-border shadow-2xs space-y-5 transition-all ${
+              !FEATURE_COMMENTS_AND_REVIEWS_ENABLED
+                ? 'opacity-40 grayscale-[70%] pointer-events-none select-none cursor-not-allowed'
+                : ''
+            }`}
+          >
+            {/* Dezenter Status-Hinweis wenn Funktion vorerst deaktiviert */}
+            {!FEATURE_COMMENTS_AND_REVIEWS_ENABLED && (
+              <div className="flex items-center justify-between pb-3 border-b border-border/70">
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  Kommentare & Notizen
+                </span>
+                <span className="text-xs font-medium text-text-muted bg-surface/90 border border-border px-3 py-1 rounded-full">
+                  Derzeit nicht verfügbar
+                </span>
+              </div>
+            )}
+
             {/* Header: Durchschnitt, Sterne, Zähler & Button "Bewertung schreiben" */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
               <div className="flex items-center gap-4">
@@ -1930,7 +1949,10 @@ export const RecipeDetailPage: React.FC = () => {
                 <button
                   id="toggle-recipe-note-btn"
                   type="button"
+                  disabled={!FEATURE_COMMENTS_AND_REVIEWS_ENABLED}
+                  tabIndex={!FEATURE_COMMENTS_AND_REVIEWS_ENABLED ? -1 : 0}
                   onClick={(e) => {
+                    if (!FEATURE_COMMENTS_AND_REVIEWS_ENABLED) return;
                     e.preventDefault();
                     setIsNoteViewOpen((prev) => {
                       const next = !prev;
@@ -1960,7 +1982,10 @@ export const RecipeDetailPage: React.FC = () => {
                   layout
                   id={isNoteViewOpen ? 'back-to-reviews-btn' : 'write-review-open-btn'}
                   type="button"
+                  disabled={!FEATURE_COMMENTS_AND_REVIEWS_ENABLED}
+                  tabIndex={!FEATURE_COMMENTS_AND_REVIEWS_ENABLED ? -1 : 0}
                   onClick={(e) => {
+                    if (!FEATURE_COMMENTS_AND_REVIEWS_ENABLED) return;
                     e.preventDefault();
                     if (isNoteViewOpen) {
                       setIsNoteViewOpen(false);
@@ -2161,13 +2186,17 @@ export const RecipeDetailPage: React.FC = () => {
                     {recipeReviews.filter((r) => r.text && r.text.trim().length > 0).length === 0 ? (
                       <div className="text-center py-6 px-4 space-y-2">
                         <p className="text-base font-medium text-text-muted">
-                          {userStarRating !== null
+                          {!FEATURE_COMMENTS_AND_REVIEWS_ENABLED
+                            ? 'Derzeit nicht verfügbar'
+                            : userStarRating !== null
                             ? 'Noch keine schriftlichen Kommentare für dieses Rezept.'
                             : 'Noch keine öffentlichen Bewertungen für dieses Rezept.'}
                         </p>
-                        <p className="text-xs text-text-muted">
-                          Koche es nach und teile deine Erfahrung als Erste/r!
-                        </p>
+                        {FEATURE_COMMENTS_AND_REVIEWS_ENABLED && (
+                          <p className="text-xs text-text-muted">
+                            Koche es nach und teile deine Erfahrung als Erste/r!
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-2.5">
@@ -2194,8 +2223,17 @@ export const RecipeDetailPage: React.FC = () => {
                       <button
                         id="view-all-reviews-btn"
                         type="button"
-                        onClick={() => navigate(`/recipes/${recipe.id}/reviews`)}
-                        className="w-full h-12 min-h-[48px] rounded-xl border border-border bg-surface hover:bg-card text-text-main font-bold text-base flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer shadow-2xs"
+                        disabled={!FEATURE_COMMENTS_AND_REVIEWS_ENABLED}
+                        tabIndex={!FEATURE_COMMENTS_AND_REVIEWS_ENABLED ? -1 : 0}
+                        onClick={() => {
+                          if (!FEATURE_COMMENTS_AND_REVIEWS_ENABLED) return;
+                          navigate(`/recipes/${recipe.id}/reviews`);
+                        }}
+                        className={`w-full h-12 min-h-[48px] rounded-xl border border-border bg-surface text-text-main font-bold text-base flex items-center justify-center gap-2 transition-all shadow-2xs ${
+                          !FEATURE_COMMENTS_AND_REVIEWS_ENABLED
+                            ? 'opacity-40 cursor-not-allowed pointer-events-none'
+                            : 'hover:bg-card active:scale-98 cursor-pointer'
+                        }`}
                       >
                         <span>Alle Bewertungen ansehen ({totalReviewsCount})</span>
                       </button>

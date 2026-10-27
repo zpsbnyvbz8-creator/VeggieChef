@@ -15,6 +15,7 @@ import {
   getUserStarRating,
   removeUserStarRating,
   calculateRecipeRatingAndCount,
+  FEATURE_COMMENTS_AND_REVIEWS_ENABLED,
 } from '../data/reviews';
 import { ReviewCard } from '../components/reviews/ReviewCard';
 import { WriteReviewSheet } from '../components/reviews/WriteReviewSheet';
@@ -287,11 +288,17 @@ export const AllReviewsPage: React.FC = () => {
 
           <button
             type="button"
+            disabled={!FEATURE_COMMENTS_AND_REVIEWS_ENABLED}
             onClick={() => {
+              if (!FEATURE_COMMENTS_AND_REVIEWS_ENABLED) return;
               setEditingReview(null);
               setIsWriteSheetOpen(true);
             }}
-            className="h-12 min-h-[48px] px-3.5 sm:px-4 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
+            className={`h-12 min-h-[48px] px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-xs transition-all shrink-0 ${
+              !FEATURE_COMMENTS_AND_REVIEWS_ENABLED
+                ? 'bg-surface border border-border text-text-muted opacity-40 cursor-not-allowed pointer-events-none'
+                : 'bg-accent hover:bg-accent-hover text-on-accent active:scale-95 cursor-pointer'
+            }`}
           >
             <Plus className="w-4 h-4" />
             <span className="hidden xs:inline">Bewertung schreiben</span>
@@ -301,7 +308,15 @@ export const AllReviewsPage: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-3xl w-full mx-auto px-4 sm:px-6 pt-5 space-y-6">
+      <main className={`max-w-3xl w-full mx-auto px-4 sm:px-6 pt-5 space-y-6 ${
+        !FEATURE_COMMENTS_AND_REVIEWS_ENABLED ? 'opacity-40 grayscale-[70%] pointer-events-none select-none' : ''
+      }`}>
+        {!FEATURE_COMMENTS_AND_REVIEWS_ENABLED && (
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-surface border border-border text-text-muted text-xs sm:text-sm font-medium">
+            <span>Kommentare & Bewertungen</span>
+            <span className="bg-card px-2.5 py-1 rounded-full border border-border">Derzeit nicht verfügbar</span>
+          </div>
+        )}
         {/* Zusammenfassungskarte */}
         <section className="p-5 sm:p-6 rounded-3xl bg-card border border-border shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">

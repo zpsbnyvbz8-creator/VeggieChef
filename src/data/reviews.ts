@@ -27,9 +27,24 @@ const SEED_AUTHORS = [
 ];
 
 /**
+ * Global Feature-Flag: Kommentar-, Bewertungs- und Notizenfunktion
+ * Vorübergehend auf false gesetzt. Zum Reaktivieren einfach auf true setzen.
+ */
+export const FEATURE_COMMENTS_AND_REVIEWS_ENABLED = false;
+
+/**
+ * Flag für vorgeschriebene Beispiel-Kommentare.
+ * Standardmäßig false, sodass alle Dummy-/Beispiel-Kommentare gelöscht/deaktiviert sind.
+ */
+export const ENABLE_SEED_REVIEWS = false;
+
+/**
  * Deterministically generates seed reviews for a given recipe
  */
 export function getSeedReviews(recipeId: string): RecipeReview[] {
+  if (!ENABLE_SEED_REVIEWS) {
+    return [];
+  }
   let hash = 0;
   for (let i = 0; i < recipeId.length; i++) {
     hash = (hash * 31 + recipeId.charCodeAt(i)) & 0xffffffff;
@@ -69,6 +84,9 @@ export function getSeedReviews(recipeId: string): RecipeReview[] {
  * Get all reviews for a recipe (seed + user created)
  */
 export function getReviewsForRecipe(recipeId: string): RecipeReview[] {
+  if (!FEATURE_COMMENTS_AND_REVIEWS_ENABLED) {
+    return [];
+  }
   if (typeof window === 'undefined') {
     return getSeedReviews(recipeId);
   }

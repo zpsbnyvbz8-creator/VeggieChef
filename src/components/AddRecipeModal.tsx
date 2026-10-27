@@ -17,7 +17,6 @@ import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 import { useRecipes } from '../context/RecipeContext';
 import { formatIngredientAmount } from '../utils/helpers';
 import { CloseButton } from './ui/CloseButton';
-import { RecipePlaceholder } from './RecipePlaceholder';
 
 interface AddRecipeModalProps {
   isOpen?: boolean;
@@ -680,20 +679,6 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
                   >
                     {/* Titel & Beschreibung */}
                     <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6 space-y-3">
-                      {previewRecipe.image ? (
-                        <div className="relative rounded-xl overflow-hidden border border-border aspect-21/9 bg-card max-h-48">
-                          <img
-                            src={previewRecipe.image}
-                            alt={previewRecipe.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="relative rounded-xl overflow-hidden border border-border aspect-21/9 max-h-48">
-                          <RecipePlaceholder size="md" className="w-full h-full" />
-                        </div>
-                      )}
-
                       <div>
                         <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-accent-tint text-accent border border-accent/20 inline-block mb-2">
                           {previewRecipe.category || 'Rezept'}
