@@ -15,6 +15,7 @@ interface RecipeCardUnifiedProps {
   className?: string;
   showDifficulty?: boolean;
   index?: number;
+  onSelect?: (recipe: Recipe) => void;
 }
 
 const DIFFICULTY_LABEL: Record<Recipe['difficulty'], string> = {
@@ -36,6 +37,7 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
   className = '',
   showDifficulty = true,
   index,
+  onSelect,
 }) => {
   const { favorites, toggleFavorite, dislikedIds } = useRecipes();
   const isFavorite = favorites.includes(recipe.id);
@@ -93,12 +95,22 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
         <h3
           className={`font-bold text-text-main leading-snug line-clamp-2 text-card-title group-hover:text-accent transition-colors`}
         >
-          <Link
-            to={`/recipes/${recipe.id}`}
-            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[-2px] rounded-sm"
-          >
-            {recipe.title}
-          </Link>
+          {onSelect ? (
+            <button
+              type="button"
+              onClick={() => onSelect(recipe)}
+              className="text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[-2px] rounded-sm cursor-pointer"
+            >
+              {recipe.title}
+            </button>
+          ) : (
+            <Link
+              to={`/recipes/${recipe.id}`}
+              className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[-2px] rounded-sm"
+            >
+              {recipe.title}
+            </Link>
+          )}
         </h3>
 
         {/* Infozeile: bricht bei wenig Platz in 2 Zeilen um, Mindesthöhe hält alle Karten gleich hoch */}

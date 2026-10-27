@@ -1,5 +1,6 @@
 import React from 'react';
 import { Minus, Plus } from 'lucide-react';
+import { motion } from 'motion/react';
 
 export interface PortionStepperProps {
   value: number;
@@ -40,8 +41,16 @@ export const PortionStepper: React.FC<PortionStepperProps> = ({
       {/* Dezente vertikale Trennlinie */}
       <div className="h-5 w-[1px] bg-border shrink-0" />
 
-      <span className="px-3 text-sm sm:text-base font-bold text-text-main tabular-nums min-w-[95px] text-center select-none whitespace-nowrap">
-        {value} {value === 1 ? 'Portion' : 'Portionen'}
+      <span className="px-3 text-sm sm:text-base font-bold text-text-main tabular-nums min-w-[95px] text-center select-none whitespace-nowrap overflow-hidden">
+        <motion.span
+          key={value}
+          initial={{ scale: 1.2 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+          className="inline-block"
+        >
+          {value} {value === 1 ? 'Portion' : 'Portionen'}
+        </motion.span>
       </span>
 
       {/* Dezente vertikale Trennlinie */}

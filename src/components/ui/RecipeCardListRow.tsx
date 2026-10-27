@@ -24,6 +24,7 @@ interface RecipeCardListRowProps {
   recipe: Recipe;
   index?: number;
   className?: string;
+  onSelect?: (recipe: Recipe) => void;
 }
 
 /**
@@ -32,7 +33,7 @@ interface RecipeCardListRowProps {
  * (bewusst ohne Beschreibung). Herz-Button identisch zur Einheitskarte
  * (48/40/22/8px).
  */
-export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe, index, className }) => {
+export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe, index, className, onSelect }) => {
   const { favorites, toggleFavorite, dislikedIds } = useRecipes();
   const isFavorite = favorites.includes(recipe.id);
   const isDisliked = dislikedIds.includes(recipe.id);
@@ -80,12 +81,22 @@ export const RecipeCardListRow: React.FC<RecipeCardListRowProps> = ({ recipe, in
       {/* Textbereich */}
       <div className="flex flex-col justify-between flex-1 min-w-0 py-2.5 pl-3 pr-12 sm:py-3 sm:pl-4 sm:pr-14">
         <h3 className="font-bold text-card-title leading-snug line-clamp-2 text-text-main group-hover:text-accent transition-colors">
-          <Link
-            to={detailPath}
-            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[-2px] rounded-sm"
-          >
-            {recipe.title}
-          </Link>
+          {onSelect ? (
+            <button
+              type="button"
+              onClick={() => onSelect(recipe)}
+              className="text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[-2px] rounded-sm cursor-pointer"
+            >
+              {recipe.title}
+            </button>
+          ) : (
+            <Link
+              to={detailPath}
+              className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[-2px] rounded-sm"
+            >
+              {recipe.title}
+            </Link>
+          )}
         </h3>
 
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-card-info font-medium leading-snug text-text-muted mt-auto pt-2">
