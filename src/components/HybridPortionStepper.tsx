@@ -32,16 +32,16 @@ export const PortionStepper: React.FC<PortionStepperProps> = ({
         type="button"
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
-        className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+        className="w-11 h-10 min-w-[44px] min-h-[40px] shrink-0 flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
         aria-label="Portion verringern"
       >
-        <Minus className="w-4 h-4" />
+        <Minus className="w-4 h-4 mx-auto shrink-0" />
       </button>
 
       {/* Dezente vertikale Trennlinie */}
       <div className="h-5 w-[1px] bg-border shrink-0" />
 
-      <span className="px-3 text-sm sm:text-base font-bold text-text-main tabular-nums min-w-[95px] text-center select-none whitespace-nowrap overflow-hidden">
+      <span className="px-3 text-[15px] sm:text-[16px] font-bold text-text-main tabular-nums min-w-[100px] flex-1 text-center select-none whitespace-nowrap overflow-hidden">
         <motion.span
           key={value}
           initial={{ scale: 1.2 }}
@@ -61,10 +61,10 @@ export const PortionStepper: React.FC<PortionStepperProps> = ({
         type="button"
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
-        className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+        className="w-11 h-10 min-w-[44px] min-h-[40px] shrink-0 flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
         aria-label="Portion erhöhen"
       >
-        <Plus className="w-4 h-4" />
+        <Plus className="w-4 h-4 mx-auto shrink-0" />
       </button>
     </div>
   );

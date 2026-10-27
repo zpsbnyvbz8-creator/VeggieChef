@@ -35,6 +35,7 @@ import {
   Utensils,
   Zap,
   Sliders,
+  SlidersHorizontal,
   Star,
   Cookie
 } from 'lucide-react';
@@ -143,6 +144,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const [pickerQuick, setPickerQuick] = useState(false);
   const [pickerHighProtein, setPickerHighProtein] = useState(false);
   const [pickerSortBy, setPickerSortBy] = useState<FilterState['sortBy']>('featured');
+  const [showPickerFilters, setShowPickerFilters] = useState(false);
+  const [showPickerSortDropdown, setShowPickerSortDropdown] = useState(false);
+  const pickerSortRef = useRef<HTMLDivElement>(null);
 
   const pickerCategories = React.useMemo(() => buildCategoryOptions(allRecipes), [allRecipes]);
 
@@ -212,8 +216,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       if (contextMenuRef.current && !contextMenuRef.current.contains(target)) {
         setShowContextMenu(false);
       }
+      if (pickerSortRef.current && !pickerSortRef.current.contains(target)) {
+        setShowPickerSortDropdown(false);
+      }
     };
-    if (showContextMenu) {
+    if (showContextMenu || showPickerSortDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('touchstart', handleClickOutside);
     }
@@ -221,7 +228,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [showContextMenu]);
+  }, [showContextMenu, showPickerSortDropdown]);
 
   // Drag & Drop State for Reordering & Swapping Meals
   const [draggingItem, setDraggingItem] = useState<{
@@ -335,6 +342,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     setPickerQuick(false);
     setPickerHighProtein(false);
     setPickerSortBy('featured');
+    setShowPickerFilters(false);
+    setShowPickerSortDropdown(false);
     setShowRecipePickerModal(true);
   };
 
@@ -954,13 +963,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     };
 
     return (
-      <motion.div
-        layout="position"
+      <div
         key={`${day.dayId}-${mealType}`}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
         draggable={true}
         onDragStart={(e) => {
           e.dataTransfer.setData('text/plain', JSON.stringify({ dayId: day.dayId, mealType }));
@@ -1021,9 +1025,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           {/* Dunkler Verlauf unten für zuverlässigen Kontrast der weißen Schrift */}
           <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/45 to-black/15" />
 
-          {/* Obere Zeile: Weiße Pille links (Mittag/Abend + ggf. Vegetarisch) + Liquid Glass Mülleimer rechts */}
+          {/* Obere Zeile: Weiße Pille links (Mittag/Abend + ggf. Vegetarisch) + Liquid Glass Mülleimer rechts (44x44px) */}
           <div className="absolute top-2.5 inset-x-3 z-20 flex items-start justify-between gap-2 pointer-events-none">
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap pt-1">
               <span className="inline-flex items-center h-7 px-2.5 rounded-full bg-card/95 backdrop-blur-xs text-text-main text-xs font-bold shadow-xs">
                 {mealType === 'lunch' ? 'Mittag' : 'Abend'}
               </span>
@@ -1041,7 +1045,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               )}
             </div>
 
-            {/* Dezenter Liquid Glass Mülleimer oben rechts */}
+            {/* Dezenter Liquid Glass Mülleimer oben rechts (44x44px) */}
             <button
               type="button"
               onClick={(e) => {
@@ -1050,39 +1054,39 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 removeSlot(day.dayId, mealType);
                 onCopyFeedback(`"${slot.recipeTitle || 'Mahlzeit'}" entfernt.`);
               }}
-              className="pointer-events-auto w-9 h-9 min-w-[36px] min-h-[36px] rounded-full flex items-center justify-center bg-black/35 hover:bg-black/55 backdrop-blur-md border border-white/15 text-on-accent/90 hover:text-rose-400 shadow-md transition-all cursor-pointer touch-manipulation active:scale-90 shrink-0"
+              className="pointer-events-auto w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center bg-black/35 hover:bg-black/55 backdrop-blur-md border border-white/15 text-on-accent/90 hover:text-rose-400 shadow-md transition-all cursor-pointer touch-manipulation active:scale-90 shrink-0"
               title="Mahlzeit entfernen"
               aria-label="Mahlzeit entfernen"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-[18px] h-[18px]" />
             </button>
           </div>
 
-          {/* Inhalt unten: Titel ausgeschrieben, darunter Zeit, Sterne, Schwierigkeit (exakt wie Tagesgericht) */}
+          {/* Inhalt unten: Titel ausgeschrieben (größer auf Mobile), darunter Zeit, Sterne, Schwierigkeit (14px) */}
           <div className="relative z-20 p-3.5 pt-12">
-            <h4 className="text-[15px] sm:text-[16px] font-extrabold tracking-tight text-on-accent leading-snug break-words drop-shadow-2xs">
+            <h4 className="text-[18px] sm:text-[17px] font-extrabold tracking-tight text-on-accent leading-snug break-words drop-shadow-2xs">
               {slot.recipeTitle}
             </h4>
 
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-on-accent/95">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] font-semibold text-on-accent/95">
               <span className="inline-flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-on-accent/80 shrink-0" aria-hidden="true" />
+                <Clock className="w-4 h-4 text-on-accent/80 shrink-0" aria-hidden="true" />
                 {totalMinutes} Min.
               </span>
               {hasRating && recipe && (
                 <span className="inline-flex items-center gap-1">
-                  <Star className="w-3.5 h-3.5 fill-[#E67E22] text-[#E67E22] shrink-0" aria-hidden="true" />
+                  <Star className="w-4 h-4 fill-[#E67E22] text-[#E67E22] shrink-0" aria-hidden="true" />
                   {recipe.rating.toFixed(1).replace('.', ',')} ({recipe.reviewCount})
                 </span>
               )}
               <span className="inline-flex items-center gap-1">
-                <ChefHat className="w-3.5 h-3.5 text-on-accent/80 shrink-0" aria-hidden="true" />
+                <ChefHat className="w-4 h-4 text-on-accent/80 shrink-0" aria-hidden="true" />
                 {difficultyText}
               </span>
             </div>
           </div>
         </article>
-      </motion.div>
+      </div>
     );
   };
 
@@ -1092,14 +1096,19 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       ? 'Mittagessen planen'
       : 'Abendessen planen';
 
+    // Wenn ein Tag nur ein Gericht hat und der andere Slot leer ist, übernimmt der leere Slot
+    // exakt den freien Platz (inkl. der 16px, die sonst durch den weißen Zwischenraum zweier Gerichte entstehen),
+    // damit alle Karten in einer Reihe ohne Flexbox-Konflikte beim Ein-/Ausklappen exakt gleich hoch sind.
+    const otherSlotPlanned = mealType === 'lunch' ? Boolean(day.dinner) : Boolean(day.lunch);
+    const heightClass = !showLunchSlot
+      ? 'h-[176px] min-h-[176px]'
+      : otherSlotPlanned
+      ? 'h-[192px] min-h-[192px] flex-1'
+      : 'h-[184px] min-h-[184px] flex-1';
+
     return (
-      <motion.div
-        layout="position"
+      <div
         key={`${day.dayId}-${mealType}-empty`}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.18 }}
         data-drop-slot="true"
         data-day-id={day.dayId}
         data-meal-type={mealType}
@@ -1121,7 +1130,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             setDragOverTarget(null);
           }
         }}
-        className="p-2.5 bg-card flex-1 min-h-[176px] flex flex-col"
+        className={`p-2.5 bg-card flex flex-col transition-[height,min-height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${heightClass}`}
       >
         <button
           type="button"
@@ -1139,7 +1148,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             {label}
           </span>
         </button>
-      </motion.div>
+      </div>
     );
   };
 
@@ -1242,23 +1251,20 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                       className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] origin-top-left sm:origin-top-right bg-card rounded-2xl border border-border shadow-xl p-1.5 z-50 space-y-1"
                     >
-                      {/* Mobile-only Portionen-Stepper im 3-Punkte-Menü */}
-                      <div className="sm:hidden px-3 py-2.5 space-y-2 border-b border-border mb-1">
-                        <span className="block text-xs font-bold uppercase tracking-wider text-text-muted">
-                          Portionen
-                        </span>
-                        <div className="flex items-center justify-between bg-surface border border-border rounded-xl p-0.5 shadow-2xs h-11 min-h-[44px] w-full">
+                      {/* Mobile-only Portionen-Stepper im 3-Punkte-Menü (ohne "Portionen" Schrift darüber) */}
+                      <div className="sm:hidden px-2.5 py-2 border-b border-border mb-1">
+                        <div className="flex items-center bg-surface border border-border rounded-xl p-0.5 shadow-2xs h-11 min-h-[44px] w-full">
                           <button
                             type="button"
                             onClick={() => setPlanServings((prev) => Math.max(1, prev - 1))}
                             disabled={planServings <= 1}
-                            className="w-11 h-10 min-w-[44px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                            className="w-11 h-10 min-w-[44px] min-h-[40px] shrink-0 flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                             aria-label="Portion verringern"
                           >
-                            <Minus className="w-4 h-4" />
+                            <Minus className="w-4 h-4 mx-auto shrink-0" />
                           </button>
                           <div className="h-5 w-[1px] bg-border shrink-0" />
-                          <span className="px-3 text-sm font-bold text-text-main tabular-nums flex-1 text-center select-none whitespace-nowrap overflow-hidden">
+                          <span className="px-3 text-[15px] font-bold text-text-main tabular-nums flex-1 text-center select-none whitespace-nowrap overflow-hidden">
                             <motion.span
                               key={planServings}
                               initial={{ scale: 1.2 }}
@@ -1274,10 +1280,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                             type="button"
                             onClick={() => setPlanServings((prev) => Math.min(24, prev + 1))}
                             disabled={planServings >= 24}
-                            className="w-11 h-10 min-w-[44px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
+                            className="w-11 h-10 min-w-[44px] min-h-[40px] shrink-0 flex items-center justify-center rounded-lg hover:bg-card active:bg-border disabled:opacity-30 text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95"
                             aria-label="Portion erhöhen"
                           >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-4 h-4 mx-auto shrink-0" />
                           </button>
                         </div>
                       </div>
@@ -1391,19 +1397,18 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       </div>
 
       {/* 7-Day Grid + 8th Slot Weekly Summary Card */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4 items-start">
         {mealPlan.map((day) => {
           const isLunchVisible = showLunchSlot;
           const bothMealsPlanned = Boolean(day.lunch && day.dinner);
 
           return (
-            <motion.div
-              layout="position"
+            <div
               key={day.dayId}
               id={`meal-plan-day-${day.dayId}`}
-              className="bg-card rounded-2xl border border-border overflow-hidden shadow-xs hover:border-accent/40 hover:shadow-sm transition-all flex flex-col justify-between"
+              className="bg-card rounded-2xl border border-border overflow-hidden shadow-xs hover:border-accent/40 hover:shadow-sm transition-colors flex flex-col"
             >
-              {/* Day Header Bar: Klickbar zum Ein- und Ausfahren des Mittags-Slots & der Wochenbilanz */}
+              {/* Day Header Bar: Klickbar zum butterweichen Ein- und Ausfahren des Mittags-Slots & der Wochenbilanz */}
               <button
                 type="button"
                 onClick={toggleDayLunch}
@@ -1415,11 +1420,13 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   <span className="font-semibold text-[16px] text-text-main group-hover:text-accent transition-colors">
                     {day.dayName}
                   </span>
-                  <ChevronDown
-                    className={`w-4 h-4 text-text-muted group-hover:text-accent transition-transform duration-200 ${
-                      isLunchVisible ? 'rotate-180' : 'rotate-0'
-                    }`}
-                  />
+                  <motion.span
+                    animate={{ rotate: isLunchVisible ? 180 : 0 }}
+                    transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                    className="inline-flex items-center justify-center text-text-muted group-hover:text-accent"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </motion.span>
                   {!isLunchVisible && day.lunch && (
                     <span
                       className="w-2 h-2 rounded-full bg-accent shrink-0 inline-block"
@@ -1430,49 +1437,54 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               </button>
 
               {/* Slots Interior: Randlos für Gerichte; Trennlinie + Weißraum da, wo Mittags- und Abendgericht kollidieren */}
-              <div className="flex-1 flex flex-col">
+              <div className="flex flex-col">
                 <AnimatePresence initial={false}>
                   {isLunchVisible && (
                     <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                      className={`overflow-hidden flex flex-col ${day.lunch ? 'shrink-0' : 'flex-1'}`}
+                      key="lunch-collapsible"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{
+                        height: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                        opacity: { duration: 0.22, ease: 'easeInOut' },
+                      }}
+                      className="overflow-hidden shrink-0"
                     >
-                      {day.lunch
-                        ? renderMealItem(day, 'lunch', day.lunch)
-                        : renderEmptySlot(day, 'lunch')}
+                      <div className="flex flex-col">
+                        {day.lunch
+                          ? renderMealItem(day, 'lunch', day.lunch)
+                          : renderEmptySlot(day, 'lunch')}
 
-                      {/* Trennlinie: Wenn Mittagsgericht & Abendgericht kollidieren, bleiben Trennlinie und das Weiß bestehen */}
-                      {bothMealsPlanned ? (
-                        <div className="bg-card py-2 shrink-0 flex items-center">
-                          <div className="w-full border-t border-border" />
-                        </div>
-                      ) : (
-                        <div className="border-t border-border shrink-0" />
-                      )}
+                        {/* Trennlinie: Wenn Mittagsgericht & Abendgericht kollidieren, bleiben Trennlinie und das Weiß bestehen */}
+                        {bothMealsPlanned ? (
+                          <div className="bg-card py-2 shrink-0 flex items-center">
+                            <div className="w-full border-t border-border" />
+                          </div>
+                        ) : (
+                          <div className="border-t border-border shrink-0" />
+                        )}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
                 {/* Dinner Slot */}
-                <div className={`flex flex-col ${day.dinner ? 'shrink-0' : 'flex-1'}`}>
+                <div className="flex flex-col shrink-0">
                   {day.dinner
                     ? renderMealItem(day, 'dinner', day.dinner)
                     : renderEmptySlot(day, 'dinner')}
                 </div>
               </div>
-            </motion.div>
+            </div>
           );
         })}
 
-        {/* 8. Slot: Wochen-Zusammenfassung (gekoppelt an das Auf-/Zuklappen der Wochentage) */}
-        <motion.div
-          layout="position"
+        {/* 8. Slot: Wochen-Zusammenfassung (synchron und geschmeidig gekoppelt an die Wochentage) */}
+        <div
           key="weekly-summary-slot"
           id="meal-plan-weekly-summary"
-          className="bg-card rounded-2xl border border-border overflow-hidden shadow-xs hover:border-accent/40 hover:shadow-sm transition-all flex flex-col justify-between"
+          className="bg-card rounded-2xl border border-border overflow-hidden shadow-xs hover:border-accent/40 hover:shadow-sm transition-colors flex flex-col"
         >
           <button
             type="button"
@@ -1485,33 +1497,39 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               <span className="font-semibold text-[16px] text-text-main group-hover:text-accent transition-colors">
                 Wochenbilanz
               </span>
-              <ChevronDown
-                className={`w-4 h-4 text-text-muted group-hover:text-accent transition-transform duration-200 ${
-                  showLunchSlot ? 'rotate-180' : 'rotate-0'
-                }`}
-              />
+              <motion.span
+                animate={{ rotate: showLunchSlot ? 180 : 0 }}
+                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                className="inline-flex items-center justify-center text-text-muted group-hover:text-accent"
+              >
+                <ChevronDown className="w-4 h-4" />
+              </motion.span>
             </div>
           </button>
 
-          <div className="divide-y divide-border flex-1 flex flex-col">
+          <div className="flex flex-col">
             {/* Ausgefahren (gekoppelt an showLunchSlot): Aufgliederung nach Wochentag (Kalorien & Proteine) */}
             <AnimatePresence initial={false}>
               {showLunchSlot && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  key="summary-collapsible"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{
+                    height: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                    opacity: { duration: 0.22, ease: 'easeInOut' },
+                  }}
                   className="overflow-hidden shrink-0"
                 >
-                  <div className="p-3 sm:p-3.5 min-h-[176px] flex flex-col justify-between bg-surface/35">
+                  <div className="px-3.5 py-2.5 h-[184px] flex flex-col justify-between bg-surface/35 border-b border-border">
                     {mealPlan.map((d) => {
                       const dCal = (d.lunch?.calories || 0) + (d.dinner?.calories || 0);
                       const dProt = (d.lunch?.protein || 0) + (d.dinner?.protein || 0);
                       return (
                         <div
                           key={d.dayId}
-                          className="flex items-center justify-between text-xs sm:text-[13px] py-0.5"
+                          className="flex items-center justify-between text-xs sm:text-[13px] leading-tight"
                         >
                           <span className="font-medium text-text-muted">{d.dayName}</span>
                           {dCal > 0 || dProt > 0 ? (
@@ -1532,7 +1550,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             </AnimatePresence>
 
             {/* Eingefahren (immer sichtbar): Kalorien der Woche & Proteine der Woche – dezent, clean, wenig Text */}
-            <div className="p-3 sm:p-3.5 flex-1 min-h-[176px] flex flex-col justify-center">
+            <div
+              className={`p-3 sm:p-3.5 flex flex-col justify-center transition-[height,min-height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                showLunchSlot ? 'h-[184px] min-h-[184px]' : 'h-[176px] min-h-[176px]'
+              }`}
+            >
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="rounded-xl bg-surface/60 border border-border/80 px-3 py-2.5 flex flex-col justify-center">
                   <div className="flex items-center gap-1.5 text-xs font-medium text-text-muted mb-0.5">
@@ -1556,7 +1578,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Undo Notification Banner (Unten am Ende des Wochenplans, exakt gleiches Design wie Einkaufsliste) */}
@@ -1615,7 +1637,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         </div>
       )}
 
-      {/* Redesigned Recipe Picker Modal – Clean, modern, animiert & konsistent mit der Startseite */}
+      {/* Redesigned Recipe Picker Modal – Auf Mobile Vollbild, ohne "Rezept wählen", Filter-Toggle in der Suchleiste & animiertes Sortier-Menü */}
       <AnimatePresence>
         {showRecipePickerModal && (
           <motion.div
@@ -1623,46 +1645,23 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
             onClick={() => setShowRecipePickerModal(false)}
-            className="fixed inset-0 z-50 bg-text-main/55 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 touch-none overscroll-contain"
+            className="fixed inset-0 z-50 bg-text-main/55 backdrop-blur-xs flex items-center justify-center sm:p-4 touch-none overscroll-contain"
           >
             <motion.div
               key="recipe-picker-dialog"
-              initial={{ opacity: 0, y: 24, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.97 }}
-              transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-card rounded-t-3xl sm:rounded-3xl max-w-5xl xl:max-w-6xl w-full flex flex-col h-[92dvh] sm:h-[88dvh] max-h-[860px] shadow-2xl border border-border overscroll-contain overflow-hidden"
+              className="bg-card rounded-none sm:rounded-3xl max-w-5xl xl:max-w-6xl w-full flex flex-col h-dvh sm:h-[88dvh] sm:max-h-[860px] shadow-2xl border-0 sm:border border-border overscroll-contain overflow-hidden"
             >
-              {/* Mobile Grab Handle */}
-              <div className="sm:hidden pt-2.5 pb-1 flex justify-center shrink-0" aria-hidden="true">
-                <span className="w-10 h-1.5 rounded-full bg-border" />
-              </div>
-
-              {/* Header */}
-              <div className="px-4 sm:px-6 pt-2.5 sm:pt-5 pb-3.5 border-b border-border flex items-center justify-between gap-3 shrink-0">
-                <div className="min-w-0 flex flex-col gap-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-bold text-accent bg-accent-tint border border-accent/20">
-                      {mealPlan.find((d) => d.dayId === selectedDayId)?.dayName || 'Wochentag'} · {selectedMealType === 'lunch' ? 'Mittagessen' : 'Abendessen'}
-                    </span>
-                    <span className="text-xs font-medium text-text-muted tabular-nums">
-                      {filteredPickerRecipes.length} {filteredPickerRecipes.length === 1 ? 'Rezept' : 'Rezepte'}
-                    </span>
-                  </div>
-                  <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-text-main truncate">
-                    Rezept wählen
-                  </h3>
-                </div>
-                <CloseButton onClick={() => setShowRecipePickerModal(false)} ariaLabel="Schließen" />
-              </div>
-
-              {/* Search, Sort & Filter Toolbar (wie im aktuellen App-Design) */}
-              <div className="px-4 sm:px-6 py-3 bg-surface/40 border-b border-border space-y-2.5 shrink-0">
-                {/* Zeile 1: Suche & Sortierung */}
+              {/* Top Toolbar: Suchleiste (mit dezentem Filter-Icon rechts, das zu einem Kreuz wird), animiertes Sortier-Dropdown & Schließen-Button */}
+              <div className="px-3.5 sm:px-6 pt-3.5 sm:pt-4 pb-3 bg-card border-b border-border shrink-0">
                 <div className="flex items-center gap-2 sm:gap-2.5">
+                  {/* Suchleiste mit integriertem Filter-Toggle rechts */}
                   <div className="relative flex-1 min-w-0">
                     <Search className="w-[18px] h-[18px] text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
@@ -1670,158 +1669,284 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       value={pickerSearchQuery}
                       onChange={(e) => setPickerSearchQuery(e.target.value)}
                       placeholder="Rezept oder Zutat suchen …"
-                      className="w-full h-11 min-h-[44px] pl-10 pr-10 rounded-xl bg-card border border-border focus:border-accent text-text-main placeholder:text-text-muted text-base font-medium focus:outline-hidden transition-colors shadow-2xs [&::-webkit-search-cancel-button]:hidden"
+                      className={`w-full h-11 min-h-[44px] pl-10 ${
+                        pickerSearchQuery ? 'pr-20' : 'pr-12'
+                      } rounded-xl bg-surface/70 focus:bg-card border border-border focus:border-accent text-text-main placeholder:text-text-muted text-base font-medium focus:outline-hidden transition-all shadow-2xs [&::-webkit-search-cancel-button]:hidden`}
                     />
+
+                    {/* Rechts in der Suchleiste: Optionaler Text-Löschen-Button + Dezentes Filter-Icon (wird bei Klick dynamisch zum Kreuz) */}
+                    <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                      <AnimatePresence>
+                        {pickerSearchQuery && (
+                          <motion.button
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ duration: 0.15 }}
+                            type="button"
+                            onClick={() => setPickerSearchQuery('')}
+                            aria-label="Suchtext löschen"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-main hover:bg-card cursor-pointer touch-manipulation"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </motion.button>
+                        )}
+                      </AnimatePresence>
+
+                      <button
+                        type="button"
+                        id="picker-toggle-filters-btn"
+                        onClick={() => setShowPickerFilters((prev) => !prev)}
+                        aria-label={showPickerFilters ? 'Filter schließen' : 'Filter öffnen'}
+                        aria-expanded={showPickerFilters}
+                        title={showPickerFilters ? 'Filter ausblenden' : 'Filter einblenden'}
+                        className={`relative w-9 h-9 min-w-[36px] min-h-[36px] rounded-lg flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 ${
+                          showPickerFilters
+                            ? 'bg-accent-tint text-accent'
+                            : (pickerCategory !== 'all' || pickerOnlyVegan || pickerOnlyFavorites || pickerQuick || pickerHighProtein)
+                            ? 'text-accent hover:bg-card'
+                            : 'text-text-muted hover:text-text-main hover:bg-card'
+                        }`}
+                      >
+                        <AnimatePresence mode="wait" initial={false}>
+                          {showPickerFilters ? (
+                            <motion.span
+                              key="filter-close-cross"
+                              initial={{ opacity: 0, rotate: -90, scale: 0.7 }}
+                              animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                              exit={{ opacity: 0, rotate: 90, scale: 0.7 }}
+                              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                              className="flex items-center justify-center"
+                            >
+                              <X className="w-[18px] h-[18px] stroke-[2.2]" />
+                            </motion.span>
+                          ) : (
+                            <motion.span
+                              key="filter-open-icon"
+                              initial={{ opacity: 0, rotate: 90, scale: 0.7 }}
+                              animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                              exit={{ opacity: 0, rotate: -90, scale: 0.7 }}
+                              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                              className="flex items-center justify-center"
+                            >
+                              <SlidersHorizontal className="w-[17px] h-[17px]" />
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
+
+                        {/* Dezenter Indikator-Punkt, falls Filter aktiv aber Leiste eingeklappt */}
+                        {!showPickerFilters &&
+                          (pickerCategory !== 'all' ||
+                            pickerOnlyVegan ||
+                            pickerOnlyFavorites ||
+                            pickerQuick ||
+                            pickerHighProtein) && (
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent ring-2 ring-card" />
+                          )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Eigenes UI/UX-animiertes Sortierungs-Dropdown */}
+                  <div className="relative shrink-0" ref={pickerSortRef}>
+                    <button
+                      type="button"
+                      id="picker-sort-dropdown-btn"
+                      onClick={() => setShowPickerSortDropdown((prev) => !prev)}
+                      aria-expanded={showPickerSortDropdown}
+                      aria-label="Sortierung wählen"
+                      className={`h-11 min-h-[44px] px-3 sm:px-3.5 rounded-xl border flex items-center gap-2 text-sm font-semibold transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs ${
+                        showPickerSortDropdown
+                          ? 'bg-accent-tint border-accent/40 text-accent ring-2 ring-accent/20'
+                          : 'bg-surface/70 hover:bg-card border-border hover:border-accent/50 text-text-main'
+                      }`}
+                    >
+                      <ArrowUpDown className="w-4 h-4 text-text-muted shrink-0" aria-hidden="true" />
+                      <span className="hidden sm:inline max-w-[140px] truncate">
+                        {SORT_OPTIONS.find((o) => o.value === pickerSortBy)?.label || 'Sortierung'}
+                      </span>
+                      <motion.span
+                        animate={{ rotate: showPickerSortDropdown ? 180 : 0 }}
+                        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                        className="inline-flex items-center justify-center text-text-muted"
+                      >
+                        <ChevronDown className="w-4 h-4 shrink-0" aria-hidden="true" />
+                      </motion.span>
+                    </button>
+
                     <AnimatePresence>
-                      {pickerSearchQuery && (
-                        <motion.button
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          transition={{ duration: 0.15 }}
-                          type="button"
-                          onClick={() => setPickerSearchQuery('')}
-                          aria-label="Suche leeren"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-text-main hover:bg-surface cursor-pointer touch-manipulation"
+                      {showPickerSortDropdown && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.94, y: -6 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.94, y: -6 }}
+                          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                          className="absolute right-0 top-full mt-2 w-56 origin-top-right bg-card rounded-2xl border border-border shadow-xl p-1.5 z-50 space-y-0.5"
                         >
-                          <X className="w-4 h-4" />
-                        </motion.button>
+                          {SORT_OPTIONS.map((opt) => {
+                            const isSelected = pickerSortBy === opt.value;
+                            return (
+                              <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => {
+                                  setPickerSortBy(opt.value as FilterState['sortBy']);
+                                  setShowPickerSortDropdown(false);
+                                }}
+                                className={`w-full min-h-[42px] px-3 py-2 rounded-xl text-left text-sm font-semibold flex items-center justify-between gap-2 transition-colors cursor-pointer touch-manipulation active:scale-[0.98] ${
+                                  isSelected
+                                    ? 'bg-accent-tint text-accent'
+                                    : 'text-text-main hover:bg-surface'
+                                }`}
+                              >
+                                <span className="truncate">{opt.label}</span>
+                                {isSelected && (
+                                  <motion.span
+                                    initial={{ scale: 0.5, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ duration: 0.15 }}
+                                  >
+                                    <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
+                                  </motion.span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
 
-                  {/* Sortierung exakt wie auf der Startseite */}
-                  <div className="relative shrink-0">
-                    <label htmlFor="picker-sort-by" className="sr-only">
-                      Sortierung
-                    </label>
-                    <ArrowUpDown className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
-                    <select
-                      id="picker-sort-by"
-                      value={pickerSortBy}
-                      onChange={(e) => setPickerSortBy(e.target.value as FilterState['sortBy'])}
-                      className="appearance-none h-11 min-h-[44px] max-w-[10.5rem] sm:max-w-none bg-card border border-border hover:border-accent/50 rounded-xl pl-9 pr-9 text-sm font-semibold text-text-main cursor-pointer focus:outline-hidden focus:border-accent transition-all shadow-2xs"
-                    >
-                      {SORT_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-text-muted absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
-                  </div>
+                  {/* Schließen-Button im Stil der App */}
+                  <CloseButton onClick={() => setShowRecipePickerModal(false)} ariaLabel="Schließen" />
                 </div>
 
-                {/* Zeile 2: Filter- & Kategorie-Chips im Stil der FilterBar auf der Startseite */}
-                <div className="-mx-4 sm:mx-0">
-                  <div className="flex items-center gap-2 overflow-x-auto scrollbar-none px-4 sm:px-0 py-0.5 mask-fade-x">
-                    {/* Alle */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPickerCategory('all');
-                        setPickerOnlyVegan(false);
-                        setPickerOnlyFavorites(false);
-                        setPickerQuick(false);
-                        setPickerHighProtein(false);
+                {/* Dynamisch ausklappbare Badge-Zeile (erscheint nur bei Klick auf das Filter-Icon in der Suchleiste) */}
+                <AnimatePresence initial={false}>
+                  {showPickerFilters && (
+                    <motion.div
+                      key="picker-dynamic-filter-bar"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{
+                        height: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
+                        opacity: { duration: 0.2, ease: 'easeInOut' },
                       }}
-                      className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                        pickerCategory === 'all' && !pickerOnlyVegan && !pickerOnlyFavorites && !pickerQuick && !pickerHighProtein
-                          ? 'bg-accent border-accent text-on-accent shadow-2xs'
-                          : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
-                      }`}
+                      className="overflow-hidden"
                     >
-                      <Sparkles className="w-4 h-4 shrink-0" aria-hidden="true" />
-                      <span>Alle</span>
-                    </button>
+                      <div className="pt-3 -mx-3.5 sm:mx-0">
+                        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none px-3.5 sm:px-0 py-0.5 mask-fade-x">
+                          {/* Alle */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPickerCategory('all');
+                              setPickerOnlyVegan(false);
+                              setPickerOnlyFavorites(false);
+                              setPickerQuick(false);
+                              setPickerHighProtein(false);
+                            }}
+                            className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                              pickerCategory === 'all' && !pickerOnlyVegan && !pickerOnlyFavorites && !pickerQuick && !pickerHighProtein
+                                ? 'bg-accent border-accent text-on-accent shadow-2xs'
+                                : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
+                            }`}
+                          >
+                            <Sparkles className="w-4 h-4 shrink-0" aria-hidden="true" />
+                            <span>Alle</span>
+                          </button>
 
-                    {/* Favoriten */}
-                    <button
-                      type="button"
-                      id="picker-favorites-filter-btn"
-                      onClick={() => setPickerOnlyFavorites((prev) => !prev)}
-                      className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                        pickerOnlyFavorites
-                          ? 'bg-favorite border-favorite text-on-accent shadow-2xs'
-                          : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
-                      }`}
-                    >
-                      <Heart className={`w-4 h-4 shrink-0 ${pickerOnlyFavorites ? 'fill-current' : 'text-favorite'}`} aria-hidden="true" />
-                      <span>Favoriten</span>
-                    </button>
+                          {/* Favoriten */}
+                          <button
+                            type="button"
+                            id="picker-favorites-filter-btn"
+                            onClick={() => setPickerOnlyFavorites((prev) => !prev)}
+                            className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                              pickerOnlyFavorites
+                                ? 'bg-favorite border-favorite text-on-accent shadow-2xs'
+                                : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
+                            }`}
+                          >
+                            <Heart className={`w-4 h-4 shrink-0 ${pickerOnlyFavorites ? 'fill-current' : 'text-favorite'}`} aria-hidden="true" />
+                            <span>Favoriten</span>
+                          </button>
 
-                    {/* Vegan */}
-                    <button
-                      type="button"
-                      id="picker-vegan-filter-btn"
-                      onClick={() => setPickerOnlyVegan((prev) => !prev)}
-                      className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                        pickerOnlyVegan
-                          ? 'bg-accent border-accent text-on-accent shadow-2xs'
-                          : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
-                      }`}
-                    >
-                      <Leaf className="w-4 h-4 shrink-0" aria-hidden="true" />
-                      <span>Vegan</span>
-                    </button>
+                          {/* Vegan */}
+                          <button
+                            type="button"
+                            id="picker-vegan-filter-btn"
+                            onClick={() => setPickerOnlyVegan((prev) => !prev)}
+                            className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                              pickerOnlyVegan
+                                ? 'bg-accent border-accent text-on-accent shadow-2xs'
+                                : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
+                            }`}
+                          >
+                            <Leaf className="w-4 h-4 shrink-0" aria-hidden="true" />
+                            <span>Vegan</span>
+                          </button>
 
-                    {/* Schnell (<= 30 Min.) */}
-                    <button
-                      type="button"
-                      onClick={() => setPickerQuick((prev) => !prev)}
-                      className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                        pickerQuick
-                          ? 'bg-accent border-accent text-on-accent shadow-2xs'
-                          : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
-                      }`}
-                    >
-                      <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
-                      <span>Bis 30 Min.</span>
-                    </button>
+                          {/* Schnell (<= 30 Min.) */}
+                          <button
+                            type="button"
+                            onClick={() => setPickerQuick((prev) => !prev)}
+                            className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                              pickerQuick
+                                ? 'bg-accent border-accent text-on-accent shadow-2xs'
+                                : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
+                            }`}
+                          >
+                            <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
+                            <span>Bis 30 Min.</span>
+                          </button>
 
-                    {/* High Protein */}
-                    <button
-                      type="button"
-                      onClick={() => setPickerHighProtein((prev) => !prev)}
-                      className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                        pickerHighProtein
-                          ? 'bg-accent border-accent text-on-accent shadow-2xs'
-                          : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
-                      }`}
-                    >
-                      <Dumbbell className="w-4 h-4 shrink-0" aria-hidden="true" />
-                      <span>High Protein</span>
-                    </button>
+                          {/* High Protein */}
+                          <button
+                            type="button"
+                            onClick={() => setPickerHighProtein((prev) => !prev)}
+                            className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                              pickerHighProtein
+                                ? 'bg-accent border-accent text-on-accent shadow-2xs'
+                                : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
+                            }`}
+                          >
+                            <Dumbbell className="w-4 h-4 shrink-0" aria-hidden="true" />
+                            <span>High Protein</span>
+                          </button>
 
-                    {pickerCategories.length > 0 && (
-                      <div className="h-5 w-px bg-border shrink-0 mx-0.5" aria-hidden="true" />
-                    )}
+                          {pickerCategories.length > 0 && (
+                            <div className="h-5 w-px bg-border shrink-0 mx-0.5" aria-hidden="true" />
+                          )}
 
-                    {/* Kategorien wie auf der Startseite */}
-                    {pickerCategories.map((cat) => {
-                      const selected = pickerCategory === cat.value;
-                      return (
-                        <button
-                          key={cat.value}
-                          type="button"
-                          onClick={() => setPickerCategory(selected ? 'all' : cat.value)}
-                          className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                            selected
-                              ? 'bg-accent border-accent text-on-accent shadow-2xs'
-                              : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
-                          }`}
-                        >
-                          {getPickerCategoryIcon(cat.value)}
-                          <span>{cat.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                          {/* Kategorien wie auf der Startseite */}
+                          {pickerCategories.map((cat) => {
+                            const selected = pickerCategory === cat.value;
+                            return (
+                              <button
+                                key={cat.value}
+                                type="button"
+                                onClick={() => setPickerCategory(selected ? 'all' : cat.value)}
+                                className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
+                                  selected
+                                    ? 'bg-accent border-accent text-on-accent shadow-2xs'
+                                    : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
+                                }`}
+                              >
+                                {getPickerCategoryIcon(cat.value)}
+                                <span>{cat.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Recipes Content: Mobile = Listenansicht der Startseite, PC = Rasteransicht der Startseite */}
-              <div className="overflow-y-auto flex-1 overscroll-contain px-4 sm:px-6 py-4">
+              <div className="overflow-y-auto flex-1 overscroll-contain px-3.5 sm:px-6 py-4">
                 {filteredPickerRecipes.length === 0 ? (
                   <div className="bg-surface/60 rounded-2xl border border-border px-6 py-12 text-center space-y-3 my-4">
                     <div className="w-12 h-12 rounded-2xl bg-accent-tint text-accent flex items-center justify-center mx-auto">
@@ -1851,7 +1976,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 ) : (
                   <>
                     {/* Mobile: Exakt die Listenansicht-Kacheln der Startseite */}
-                    <div className="sm:hidden space-y-2.5 pb-4">
+                    <div className="sm:hidden space-y-2.5 pb-6">
                       {filteredPickerRecipes.map((recipe, idx) => (
                         <RecipeCardListRow
                           key={recipe.id}
@@ -1882,454 +2007,464 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         )}
       </AnimatePresence>
 
-      {/* AI Meal Plan Generator Modal - Reformed and Streamlined for PC without scrolling */}
+      {/* AI Meal Plan Generator Modal – Im Stil der App (weiße Schließen/Abbrechen-Buttons, komplett animiert & zentrierter Portionen-Stepper) */}
       <AnimatePresence>
         {showAIGeneratorModal && (
-          <motion.div 
+          <motion.div
+            key="ai-generator-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
             onClick={() => setShowAIGeneratorModal(false)}
-            className="fixed inset-0 z-50 bg-text-main/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 touch-none overscroll-contain"
+            className="fixed inset-0 z-50 bg-text-main/55 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 touch-none overscroll-contain"
           >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+            <motion.div
+              key="ai-generator-dialog"
+              initial={{ scale: 0.95, opacity: 0, y: 12 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ scale: 0.95, opacity: 0, y: 12 }}
+              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
               onClick={(e) => e.stopPropagation()}
               className="bg-card rounded-2xl sm:rounded-3xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-border max-h-[94vh] sm:max-h-[90vh] overflow-y-auto overscroll-contain flex flex-col justify-between"
             >
-            {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-border pb-3">
-              <div>
-                <h3 className="text-xl font-bold text-text-main leading-snug">
+              {/* Modal Header mit weißem Schließen-Button im Stil der App */}
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-text-main leading-snug">
                   7-Tage-Wochenplan erstellen
                 </h3>
-              </div>
-              <button
-                onClick={() => setShowAIGeneratorModal(false)}
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-surface border border-border text-[#57534d] hover:text-accent flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0"
-                aria-label="Schließen"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="py-3.5 space-y-4">
-              {/* Hauptpunkte 1, 2, 3 in einem harmonischen Raster */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
-                {/* 1. Mahlzeiten */}
-                <div>
-                  <label className="block font-bold text-text-main text-[13px] uppercase tracking-wider mb-1.5">
-                    1. Mahlzeiten
-                  </label>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setAiMealOption('lunch')}
-                      className={`h-11 min-h-[44px] py-2 px-1 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 ${
-                        aiMealOption === 'lunch'
-                          ? 'bg-accent text-on-accent border-accent shadow-xs'
-                          : 'bg-surface text-text-muted border-border hover:bg-card'
-                      }`}
-                    >
-                      <Sun className="w-4 h-4 shrink-0" />
-                      <span>Mittag</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAiMealOption('dinner')}
-                      className={`h-11 min-h-[44px] py-2 px-1 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 ${
-                        aiMealOption === 'dinner'
-                          ? 'bg-accent text-on-accent border-accent shadow-xs'
-                          : 'bg-surface text-text-muted border-border hover:bg-card'
-                      }`}
-                    >
-                      <Moon className="w-4 h-4 shrink-0" />
-                      <span>Abend</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAiMealOption('both')}
-                      className={`h-11 min-h-[44px] py-2 px-1 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 ${
-                        aiMealOption === 'both'
-                          ? 'bg-accent text-on-accent border-accent shadow-xs'
-                          : 'bg-surface text-text-muted border-border hover:bg-card'
-                      }`}
-                    >
-                      <Utensils className="w-4 h-4 shrink-0" />
-                      <span>Beides</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* 2. Ernährungsweise */}
-                <div>
-                  <label className="block font-bold text-text-main text-[13px] uppercase tracking-wider mb-1.5">
-                    2. Ernährungsweise
-                  </label>
-                  <div className="bg-surface p-1 rounded-xl grid grid-cols-2 gap-1.5 h-11 min-h-[44px] items-center border border-border">
-                    <button
-                      type="button"
-                      id="ai-diet-veggie-btn"
-                      onClick={() => setAiIsVegan(false)}
-                      className={`h-9 min-h-[36px] px-3 rounded-lg transition-all flex items-center justify-center cursor-pointer touch-manipulation select-none ${
-                        !aiIsVegan
-                          ? 'bg-accent text-on-accent shadow-2xs font-semibold'
-                          : 'text-[#57534d] hover:text-text-main border-0 bg-transparent font-medium'
-                      }`}
-                    >
-                      <span style={{ color: !aiIsVegan ? '#ffffff' : '#57534d', fontSize: '15px' }}>Veggie</span>
-                    </button>
-                    <button
-                      type="button"
-                      id="ai-diet-vegan-btn"
-                      onClick={() => setAiIsVegan(true)}
-                      className={`h-9 min-h-[36px] px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none ${
-                        aiIsVegan
-                          ? 'bg-accent text-on-accent shadow-2xs font-semibold'
-                          : 'text-[#57534d] hover:text-text-main border-0 bg-transparent font-medium'
-                      }`}
-                    >
-                      <Leaf className="w-4 h-4 shrink-0" />
-                      <span style={{ color: aiIsVegan ? '#ffffff' : '#57534d', fontSize: '15px' }}>Vegan</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* 3. Portionen */}
-                <div>
-                  <label className="block font-bold text-text-main text-[13px] uppercase tracking-wider mb-1.5">
-                    3. Portionen
-                  </label>
-                  <HybridPortionStepper
-                    value={aiPeopleCount}
-                    onChange={setAiPeopleCount}
-                    idPrefix="ai-modal-people-count"
-                    className="w-full justify-between"
-                  />
-                </div>
+                <CloseButton onClick={() => setShowAIGeneratorModal(false)} ariaLabel="Schließen" />
               </div>
 
-              {/* Dünne Trennlinie vor dem ausklappbaren Element */}
-              <div className="border-t border-border" />
-
-              {/* Wünsche & Feineinstellungen - Einklappbares Element wie in der Vorratskammer */}
-              <div className="space-y-3">
-                {/* Accordion Toggle Header */}
-                <button
-                  type="button"
-                  id="ai-toggle-preferences-btn"
-                  onClick={() => setIsAiPreferencesOpen((prev) => !prev)}
-                  aria-expanded={isAiPreferencesOpen}
-                  aria-controls="ai-meal-plan-extra-section"
-                  className="w-full min-h-[48px] p-3 sm:p-4 rounded-xl bg-accent-tint hover:bg-surface border border-border hover:border-accent/40 flex items-center justify-between text-left cursor-pointer select-none touch-manipulation transition-all group"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex items-center justify-center text-accent shrink-0">
-                      <Sliders className="w-5 h-5 text-accent" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base font-bold text-text-main">
-                          Wünsche &amp; Feineinstellungen
-                        </span>
-                      </div>
-                      {/* Untertitel / Zusammenfassung */}
-                      <p className="text-xs text-text-muted truncate mt-0.5">
-                        {`Max. ${aiMaxMinutes} Min.`}
-                        {' · '}
-                        {aiCalorieFilter !== 'all' ? (aiCalorieFilter === 'high' ? '750+ kcal' : aiCalorieFilter === 'low' ? '< 500 kcal' : '500–700 kcal') : 'Kalorien: Alle'}
-                        {' · '}
-                        {aiProteinFilter !== 'all' ? (aiProteinFilter === 'very-high' ? '40+ g' : aiProteinFilter === 'high' ? '30+ g' : '20+ g') : 'Protein: Alle'}
-                        {aiDifficultyFilter !== 'all' && ` · ${aiDifficultyFilter}`}
-                        {aiWishes.trim() ? ` · "${aiWishes.trim().slice(0, 16)}..."` : ' · Keine Wünsche'}
-                      </p>
+              {/* Modal Body */}
+              <div className="py-4 space-y-4">
+                {/* Hauptpunkte 1, 2, 3 in einem harmonischen Raster */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
+                  {/* 1. Mahlzeiten */}
+                  <div>
+                    <label className="block font-bold text-text-main text-[13px] uppercase tracking-wider mb-1.5">
+                      1. Mahlzeiten
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <motion.button
+                        whileTap={{ scale: 0.96 }}
+                        type="button"
+                        onClick={() => setAiMealOption('lunch')}
+                        className={`h-11 min-h-[44px] py-2 px-1 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation flex items-center justify-center gap-1.5 ${
+                          aiMealOption === 'lunch'
+                            ? 'bg-accent text-on-accent border-accent shadow-xs'
+                            : 'bg-card hover:bg-surface text-text-main border-border shadow-2xs'
+                        }`}
+                      >
+                        <Sun className="w-4 h-4 shrink-0" />
+                        <span>Mittag</span>
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.96 }}
+                        type="button"
+                        onClick={() => setAiMealOption('dinner')}
+                        className={`h-11 min-h-[44px] py-2 px-1 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation flex items-center justify-center gap-1.5 ${
+                          aiMealOption === 'dinner'
+                            ? 'bg-accent text-on-accent border-accent shadow-xs'
+                            : 'bg-card hover:bg-surface text-text-main border-border shadow-2xs'
+                        }`}
+                      >
+                        <Moon className="w-4 h-4 shrink-0" />
+                        <span>Abend</span>
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.96 }}
+                        type="button"
+                        onClick={() => setAiMealOption('both')}
+                        className={`h-11 min-h-[44px] py-2 px-1 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation flex items-center justify-center gap-1.5 ${
+                          aiMealOption === 'both'
+                            ? 'bg-accent text-on-accent border-accent shadow-xs'
+                            : 'bg-card hover:bg-surface text-text-main border-border shadow-2xs'
+                        }`}
+                      >
+                        <Utensils className="w-4 h-4 shrink-0" />
+                        <span>Beides</span>
+                      </motion.button>
                     </div>
                   </div>
 
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted group-hover:text-accent transition-colors shrink-0 ml-2">
-                    <ChevronDown
-                      className={`w-5 h-5 text-accent transition-transform duration-200 shrink-0 ${
-                        isAiPreferencesOpen ? 'rotate-180' : 'rotate-0'
-                      }`}
+                  {/* 2. Ernährungsweise */}
+                  <div>
+                    <label className="block font-bold text-text-main text-[13px] uppercase tracking-wider mb-1.5">
+                      2. Ernährungsweise
+                    </label>
+                    <div className="bg-surface p-1 rounded-xl grid grid-cols-2 gap-1.5 h-11 min-h-[44px] items-center border border-border shadow-2xs">
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        type="button"
+                        id="ai-diet-veggie-btn"
+                        onClick={() => setAiIsVegan(false)}
+                        className={`h-9 min-h-[36px] px-3 rounded-lg transition-all flex items-center justify-center cursor-pointer touch-manipulation select-none text-[15px] ${
+                          !aiIsVegan
+                            ? 'bg-accent text-on-accent shadow-2xs font-semibold'
+                            : 'text-[#57534d] hover:text-text-main bg-transparent font-medium'
+                        }`}
+                      >
+                        <span>Veggie</span>
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        type="button"
+                        id="ai-diet-vegan-btn"
+                        onClick={() => setAiIsVegan(true)}
+                        className={`h-9 min-h-[36px] px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none text-[15px] ${
+                          aiIsVegan
+                            ? 'bg-accent text-on-accent shadow-2xs font-semibold'
+                            : 'text-[#57534d] hover:text-text-main bg-transparent font-medium'
+                        }`}
+                      >
+                        <Leaf className="w-4 h-4 shrink-0" />
+                        <span>Vegan</span>
+                      </motion.button>
+                    </div>
+                  </div>
+
+                  {/* 3. Portionen – Größere Schrift & sauber zentrierte -/+ Buttons */}
+                  <div>
+                    <label className="block font-bold text-text-main text-[13px] uppercase tracking-wider mb-1.5">
+                      3. Portionen
+                    </label>
+                    <HybridPortionStepper
+                      value={aiPeopleCount}
+                      onChange={setAiPeopleCount}
+                      idPrefix="ai-modal-people-count"
+                      className="w-full"
                     />
                   </div>
-                </button>
+                </div>
 
-                {/* Accordion Content mit Schritt-für-Schritt Timeline wie in der Vorratskammer */}
-                <div
-                  id="ai-meal-plan-extra-section"
-                  className={`grid transition-all duration-250 ease-in-out ${
-                    isAiPreferencesOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
-                  }`}
-                >
-                  <div className="overflow-hidden">
-                    <div className="pt-3 pb-1">
-                      <div className="relative pl-1 sm:pl-3 space-y-6 sm:space-y-7 before:absolute before:left-[17px] sm:before:left-[23px] before:top-4 before:bottom-4 before:w-0.5 before:bg-border">
-                        {/* Schritt 4: Zubereitungszeit */}
-                        <div className="relative flex items-start gap-3.5 sm:gap-4.5 group">
-                          {/* Timeline indicator circle */}
-                          <div
-                            className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-on-accent ${
-                              aiMaxMinutes < 50
-                                ? 'bg-accent text-on-accent shadow-2xs'
-                                : 'bg-card border-2 border-accent text-accent'
-                            }`}
-                          >
-                            {aiMaxMinutes < 50 ? <Check className="w-4 h-4 stroke-[3]" /> : '4'}
-                          </div>
+                {/* Dünne Trennlinie vor dem ausklappbaren Element */}
+                <div className="border-t border-border" />
 
-                          {/* Step Content */}
-                          <div className="flex-1 min-w-0 pt-0.5 space-y-2">
-                            <div className="flex items-center justify-between gap-2">
-                              <h4 className="text-[16px] font-bold text-text-main">
-                                Zubereitungszeit
-                              </h4>
-                              <AnimatePresence>
-                                {!isAiTimeSliderActive && (
-                                  <motion.span
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="px-2 py-0.5 rounded-full bg-accent-tint border border-border text-accent font-bold text-xs tabular-nums"
-                                  >
-                                    {aiMaxMinutes} Min.
-                                  </motion.span>
-                                )}
-                              </AnimatePresence>
-                            </div>
-
-                            {/* Schieberegler für Zeit - identisch zur Vorratskammer mit iOS Pille */}
-                            <div className="relative py-2.5 flex items-center">
-                              <AnimatePresence>
-                                {isAiTimeSliderActive && (
-                                  <motion.div
-                                    initial={{ opacity: 0, y: 7, scale: 0.85 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 5, scale: 0.88 }}
-                                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                                    style={{
-                                      left: `calc(${((aiMaxMinutes - 15) / (50 - 15)) * 100}% + ${(0.5 - (aiMaxMinutes - 15) / (50 - 15)) * 24}px)`,
-                                    }}
-                                    className="absolute bottom-[calc(50%+26px)] -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center select-none"
-                                  >
-                                    <div className="px-4 py-1 rounded-full bg-card border border-[#D3DCD5] shadow-lg text-[#355F40] font-extrabold text-[17px] tabular-nums whitespace-nowrap">
-                                      {aiMaxMinutes} Min.
-                                    </div>
-                                    <div className="w-3 h-3 bg-card border-r border-b border-[#D3DCD5] rotate-45 -mt-1.5 shadow-xs" />
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-
-                              <input
-                                id="ai-time-slider"
-                                type="range"
-                                min="15"
-                                max="50"
-                                step="5"
-                                value={aiMaxMinutes}
-                                onPointerDown={() => setIsAiTimeSliderActive(true)}
-                                onPointerUp={() => setIsAiTimeSliderActive(false)}
-                                onPointerCancel={() => setIsAiTimeSliderActive(false)}
-                                onTouchStart={() => setIsAiTimeSliderActive(true)}
-                                onTouchEnd={() => setIsAiTimeSliderActive(false)}
-                                onChange={(e) => {
-                                  const val = Number(e.target.value);
-                                  if (val !== aiMaxMinutes && typeof window !== 'undefined' && 'vibrate' in navigator) {
-                                    try { navigator.vibrate(8); } catch {}
-                                  }
-                                  setAiMaxMinutes(val);
-                                }}
-                                className="ios-slider"
-                                style={{
-                                  background: `linear-gradient(to right, #4A7856 ${((aiMaxMinutes - 15) / (50 - 15)) * 100}%, #E3E8E5 ${((aiMaxMinutes - 15) / (50 - 15)) * 100}%)`,
-                                }}
-                              />
-                            </div>
-                            <div className="flex justify-between text-[13px] text-text-muted font-medium tabular-nums px-0.5">
-                              <span>15 Min.</span>
-                              <span>50 Min.</span>
-                            </div>
-                          </div>
+                {/* Wünsche & Feineinstellungen – Geschmeidig animiertes Einklapp-Element */}
+                <div className="space-y-2.5">
+                  <motion.button
+                    whileTap={{ scale: 0.99 }}
+                    type="button"
+                    id="ai-toggle-preferences-btn"
+                    onClick={() => setIsAiPreferencesOpen((prev) => !prev)}
+                    aria-expanded={isAiPreferencesOpen}
+                    aria-controls="ai-meal-plan-extra-section"
+                    className="w-full min-h-[48px] p-3 sm:p-4 rounded-xl bg-accent-tint hover:bg-surface border border-border hover:border-accent/40 flex items-center justify-between text-left cursor-pointer select-none touch-manipulation transition-colors group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center justify-center text-accent shrink-0">
+                        <Sliders className="w-5 h-5 text-accent" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base font-bold text-text-main">
+                            Wünsche &amp; Feineinstellungen
+                          </span>
                         </div>
-
-                        {/* Schritt 5: Nährwerte & Ansprüche */}
-                        <div className="relative flex items-start gap-3.5 sm:gap-4.5 group">
-                          {/* Timeline indicator circle */}
-                          <div
-                            className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-on-accent ${
-                              (aiCalorieFilter !== 'all' || aiProteinFilter !== 'all' || aiDifficultyFilter !== 'all')
-                                ? 'bg-accent text-on-accent shadow-2xs'
-                                : 'bg-card border-2 border-accent text-accent'
-                            }`}
-                          >
-                            {(aiCalorieFilter !== 'all' || aiProteinFilter !== 'all' || aiDifficultyFilter !== 'all') ? <Check className="w-4 h-4 stroke-[3]" /> : '5'}
-                          </div>
-
-                          {/* Step Content */}
-                          <div className="flex-1 min-w-0 pt-0.5 space-y-2">
-                            <div className="flex items-center justify-between gap-2">
-                              <h4 className="text-[16px] font-bold text-text-main">
-                                Nährwerte &amp; Ansprüche
-                              </h4>
-                              {(aiCalorieFilter !== 'all' || aiProteinFilter !== 'all' || aiDifficultyFilter !== 'all') && (
-                                <span className="text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded-full border border-border">
-                                  Aktiv
-                                </span>
-                              )}
-                            </div>
-
-                            {/* 3 Dropdowns in einer Reihe - Labels direkt in den Boxen in dunklem Grau #57534d */}
-                            <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                              {/* Kalorien */}
-                              <div className="relative">
-                                <select
-                                  id="ai-filter-calories"
-                                  aria-label="Kalorien"
-                                  value={aiCalorieFilter}
-                                  onChange={(e) => setAiCalorieFilter(e.target.value)}
-                                  style={{ color: '#57534d' }}
-                                  className={`w-full appearance-none h-11 min-h-[44px] bg-surface border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-[#57534d] ${
-                                    aiCalorieFilter === 'all' ? '' : 'font-semibold'
-                                  }`}
-                                >
-                                  <option value="all">Kalorien: Alle</option>
-                                  <option value="low">&lt; 500 kcal</option>
-                                  <option value="moderate">500–700 kcal</option>
-                                  <option value="high">750+ kcal</option>
-                                </select>
-                                <ChevronDown className="w-3.5 h-3.5 text-text-muted absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-                              </div>
-
-                              {/* Proteine */}
-                              <div className="relative">
-                                <select
-                                  id="ai-filter-protein"
-                                  aria-label="Proteine"
-                                  value={aiProteinFilter}
-                                  onChange={(e) => setAiProteinFilter(e.target.value)}
-                                  style={{ color: '#57534d' }}
-                                  className={`w-full appearance-none h-11 min-h-[44px] bg-surface border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-[#57534d] ${
-                                    aiProteinFilter === 'all' ? '' : 'font-semibold'
-                                  }`}
-                                >
-                                  <option value="all">Protein: Alle</option>
-                                  <option value="medium">20+ g</option>
-                                  <option value="high">30+ g</option>
-                                  <option value="very-high">40+ g</option>
-                                </select>
-                                <ChevronDown className="w-3.5 h-3.5 text-text-muted absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-                              </div>
-
-                              {/* Schwierigkeit */}
-                              <div className="relative">
-                                <select
-                                  id="ai-filter-difficulty"
-                                  aria-label="Schwierigkeit"
-                                  value={aiDifficultyFilter}
-                                  onChange={(e) => setAiDifficultyFilter(e.target.value)}
-                                  style={{ color: '#57534d' }}
-                                  className={`w-full appearance-none h-11 min-h-[44px] bg-surface border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-[#57534d] ${
-                                    aiDifficultyFilter === 'all' ? '' : 'font-semibold'
-                                  }`}
-                                >
-                                  <option value="all">Schwierigkeit: Alle</option>
-                                  <option value="Einfach">Einfach</option>
-                                  <option value="Mittel">Mittel</option>
-                                  <option value="Anspruchsvoll">Anspruchsvoll</option>
-                                </select>
-                                <ChevronDown className="w-3.5 h-3.5 text-text-muted absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Schritt 6: Wünsche */}
-                        <div className="relative flex items-start gap-3.5 sm:gap-4.5 group">
-                          {/* Timeline indicator circle */}
-                          <div
-                            className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-on-accent ${
-                              aiWishes.trim()
-                                ? 'bg-accent text-on-accent shadow-2xs'
-                                : 'bg-card border-2 border-accent text-accent'
-                            }`}
-                          >
-                            {aiWishes.trim() ? <Check className="w-4 h-4 stroke-[3]" /> : '6'}
-                          </div>
-
-                          {/* Step Content */}
-                          <div className="flex-1 min-w-0 pt-0.5 space-y-2">
-                            <div className="flex items-center justify-between gap-2">
-                              <h4 className="text-[16px] font-bold text-text-main">
-                                Wünsche
-                              </h4>
-                              {aiWishes.trim() && (
-                                <span className="text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded-full border border-border">
-                                  Aktiv
-                                </span>
-                              )}
-                            </div>
-
-                            <input
-                              type="text"
-                              id="ai-meal-plan-wishes-input"
-                              value={aiWishes}
-                              onChange={(e) => setAiWishes(e.target.value)}
-                              placeholder="z. B. keine Pilze, asiatisch angehaucht, schnell gekocht..."
-                              className="w-full h-11 min-h-[44px] px-3.5 py-2 rounded-xl bg-surface focus:bg-card border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[16px] text-text-main placeholder-[#A0A5A1] transition-all outline-none"
-                            />
-                            {aiWishes.trim() && (
-                              <p className="text-[11px] text-accent font-medium">
-                                ✓ Wünsche werden bei der KI-Generierung berücksichtigt
-                              </p>
-                            )}
-                          </div>
-                        </div>
+                        <p className="text-xs text-text-muted truncate mt-0.5">
+                          {`Max. ${aiMaxMinutes} Min.`}
+                          {' · '}
+                          {aiCalorieFilter !== 'all' ? (aiCalorieFilter === 'high' ? '750+ kcal' : aiCalorieFilter === 'low' ? '< 500 kcal' : '500–700 kcal') : 'Kalorien: Alle'}
+                          {' · '}
+                          {aiProteinFilter !== 'all' ? (aiProteinFilter === 'very-high' ? '40+ g' : aiProteinFilter === 'high' ? '30+ g' : '20+ g') : 'Protein: Alle'}
+                          {aiDifficultyFilter !== 'all' && ` · ${aiDifficultyFilter}`}
+                          {aiWishes.trim() ? ` · "${aiWishes.trim().slice(0, 16)}..."` : ' · Keine Wünsche'}
+                        </p>
                       </div>
                     </div>
-                  </div>
+
+                    <motion.div
+                      animate={{ rotate: isAiPreferencesOpen ? 180 : 0 }}
+                      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted group-hover:text-accent transition-colors shrink-0 ml-2"
+                    >
+                      <ChevronDown className="w-5 h-5 text-accent shrink-0" />
+                    </motion.div>
+                  </motion.button>
+
+                  {/* Animierter Accordion-Content */}
+                  <AnimatePresence initial={false}>
+                    {isAiPreferencesOpen && (
+                      <motion.div
+                        key="ai-meal-plan-extra-section"
+                        id="ai-meal-plan-extra-section"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{
+                          height: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+                          opacity: { duration: 0.2, ease: 'easeInOut' },
+                        }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-3 pb-1">
+                          <div className="relative pl-1 sm:pl-3 space-y-6 sm:space-y-7 before:absolute before:left-[17px] sm:before:left-[23px] before:top-4 before:bottom-4 before:w-0.5 before:bg-border">
+                            {/* Schritt 4: Zubereitungszeit */}
+                            <div className="relative flex items-start gap-3.5 sm:gap-4.5 group">
+                              <div
+                                className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-on-accent ${
+                                  aiMaxMinutes < 50
+                                    ? 'bg-accent text-on-accent shadow-2xs'
+                                    : 'bg-card border-2 border-accent text-accent'
+                                }`}
+                              >
+                                {aiMaxMinutes < 50 ? <Check className="w-4 h-4 stroke-[3]" /> : '4'}
+                              </div>
+
+                              <div className="flex-1 min-w-0 pt-0.5 space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <h4 className="text-[16px] font-bold text-text-main">
+                                    Zubereitungszeit
+                                  </h4>
+                                  <AnimatePresence>
+                                    {!isAiTimeSliderActive && (
+                                      <motion.span
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="px-2 py-0.5 rounded-full bg-accent-tint border border-border text-accent font-bold text-xs tabular-nums"
+                                      >
+                                        {aiMaxMinutes} Min.
+                                      </motion.span>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+
+                                <div className="relative py-2.5 flex items-center">
+                                  <AnimatePresence>
+                                    {isAiTimeSliderActive && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: 7, scale: 0.85 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 5, scale: 0.88 }}
+                                        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                                        style={{
+                                          left: `calc(${((aiMaxMinutes - 15) / (50 - 15)) * 100}% + ${(0.5 - (aiMaxMinutes - 15) / (50 - 15)) * 24}px)`,
+                                        }}
+                                        className="absolute bottom-[calc(50%+26px)] -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center select-none"
+                                      >
+                                        <div className="px-4 py-1 rounded-full bg-card border border-[#D3DCD5] shadow-lg text-[#355F40] font-extrabold text-[17px] tabular-nums whitespace-nowrap">
+                                          {aiMaxMinutes} Min.
+                                        </div>
+                                        <div className="w-3 h-3 bg-card border-r border-b border-[#D3DCD5] rotate-45 -mt-1.5 shadow-xs" />
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+
+                                  <input
+                                    id="ai-time-slider"
+                                    type="range"
+                                    min="15"
+                                    max="50"
+                                    step="5"
+                                    value={aiMaxMinutes}
+                                    onPointerDown={() => setIsAiTimeSliderActive(true)}
+                                    onPointerUp={() => setIsAiTimeSliderActive(false)}
+                                    onPointerCancel={() => setIsAiTimeSliderActive(false)}
+                                    onTouchStart={() => setIsAiTimeSliderActive(true)}
+                                    onTouchEnd={() => setIsAiTimeSliderActive(false)}
+                                    onChange={(e) => {
+                                      const val = Number(e.target.value);
+                                      if (val !== aiMaxMinutes && typeof window !== 'undefined' && 'vibrate' in navigator) {
+                                        try { navigator.vibrate(8); } catch {}
+                                      }
+                                      setAiMaxMinutes(val);
+                                    }}
+                                    className="ios-slider"
+                                    style={{
+                                      background: `linear-gradient(to right, #4A7856 ${((aiMaxMinutes - 15) / (50 - 15)) * 100}%, #E3E8E5 ${((aiMaxMinutes - 15) / (50 - 15)) * 100}%)`,
+                                    }}
+                                  />
+                                </div>
+                                <div className="flex justify-between text-[13px] text-text-muted font-medium tabular-nums px-0.5">
+                                  <span>15 Min.</span>
+                                  <span>50 Min.</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Schritt 5: Nährwerte & Ansprüche */}
+                            <div className="relative flex items-start gap-3.5 sm:gap-4.5 group">
+                              <div
+                                className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-on-accent ${
+                                  (aiCalorieFilter !== 'all' || aiProteinFilter !== 'all' || aiDifficultyFilter !== 'all')
+                                    ? 'bg-accent text-on-accent shadow-2xs'
+                                    : 'bg-card border-2 border-accent text-accent'
+                                }`}
+                              >
+                                {(aiCalorieFilter !== 'all' || aiProteinFilter !== 'all' || aiDifficultyFilter !== 'all') ? <Check className="w-4 h-4 stroke-[3]" /> : '5'}
+                              </div>
+
+                              <div className="flex-1 min-w-0 pt-0.5 space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <h4 className="text-[16px] font-bold text-text-main">
+                                    Nährwerte &amp; Ansprüche
+                                  </h4>
+                                  {(aiCalorieFilter !== 'all' || aiProteinFilter !== 'all' || aiDifficultyFilter !== 'all') && (
+                                    <span className="text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded-full border border-border">
+                                      Aktiv
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                                  <div className="relative">
+                                    <select
+                                      id="ai-filter-calories"
+                                      aria-label="Kalorien"
+                                      value={aiCalorieFilter}
+                                      onChange={(e) => setAiCalorieFilter(e.target.value)}
+                                      className={`w-full appearance-none h-11 min-h-[44px] bg-card border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-text-main shadow-2xs ${
+                                        aiCalorieFilter === 'all' ? '' : 'font-semibold'
+                                      }`}
+                                    >
+                                      <option value="all">Kalorien: Alle</option>
+                                      <option value="low">&lt; 500 kcal</option>
+                                      <option value="moderate">500–700 kcal</option>
+                                      <option value="high">750+ kcal</option>
+                                    </select>
+                                    <ChevronDown className="w-3.5 h-3.5 text-text-muted absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                  </div>
+
+                                  <div className="relative">
+                                    <select
+                                      id="ai-filter-protein"
+                                      aria-label="Proteine"
+                                      value={aiProteinFilter}
+                                      onChange={(e) => setAiProteinFilter(e.target.value)}
+                                      className={`w-full appearance-none h-11 min-h-[44px] bg-card border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-text-main shadow-2xs ${
+                                        aiProteinFilter === 'all' ? '' : 'font-semibold'
+                                      }`}
+                                    >
+                                      <option value="all">Protein: Alle</option>
+                                      <option value="medium">20+ g</option>
+                                      <option value="high">30+ g</option>
+                                      <option value="very-high">40+ g</option>
+                                    </select>
+                                    <ChevronDown className="w-3.5 h-3.5 text-text-muted absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                  </div>
+
+                                  <div className="relative">
+                                    <select
+                                      id="ai-filter-difficulty"
+                                      aria-label="Schwierigkeit"
+                                      value={aiDifficultyFilter}
+                                      onChange={(e) => setAiDifficultyFilter(e.target.value)}
+                                      className={`w-full appearance-none h-11 min-h-[44px] bg-card border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-text-main shadow-2xs ${
+                                        aiDifficultyFilter === 'all' ? '' : 'font-semibold'
+                                      }`}
+                                    >
+                                      <option value="all">Schwierigkeit: Alle</option>
+                                      <option value="Einfach">Einfach</option>
+                                      <option value="Mittel">Mittel</option>
+                                      <option value="Anspruchsvoll">Anspruchsvoll</option>
+                                    </select>
+                                    <ChevronDown className="w-3.5 h-3.5 text-text-muted absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Schritt 6: Wünsche */}
+                            <div className="relative flex items-start gap-3.5 sm:gap-4.5 group">
+                              <div
+                                className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-on-accent ${
+                                  aiWishes.trim()
+                                    ? 'bg-accent text-on-accent shadow-2xs'
+                                    : 'bg-card border-2 border-accent text-accent'
+                                }`}
+                              >
+                                {aiWishes.trim() ? <Check className="w-4 h-4 stroke-[3]" /> : '6'}
+                              </div>
+
+                              <div className="flex-1 min-w-0 pt-0.5 space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <h4 className="text-[16px] font-bold text-text-main">
+                                    Wünsche
+                                  </h4>
+                                  {aiWishes.trim() && (
+                                    <span className="text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded-full border border-border">
+                                      Aktiv
+                                    </span>
+                                  )}
+                                </div>
+
+                                <input
+                                  type="text"
+                                  id="ai-meal-plan-wishes-input"
+                                  value={aiWishes}
+                                  onChange={(e) => setAiWishes(e.target.value)}
+                                  placeholder="z. B. keine Pilze, asiatisch angehaucht, schnell gekocht..."
+                                  className="w-full h-11 min-h-[44px] px-3.5 py-2 rounded-xl bg-card border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[16px] text-text-main placeholder-[#A0A5A1] transition-all outline-none shadow-2xs"
+                                />
+                                {aiWishes.trim() && (
+                                  <p className="text-[11px] text-accent font-medium">
+                                    ✓ Wünsche werden bei der KI-Generierung berücksichtigt
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
-            </div>
 
-            {/* Bottom Action Buttons - Direkt sichtbar ohne Scrollen auf PC */}
-            <div className="flex items-center gap-2 sm:gap-3 pt-3 border-t border-border">
-              <button
-                type="button"
-                onClick={() => setShowAIGeneratorModal(false)}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-surface border border-border hover:bg-accent-tint text-[#57534d] font-semibold text-sm cursor-pointer touch-manipulation active:scale-95 h-11 min-h-[44px]"
-              >
-                Abbrechen
-              </button>
-              <button
-                type="button"
-                id="submit-ai-meal-plan-btn"
-                disabled={isGeneratingPlan}
-                onClick={handleGenerateAIMealPlan}
-                className="flex-2 py-2.5 px-5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent font-semibold text-base flex items-center justify-center gap-2 shadow-xs transition-all disabled:opacity-50 cursor-pointer touch-manipulation active:scale-95 h-11 min-h-[44px]"
-              >
-                {isGeneratingPlan ? (
-                  <>
-                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-on-accent" />
-                    <span>Generiere Plan...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-on-accent" />
-                    <span>Plan automatisch generieren</span>
-                  </>
-                )}
-              </button>
-            </div>
+              {/* Bottom Action Buttons – Abbrechen-Button im weißen Stil der App & animiert */}
+              <div className="flex items-center gap-2 sm:gap-3 pt-3 border-t border-border">
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  type="button"
+                  onClick={() => setShowAIGeneratorModal(false)}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-card hover:bg-surface active:bg-surface border border-border text-text-main font-semibold text-sm sm:text-base shadow-2xs transition-colors cursor-pointer touch-manipulation h-11 min-h-[44px]"
+                >
+                  Abbrechen
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  id="submit-ai-meal-plan-btn"
+                  disabled={isGeneratingPlan}
+                  onClick={handleGenerateAIMealPlan}
+                  className="flex-2 py-2.5 px-5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-xs transition-all disabled:opacity-50 cursor-pointer touch-manipulation h-11 min-h-[44px]"
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    {isGeneratingPlan ? (
+                      <motion.span
+                        key="ai-generating"
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.16 }}
+                        className="inline-flex items-center gap-2"
+                      >
+                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-on-accent" />
+                        <span>Generiere Plan...</span>
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="ai-generate-ready"
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.16 }}
+                        className="inline-flex items-center gap-2"
+                      >
+                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-on-accent" />
+                        <span>Plan automatisch generieren</span>
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
 
       {/* Safety Confirmation Modal: ONLY for clearing entire week */}
       {showConfirmClearAll && (
