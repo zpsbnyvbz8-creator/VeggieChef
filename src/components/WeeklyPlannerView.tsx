@@ -1025,42 +1025,42 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           {/* Dunkler Verlauf unten für zuverlässigen Kontrast der weißen Schrift */}
           <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/45 to-black/15" />
 
-          {/* Obere Zeile: Weiße Pille links (Mittag/Abend + ggf. Vegetarisch) + Liquid Glass Mülleimer rechts (44x44px) */}
-          <div className="absolute top-2.5 inset-x-3 z-20 flex items-start justify-between gap-2 pointer-events-none">
-            <div className="flex items-center gap-1.5 flex-wrap pt-1">
-              <span className="inline-flex items-center h-7 px-2.5 rounded-full bg-card/95 backdrop-blur-xs text-text-main text-xs font-bold shadow-xs">
-                {mealType === 'lunch' ? 'Mittag' : 'Abend'}
+          {/* Icon oben links: Sonne für Mittag, Halbmond für Abend – reinweiß mit dezentem Kontur-Schatten (ohne Hintergrund-Box) */}
+          <div className="absolute top-3.5 left-3.5 z-20 pointer-events-none flex items-center gap-2">
+            {mealType === 'lunch' ? (
+              <Sun
+                className="w-5 h-5 text-white stroke-[2.2] drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.75)]"
+                aria-label="Mittagessen"
+              />
+            ) : (
+              <Moon
+                className="w-5 h-5 text-white stroke-[2.2] drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.75)]"
+                aria-label="Abendessen"
+              />
+            )}
+
+            {isSwapTarget && (
+              <span className="inline-flex items-center h-7 px-2.5 rounded-full bg-accent text-on-accent text-xs font-bold shadow-xs">
+                Tauschen ⇄
               </span>
-
-              {diet === 'vegetarisch' && (
-                <span className="inline-flex items-center h-7 px-2.5 rounded-full bg-card/95 backdrop-blur-xs text-text-main text-xs font-bold shadow-xs">
-                  Vegetarisch
-                </span>
-              )}
-
-              {isSwapTarget && (
-                <span className="inline-flex items-center h-7 px-2.5 rounded-full bg-accent text-on-accent text-xs font-bold shadow-xs">
-                  Tauschen ⇄
-                </span>
-              )}
-            </div>
-
-            {/* Dezenter Liquid Glass Mülleimer oben rechts (44x44px) */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                removeSlot(day.dayId, mealType);
-                onCopyFeedback(`"${slot.recipeTitle || 'Mahlzeit'}" entfernt.`);
-              }}
-              className="pointer-events-auto w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center bg-black/35 hover:bg-black/55 backdrop-blur-md border border-white/15 text-on-accent/90 hover:text-rose-400 shadow-md transition-all cursor-pointer touch-manipulation active:scale-90 shrink-0"
-              title="Mahlzeit entfernen"
-              aria-label="Mahlzeit entfernen"
-            >
-              <Trash2 className="w-[18px] h-[18px]" />
-            </button>
+            )}
           </div>
+
+          {/* Dezenter Liquid Glass Mülleimer oben rechts (44x44px) */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              removeSlot(day.dayId, mealType);
+              onCopyFeedback(`"${slot.recipeTitle || 'Mahlzeit'}" entfernt.`);
+            }}
+            className="absolute top-2.5 right-3 z-20 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center bg-black/35 hover:bg-black/55 backdrop-blur-md border border-white/15 text-on-accent/90 hover:text-rose-400 shadow-md transition-all cursor-pointer touch-manipulation active:scale-90 shrink-0"
+            title="Mahlzeit entfernen"
+            aria-label="Mahlzeit entfernen"
+          >
+            <Trash2 className="w-[18px] h-[18px]" />
+          </button>
 
           {/* Inhalt unten: Titel ausgeschrieben (größer auf Mobile), darunter Zeit, Sterne, Schwierigkeit (14px) */}
           <div className="relative z-20 p-3.5 pt-12">
@@ -1096,16 +1096,6 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       ? 'Mittagessen planen'
       : 'Abendessen planen';
 
-    // Wenn ein Tag nur ein Gericht hat und der andere Slot leer ist, übernimmt der leere Slot
-    // exakt den freien Platz (inkl. der 16px, die sonst durch den weißen Zwischenraum zweier Gerichte entstehen),
-    // damit alle Karten in einer Reihe ohne Flexbox-Konflikte beim Ein-/Ausklappen exakt gleich hoch sind.
-    const otherSlotPlanned = mealType === 'lunch' ? Boolean(day.dinner) : Boolean(day.lunch);
-    const heightClass = !showLunchSlot
-      ? 'h-[176px] min-h-[176px]'
-      : otherSlotPlanned
-      ? 'h-[192px] min-h-[192px] flex-1'
-      : 'h-[184px] min-h-[184px] flex-1';
-
     return (
       <div
         key={`${day.dayId}-${mealType}-empty`}
@@ -1130,7 +1120,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             setDragOverTarget(null);
           }
         }}
-        className={`p-2.5 bg-card flex flex-col transition-[height,min-height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${heightClass}`}
+        className="p-2.5 bg-card flex flex-col h-[176px] min-h-[176px]"
       >
         <button
           type="button"
@@ -1456,13 +1446,15 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                           ? renderMealItem(day, 'lunch', day.lunch)
                           : renderEmptySlot(day, 'lunch')}
 
-                        {/* Trennlinie: Wenn Mittagsgericht & Abendgericht kollidieren, bleiben Trennlinie und das Weiß bestehen */}
+                        {/* Direkter Übergang: Abstand komplett entfernt, dezente Trennlinie in der Hintergrundfarbe der App, die vor dem horizontalen Ende aufhört */}
                         {bothMealsPlanned ? (
-                          <div className="bg-card py-2 shrink-0 flex items-center">
-                            <div className="w-full border-t border-border" />
+                          <div className="w-full shrink-0 flex items-center justify-center -my-[1px] relative z-10 pointer-events-none">
+                            <div className="w-[84%] h-[2px] bg-page bg-[var(--bg-page)] rounded-full shadow-2xs" />
                           </div>
                         ) : (
-                          <div className="border-t border-border shrink-0" />
+                          <div className="w-full shrink-0 flex items-center justify-center">
+                            <div className="w-[84%] border-t border-border" />
+                          </div>
                         )}
                       </div>
                     </motion.div>
@@ -1522,7 +1514,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   }}
                   className="overflow-hidden shrink-0"
                 >
-                  <div className="px-3.5 py-2.5 h-[184px] flex flex-col justify-between bg-surface/35 border-b border-border">
+                  <div className="px-3.5 py-2.5 h-[176px] flex flex-col justify-between bg-surface/35 border-b border-border">
                     {mealPlan.map((d) => {
                       const dCal = (d.lunch?.calories || 0) + (d.dinner?.calories || 0);
                       const dProt = (d.lunch?.protein || 0) + (d.dinner?.protein || 0);
@@ -1551,9 +1543,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
             {/* Eingefahren (immer sichtbar): Kalorien der Woche & Proteine der Woche – dezent, clean, wenig Text */}
             <div
-              className={`p-3 sm:p-3.5 flex flex-col justify-center transition-[height,min-height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                showLunchSlot ? 'h-[184px] min-h-[184px]' : 'h-[176px] min-h-[176px]'
-              }`}
+              className="p-3 sm:p-3.5 h-[176px] min-h-[176px] flex flex-col justify-center"
             >
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="rounded-xl bg-surface/60 border border-border/80 px-3 py-2.5 flex flex-col justify-center">
