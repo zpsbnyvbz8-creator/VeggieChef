@@ -24,6 +24,7 @@ import {
   Clock,
   Users
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { CookedLog, Recipe } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 import { computeAchievements, AchievementItem } from '../data/achievements';
@@ -250,57 +251,60 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
         </p>
       </div>
 
-      {/* Confirmation Modal: Achtung */}
-      {showConfirmModal && (
-        <div 
-          onClick={() => setShowConfirmModal(false)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs touch-none overscroll-contain animate-in fade-in duration-200"
-        >
-          <div 
-            onClick={(e) => e.stopPropagation()}
-            className="bg-card rounded-3xl p-5 sm:p-8 max-w-md w-full shadow-2xl border border-border space-y-4 sm:space-y-5 animate-in zoom-in-95 duration-200 overscroll-contain"
+      {/* Clean, Subtle Confirmation Modal */}
+      <AnimatePresence>
+        {showConfirmModal && (
+          <motion.div
+            key="confirm-clear-stats-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => setShowConfirmModal(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs touch-none overscroll-contain"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
-              </div>
-              <div>
-                <span className="text-xs font-bold text-amber-600 uppercase tracking-wider">Achtung: Bestätigung erforderlich</span>
-                <h3 className="text-xl font-bold text-text-main leading-snug">
-                  Statistiken wirklich löschen?
-                </h3>
-              </div>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl p-5 sm:p-6 max-w-sm w-full shadow-xl border border-border space-y-3.5 overscroll-contain"
+            >
+              <h3 className="text-lg font-bold text-text-main leading-snug">
+                Statistiken zurücksetzen?
+              </h3>
 
-            <p className="text-[16px] text-[#57534d] leading-relaxed">
-              Bist du sicher, dass du deinen gesamten Kochverlauf und alle <strong className="text-text-main">{logs.length} erfassten Einträge</strong> löschen möchtest? Alle bisher berechneten CO₂- und Wasserersparnisse werden zurückgesetzt.
-            </p>
+              <p className="text-[15px] text-text-muted leading-relaxed">
+                Dein gesamter Kochverlauf ({logs.length} {logs.length === 1 ? 'Eintrag' : 'Einträge'}) sowie die berechneten CO₂- und Wasserersparnisse werden zurückgesetzt.
+              </p>
 
-            <div className="flex items-center justify-end gap-2.5 sm:gap-3 pt-2">
-              <button
-                id="cancel-clear-stats-btn"
-                type="button"
-                onClick={() => setShowConfirmModal(false)}
-                className="min-h-[44px] sm:min-h-[48px] px-5 py-3 rounded-xl border border-border bg-card hover:bg-surface text-[#57534d] font-semibold text-[16px] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-              >
-                Abbrechen
-              </button>
-              <button
-                id="confirm-clear-stats-btn"
-                type="button"
-                onClick={() => {
-                  setShowConfirmModal(false);
-                  handleClearAllLogs();
-                }}
-                className="min-h-[44px] sm:min-h-[48px] px-5 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-on-accent font-semibold text-[16px] shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Ja, wirklich löschen</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <div className="flex items-center justify-end gap-2 pt-1.5">
+                <button
+                  id="cancel-clear-stats-btn"
+                  type="button"
+                  onClick={() => setShowConfirmModal(false)}
+                  className="min-h-[44px] px-4 py-2 rounded-xl border border-border bg-surface hover:bg-accent-tint text-text-main font-semibold text-[15px] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  id="confirm-clear-stats-btn"
+                  type="button"
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    handleClearAllLogs();
+                  }}
+                  className="min-h-[44px] px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-on-accent font-semibold text-[15px] shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Zurücksetzen</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">

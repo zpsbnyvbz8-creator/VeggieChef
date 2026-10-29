@@ -2456,57 +2456,58 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         )}
       </AnimatePresence>
 
-      {/* Safety Confirmation Modal: ONLY for clearing entire week */}
-      {showConfirmClearAll && (
-        <div 
-          id="confirm-clear-all-modal-backdrop"
-          onClick={() => setShowConfirmClearAll(false)}
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150 touch-none overscroll-contain"
-        >
-          <div 
-            onClick={(e) => e.stopPropagation()}
-            className="bg-card rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-xl border border-border space-y-4 animate-in zoom-in-95 duration-150 overscroll-contain"
+      {/* Clean, Subtle Confirmation Modal for clearing entire week */}
+      <AnimatePresence>
+        {showConfirmClearAll && (
+          <motion.div
+            key="confirm-clear-all-modal-backdrop"
+            id="confirm-clear-all-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => setShowConfirmClearAll(false)}
+            className="fixed inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-center justify-center p-4 touch-none overscroll-contain"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-rose-600" />
-              </div>
-              <div>
-                <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">
-                  Sicherheitsabfrage
-                </span>
-                <h3 className="text-xl font-bold text-text-main">
-                  Gesamten Wochenplan leeren?
-                </h3>
-              </div>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl p-5 sm:p-6 max-w-sm w-full shadow-xl border border-border space-y-3.5 overscroll-contain"
+            >
+              <h3 className="text-lg font-bold text-text-main leading-snug">
+                Wochenplan leeren?
+              </h3>
 
-            <p className="text-[16px] text-[#57534d] leading-relaxed">
-              Möchtest du wirklich alle geplanten Mahlzeiten dieser Woche aus deinem Wochenplan löschen? Du kannst diese Aktion danach über den Rückgängig-Button widerrufen.
-            </p>
+              <p className="text-[15px] text-text-muted leading-relaxed">
+                Alle geplanten Mahlzeiten dieser Woche werden aus dem Plan entfernt. Du kannst dies direkt danach rückgängig machen.
+              </p>
 
-            <div className="flex items-center justify-end gap-2.5 pt-2">
-              <button
-                id="cancel-clear-plan-btn"
-                type="button"
-                onClick={() => setShowConfirmClearAll(false)}
-                className="min-h-[44px] sm:min-h-[48px] h-12 px-5 rounded-xl border border-border bg-card hover:bg-surface text-[#57534d] font-semibold text-[16px] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-              >
-                Abbrechen
-              </button>
-              <button
-                id="confirm-clear-plan-btn"
-                type="button"
-                onClick={handleConfirmClearAll}
-                className="min-h-[44px] sm:min-h-[48px] h-12 px-5 rounded-xl bg-rose-600 hover:bg-rose-700 text-on-accent font-semibold text-[16px] shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-2"
-              >
-                <Trash2 className="w-4 h-4 text-on-accent" />
-                <span>Ja, Plan leeren</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <div className="flex items-center justify-end gap-2 pt-1.5">
+                <button
+                  id="cancel-clear-plan-btn"
+                  type="button"
+                  onClick={() => setShowConfirmClearAll(false)}
+                  className="min-h-[44px] px-4 py-2 rounded-xl border border-border bg-surface hover:bg-accent-tint text-text-main font-semibold text-[15px] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  id="confirm-clear-plan-btn"
+                  type="button"
+                  onClick={handleConfirmClearAll}
+                  className="min-h-[44px] px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-on-accent font-semibold text-[15px] shadow-xs transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <Trash2 className="w-4 h-4 text-on-accent" />
+                  <span>Plan leeren</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Alle Wochen Modal (Dezent & Minimalistisch) */}
       {showAllWeeksModal && (

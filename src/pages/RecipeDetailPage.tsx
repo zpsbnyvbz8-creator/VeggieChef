@@ -2322,46 +2322,53 @@ export const RecipeDetailPage: React.FC = () => {
         }}
       />
 
-      {/* 5. Delete Confirmation Modal */}
-      {isDeleteConfirmOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
-          onClick={() => setIsDeleteConfirmOpen(false)}
-        >
-          <div
-            className="bg-card rounded-3xl max-w-sm w-full p-6 space-y-4 border border-border shadow-2xl animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
+      {/* 5. Clean, Subtle Delete Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteConfirmOpen && (
+          <motion.div
+            key="delete-recipe-modal-backdrop"
+            role="dialog"
+            aria-modal="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-center justify-center p-4"
+            onClick={() => setIsDeleteConfirmOpen(false)}
           >
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
-              <Trash2 className="w-6 h-6" />
-            </div>
-            <div className="text-center space-y-1.5">
-              <h3 className="text-xl font-bold text-text-main">Rezept löschen?</h3>
-              <p className="text-[16px] text-[#57534d] leading-relaxed">
-                Möchtest du "{recipe.title}" wirklich unwiderruflich aus deiner Rezeptsammlung entfernen?
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="bg-card rounded-2xl max-w-sm w-full p-5 sm:p-6 space-y-3.5 border border-border shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-text-main leading-snug">Rezept löschen?</h3>
+              <p className="text-[15px] text-text-muted leading-relaxed">
+                „{recipe.title}“ wird dauerhaft aus deiner Rezeptsammlung entfernt.
               </p>
-            </div>
-            <div className="flex items-center gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsDeleteConfirmOpen(false)}
-                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-[#57534d] bg-surface hover:bg-accent-tint border border-border cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-              >
-                Abbrechen
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteConfirm}
-                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-on-accent bg-rose-600 hover:bg-rose-700 shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-              >
-                Endgültig löschen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <div className="flex items-center justify-end gap-2 pt-1.5">
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteConfirmOpen(false)}
+                  className="min-h-[44px] px-4 py-2 rounded-xl text-[15px] font-semibold text-text-main bg-surface hover:bg-accent-tint border border-border cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center transition-colors"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteConfirm}
+                  className="min-h-[44px] px-4 py-2 rounded-xl text-[15px] font-semibold text-on-accent bg-rose-600 hover:bg-rose-700 shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-1.5 transition-all"
+                >
+                  <Trash2 className="w-4 h-4 text-on-accent" />
+                  <span>Löschen</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 6. "Gericht gekocht" Star & Notes Dialog */}
       {showCookedDialog && (

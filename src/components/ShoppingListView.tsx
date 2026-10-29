@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  ShoppingCart, 
   Copy, 
   Check, 
   Trash2, 
@@ -9,14 +8,14 @@ import {
   RotateCcw, 
   List, 
   LayoutGrid, 
-  AlertTriangle, 
   Pencil, 
   Minus, 
   X,
   ChevronDown,
   Sparkles,
-  GripVertical,
-  MoreHorizontal
+  MoreHorizontal,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingItem, IngredientCategory } from '../types';
@@ -76,13 +75,35 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const items = props.items ?? shoppingCtx.items;
   const setItems = props.setItems ?? shoppingCtx.setItems;
   const onCopyFeedback = props.onCopyFeedback ?? toastCtx.showToast;
-  const syncConfig = props.syncConfig ?? syncCtx.syncConfig;
-  const onOpenSyncModal = props.onOpenSyncModal ?? syncCtx.openSyncModal;
 
   const [copied, setCopied] = useState(false);
   const [quickAddInput, setQuickAddInput] = useState('');
   const [categoryChoice, setCategoryChoice] = useState<'auto' | IngredientCategory>('auto');
   const [viewMode, setViewMode] = useState<'categorized' | 'flat'>('categorized');
+
+  // Toggleable Recipe Source ("Herkunft der Zutat")
+  const [showRecipeSource, setShowRecipeSource] = useState<boolean>(() =>
+    loadFromLocalStorage('veggiechef_show_recipe_source', true)
+  );
+
+  const toggleShowRecipeSource = () => {
+    setShowRecipeSource((prev) => {
+      const next = !prev;
+      saveToLocalStorage('veggiechef_show_recipe_source', next);
+      onCopyFeedback(next ? 'Rezept-Herkunft eingeblendet' : 'Rezept-Herkunft ausgeblendet');
+      return next;
+    });
+  };
+
+  // Delayed Check-Off (~3 seconds) so accidental taps can be undone before disappearing
+  const [pendingCompleteIds, setPendingCompleteIds] = useState<Record<string, boolean>>({});
+  const pendingTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  useEffect(() => {
+    return () => {
+      Object.values(pendingTimeoutsRef.current).forEach(clearTimeout);
+    };
+  }, []);
 
   // Shelf (Category) reorder state via drag and drop
   const [shelfOrder, setShelfOrder] = useState<IngredientCategory[]>(() =>
@@ -134,36 +155,45 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       setTouchCurrentOffset(0);
       setTimeout(() => {
         justClosedSwipeMenuRef.current = false;
-      }, 500);
+      }, 450);
     }
   };
 
-  // Auto-close swiped menu when tapping anywhere outside on the screen
+  // Auto-close swiped menu ONLY on a genuine tap/click outside (NOT when starting a scroll!)
   useEffect(() => {
     if (!swipedItemId) return;
 
-    const handleGlobalTap = (e: MouseEvent | TouchEvent) => {
-      // Wenn das Menü erst vor kurzem (< 350ms) aufgeswipt wurde, nicht durch auslaufende Events schließen
-      if (Date.now() - lastSwipedTimeRef.current < 350) {
-        return;
-      }
-      const target = e.target as HTMLElement | null;
-      // Falls auf die Swipe-Aktionsbuttons (Stift, Mülleimer) geklickt wird, dieses Event zulassen
-      if (target?.closest('[data-swipe-action="true"]')) {
-        return;
-      }
-      // Ansonsten schließt jeder Klick/Tap außerhalb das Menü
-      closeSwipeMenu();
+    let pointerStart: { x: number; y: number; target: EventTarget | null } | null = null;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      if (Date.now() - lastSwipedTimeRef.current < 300) return;
+      pointerStart = { x: e.clientX, y: e.clientY, target: e.target };
     };
 
-    // Leichte Verzögerung damit nicht das Loslassen des Touches sofort schließt
+    const handlePointerUp = (e: PointerEvent) => {
+      if (!pointerStart) return;
+      const dist = Math.hypot(e.clientX - pointerStart.x, e.clientY - pointerStart.y);
+      const target = (e.target || pointerStart.target) as HTMLElement | null;
+      pointerStart = null;
+
+      // Nur schließen, wenn es ein echtes Tippen war (< 10px Bewegung) und kein Scrollen
+      if (dist < 10) {
+        if (target?.closest('[data-swipe-action="true"]')) {
+          return;
+        }
+        closeSwipeMenu();
+      }
+    };
+
     const timer = setTimeout(() => {
-      window.addEventListener('pointerdown', handleGlobalTap, true);
+      window.addEventListener('pointerdown', handlePointerDown, true);
+      window.addEventListener('pointerup', handlePointerUp, true);
     }, 40);
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener('pointerdown', handleGlobalTap, true);
+      window.removeEventListener('pointerdown', handlePointerDown, true);
+      window.removeEventListener('pointerup', handlePointerUp, true);
     };
   }, [swipedItemId]);
 
@@ -182,13 +212,24 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
   useEffect(() => {
     if (!showContextMenu) return;
-    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
-      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+    let startPos: { x: number; y: number } | null = null;
+    const handleDown = (e: PointerEvent) => {
+      startPos = { x: e.clientX, y: e.clientY };
+    };
+    const handleUp = (e: PointerEvent) => {
+      if (!startPos) return;
+      const dist = Math.hypot(e.clientX - startPos.x, e.clientY - startPos.y);
+      startPos = null;
+      if (dist < 10 && contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
         setShowContextMenu(false);
       }
     };
-    document.addEventListener('pointerdown', handleOutsideClick);
-    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+    document.addEventListener('pointerdown', handleDown);
+    document.addEventListener('pointerup', handleUp);
+    return () => {
+      document.removeEventListener('pointerdown', handleDown);
+      document.removeEventListener('pointerup', handleUp);
+    };
   }, [showContextMenu]);
 
   // Custom Category Dropdown in quick add form
@@ -197,43 +238,54 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
   useEffect(() => {
     if (!isCategoryDropdownOpen) return;
-    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
-      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target as Node)) {
+    let startPos: { x: number; y: number } | null = null;
+    const handleDown = (e: PointerEvent) => {
+      startPos = { x: e.clientX, y: e.clientY };
+    };
+    const handleUp = (e: PointerEvent) => {
+      if (!startPos) return;
+      const dist = Math.hypot(e.clientX - startPos.x, e.clientY - startPos.y);
+      startPos = null;
+      if (dist < 10 && categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target as Node)) {
         setIsCategoryDropdownOpen(false);
       }
     };
-    document.addEventListener('pointerdown', handleOutsideClick);
-    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+    document.addEventListener('pointerdown', handleDown);
+    document.addEventListener('pointerup', handleUp);
+    return () => {
+      document.removeEventListener('pointerdown', handleDown);
+      document.removeEventListener('pointerup', handleUp);
+    };
   }, [isCategoryDropdownOpen]);
 
   useLockBodyScroll(Boolean(confirmDeleteState));
 
-  // Live parsed preview of natural language quick-add
-  const parsedPreview = useMemo(() => {
-    return parseNaturalLanguageGroceryItem(quickAddInput);
-  }, [quickAddInput]);
-
-  // Detected category from input
-  const previewCategory: IngredientCategory = useMemo(() => {
-    if (categoryChoice !== 'auto') return categoryChoice;
-    return detectIngredientCategory(parsedPreview.name || quickAddInput);
-  }, [categoryChoice, parsedPreview.name, quickAddInput]);
-
-  // Auto-save & close inline stepper on click/tap outside
+  // Auto-save & close inline stepper ONLY on a genuine tap/click outside (NOT when scrolling!)
   useEffect(() => {
     if (!editingItemId) return;
 
-    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
-      if (editContainerRef.current && !editContainerRef.current.contains(e.target as Node)) {
+    let pointerStart: { x: number; y: number; target: EventTarget | null } | null = null;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      pointerStart = { x: e.clientX, y: e.clientY, target: e.target };
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      if (!pointerStart) return;
+      const dist = Math.hypot(e.clientX - pointerStart.x, e.clientY - pointerStart.y);
+      const target = (e.target || pointerStart.target) as Node | null;
+      pointerStart = null;
+
+      if (dist < 10 && editContainerRef.current && target && !editContainerRef.current.contains(target)) {
         saveEditedAmount(editingItemId);
       }
     };
 
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    document.addEventListener('pointerup', handlePointerUp, true);
     return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+      document.removeEventListener('pointerup', handlePointerUp, true);
     };
   }, [editingItemId, editingAmountValue]);
 
@@ -259,11 +311,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
     return map;
   }, [items]);
 
-  const activeCount = items.filter((i) => !i.completed).length;
   const completedCount = items.filter((i) => i.completed).length;
 
   // Active categories: Categories that have AT LEAST ONE uncompleted item.
-  // When all items in a category are completed, it disappears completely from the shelves!
   const activeCategories = useMemo(() => {
     return shelfOrder.filter((catKey) => {
       const catItems = grouped[catKey] || [];
@@ -272,12 +322,57 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   }, [shelfOrder, grouped]);
 
   const toggleItem = (id: string) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item))
-    );
+    const targetItem = items.find((i) => i.id === id);
+    if (!targetItem) return;
+
     if (swipedItemId === id) {
       setSwipedItemId(null);
     }
+
+    // 1. Bereits erledigtes Item im "Erledigt"-Bereich -> sofort wieder aktivieren
+    if (targetItem.completed) {
+      if (pendingTimeoutsRef.current[id]) {
+        clearTimeout(pendingTimeoutsRef.current[id]);
+        delete pendingTimeoutsRef.current[id];
+      }
+      setPendingCompleteIds((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, completed: false } : item))
+      );
+      return;
+    }
+
+    // 2. Item befindet sich gerade in der ~3 Sekunden Verzögerung -> Klick bricht das Abhaken sofort ab!
+    if (pendingCompleteIds[id]) {
+      if (pendingTimeoutsRef.current[id]) {
+        clearTimeout(pendingTimeoutsRef.current[id]);
+        delete pendingTimeoutsRef.current[id];
+      }
+      setPendingCompleteIds((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      return;
+    }
+
+    // 3. Offenes Item -> Sofort visuell abhaken (grau & durchgestrichen), langsam verblassen und erst nach 3 Sek. verschieben
+    setPendingCompleteIds((prev) => ({ ...prev, [id]: true }));
+    pendingTimeoutsRef.current[id] = setTimeout(() => {
+      delete pendingTimeoutsRef.current[id];
+      setPendingCompleteIds((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, completed: true } : item))
+      );
+    }, 3000);
   };
 
   const deleteItem = (id: string) => {
@@ -669,13 +764,15 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const activeItems = useMemo(() => items.filter((i) => !i.completed), [items]);
   const completedItems = useMemo(() => items.filter((i) => i.completed), [items]);
 
-  // Clean Item Row: Checkbox, Name, Desktop Actions LINKS von der Mengenangabe, Mengenangabe GANZ RECHTS, Drag Handle, iOS Full-Swipe
+  // Clean Item Row: Checkbox, Name, Desktop Actions LINKS von der Mengenangabe, Mengenangabe GANZ RECHTS (ohne 6-Punkte-Griff & ohne Hint-Badge)
   const renderItemRow = (item: ShoppingItem) => {
     const isEditing = editingItemId === item.id;
     const isSwiped = swipedItemId === item.id;
     const isAnySwiped = swipedItemId !== null;
     const isBeingDragged = draggedItemId === item.id;
     const isDragOver = dragOverItemId === item.id;
+    const isPendingComplete = Boolean(pendingCompleteIds[item.id]);
+    const isVisuallyCompleted = item.completed || isPendingComplete;
 
     // Mobile Touch & Swipe Offset
     const isThisItemTouching = activeTouchItemId === item.id;
@@ -708,7 +805,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       ? Math.min(itemWidth - 24, 48 + extraPull * 1.25)
       : 48;
 
-    const recipeSourceText = formatRecipeSource(item.recipeSource);
+    const rawRecipeSourceText = formatRecipeSource(item.recipeSource);
+    const recipeSourceText = showRecipeSource ? rawRecipeSourceText : '';
     const hasSecondaryText = Boolean(recipeSourceText);
 
     return (
@@ -716,9 +814,25 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         layout="position"
         key={item.id}
         initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
-        transition={{ layout: { duration: 0.2 }, opacity: { duration: 0.18 } }}
+        animate={
+          isPendingComplete
+            ? { opacity: [1, 0.78, 0.32], y: 0, scale: 0.99 }
+            : { opacity: 1, y: 0, scale: 1 }
+        }
+        exit={{ opacity: 0, height: 0, scale: 0.97, overflow: 'hidden' }}
+        transition={
+          isPendingComplete
+            ? {
+                opacity: { duration: 2.9, times: [0, 0.35, 1], ease: 'easeInOut' },
+                scale: { duration: 0.2 },
+                layout: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
+              }
+            : {
+                layout: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
+                opacity: { duration: 0.2 },
+                scale: { duration: 0.2 },
+              }
+        }
         data-swipe-item={item.id}
         draggable={!isEditing && !isSwiped && !isAnySwiped}
         onDragStart={(e: any) => handleDragStartItem(e, item.id)}
@@ -752,7 +866,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           <div className="absolute bottom-0 left-2 right-2 h-1 bg-accent rounded-full z-30 pointer-events-none shadow-xs" />
         )}
 
-        {/* Background Action Tray: Für Mobile-Swipe (nicht durch sm:hidden verstecken) */}
+        {/* Background Action Tray: Für Mobile-Swipe */}
         <div
           className={`absolute inset-0 z-0 overflow-hidden flex items-center justify-end transition-[background-color,border-color] duration-150 ease-out ${
             isFullSwipeDelete
@@ -761,15 +875,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           }`}
         >
           {isFullSwipeDelete ? (
-            /* Apple Full-Swipe: Bei ~70% nimmt das dunklere Rot komplett den Background Space ein (Zeichen für Löschen) */
             <div className="flex items-center justify-end w-full px-6 gap-2.5 text-on-accent font-semibold text-sm animate-in fade-in zoom-in-95 duration-150">
               <Trash2 className="w-5 h-5 stroke-[2.5] scale-110 transition-transform" />
               <span>Löschen</span>
             </div>
           ) : (
-            /* Standard-Tray mit 48x48px Stift und dynamisch länger werdendem 48px Mülleimer */
             <div className="flex items-center justify-end gap-2 h-full">
-              {/* Stift: Verblasst, wenn man über das Menü hinaus swipt */}
               <button
                 data-swipe-action="true"
                 type="button"
@@ -791,7 +902,6 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 <Pencil className="w-5 h-5" />
               </button>
 
-              {/* Mülleimer: Mindestens 48px, wird dynamisch länger, je weiter man nach links zieht */}
               <button
                 data-swipe-action="true"
                 type="button"
@@ -826,17 +936,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         <div
           onTouchStart={(e) => {
             if (isEditing) return;
-            // Falls ein ANDERES Menü offen ist, dieses schließen und Klick für diese Zutat sperren
+            // Falls ein anderes Swipe-Menü offen ist: NICHT sofort beim Berühren schließen (damit man normal scrollen kann!),
+            // sondern erst beim echten Tippen (ohne Scrollen) oder wenn dieses Item horizontal gewischt wird.
             if (swipedItemIdRef.current !== null && swipedItemIdRef.current !== item.id) {
               swipeOpenAtTouchStartRef.current = true;
-              closeSwipeMenu();
-              touchStartRef.current = null;
-              return;
-            }
-
-            // Falls dieses Item selbst das Menü offen hat:
-            // Wir merken uns, dass das Menü offen war, damit ein einfacher Tap das Menü nur schließt und nicht abcheckt
-            if (swipedItemIdRef.current === item.id) {
+            } else if (swipedItemIdRef.current === item.id) {
               swipeOpenAtTouchStartRef.current = true;
             } else {
               swipeOpenAtTouchStartRef.current = false;
@@ -853,7 +957,6 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             };
             lastTouchOffsetRef.current = swipedItemIdRef.current === item.id ? -MENU_SWIPE_OFFSET : 0;
             didSwipeRef.current = false;
-            setActiveTouchItemId(item.id);
           }}
           onTouchMove={(e) => {
             if (!touchStartRef.current || isEditing) return;
@@ -862,22 +965,27 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             const diffY = touch.clientY - touchStartRef.current.startY;
 
             // Vertikales Scrollen durchlassen, falls primär vertikal gescrollt wird
-            if (!didSwipeRef.current && Math.abs(diffY) > 10 && Math.abs(diffY) > Math.abs(diffX) * 1.3) {
+            if (!didSwipeRef.current && Math.abs(diffY) > 10 && Math.abs(diffY) > Math.abs(diffX) * 1.2) {
+              touchStartRef.current = null;
               return;
             }
 
-            if (Math.abs(diffX) > 6) {
-              didSwipeRef.current = true;
+            if (Math.abs(diffX) > 8 && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
+              if (!didSwipeRef.current) {
+                didSwipeRef.current = true;
+                if (swipedItemIdRef.current !== null && swipedItemIdRef.current !== item.id) {
+                  setSwipedItemId(null);
+                }
+                setActiveTouchItemId(item.id);
+              }
             }
 
             if (!didSwipeRef.current) return;
 
             const width = touchStartRef.current.itemWidth || 360;
             const rawOffset = touchStartRef.current.baseOffset + diffX;
-            // Nach links swipen (bis zum linken Bildschirmrand: -width) und nach rechts mit Dämpfung (Rubber-Banding)
             let clamped: number;
             if (rawOffset > 0) {
-              // Elastisches Rubber-Banding beim Ziehen nach rechts
               clamped = Math.min(15, rawOffset * 0.2);
             } else {
               clamped = Math.max(-width, rawOffset);
@@ -892,25 +1000,25 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               return;
             }
             const width = touchStartRef.current.itemWidth || 360;
-            const deleteThreshold = width * 0.7; // Exakt ~70% der Breite
+            const deleteThreshold = width * 0.7;
             const offset = lastTouchOffsetRef.current;
             const didActuallySwipe = didSwipeRef.current;
             touchStartRef.current = null;
 
-            if (isThisItemTouching) {
+            if (didActuallySwipe && activeTouchItemId === item.id) {
               if (offset <= -deleteThreshold) {
-                // Erst wenn bis ca. 70% der Breite gezogen wurde: direkt löschen
                 handleDeleteBySwipe(item);
-              } else if (didActuallySwipe && offset < -35) {
-                // Menü öffnet sich geschmeidig (-132px)
+              } else if (offset < -35) {
                 setSwipedItemId(item.id);
                 lastSwipedTimeRef.current = Date.now();
                 setActiveTouchItemId(null);
                 setTouchCurrentOffset(0);
               } else {
-                // Nicht weit genug geswipt, zurückgewischt oder reiner Tap: geschmeidig schließen
                 closeSwipeMenu();
               }
+            } else {
+              setActiveTouchItemId(null);
+              setTouchCurrentOffset(0);
             }
           }}
           onTouchCancel={() => {
@@ -920,7 +1028,6 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             didSwipeRef.current = false;
           }}
           onClick={(e) => {
-            // 1. Wenn gerade erst geswipt wurde (< 400ms) oder tatsächlich gewischt wurde: Klick ignorieren
             if (Date.now() - lastSwipedTimeRef.current < 400 || didSwipeRef.current) {
               didSwipeRef.current = false;
               e.preventDefault();
@@ -928,15 +1035,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               return;
             }
 
-            // 2. ABSOLUTER SCHUTZ: Wenn irgendein Swipe-Menü offen war, beim Touchstart offen war,
-            // oder gerade geschlossen wurde:
-            // Es darf schlicht NICHT möglich sein, irgendeine Zutat abzuhaken!
             if (
               swipedItemId !== null ||
               swipedItemIdRef.current !== null ||
               swipeOpenAtTouchStartRef.current ||
               justClosedSwipeMenuRef.current ||
-              Date.now() - lastClosedSwipeMenuTimeRef.current < 500
+              Date.now() - lastClosedSwipeMenuTimeRef.current < 450
             ) {
               e.preventDefault();
               e.stopPropagation();
@@ -955,7 +1059,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             transition: isThisItemTouching ? 'none' : 'transform 0.32s cubic-bezier(0.16, 1, 0.3, 1)',
             willChange: isThisItemTouching ? 'transform' : 'auto',
           }}
-          className={`relative z-10 w-full flex justify-between py-2.5 sm:py-2 px-3.5 sm:px-4 gap-2.5 sm:gap-3 min-h-[52px] sm:min-h-[52px] touch-pan-y transition-colors ${
+          className={`relative z-10 w-full flex justify-between py-2.5 sm:py-2.5 px-3.5 sm:px-4 gap-2.5 sm:gap-3 min-h-[52px] sm:min-h-[52px] touch-pan-y transition-colors ${
             isEditing
               ? 'cursor-default bg-surface items-stretch'
               : hasSecondaryText
@@ -964,17 +1068,20 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           } ${
             isEditing
               ? ''
-              : item.completed
+              : isVisuallyCompleted
               ? 'cursor-pointer bg-card hover:bg-surface text-text-muted'
               : 'cursor-pointer bg-card hover:bg-surface active:bg-[#F5F4F0] text-text-main'
           }`}
         >
           {isEditing ? (
             /* Smart, compact editing view with 44px touch targets and full-width text protection */
-            <div
+            <motion.div
               ref={editContainerRef}
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full flex flex-col gap-2.5 py-1 animate-in fade-in duration-150"
+              className="w-full flex flex-col gap-2.5 py-1"
             >
               {/* Header row: Checkbox/Pencil icon, item name and status badge */}
               <div className="flex items-center justify-between gap-2 min-w-0">
@@ -998,9 +1105,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 </span>
               </div>
 
-              {/* Controls row: Stepper (- / input / +) and actions (Cancel / Save) - all 44px buttons! */}
+              {/* Controls row: Stepper (- / input / +) and actions (Cancel / Save) */}
               <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
-                {/* Stepper with 44px buttons and 44px input */}
                 <div className="flex items-center bg-card border border-[#D1D5D2] rounded-xl shadow-2xs overflow-hidden h-[44px]">
                   <button
                     type="button"
@@ -1039,7 +1145,6 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   </button>
                 </div>
 
-                {/* Action buttons: Cancel (44x44px) & Save (44px min-h) */}
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
@@ -1063,56 +1168,80 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   </button>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ) : (
             <>
               {/* LEFT SIDE: Checkbox -> Name & Quelle */}
               <div className={`flex flex-1 min-w-0 gap-2.5 sm:gap-3 ${
                 hasSecondaryText ? 'items-start' : 'items-center'
               }`}>
-                {/* Square Checkbox Indicator: mt-0.5 verankert ihn bei Sekundärtext exakt neben der ersten Zeile */}
-                <div
-                  className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors shrink-0 ${
+                {/* Square Checkbox Indicator */}
+                <motion.div
+                  animate={isVisuallyCompleted ? { scale: [1, 1.16, 1] } : { scale: 1 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                  className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors duration-200 shrink-0 ${
                     hasSecondaryText ? 'mt-0.5' : ''
                   } ${
-                    item.completed
+                    isVisuallyCompleted
                       ? 'bg-accent border-accent text-on-accent'
                       : 'border-[#D1D5D2] bg-card group-hover:border-accent'
                   }`}
                 >
-                  {item.completed && <Check className="w-3 h-3 stroke-[3]" />}
-                </div>
+                  <AnimatePresence initial={false}>
+                    {isVisuallyCompleted && (
+                      <motion.span
+                        key="check"
+                        initial={{ scale: 0.4, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.4, opacity: 0 }}
+                        transition={{ duration: 0.16, ease: 'easeOut' }}
+                        className="flex items-center justify-center"
+                      >
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
 
                 {/* Name & Quelle */}
                 <div className={`flex-1 min-w-0 flex flex-col ${
                   hasSecondaryText ? 'justify-start' : 'justify-center'
                 }`}>
                   <span
-                    className={`text-base font-medium block break-words leading-tight ${
-                      item.completed ? 'line-through text-text-muted' : 'text-text-main'
+                    className={`text-base font-medium block break-words leading-tight transition-colors duration-200 ${
+                      isVisuallyCompleted ? 'line-through text-text-muted' : 'text-text-main'
                     }`}
                   >
                     {item.name}
                   </span>
-                  {recipeSourceText && (
-                    <span 
-                      className="text-[13px] font-normal text-text-muted break-words leading-normal mt-0.5 line-clamp-2"
-                      title={item.recipeSource}
-                    >
-                      {recipeSourceText}
-                    </span>
-                  )}
+                  <AnimatePresence initial={false}>
+                    {recipeSourceText && (
+                      <motion.span
+                        key="recipe-source"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.18 }}
+                        className={`text-[13px] font-normal break-words leading-normal mt-0.5 line-clamp-2 transition-colors duration-200 ${
+                          isVisuallyCompleted ? 'text-text-muted/70 line-through' : 'text-text-muted'
+                        }`}
+                        title={item.recipeSource}
+                      >
+                        {recipeSourceText}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
-              {/* RIGHT SIDE: [Desktop Actions: Pencil & Trash (LINKS)] -> [Menge (GANZ RECHTS)] -> [Drag Handle] */}
+              {/* RIGHT SIDE: [Desktop Actions: Pencil & Trash (LINKS)] -> [Menge (GANZ RECHTS)] */}
               <div className={`flex items-center gap-2 shrink-0 ml-auto ${
                 hasSecondaryText ? 'self-start mt-0.5' : 'self-center'
               }`} onClick={(e) => {
                 if (
                   swipedItemIdRef.current !== null ||
                   justClosedSwipeMenuRef.current ||
-                  Date.now() - lastClosedSwipeMenuTimeRef.current < 500
+                  Date.now() - lastClosedSwipeMenuTimeRef.current < 450
                 ) {
                   e.stopPropagation();
                   closeSwipeMenu();
@@ -1120,7 +1249,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 }
                 e.stopPropagation();
               }}>
-                {/* Desktop hover actions: LINKS von der Mengenangabe (44x44px Buttons) */}
+                {/* Desktop hover actions: LINKS von der Mengenangabe */}
                 <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     type="button"
@@ -1148,7 +1277,6 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 {item.amount ? (() => {
                   const display = formatDisplayGrocery(item.amount, item.unit, item.name);
                   return (
-                    /* Mengenangabe ganz rechts: Exakt wie in der Rezept-Detailansicht (font-semibold tabular-nums text-accent) */
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1156,15 +1284,15 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                         if (
                           swipedItemIdRef.current !== null ||
                           justClosedSwipeMenuRef.current ||
-                          Date.now() - lastClosedSwipeMenuTimeRef.current < 500
+                          Date.now() - lastClosedSwipeMenuTimeRef.current < 450
                         ) {
                           closeSwipeMenu();
                           return;
                         }
                         startEditingItem(item);
                       }}
-                      className={`text-base font-semibold tabular-nums select-none text-right transition-colors cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline flex items-baseline gap-1.5 ${
-                        item.completed
+                      className={`text-base font-semibold tabular-nums select-none text-right transition-colors duration-200 cursor-pointer touch-manipulation whitespace-nowrap px-1 py-0.5 rounded-sm hover:underline flex items-baseline gap-1.5 ${
+                        isVisuallyCompleted
                           ? 'text-text-muted line-through opacity-60'
                           : 'text-accent hover:text-accent-hover'
                       }`}
@@ -1173,26 +1301,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       <span>
                         {display.formattedAmount} {display.formattedUnit}
                       </span>
-                      {display.hintBadge && (
-                        <span className="text-[12px] font-medium text-text-muted bg-stone-100 px-1.5 py-0.2 rounded-md border border-border no-underline inline-block">
-                          {display.hintBadge}
-                        </span>
-                      )}
                     </button>
                   );
                 })() : null}
-
-                {/* Drag Handle am äußersten rechten Rand */}
-                <div
-                  className={`p-1 transition-colors hidden sm:flex items-center justify-center ${
-                    isAnySwiped
-                      ? 'text-text-muted opacity-30 cursor-not-allowed pointer-events-none'
-                      : 'text-text-muted hover:text-[#57534d] cursor-grab active:cursor-grabbing'
-                  }`}
-                  title={isAnySwiped ? 'Verschieben gesperrt' : 'Gedrückt halten zum Verschieben'}
-                >
-                  <GripVertical className="w-3.5 h-3.5" />
-                </div>
               </div>
             </>
           )}
@@ -1204,7 +1315,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   return (
     <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-300">
       {/* Header & Controls */}
-      <div className="bg-card rounded-2xl p-4 sm:p-5 lg:p-6 border border-border shadow-xs space-y-4">
+      <div className="bg-card rounded-2xl p-4 sm:p-5 lg:p-6 border border-border shadow-[0_6px_24px_-4px_rgba(45,62,64,0.07),0_2px_8px_-2px_rgba(45,62,64,0.04)] space-y-4">
         <div className="space-y-1">
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-main leading-tight">
             Einkaufsliste
@@ -1214,12 +1325,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
           </p>
         </div>
 
-        {/* Unified Action Row: single horizontal row with consistent sizing and alignment */}
+        {/* Unified Action Row: Auf Mobile steht das 3-Punkte-Menü rechtsbündig gegenüber dem Regale/Liste-Schalter */}
         <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-border">
-          {/* Left side: View switcher ([ Regale ] / [ Liste ]) styled as cohesive segmented control pill */}
-          <div className="relative flex items-center p-1 bg-surface border border-border rounded-xl text-[16px] select-none shadow-2xs h-[44px]">
-            <div
-              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-accent rounded-lg shadow-xs transition-all duration-200 ease-out pointer-events-none ${
+          {/* Left side: View switcher ([ Regale ] / [ Liste ]) */}
+          <div className="order-1 relative flex items-center p-1 bg-surface border border-border rounded-xl text-[16px] select-none shadow-2xs h-[44px]">
+            <motion.div
+              layout
+              transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-accent rounded-lg shadow-xs pointer-events-none ${
                 viewMode === 'categorized' ? 'left-1' : 'left-[calc(50%+2px)]'
               }`}
             />
@@ -1253,64 +1366,69 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             </button>
           </div>
 
-          {/* Right side: Unified matching neutral action buttons & 3-Punkte-Menü */}
-          <div className="flex items-center gap-2 shrink-0">
-            {/* 3-Punkte-Menü Button (Klassisches iOS Select-Menü auf Mobile & Dropdown auf Desktop) */}
-            <div className="relative shrink-0" ref={contextMenuRef}>
-              {/* Native iOS / Mobile Dropdown Select */}
-              <select
-                aria-label="Einkaufslisten-Optionen"
-                value=""
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === 'copy') handleCopyFormattedList();
-                  else if (val === 'clear-completed') {
-                    if (completedCount > 0) setConfirmDeleteState({ type: 'completed' });
-                  }
-                  else if (val === 'clear-all') {
-                    if (items.length > 0) setConfirmDeleteState({ type: 'all' });
-                  }
-                  e.target.value = '';
-                }}
-                className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
-              >
-                <option value="" disabled>Einkaufslisten-Optionen...</option>
-                <option value="copy" disabled={items.length === 0}>Liste kopieren</option>
-                {completedCount > 0 && (
-                  <option value="clear-completed">Erledigte entfernen</option>
-                )}
-                {items.length > 0 && (
-                  <option value="clear-all">Gesamte Liste leeren</option>
-                )}
-              </select>
-
-              <button
-                type="button"
-                id="shopping-list-context-menu-btn"
-                onClick={() => setShowContextMenu((prev) => !prev)}
-                className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs border ${
-                  showContextMenu
-                    ? 'bg-[#E5EBE6] text-text-main border-accent-border ring-2 ring-accent/25'
-                    : 'bg-surface hover:bg-accent-tint text-text-main hover:text-text-main border-border hover:border-accent-border'
-                }`}
-                title="Weitere Optionen"
-                aria-label="Weitere Optionen"
-                aria-expanded={showContextMenu}
+          {/* 3-Punkte-Menü Button: Auf Mobile direkt rechtsbündig gegenüber dem Regale/Liste-Schalter (order-2), auf Desktop neben den Aktionsbuttons */}
+          <div className="order-2 sm:order-2 relative shrink-0 ml-auto" ref={contextMenuRef}>
+            <button
+              type="button"
+              id="shopping-list-context-menu-btn"
+              onClick={() => setShowContextMenu((prev) => !prev)}
+              className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs border ${
+                showContextMenu
+                  ? 'bg-[#E5EBE6] text-text-main border-accent-border ring-2 ring-accent/25'
+                  : 'bg-surface hover:bg-accent-tint text-text-main hover:text-text-main border-border hover:border-accent-border'
+              }`}
+              title="Weitere Optionen"
+              aria-label="Weitere Optionen"
+              aria-expanded={showContextMenu}
+            >
+              <motion.div
+                animate={{ rotate: showContextMenu ? 90 : 0, scale: showContextMenu ? 1.05 : 1 }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className="flex items-center justify-center"
               >
                 <MoreHorizontal className="w-5 h-5 text-text-main" />
-              </button>
+              </motion.div>
+            </button>
 
+            <AnimatePresence>
               {showContextMenu && (
                 <>
-                  {/* Backdrop for click outside on desktop */}
+                  {/* Backdrop for click outside */}
                   <div
-                    className="hidden sm:block fixed inset-0 z-40"
+                    className="fixed inset-0 z-40"
                     onClick={() => setShowContextMenu(false)}
                     aria-hidden="true"
                   />
 
-                  {/* Desktop Dropdown Popover (>= sm) */}
-                  <div className="hidden sm:block absolute right-0 top-full mt-2 w-72 bg-card rounded-2xl border border-border shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 space-y-1">
+                  {/* Custom Animated Dropdown Popover (auf Mobile & Desktop identisch, kein Apple-Select) */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.94, y: -6 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.94, y: -6 }}
+                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] origin-top-right bg-card rounded-2xl border border-border shadow-xl p-1.5 z-50 space-y-1"
+                  >
+                    <button
+                      type="button"
+                      id="context-menu-toggle-recipe-source-btn"
+                      onClick={() => {
+                        setShowContextMenu(false);
+                        toggleShowRecipeSource();
+                      }}
+                      className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-text-main hover:bg-surface active:bg-accent-tint flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-accent-tint flex items-center justify-center shrink-0 text-accent">
+                        {showRecipeSource ? (
+                          <EyeOff className="w-4 h-4 shrink-0" />
+                        ) : (
+                          <Eye className="w-4 h-4 shrink-0" />
+                        )}
+                      </div>
+                      <span className="truncate">
+                        {showRecipeSource ? 'Rezept-Herkunft ausblenden' : 'Rezept-Herkunft einblenden'}
+                      </span>
+                    </button>
+
                     <button
                       type="button"
                       id="context-menu-copy-list-btn"
@@ -1322,9 +1440,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       className="w-full min-h-[48px] px-3 py-2 rounded-xl text-left text-[15px] sm:text-[16px] font-medium text-text-main hover:bg-surface active:bg-accent-tint disabled:opacity-40 disabled:hover:bg-transparent flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
                     >
                       <div className="w-8 h-8 rounded-lg bg-accent-tint flex items-center justify-center shrink-0 text-accent">
-                        <Copy className="w-4 h-4 shrink-0" />
+                        {copied ? <Check className="w-4 h-4 shrink-0" /> : <Copy className="w-4 h-4 shrink-0" />}
                       </div>
-                      <span className="truncate">Liste kopieren</span>
+                      <span className="truncate">{copied ? 'Kopiert!' : 'Liste kopieren'}</span>
                     </button>
 
                     {completedCount > 0 && (
@@ -1361,25 +1479,53 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       </div>
                       <span className="truncate">Gesamte Liste leeren</span>
                     </button>
-                  </div>
+                  </motion.div>
                 </>
               )}
-            </div>
+            </AnimatePresence>
+          </div>
 
+          {/* Action Buttons: Kopieren (animiert wie in der Rezept-Detailansicht) & Löschen */}
+          <div className="order-3 flex items-center gap-2 w-full sm:w-auto shrink-0">
             <button
               id="copy-entire-shopping-list-btn"
               type="button"
               onClick={handleCopyFormattedList}
               disabled={items.length === 0}
-              className="h-[44px] px-3.5 sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-surface hover:bg-accent-tint border border-border text-[#57534d] hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface font-semibold text-[16px] shadow-2xs transition-all active:scale-95 touch-manipulation cursor-pointer group"
+              className={`flex-1 sm:flex-initial h-[44px] px-3.5 sm:px-4 flex items-center justify-center gap-2 rounded-xl border text-[16px] shadow-2xs transition-all active:scale-95 touch-manipulation cursor-pointer group ${
+                copied
+                  ? 'bg-accent-tint border-accent/40 text-accent font-bold'
+                  : 'bg-surface hover:bg-accent-tint border-border text-[#57534d] hover:text-accent font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface'
+              }`}
               title="Kopiert die Liste formatiert für WhatsApp & Notizen"
             >
-              {copied ? (
-                <Check className="w-4 h-4 text-accent" />
-              ) : (
-                <Copy className="w-4 h-4 text-accent transition-colors" />
-              )}
-              <span>{copied ? 'Kopiert!' : 'Kopieren'}</span>
+              <AnimatePresence mode="wait" initial={false}>
+                {copied ? (
+                  <motion.span
+                    key="copied"
+                    initial={{ opacity: 0, scale: 0.85, y: 2 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.85, y: -2 }}
+                    transition={{ duration: 0.16, ease: 'easeOut' }}
+                    className="inline-flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4 text-accent stroke-[2.5]" />
+                    <span>Kopiert</span>
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="copy"
+                    initial={{ opacity: 0, scale: 0.85, y: -2 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.85, y: 2 }}
+                    transition={{ duration: 0.16, ease: 'easeOut' }}
+                    className="inline-flex items-center gap-1.5"
+                  >
+                    <Copy className="w-4 h-4 text-accent transition-colors" />
+                    <span>Kopieren</span>
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
 
             <button
@@ -1405,7 +1551,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
               }}
               onDrop={handleDropOnDelete}
               disabled={items.length === 0 && !draggedShelf && !draggedItemId}
-              className={`h-[44px] px-3.5 sm:px-4 flex items-center justify-center gap-2 rounded-xl font-semibold text-[16px] border transition-all select-none touch-manipulation group shadow-2xs ${
+              className={`flex-1 sm:flex-initial h-[44px] px-3.5 sm:px-4 flex items-center justify-center gap-2 rounded-xl font-semibold text-[16px] border transition-all select-none touch-manipulation group shadow-2xs ${
                 isDragOverDelete
                   ? 'bg-rose-600 text-on-accent border-rose-600 shadow-md ring-2 ring-rose-400'
                   : items.length > 0
@@ -1435,45 +1581,29 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         </div>
       </div>
 
-      {/* 2. Compact 1-Row Quick Add Module */}
+      {/* 2. Quick Add Module: Ohne umschließende weiße Box – direkt auf dem beigen Hintergrund */}
       <form
         onSubmit={handleAddItem}
-        className="bg-card p-1.5 sm:p-2 rounded-2xl border border-border shadow-xs flex items-center gap-1.5 sm:gap-2"
+        className="flex items-center gap-2 sm:gap-2.5"
       >
-        {/* Left/Flexible: Text input field */}
+        {/* Left/Flexible: Weißes, abgerundetes Input-Feld direkt auf dem Hintergrund */}
         <div className="relative flex-1 min-w-0">
           <input
             type="text"
             placeholder="Schnell hinzufügen (z. B. 400g Tofu)..."
             value={quickAddInput}
             onChange={(e) => setQuickAddInput(e.target.value)}
-            className="w-full bg-surface hover:bg-[#F5F4F0] focus:bg-card border border-border focus:border-accent rounded-xl px-3 sm:px-3.5 py-2 text-base text-text-main placeholder:text-text-muted focus:outline-hidden transition-all h-12 sm:h-10"
+            className="w-full bg-card hover:bg-card focus:bg-card border border-border focus:border-accent rounded-2xl px-4 py-2.5 text-base text-text-main placeholder:text-text-muted focus:outline-hidden transition-all h-12 shadow-[0_4px_16px_-2px_rgba(45,62,64,0.06)]"
           />
         </div>
 
-        {/* Middle: Truly dynamic compact button & custom dropdown */}
+        {/* Middle: Custom Category Dropdown */}
         <div ref={categoryDropdownRef} className="relative shrink-0">
-          {/* Mobile Native iOS Dropdown Menu: Triggers native iOS picker wheel / action sheet on iPhone / iPad */}
-          <select
-            aria-label="Regal / Kategorie wählen"
-            value={categoryChoice}
-            onChange={(e) => setCategoryChoice(e.target.value as any)}
-            className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
-          >
-            <option value="auto">Auto-Erkennung</option>
-            <option value="gemuese">Gemüse</option>
-            <option value="kuehlregal">Kühlregal</option>
-            <option value="huelsenfruechte">Hülsenfrüchte</option>
-            <option value="trockenwaren">Vorrat</option>
-            <option value="gewuerze">Gewürze</option>
-            <option value="sonstiges">Sonstiges</option>
-          </select>
-
           <button
             type="button"
             id="shopping-item-category-select"
             onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-            className="inline-flex items-center gap-2 bg-surface hover:bg-accent-tint border border-border rounded-xl px-3 sm:px-3.5 py-2 text-[16px] font-semibold text-text-main cursor-pointer focus:border-accent focus:outline-hidden h-12 sm:h-11 min-h-[44px] transition-colors select-none"
+            className="inline-flex items-center gap-2 bg-card hover:bg-accent-tint border border-border rounded-2xl px-3.5 sm:px-4 py-2.5 text-[16px] font-semibold text-text-main cursor-pointer focus:border-accent focus:outline-hidden h-12 min-h-[48px] transition-colors select-none shadow-[0_4px_16px_-2px_rgba(45,62,64,0.06)]"
             title="Regal / Kategorie wählen"
             aria-label="Regal / Kategorie wählen"
             aria-expanded={isCategoryDropdownOpen}
@@ -1493,76 +1623,92 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                 ? 'Gewürze'
                 : 'Sonstiges'}
             </span>
-            <ChevronDown
-              className={`w-4 h-4 text-text-muted transition-transform duration-150 ${
-                isCategoryDropdownOpen ? 'rotate-180 text-accent' : ''
-              }`}
-            />
+            <motion.div
+              animate={{ rotate: isCategoryDropdownOpen ? 180 : 0 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <ChevronDown className={`w-4 h-4 ${isCategoryDropdownOpen ? 'text-accent' : 'text-text-muted'}`} />
+            </motion.div>
           </button>
 
-          {/* Desktop Popover Menu with categories */}
-          {isCategoryDropdownOpen && (
-            <div className="hidden sm:block absolute right-0 top-full mt-1.5 z-40 w-64 bg-card rounded-xl shadow-lg border border-border p-1.5 animate-in fade-in zoom-in-95 duration-150">
-              <button
-                type="button"
-                onClick={() => {
-                  setCategoryChoice('auto');
-                  setIsCategoryDropdownOpen(false);
-                }}
-                className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-lg text-[16px] font-medium transition-colors cursor-pointer text-left ${
-                  categoryChoice === 'auto'
-                    ? 'bg-accent-tint text-accent font-semibold'
-                    : 'text-text-main hover:bg-surface'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-accent" />
-                  <span>Auto-Erkennung</span>
-                </span>
-                {categoryChoice === 'auto' && <Check className="w-4 h-4 text-accent" />}
-              </button>
-
-              <div className="my-1 border-t border-border" />
-
-              {(
-                [
-                  ['gemuese', 'Gemüse', 'Frisches Gemüse & Kräuter'],
-                  ['kuehlregal', 'Kühlregal', 'Kühlwaren & Alternativen'],
-                  ['huelsenfruechte', 'Hülsenfrüchte', 'Bohnen, Linsen & Tofu'],
-                  ['trockenwaren', 'Vorrat', 'Nudeln, Reis & Konserven'],
-                  ['gewuerze', 'Gewürze', 'Gewürze, Öle & Dips'],
-                  ['sonstiges', 'Sonstiges', 'Haushalt & Sonstiges'],
-                ] as const
-              ).map(([catKey, catLabel]) => {
-                const isSelected = categoryChoice === catKey;
-                return (
+          {/* Animated Popover Menu with categories (auf Mobile & Desktop) */}
+          <AnimatePresence>
+            {isCategoryDropdownOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-30"
+                  onClick={() => setIsCategoryDropdownOpen(false)}
+                  aria-hidden="true"
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.94, y: -6 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.94, y: -6 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute right-0 top-full mt-2 z-40 w-64 max-w-[calc(100vw-2rem)] origin-top-right bg-card rounded-2xl shadow-xl border border-border p-1.5"
+                >
                   <button
-                    key={catKey}
                     type="button"
                     onClick={() => {
-                      setCategoryChoice(catKey as IngredientCategory);
+                      setCategoryChoice('auto');
                       setIsCategoryDropdownOpen(false);
                     }}
-                    className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-lg text-[16px] transition-colors cursor-pointer text-left ${
-                      isSelected
+                    className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[16px] font-medium transition-colors cursor-pointer text-left ${
+                      categoryChoice === 'auto'
                         ? 'bg-accent-tint text-accent font-semibold'
-                        : 'text-text-main hover:bg-surface font-normal'
+                        : 'text-text-main hover:bg-surface'
                     }`}
                   >
-                    <span>{catLabel}</span>
-                    {isSelected && <Check className="w-4 h-4 text-accent" />}
+                    <span className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-accent" />
+                      <span>Auto-Erkennung</span>
+                    </span>
+                    {categoryChoice === 'auto' && <Check className="w-4 h-4 text-accent" />}
                   </button>
-                );
-              })}
-            </div>
-          )}
+
+                  <div className="my-1 border-t border-border" />
+
+                  {(
+                    [
+                      ['gemuese', 'Gemüse', 'Frisches Gemüse & Kräuter'],
+                      ['kuehlregal', 'Kühlregal', 'Kühlwaren & Alternativen'],
+                      ['huelsenfruechte', 'Hülsenfrüchte', 'Bohnen, Linsen & Tofu'],
+                      ['trockenwaren', 'Vorrat', 'Nudeln, Reis & Konserven'],
+                      ['gewuerze', 'Gewürze', 'Gewürze, Öle & Dips'],
+                      ['sonstiges', 'Sonstiges', 'Haushalt & Sonstiges'],
+                    ] as const
+                  ).map(([catKey, catLabel]) => {
+                    const isSelected = categoryChoice === catKey;
+                    return (
+                      <button
+                        key={catKey}
+                        type="button"
+                        onClick={() => {
+                          setCategoryChoice(catKey as IngredientCategory);
+                          setIsCategoryDropdownOpen(false);
+                        }}
+                        className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[16px] transition-colors cursor-pointer text-left ${
+                          isSelected
+                            ? 'bg-accent-tint text-accent font-semibold'
+                            : 'text-text-main hover:bg-surface font-normal'
+                        }`}
+                      >
+                        <span>{catLabel}</span>
+                        {isSelected && <Check className="w-4 h-4 text-accent" />}
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Right: Square or compact icon button (+) */}
+        {/* Right: Square icon button (+) */}
         <button
           type="submit"
           disabled={!quickAddInput.trim()}
-          className="w-12 h-12 sm:w-10 sm:h-10 min-w-[48px] min-h-[48px] sm:min-w-0 sm:min-h-0 bg-accent hover:bg-accent-hover disabled:opacity-40 text-on-accent rounded-xl flex items-center justify-center shadow-xs shrink-0 transition-all active:scale-95 touch-manipulation cursor-pointer"
+          className="w-12 h-12 min-w-[48px] min-h-[48px] bg-accent hover:bg-accent-hover disabled:opacity-40 text-on-accent rounded-2xl flex items-center justify-center shadow-[0_4px_16px_-2px_rgba(45,62,64,0.12)] shrink-0 transition-all active:scale-95 touch-manipulation cursor-pointer"
           title="Zutat hinzufügen"
           aria-label="Zutat hinzufügen"
         >
@@ -1572,7 +1718,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
       {/* Main Content Area */}
       {items.length === 0 ? (
-        <div className="bg-card rounded-2xl p-12 text-center border border-border space-y-3 shadow-xs">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+          className="bg-card rounded-2xl p-12 text-center border border-border space-y-3 shadow-[0_6px_24px_-4px_rgba(45,62,64,0.08),0_2px_8px_-2px_rgba(45,62,64,0.04)]"
+        >
           <div className="w-14 h-14 rounded-full bg-accent-tint text-accent flex items-center justify-center mx-auto text-2xl border border-border">
             🛒
           </div>
@@ -1601,299 +1752,311 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             }
             return null;
           })()}
-        </div>
-      ) : viewMode === 'flat' ? (
-        /* Gesamtansicht (Liste mit Drag & Drop Sortierung) */
-        <div className="space-y-4">
-          <div className="bg-card rounded-2xl border border-border shadow-xs overflow-hidden">
-            <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-border bg-accent-tint">
-              <div className="flex items-center gap-2 font-semibold text-text-main text-base">
-                <List className="w-4 h-4 text-accent" />
-                <span style={{ fontSize: '16px' }} className="text-[16px]">Offene Artikel</span>
-              </div>
-              <span className="text-xs font-semibold text-[#57534d] bg-card px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
-                {activeItems.length} offen
-              </span>
-            </div>
-
-            {activeItems.length > 0 ? (
-              <div className="divide-y divide-[#F0EFEB]">
-                <AnimatePresence initial={false}>
-                  {activeItems.map(renderItemRow)}
-                </AnimatePresence>
-              </div>
-            ) : (
-              <p className="text-xs text-text-muted py-6 text-center italic">
-                Alle Artikel sind abgehakt! 🎉
-              </p>
-            )}
-          </div>
-        </div>
+        </motion.div>
       ) : (
-        /* Regale-Ansicht: Nur Kategorien anzeigen, die noch offene Artikel haben.
-           Kategorien können per Drag & Drop sortiert werden! */
-        activeCategories.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
-            {activeCategories.map((catKey) => {
-              const catItems = grouped[catKey] || [];
-              const activeInCat = catItems.filter((i) => !i.completed);
-              if (activeInCat.length === 0) return null;
-
-              const meta = CATEGORY_META[catKey];
-              const isCollapsed = Boolean(collapsedCategories[catKey]);
-              const isBeingDragged = draggedShelf === catKey;
-              const isDragOver = dragOverShelf === catKey;
-
-              return (
-                <div
-                  key={catKey}
-                  onDragOver={(e) => handleDragOverShelf(e, catKey)}
-                  onDrop={(e) => handleDropShelf(e, catKey)}
-                  className={`bg-card rounded-2xl border border-border shadow-xs overflow-hidden transition-opacity duration-150 ${
-                    isBeingDragged ? 'opacity-40' : 'opacity-100'
-                  }`}
-                >
-                  {/* Shelf Header (Entire header is draggable for shelf re-ordering) */}
-                  <div
-                    draggable
-                    onDragStart={(e) => handleDragStartShelf(e, catKey)}
-                    onDragEnd={() => {
-                      setDraggedShelf(null);
-                      setDragOverShelf(null);
-                      setIsDragOverDelete(false);
-                    }}
-                    className="flex items-center justify-between p-3.5 sm:p-4 bg-accent-tint hover:bg-[#E8EFEA] transition-colors border-b border-border cursor-grab active:cursor-grabbing select-none"
-                    title="Gedrückt halten und ziehen, um das Regal zu sortieren oder auf 'Löschen' zu ziehen"
-                  >
-                    {/* Category Title & Drag Handle */}
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div
-                        className="p-1 text-text-muted shrink-0 pointer-events-none"
-                      >
-                        <GripVertical className="w-4 h-4" />
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleCategoryCollapse(catKey);
-                        }}
-                        className="flex items-center gap-2 text-left cursor-pointer select-none flex-1 min-w-0"
-                      >
-                        <span className="text-xl shrink-0 pointer-events-none">{meta.icon}</span>
-                        <span className="font-semibold text-text-main text-base truncate pointer-events-none">
-                          {meta.label}
-                        </span>
-                      </button>
-                    </div>
-
-                    {/* Clean & minimal count pill + chevron */}
-                    <div 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleCategoryCollapse(catKey);
-                      }}
-                      className="flex items-center gap-1.5 shrink-0 ml-2 cursor-pointer"
-                      title={isCollapsed ? 'Regal aufklappen' : 'Regal zuklappen'}
-                    >
-                      <span className="text-xs font-semibold text-[#57534d] bg-card px-2.5 py-0.5 rounded-full whitespace-nowrap select-none tabular-nums border border-[#D5DDD7] shadow-2xs">
-                        {activeInCat.length} offen
-                      </span>
-
-                      <div className="p-1 text-accent group-hover:text-accent-hover transition-colors">
-                        <ChevronDown
-                          className={`w-4 h-4 transition-transform duration-200 ${
-                            isCollapsed ? '-rotate-90' : 'rotate-0'
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Shelf Content */}
-                  <div
-                    className={`grid transition-all duration-250 ease-in-out ${
-                      isCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
-                    }`}
-                  >
-                    <div className="overflow-hidden">
-                      <div className="divide-y divide-[#F0EFEB]">
-                        <AnimatePresence initial={false}>
-                          {activeInCat.map(renderItemRow)}
-                        </AnimatePresence>
-                      </div>
-                    </div>
+        <AnimatePresence mode="wait" initial={false}>
+          {viewMode === 'flat' ? (
+            /* Gesamtansicht (Liste mit Drag & Drop Sortierung) */
+            <motion.div
+              key="view-flat"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="space-y-4"
+            >
+              <div className="bg-card rounded-2xl border border-border shadow-[0_6px_24px_-4px_rgba(45,62,64,0.08),0_2px_8px_-2px_rgba(45,62,64,0.04)] overflow-hidden">
+                <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-border bg-accent-tint">
+                  <div className="flex items-center gap-2 font-semibold text-text-main text-base">
+                    <List className="w-4 h-4 text-accent" />
+                    <span className="text-[16px]">
+                      Offene Artikel ({activeItems.length})
+                    </span>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="bg-card rounded-2xl p-8 text-center border border-border shadow-xs space-y-2">
-            <span className="text-2xl">🎉</span>
-            <h3 className="text-base font-semibold text-text-main">Alle Regale sind abgehakt!</h3>
-            <p className="text-xs text-text-muted">
-              Alle Artikel wurden erledigt und befinden sich im erledigten Bereich unten.
-            </p>
-          </div>
-        )
+
+                {activeItems.length > 0 ? (
+                  <div className="divide-y divide-[#F0EFEB]">
+                    <AnimatePresence initial={false}>
+                      {activeItems.map(renderItemRow)}
+                    </AnimatePresence>
+                  </div>
+                ) : (
+                  <p className="text-xs text-text-muted py-6 text-center italic">
+                    Alle Artikel sind abgehakt! 🎉
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          ) : (
+            /* Regale-Ansicht: Nur Kategorien anzeigen, die noch offene Artikel haben */
+            <motion.div
+              key="view-categorized"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {activeCategories.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
+                  <AnimatePresence initial={false}>
+                    {activeCategories.map((catKey) => {
+                      const catItems = grouped[catKey] || [];
+                      const activeInCat = catItems.filter((i) => !i.completed);
+                      if (activeInCat.length === 0) return null;
+
+                      const meta = CATEGORY_META[catKey];
+                      const isCollapsed = Boolean(collapsedCategories[catKey]);
+                      const isBeingDragged = draggedShelf === catKey;
+
+                      return (
+                        <motion.div
+                          layout="position"
+                          key={catKey}
+                          initial={{ opacity: 0, scale: 0.98, y: 8 }}
+                          animate={{ opacity: isBeingDragged ? 0.4 : 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.96, y: -6 }}
+                          transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                          onDragOver={(e: any) => handleDragOverShelf(e, catKey)}
+                          onDrop={(e: any) => handleDropShelf(e, catKey)}
+                          className="bg-card rounded-2xl border border-border shadow-[0_6px_24px_-4px_rgba(45,62,64,0.08),0_2px_8px_-2px_rgba(45,62,64,0.04)] overflow-hidden"
+                        >
+                          {/* Shelf Header (Ohne 6-Punkte-Griff und ohne separaten Badge, Anzahl in Klammern hinter dem Namen) */}
+                          <div
+                            draggable
+                            onDragStart={(e) => handleDragStartShelf(e, catKey)}
+                            onDragEnd={() => {
+                              setDraggedShelf(null);
+                              setDragOverShelf(null);
+                              setIsDragOverDelete(false);
+                            }}
+                            onClick={() => toggleCategoryCollapse(catKey)}
+                            className="flex items-center justify-between p-3.5 sm:p-4 bg-accent-tint hover:bg-[#E8EFEA] transition-colors border-b border-border cursor-pointer select-none"
+                            title="Klicken zum Auf-/Zuklappen oder gedrückt halten zum Sortieren"
+                          >
+                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                              <span className="text-xl shrink-0 pointer-events-none">{meta.icon}</span>
+                              <span className="font-semibold text-text-main text-base truncate pointer-events-none">
+                                {meta.label} ({activeInCat.length})
+                              </span>
+                            </div>
+
+                            <div
+                              className="flex items-center shrink-0 ml-2 p-1 text-accent transition-colors"
+                              title={isCollapsed ? 'Regal aufklappen' : 'Regal zuklappen'}
+                            >
+                              <motion.div
+                                animate={{ rotate: isCollapsed ? -90 : 0 }}
+                                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                              >
+                                <ChevronDown className="w-4 h-4" />
+                              </motion.div>
+                            </div>
+                          </div>
+
+                          {/* Shelf Content */}
+                          <div
+                            className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                              isCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
+                            }`}
+                          >
+                            <div className="overflow-hidden">
+                              <div className="divide-y divide-[#F0EFEB]">
+                                <AnimatePresence initial={false}>
+                                  {activeInCat.map(renderItemRow)}
+                                </AnimatePresence>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <div className="bg-card rounded-2xl p-8 text-center border border-border shadow-[0_6px_24px_-4px_rgba(45,62,64,0.08),0_2px_8px_-2px_rgba(45,62,64,0.04)] space-y-2">
+                  <span className="text-2xl">🎉</span>
+                  <h3 className="text-base font-semibold text-text-main">Alle Regale sind abgehakt!</h3>
+                  <p className="text-xs text-text-muted">
+                    Alle Artikel wurden erledigt und befinden sich im erledigten Bereich unten.
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       )}
 
       {/* 3. Erledigte Items: Einklappbarer Bereich am Ende („Erledigt (X)“) */}
-      {completedCount > 0 && (
-        <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-xs mt-6">
-          <div
-            onClick={() => setShowCompletedSection(!showCompletedSection)}
-            className="w-full flex items-center justify-between p-4 sm:p-5 bg-accent-tint hover:bg-[#E3EBE5] text-left transition-colors cursor-pointer select-none"
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                setShowCompletedSection(!showCompletedSection);
-              }
-            }}
+      <AnimatePresence initial={false}>
+        {completedCount > 0 && (
+          <motion.div
+            key="completed-section"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            className="bg-card rounded-2xl border border-border overflow-hidden shadow-[0_6px_24px_-4px_rgba(45,62,64,0.08),0_2px_8px_-2px_rgba(45,62,64,0.04)] mt-6"
           >
-            <div className="flex items-center gap-2 font-semibold text-text-main text-base">
-              <CheckCheck className="w-4 h-4 text-accent" />
-              <span>Erledigt ({completedCount})</span>
-            </div>
-
-            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                onClick={() => setConfirmDeleteState({ type: 'completed' })}
-                className="text-sm font-semibold text-rose-600 hover:text-rose-700 px-3 py-1.5 rounded-lg hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer mr-1"
-                title="Erledigte Zutaten entfernen"
-              >
-                Entfernen
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowCompletedSection(!showCompletedSection)}
-                className="p-1 text-[#57534d] hover:text-accent cursor-pointer"
-                title={showCompletedSection ? 'Zuklappen' : 'Aufklappen'}
-              >
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-200 ${
-                    showCompletedSection ? 'rotate-180' : 'rotate-0'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-
-          <div
-            className={`grid transition-all duration-250 ease-in-out ${
-              showCompletedSection ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-            }`}
-            style={{
-              gridTemplateRows: showCompletedSection ? '1fr' : '0fr',
-              opacity: showCompletedSection ? 1 : 0,
-            }}
-          >
-            <div className="overflow-hidden">
-              <div className="border-t border-border divide-y divide-[#F0EFEB] bg-card">
-                <AnimatePresence initial={false}>
-                  {completedItems.map(renderItemRow)}
-                </AnimatePresence>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Undo Notification Banner (Nach unten gerückt: hinter 'Erledigt', sowohl Mobile als auch PC) */}
-      {showUndoBanner && undoBackup && (
-        <div className="p-3.5 sm:p-4 bg-text-main text-on-accent rounded-2xl shadow-lg border border-border/20 flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-bottom duration-200 mt-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-accent shrink-0" />
-            <span className="text-[16px] font-medium text-on-accent/95 truncate">
-              {lastDeletedInfo?.type === 'completed'
-                ? `${lastDeletedInfo.count} erledigte ${lastDeletedInfo.count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`
-                : lastDeletedInfo?.type === 'category'
-                ? `Regal "${lastDeletedInfo.name}" gelöscht (${lastDeletedInfo.count} ${lastDeletedInfo.count === 1 ? 'Artikel' : 'Artikel'}).`
-                : lastDeletedInfo?.type === 'single'
-                ? `"${lastDeletedInfo.name}" gelöscht.`
-                : `Einkaufsliste gelöscht (${lastDeletedInfo?.count || undoBackup.length} ${lastDeletedInfo?.count === 1 ? 'Zutat' : 'Zutaten'}).`}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={handleUndo}
-              className="h-[44px] min-h-[44px] px-4 sm:px-5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-[16px] font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center gap-2"
+            <div
+              onClick={() => setShowCompletedSection(!showCompletedSection)}
+              className="w-full flex items-center justify-between p-4 sm:p-5 bg-accent-tint hover:bg-[#E3EBE5] text-left transition-colors cursor-pointer select-none"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setShowCompletedSection(!showCompletedSection);
+                }
+              }}
             >
-              <RotateCcw className="w-4 h-4 sm:hidden" />
-              <span>Rückgängig</span>
-            </button>
-            <button
-              onClick={() => setShowUndoBanner(false)}
-              className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-on-accent/70 hover:text-on-accent hover:bg-card/10 transition-colors cursor-pointer touch-manipulation active:scale-95"
-              title="Schließen"
-              aria-label="Schließen"
+              <div className="flex items-center gap-2 font-semibold text-text-main text-base">
+                <CheckCheck className="w-4 h-4 text-accent" />
+                <span>Erledigt ({completedCount})</span>
+              </div>
+
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteState({ type: 'completed' })}
+                  className="text-sm font-semibold text-rose-600 hover:text-rose-700 px-3 py-1.5 rounded-lg hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer mr-1"
+                  title="Erledigte Zutaten entfernen"
+                >
+                  Entfernen
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCompletedSection(!showCompletedSection)}
+                  className="p-1 text-[#57534d] hover:text-accent cursor-pointer"
+                  title={showCompletedSection ? 'Zuklappen' : 'Aufklappen'}
+                >
+                  <motion.div
+                    animate={{ rotate: showCompletedSection ? 180 : 0 }}
+                    transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </motion.div>
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                showCompletedSection ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+              }`}
             >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
+              <div className="overflow-hidden">
+                <div className="border-t border-border divide-y divide-[#F0EFEB] bg-card">
+                  <AnimatePresence initial={false}>
+                    {completedItems.map(renderItemRow)}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Confirmation Modal for Bulk Deletion */}
-      {confirmDeleteState && (
-        <div 
-          onClick={() => setConfirmDeleteState(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs touch-none overscroll-contain animate-in fade-in duration-200"
-        >
-          <div 
-            onClick={(e) => e.stopPropagation()}
-            className="bg-card rounded-3xl p-5 sm:p-7 max-w-md w-full shadow-2xl border border-border space-y-4 animate-in zoom-in-95 duration-200 overscroll-contain"
+      {/* Undo Notification Banner */}
+      <AnimatePresence>
+        {showUndoBanner && undoBackup && (
+          <motion.div
+            key="undo-banner"
+            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="p-3.5 sm:p-4 bg-text-main text-on-accent rounded-2xl shadow-lg border border-border/20 flex items-center justify-between gap-3 sm:gap-4 mt-2"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600" />
-              </div>
-              <div>
-                <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">
-                  Sicherheitsabfrage
-                </span>
-                <h3 className="text-xl font-bold text-text-main leading-snug">
-                  {confirmDeleteState.type === 'all'
-                    ? 'Liste wirklich löschen?'
-                    : 'Erledigte Zutaten entfernen?'}
-                </h3>
-              </div>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-accent shrink-0" />
+              <span className="text-[16px] font-medium text-on-accent/95 truncate">
+                {lastDeletedInfo?.type === 'completed'
+                  ? `${lastDeletedInfo.count} erledigte ${lastDeletedInfo.count === 1 ? 'Zutat' : 'Zutaten'} entfernt.`
+                  : lastDeletedInfo?.type === 'category'
+                  ? `Regal "${lastDeletedInfo.name}" gelöscht (${lastDeletedInfo.count} ${lastDeletedInfo.count === 1 ? 'Artikel' : 'Artikel'}).`
+                  : lastDeletedInfo?.type === 'single'
+                  ? `"${lastDeletedInfo.name}" gelöscht.`
+                  : `Einkaufsliste gelöscht (${lastDeletedInfo?.count || undoBackup.length} ${lastDeletedInfo?.count === 1 ? 'Zutat' : 'Zutaten'}).`}
+              </span>
             </div>
-
-            <p className="text-[16px] text-[#57534d] leading-relaxed">
-              {confirmDeleteState.type === 'all'
-                ? `Bist du sicher, dass du alle ${items.length} Zutaten von deiner Liste löschen möchtest?`
-                : `Bist du sicher, dass du alle ${completedCount} erledigten Zutaten löschen möchtest?`}
-            </p>
-
-            <div className="flex items-center justify-end gap-2.5 sm:gap-3 pt-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
-                id="cancel-delete-shopping-btn"
-                type="button"
-                onClick={() => setConfirmDeleteState(null)}
-                className="min-h-[44px] sm:min-h-[48px] px-5 py-2.5 rounded-xl border border-border bg-card hover:bg-surface text-[#57534d] font-semibold text-[16px] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                onClick={handleUndo}
+                className="h-[44px] min-h-[44px] px-4 sm:px-5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-[16px] font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center gap-2"
               >
-                Abbrechen
+                <RotateCcw className="w-4 h-4 sm:hidden" />
+                <span>Rückgängig</span>
               </button>
               <button
-                id="confirm-delete-shopping-btn"
-                type="button"
-                onClick={handleConfirmDeleteAction}
-                className="min-h-[44px] sm:min-h-[48px] px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-on-accent font-semibold text-[16px] shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
+                onClick={() => setShowUndoBanner(false)}
+                className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-on-accent/70 hover:text-on-accent hover:bg-card/10 transition-colors cursor-pointer touch-manipulation active:scale-95"
+                title="Schließen"
+                aria-label="Schließen"
               >
-                <Trash2 className="w-4 h-4 text-on-accent" />
-                <span>Ja, wirklich löschen</span>
+                <X className="w-5 h-5" />
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Clean, Subtle Confirmation Modal for Bulk Deletion (ohne kitschige "Sicherheitsabfrage") */}
+      <AnimatePresence>
+        {confirmDeleteState && (
+          <motion.div
+            key="confirm-delete-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => setConfirmDeleteState(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs touch-none overscroll-contain"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl p-5 sm:p-6 max-w-sm w-full shadow-xl border border-border space-y-3.5 overscroll-contain"
+            >
+              <h3 className="text-lg font-bold text-text-main leading-snug">
+                {confirmDeleteState.type === 'all'
+                  ? 'Einkaufsliste leeren?'
+                  : 'Erledigte Zutaten entfernen?'}
+              </h3>
+
+              <p className="text-[15px] text-text-muted leading-relaxed">
+                {confirmDeleteState.type === 'all'
+                  ? `Alle ${items.length} ${items.length === 1 ? 'Zutat wird' : 'Zutaten werden'} von deiner Einkaufsliste entfernt.`
+                  : `Alle ${completedCount} erledigten Zutaten werden von deiner Liste entfernt.`}
+              </p>
+
+              <div className="flex items-center justify-end gap-2 pt-1.5">
+                <button
+                  id="cancel-delete-shopping-btn"
+                  type="button"
+                  onClick={() => setConfirmDeleteState(null)}
+                  className="min-h-[44px] px-4 py-2 rounded-xl border border-border bg-surface hover:bg-accent-tint text-text-main font-semibold text-[15px] transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  id="confirm-delete-shopping-btn"
+                  type="button"
+                  onClick={handleConfirmDeleteAction}
+                  className="min-h-[44px] px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-on-accent font-semibold text-[15px] shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation"
+                >
+                  <Trash2 className="w-4 h-4 text-on-accent" />
+                  <span>{confirmDeleteState.type === 'all' ? 'Liste leeren' : 'Entfernen'}</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
