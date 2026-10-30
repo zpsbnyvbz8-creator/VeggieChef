@@ -39,11 +39,10 @@ import {
   Star,
   Cookie
 } from 'lucide-react';
-import { DayPlan, MealPlanSlot, Recipe, WeekPlan, FilterState } from '../types';
+import { DayPlan, MealPlanSlot, Recipe, WeekPlan } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { RecipeImage } from './RecipeImage';
-import { RecipeCardUnified } from './ui/RecipeCardUnified';
-import { RecipeCardListRow } from './ui/RecipeCardListRow';
+import { RecipePickerModal } from './RecipePickerModal';
 import { CloseButton } from './ui/CloseButton';
 import { SyncConfig } from '../lib/syncService';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
@@ -54,42 +53,13 @@ import { useSync } from '../context/SyncContext';
 import { useToast } from '../context/ToastContext';
 import { HybridPortionStepper } from './HybridPortionStepper';
 import { safeStorage } from '../utils/helpers';
-import { getRecipeDiet, buildCategoryOptions, SORT_OPTIONS } from '../utils/discover';
+import { getRecipeDiet } from '../utils/discover';
 
 const DIFFICULTY_LABEL: Record<string, string> = {
   Einfach: 'Einfach',
   Mittel: 'Mittel',
   Anspruchsvoll: 'Aufwendig',
 };
-
-function getPickerCategoryIcon(value: string) {
-  switch (value) {
-    case 'all':
-      return <Sparkles className="w-4 h-4 shrink-0" aria-hidden="true" />;
-    case 'Schnelle Küche':
-    case 'Schnell':
-      return <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />;
-    case 'Pasta & Gnocchi':
-    case 'Pasta':
-      return <Utensils className="w-4 h-4 shrink-0" aria-hidden="true" />;
-    case 'Currys & Eintöpfe':
-      return <Flame className="w-4 h-4 shrink-0" aria-hidden="true" />;
-    case 'Bowls & Salate':
-      return <Salad className="w-4 h-4 shrink-0" aria-hidden="true" />;
-    case 'Ofengerichte':
-      return <ChefHat className="w-4 h-4 shrink-0" aria-hidden="true" />;
-    case 'High Protein':
-      return <Dumbbell className="w-4 h-4 shrink-0" aria-hidden="true" />;
-    case 'Frühstück & Süßes':
-      return <Sun className="w-4 h-4 shrink-0" aria-hidden="true" />;
-    case 'Snacks & Dips':
-      return <Cookie className="w-4 h-4 shrink-0" aria-hidden="true" />;
-    case 'Festlich':
-      return <Star className="w-4 h-4 shrink-0" aria-hidden="true" />;
-    default:
-      return <Sparkles className="w-4 h-4 shrink-0" aria-hidden="true" />;
-  }
-}
 
 interface WeeklyPlannerViewProps {
   mealPlan?: DayPlan[];
@@ -137,18 +107,6 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
   const [selectedMealType, setSelectedMealType] = useState<'lunch' | 'dinner'>('dinner');
   const [showRecipePickerModal, setShowRecipePickerModal] = useState(false);
-  const [pickerSearchQuery, setPickerSearchQuery] = useState('');
-  const [pickerCategory, setPickerCategory] = useState<string>('all');
-  const [pickerOnlyVegan, setPickerOnlyVegan] = useState(false);
-  const [pickerOnlyFavorites, setPickerOnlyFavorites] = useState(false);
-  const [pickerQuick, setPickerQuick] = useState(false);
-  const [pickerHighProtein, setPickerHighProtein] = useState(false);
-  const [pickerSortBy, setPickerSortBy] = useState<FilterState['sortBy']>('featured');
-  const [showPickerFilters, setShowPickerFilters] = useState(false);
-  const [showPickerSortDropdown, setShowPickerSortDropdown] = useState(false);
-  const pickerSortRef = useRef<HTMLDivElement>(null);
-
-  const pickerCategories = React.useMemo(() => buildCategoryOptions(allRecipes), [allRecipes]);
 
   // Toggle showing lunch slot for all days AND weekly summary - persisted in safeStorage
   const [showLunchSlot, setShowLunchSlot] = useState<boolean>(() => {
@@ -216,11 +174,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       if (contextMenuRef.current && !contextMenuRef.current.contains(target)) {
         setShowContextMenu(false);
       }
-      if (pickerSortRef.current && !pickerSortRef.current.contains(target)) {
-        setShowPickerSortDropdown(false);
-      }
     };
-    if (showContextMenu || showPickerSortDropdown) {
+    if (showContextMenu) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('touchstart', handleClickOutside);
     }
@@ -228,7 +183,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [showContextMenu, showPickerSortDropdown]);
+  }, [showContextMenu]);
 
   // Drag & Drop State for Reordering & Swapping Meals
   const [draggingItem, setDraggingItem] = useState<{
@@ -335,101 +290,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const openRecipePicker = (dayId: string, mealType: 'lunch' | 'dinner') => {
     setSelectedDayId(dayId);
     setSelectedMealType(mealType);
-    setPickerSearchQuery('');
-    setPickerCategory('all');
-    setPickerOnlyVegan(false);
-    setPickerOnlyFavorites(false);
-    setPickerQuick(false);
-    setPickerHighProtein(false);
-    setPickerSortBy('featured');
-    setShowPickerFilters(false);
-    setShowPickerSortDropdown(false);
     setShowRecipePickerModal(true);
   };
-
-  const filteredPickerRecipes = React.useMemo(() => {
-    const cookedLogs = recipesCtx.cookedLogs;
-    let list = allRecipes.filter((recipe) => {
-      // 0. Kategorie
-      if (pickerCategory !== 'all' && recipe.category !== pickerCategory) return false;
-
-      // 1. Vegan filter (kombinierbar)
-      if (pickerOnlyVegan && !recipe.isVegan) return false;
-
-      // 2. Favoriten / Gelikt filter (kombinierbar)
-      if (pickerOnlyFavorites && !favorites.includes(recipe.id)) return false;
-
-      // 3. Schnell (<= 30 min, kombinierbar)
-      if (pickerQuick && (recipe.totalTimeMinutes || 0) > 30) return false;
-
-      // 4. High Protein (>= 20g Protein, kombinierbar)
-      if (pickerHighProtein && (recipe.nutrients?.protein || 0) < 20) return false;
-
-      // 5. Suche
-      if (!pickerSearchQuery.trim()) return true;
-      const query = pickerSearchQuery.toLowerCase().trim();
-      const matchesTitle = recipe.title.toLowerCase().includes(query);
-      const matchesSubtitle = recipe.subtitle?.toLowerCase().includes(query);
-      const matchesIngredient = recipe.ingredients?.some((ing) => ing.name.toLowerCase().includes(query));
-      return matchesTitle || matchesSubtitle || matchesIngredient;
-    });
-
-    // 4. Sortierung wie auf Startseite
-    list = [...list].sort((a, b) => {
-      const aNutrients = a.nutrients || { calories: 0, protein: 0, fiber: 0 };
-      const bNutrients = b.nutrients || { calories: 0, protein: 0, fiber: 0 };
-
-      switch (pickerSortBy) {
-        case 'recentlyCooked': {
-          if (!cookedLogs || cookedLogs.length === 0) {
-            return (b.rating || 0) - (a.rating || 0);
-          }
-          const getLatestCookedTime = (recId: string) => {
-            let maxTime = 0;
-            for (const log of cookedLogs) {
-              if (log.recipeId === recId) {
-                const t = new Date(log.date).getTime();
-                if (t > maxTime) maxTime = t;
-              }
-            }
-            return maxTime;
-          };
-          const aTime = getLatestCookedTime(a.id);
-          const bTime = getLatestCookedTime(b.id);
-          if (bTime !== aTime) return bTime - aTime;
-          return (b.rating || 0) - (a.rating || 0);
-        }
-        case 'recentlyAdded': {
-          const getAddedTimestamp = (r: Recipe) => {
-            if (r.createdAt) {
-              return typeof r.createdAt === 'number' ? r.createdAt : new Date(r.createdAt).getTime();
-            }
-            const numMatch = r.id.match(/\d{10,}/);
-            if (numMatch) return parseInt(numMatch[0], 10);
-            const idNum = parseInt(r.id.replace(/\D/g, ''), 10);
-            return isNaN(idNum) ? 0 : idNum;
-          };
-          const aTime = getAddedTimestamp(a);
-          const bTime = getAddedTimestamp(b);
-          if (bTime !== aTime) return bTime - aTime;
-          return (b.rating || 0) - (a.rating || 0);
-        }
-        case 'timeAsc':
-          return (a.totalTimeMinutes || 0) - (b.totalTimeMinutes || 0);
-        case 'proteinDesc':
-          return (bNutrients.protein || 0) - (aNutrients.protein || 0);
-        case 'caloriesDesc':
-          return (b.caloriesPerServing ?? bNutrients.calories ?? 0) - (a.caloriesPerServing ?? aNutrients.calories ?? 0);
-        case 'ratingDesc':
-          return (b.rating ?? 0) - (a.rating ?? 0) || (b.reviewCount ?? 0) - (a.reviewCount ?? 0);
-        case 'featured':
-        default:
-          return 0;
-      }
-    });
-
-    return list;
-  }, [allRecipes, pickerCategory, pickerOnlyVegan, pickerOnlyFavorites, pickerQuick, pickerHighProtein, pickerSearchQuery, pickerSortBy, favorites, recipesCtx.cookedLogs]);
 
   const assignRecipeToSlot = (recipe: Recipe) => {
     if (!selectedDayId) return;
@@ -1627,375 +1489,13 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         </div>
       )}
 
-      {/* Redesigned Recipe Picker Modal – Auf Mobile Vollbild, ohne "Rezept wählen", Filter-Toggle in der Suchleiste & animiertes Sortier-Menü */}
-      <AnimatePresence>
-        {showRecipePickerModal && (
-          <motion.div
-            key="recipe-picker-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
-            onClick={() => setShowRecipePickerModal(false)}
-            className="fixed inset-0 z-50 bg-text-main/55 backdrop-blur-xs flex items-center justify-center sm:p-4 touch-none overscroll-contain"
-          >
-            <motion.div
-              key="recipe-picker-dialog"
-              initial={{ opacity: 0, scale: 0.96, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 10 }}
-              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-card rounded-none sm:rounded-3xl max-w-5xl xl:max-w-6xl w-full flex flex-col h-dvh sm:h-[88dvh] sm:max-h-[860px] shadow-2xl border-0 sm:border border-border overscroll-contain overflow-hidden"
-            >
-              {/* Top Toolbar: Suchleiste (mit dezentem Filter-Icon rechts, das zu einem Kreuz wird), animiertes Sortier-Dropdown & Schließen-Button */}
-              <div className="px-3.5 sm:px-6 pt-3.5 sm:pt-4 pb-3 bg-card border-b border-border shrink-0">
-                <div className="flex items-center gap-2 sm:gap-2.5">
-                  {/* Suchleiste mit integriertem Filter-Toggle rechts */}
-                  <div className="relative flex-1 min-w-0">
-                    <Search className="w-[18px] h-[18px] text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="search"
-                      value={pickerSearchQuery}
-                      onChange={(e) => setPickerSearchQuery(e.target.value)}
-                      placeholder="Rezept oder Zutat suchen …"
-                      className={`w-full h-11 min-h-[44px] pl-10 ${
-                        pickerSearchQuery ? 'pr-20' : 'pr-12'
-                      } rounded-xl bg-surface/70 focus:bg-card border border-border focus:border-accent text-text-main placeholder:text-text-muted text-base font-medium focus:outline-hidden transition-all shadow-2xs [&::-webkit-search-cancel-button]:hidden`}
-                    />
-
-                    {/* Rechts in der Suchleiste: Optionaler Text-Löschen-Button + Dezentes Filter-Icon (wird bei Klick dynamisch zum Kreuz) */}
-                    <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-                      <AnimatePresence>
-                        {pickerSearchQuery && (
-                          <motion.button
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            transition={{ duration: 0.15 }}
-                            type="button"
-                            onClick={() => setPickerSearchQuery('')}
-                            aria-label="Suchtext löschen"
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-main hover:bg-card cursor-pointer touch-manipulation"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </motion.button>
-                        )}
-                      </AnimatePresence>
-
-                      <button
-                        type="button"
-                        id="picker-toggle-filters-btn"
-                        onClick={() => setShowPickerFilters((prev) => !prev)}
-                        aria-label={showPickerFilters ? 'Filter schließen' : 'Filter öffnen'}
-                        aria-expanded={showPickerFilters}
-                        title={showPickerFilters ? 'Filter ausblenden' : 'Filter einblenden'}
-                        className={`relative w-9 h-9 min-w-[36px] min-h-[36px] rounded-lg flex items-center justify-center transition-colors cursor-pointer touch-manipulation active:scale-95 ${
-                          showPickerFilters
-                            ? 'bg-accent-tint text-accent'
-                            : (pickerCategory !== 'all' || pickerOnlyVegan || pickerOnlyFavorites || pickerQuick || pickerHighProtein)
-                            ? 'text-accent hover:bg-card'
-                            : 'text-text-muted hover:text-text-main hover:bg-card'
-                        }`}
-                      >
-                        <AnimatePresence mode="wait" initial={false}>
-                          {showPickerFilters ? (
-                            <motion.span
-                              key="filter-close-cross"
-                              initial={{ opacity: 0, rotate: -90, scale: 0.7 }}
-                              animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                              exit={{ opacity: 0, rotate: 90, scale: 0.7 }}
-                              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                              className="flex items-center justify-center"
-                            >
-                              <X className="w-[18px] h-[18px] stroke-[2.2]" />
-                            </motion.span>
-                          ) : (
-                            <motion.span
-                              key="filter-open-icon"
-                              initial={{ opacity: 0, rotate: 90, scale: 0.7 }}
-                              animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                              exit={{ opacity: 0, rotate: -90, scale: 0.7 }}
-                              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                              className="flex items-center justify-center"
-                            >
-                              <SlidersHorizontal className="w-[17px] h-[17px]" />
-                            </motion.span>
-                          )}
-                        </AnimatePresence>
-
-                        {/* Dezenter Indikator-Punkt, falls Filter aktiv aber Leiste eingeklappt */}
-                        {!showPickerFilters &&
-                          (pickerCategory !== 'all' ||
-                            pickerOnlyVegan ||
-                            pickerOnlyFavorites ||
-                            pickerQuick ||
-                            pickerHighProtein) && (
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent ring-2 ring-card" />
-                          )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Eigenes UI/UX-animiertes Sortierungs-Dropdown */}
-                  <div className="relative shrink-0" ref={pickerSortRef}>
-                    <button
-                      type="button"
-                      id="picker-sort-dropdown-btn"
-                      onClick={() => setShowPickerSortDropdown((prev) => !prev)}
-                      aria-expanded={showPickerSortDropdown}
-                      aria-label="Sortierung wählen"
-                      className={`h-11 min-h-[44px] px-3 sm:px-3.5 rounded-xl border flex items-center gap-2 text-sm font-semibold transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs ${
-                        showPickerSortDropdown
-                          ? 'bg-accent-tint border-accent/40 text-accent ring-2 ring-accent/20'
-                          : 'bg-surface/70 hover:bg-card border-border hover:border-accent/50 text-text-main'
-                      }`}
-                    >
-                      <ArrowUpDown className="w-4 h-4 text-text-muted shrink-0" aria-hidden="true" />
-                      <span className="hidden sm:inline max-w-[140px] truncate">
-                        {SORT_OPTIONS.find((o) => o.value === pickerSortBy)?.label || 'Sortierung'}
-                      </span>
-                      <motion.span
-                        animate={{ rotate: showPickerSortDropdown ? 180 : 0 }}
-                        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                        className="inline-flex items-center justify-center text-text-muted"
-                      >
-                        <ChevronDown className="w-4 h-4 shrink-0" aria-hidden="true" />
-                      </motion.span>
-                    </button>
-
-                    <AnimatePresence>
-                      {showPickerSortDropdown && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.94, y: -6 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.94, y: -6 }}
-                          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                          className="absolute right-0 top-full mt-2 w-56 origin-top-right bg-card rounded-2xl border border-border shadow-xl p-1.5 z-50 space-y-0.5"
-                        >
-                          {SORT_OPTIONS.map((opt) => {
-                            const isSelected = pickerSortBy === opt.value;
-                            return (
-                              <button
-                                key={opt.value}
-                                type="button"
-                                onClick={() => {
-                                  setPickerSortBy(opt.value as FilterState['sortBy']);
-                                  setShowPickerSortDropdown(false);
-                                }}
-                                className={`w-full min-h-[42px] px-3 py-2 rounded-xl text-left text-sm font-semibold flex items-center justify-between gap-2 transition-colors cursor-pointer touch-manipulation active:scale-[0.98] ${
-                                  isSelected
-                                    ? 'bg-accent-tint text-accent'
-                                    : 'text-text-main hover:bg-surface'
-                                }`}
-                              >
-                                <span className="truncate">{opt.label}</span>
-                                {isSelected && (
-                                  <motion.span
-                                    initial={{ scale: 0.5, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    transition={{ duration: 0.15 }}
-                                  >
-                                    <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
-                                  </motion.span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                  {/* Schließen-Button im Stil der App */}
-                  <CloseButton onClick={() => setShowRecipePickerModal(false)} ariaLabel="Schließen" />
-                </div>
-
-                {/* Dynamisch ausklappbare Badge-Zeile (erscheint nur bei Klick auf das Filter-Icon in der Suchleiste) */}
-                <AnimatePresence initial={false}>
-                  {showPickerFilters && (
-                    <motion.div
-                      key="picker-dynamic-filter-bar"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{
-                        height: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
-                        opacity: { duration: 0.2, ease: 'easeInOut' },
-                      }}
-                      className="overflow-hidden"
-                    >
-                      <div className="pt-3 -mx-3.5 sm:mx-0">
-                        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none px-3.5 sm:px-0 py-0.5 mask-fade-x">
-                          {/* Alle */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPickerCategory('all');
-                              setPickerOnlyVegan(false);
-                              setPickerOnlyFavorites(false);
-                              setPickerQuick(false);
-                              setPickerHighProtein(false);
-                            }}
-                            className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                              pickerCategory === 'all' && !pickerOnlyVegan && !pickerOnlyFavorites && !pickerQuick && !pickerHighProtein
-                                ? 'bg-accent border-accent text-on-accent shadow-2xs'
-                                : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
-                            }`}
-                          >
-                            <Sparkles className="w-4 h-4 shrink-0" aria-hidden="true" />
-                            <span>Alle</span>
-                          </button>
-
-                          {/* Favoriten */}
-                          <button
-                            type="button"
-                            id="picker-favorites-filter-btn"
-                            onClick={() => setPickerOnlyFavorites((prev) => !prev)}
-                            className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                              pickerOnlyFavorites
-                                ? 'bg-favorite border-favorite text-on-accent shadow-2xs'
-                                : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
-                            }`}
-                          >
-                            <Heart className={`w-4 h-4 shrink-0 ${pickerOnlyFavorites ? 'fill-current' : 'text-favorite'}`} aria-hidden="true" />
-                            <span>Favoriten</span>
-                          </button>
-
-                          {/* Vegan */}
-                          <button
-                            type="button"
-                            id="picker-vegan-filter-btn"
-                            onClick={() => setPickerOnlyVegan((prev) => !prev)}
-                            className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                              pickerOnlyVegan
-                                ? 'bg-accent border-accent text-on-accent shadow-2xs'
-                                : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
-                            }`}
-                          >
-                            <Leaf className="w-4 h-4 shrink-0" aria-hidden="true" />
-                            <span>Vegan</span>
-                          </button>
-
-                          {/* Schnell (<= 30 Min.) */}
-                          <button
-                            type="button"
-                            onClick={() => setPickerQuick((prev) => !prev)}
-                            className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                              pickerQuick
-                                ? 'bg-accent border-accent text-on-accent shadow-2xs'
-                                : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
-                            }`}
-                          >
-                            <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
-                            <span>Bis 30 Min.</span>
-                          </button>
-
-                          {/* High Protein */}
-                          <button
-                            type="button"
-                            onClick={() => setPickerHighProtein((prev) => !prev)}
-                            className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                              pickerHighProtein
-                                ? 'bg-accent border-accent text-on-accent shadow-2xs'
-                                : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
-                            }`}
-                          >
-                            <Dumbbell className="w-4 h-4 shrink-0" aria-hidden="true" />
-                            <span>High Protein</span>
-                          </button>
-
-                          {pickerCategories.length > 0 && (
-                            <div className="h-5 w-px bg-border shrink-0 mx-0.5" aria-hidden="true" />
-                          )}
-
-                          {/* Kategorien wie auf der Startseite */}
-                          {pickerCategories.map((cat) => {
-                            const selected = pickerCategory === cat.value;
-                            return (
-                              <button
-                                key={cat.value}
-                                type="button"
-                                onClick={() => setPickerCategory(selected ? 'all' : cat.value)}
-                                className={`h-10 px-4 rounded-full border text-sm font-semibold whitespace-nowrap shrink-0 flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                                  selected
-                                    ? 'bg-accent border-accent text-on-accent shadow-2xs'
-                                    : 'bg-card border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
-                                }`}
-                              >
-                                {getPickerCategoryIcon(cat.value)}
-                                <span>{cat.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Recipes Content: Mobile = Listenansicht der Startseite, PC = Rasteransicht der Startseite */}
-              <div className="overflow-y-auto flex-1 overscroll-contain px-3.5 sm:px-6 py-4">
-                {filteredPickerRecipes.length === 0 ? (
-                  <div className="bg-surface/60 rounded-2xl border border-border px-6 py-12 text-center space-y-3 my-4">
-                    <div className="w-12 h-12 rounded-2xl bg-accent-tint text-accent flex items-center justify-center mx-auto">
-                      <Search className="w-6 h-6" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-base font-bold text-text-main">Keine passenden Rezepte gefunden</p>
-                      <p className="text-sm text-text-muted">Passe deinen Suchbegriff oder deine Filter an.</p>
-                    </div>
-                    {(pickerCategory !== 'all' || pickerOnlyVegan || pickerOnlyFavorites || pickerQuick || pickerHighProtein || pickerSearchQuery) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPickerCategory('all');
-                          setPickerOnlyVegan(false);
-                          setPickerOnlyFavorites(false);
-                          setPickerQuick(false);
-                          setPickerHighProtein(false);
-                          setPickerSearchQuery('');
-                        }}
-                        className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-sm font-semibold transition-all cursor-pointer active:scale-95"
-                      >
-                        Alle Filter zurücksetzen
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    {/* Mobile: Exakt die Listenansicht-Kacheln der Startseite */}
-                    <div className="sm:hidden space-y-2.5 pb-6">
-                      {filteredPickerRecipes.map((recipe, idx) => (
-                        <RecipeCardListRow
-                          key={recipe.id}
-                          recipe={recipe}
-                          index={idx}
-                          onSelect={assignRecipeToSlot}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Desktop/Tablet: Exakt die Rasteransicht-Kacheln der Startseite */}
-                    <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
-                      {filteredPickerRecipes.map((recipe, idx) => (
-                        <RecipeCardUnified
-                          key={recipe.id}
-                          recipe={recipe}
-                          variant="regular"
-                          index={idx}
-                          onSelect={assignRecipeToSlot}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Global Recipe Picker Modal – Auf Mobile Vollbild, ohne "Rezept wählen", Filter-Toggle in der Suchleiste, animiertes Sortier-Menü & Startseiten-Raster-Kacheln */}
+      <RecipePickerModal
+        isOpen={showRecipePickerModal}
+        onClose={() => setShowRecipePickerModal(false)}
+        recipes={allRecipes}
+        onSelectRecipe={assignRecipeToSlot}
+      />
 
       {/* AI Meal Plan Generator Modal – Im Stil der App (weiße Schließen/Abbrechen-Buttons, komplett animiert & zentrierter Portionen-Stepper) */}
       <AnimatePresence>

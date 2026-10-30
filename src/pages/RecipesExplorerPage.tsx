@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate, useNavigationType } from 'react-router-dom';
-import { ArrowUpDown, ChevronDown, Layers, LayoutGrid, List, Plus, Bookmark, History } from 'lucide-react';
-import { AnimatePresence } from 'motion/react';
+import { ArrowUpDown, Check, ChevronDown, Layers, LayoutGrid, List, Plus, Bookmark, History } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useRecipes } from '../context/RecipeContext';
 import { DishOfTheDay } from '../components/DishOfTheDay';
 import { SeasonHighlights } from '../components/SeasonHighlights';
@@ -47,7 +47,6 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({
     setFilters,
     resetFilters,
     filteredRecipes,
-    dishOfTheDay,
     setIsAddRecipeOpen,
     isFilterSheetOpen,
     closeFilterSheet,
@@ -57,6 +56,31 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({
   const restore = navType === 'POP' ? listMemory[memoryKey] : undefined;
 
   const [visibleCount, setVisibleCount] = useState(restore?.count ?? RECIPES_PAGE_SIZE);
+
+  /* ---- Custom Animated Sort Dropdown State ---- */
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showSortDropdown) return;
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(target)) {
+        setShowSortDropdown(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowSortDropdown(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showSortDropdown]);
 
   /* ---- Layout-Toggle Raster/Liste: Auswahl wird gemerkt (SSR-sicher, try/catch in helpers) ---- */
   const VIEW_MODE_KEY = 'veggiechef_explorer_view';
@@ -170,52 +194,63 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({
             {isBookmarks ? 'Merkliste' : isFavorites ? 'Deine Favoriten' : isCooked ? 'Zuletzt gekocht' : 'Was kochen wir heute?'}
           </h1>
         </div>
-        <button
+        <motion.button
           id="explorer-add-recipe-btn"
           type="button"
+          whileTap={{ scale: 0.95 }}
           onClick={() => setIsAddRecipeOpen(true)}
           aria-label="Gericht hinzufügen"
           title="Gericht hinzufügen"
-          className="h-11 min-h-[44px] px-4 rounded-full text-sm font-bold bg-accent hover:bg-accent-hover text-on-accent shrink-0 flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation"
+          className="h-11 min-h-[44px] px-4 rounded-full text-sm font-bold bg-accent hover:bg-accent-hover text-on-accent shrink-0 flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer touch-manipulation"
         >
           <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
           <span className="sm:hidden text-sm">Gericht</span>
           <span className="hidden sm:inline text-sm">Gericht hinzufügen</span>
-        </button>
+        </motion.button>
       </header>
 
       {/* Categories + aktive Filter (Suche/Filter-Button leben im Header) */}
       <FilterBar />
 
       {/* Discovery entry points (browse mode only) */}
-      {isBrowsing && (
-        <>
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-            <button
-              id="explorer-cooked-recipes-btn"
-              type="button"
-              onClick={() => navigate('/cooked')}
-              className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-season-autumn/25 bg-season-autumn-bg hover:border-season-autumn/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
-            >
-              <History className="w-6 h-6 text-season-autumn group-hover:-rotate-12 transition-transform" aria-hidden="true" />
-              <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Zuletzt gekocht</span>
-            </button>
-            <button
-              id="explorer-swipe-deck-btn"
-              type="button"
-              onClick={() => navigate('/swipen')}
-              className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-accent/25 bg-accent-tint hover:border-accent/50 hover:shadow-sm transition-all active:scale-[0.98] cursor-pointer"
-            >
-              <Layers className="w-7 h-7 sm:w-8 sm:h-8 text-accent group-hover:scale-110 transition-transform" aria-hidden="true" />
-              <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Swipen</span>
-            </button>
-          </div>
-        </>
-      )}
+      <AnimatePresence initial={false}>
+        {isBrowsing && (
+          <motion.div
+            key="explorer-discovery-blocks"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            className="space-y-5 sm:space-y-7"
+          >
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+              <motion.button
+                id="explorer-cooked-recipes-btn"
+                type="button"
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/cooked')}
+                className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-season-autumn/25 bg-season-autumn-bg hover:border-season-autumn/50 hover:shadow-sm transition-all cursor-pointer"
+              >
+                <History className="w-6 h-6 text-season-autumn group-hover:-rotate-12 transition-transform duration-300" aria-hidden="true" />
+                <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Zuletzt gekocht</span>
+              </motion.button>
+              <motion.button
+                id="explorer-swipe-deck-btn"
+                type="button"
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/swipen')}
+                className="group flex items-center justify-center gap-3 min-h-[76px] px-4 py-3 rounded-2xl border border-accent/25 bg-accent-tint hover:border-accent/50 hover:shadow-sm transition-all cursor-pointer"
+              >
+                <Layers className="w-7 h-7 sm:w-8 sm:h-8 text-accent group-hover:scale-110 transition-transform duration-300" aria-hidden="true" />
+                <span className="text-base sm:text-lg font-bold text-text-main leading-tight">Swipen</span>
+              </motion.button>
+            </div>
 
-      {/* Editorial blocks (browse mode only) */}
-      {isBrowsing && <DishOfTheDay />}
-      {isBrowsing && <SeasonHighlights />}
+            <DishOfTheDay />
+            <SeasonHighlights />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Results */}
       <section aria-labelledby="results-title" className="space-y-4">
@@ -238,31 +273,87 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <div className="relative">
-              <label htmlFor="filter-sort-by" className="sr-only">
-                Sortierung
-              </label>
-              <ArrowUpDown className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
-              <select
+            {/* Eigenes UI/UX-animiertes Sortierungs-Dropdown (kein natives iOS-Menü mehr auf Mobile) */}
+            <div className="relative shrink-0" ref={sortDropdownRef}>
+              <motion.button
+                type="button"
                 id="filter-sort-by"
-                value={filters.sortBy}
-                onChange={(e) => setFilters((prev) => ({ ...prev, sortBy: e.target.value as FilterState['sortBy'] }))}
-                className="appearance-none h-11 max-w-[10rem] sm:max-w-none bg-card border border-border hover:border-accent/50 rounded-xl pl-9 pr-9 text-sm font-semibold text-text-main cursor-pointer focus:outline-hidden focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all"
+                whileTap={{ scale: 0.96 }}
+                onClick={() => setShowSortDropdown((prev) => !prev)}
+                aria-expanded={showSortDropdown}
+                aria-haspopup="listbox"
+                aria-label="Sortierung wählen"
+                className={`h-11 min-h-[44px] px-3 sm:px-3.5 rounded-xl border flex items-center gap-2 text-sm font-semibold transition-all cursor-pointer touch-manipulation shadow-2xs ${
+                  showSortDropdown
+                    ? 'bg-accent-tint border-accent/40 text-accent ring-2 ring-accent/15'
+                    : 'bg-card border-border hover:border-accent/50 text-text-main'
+                }`}
               >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-4 h-4 text-text-muted absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+                <ArrowUpDown className="w-4 h-4 text-text-muted shrink-0" aria-hidden="true" />
+                <span className="max-w-[7.5rem] sm:max-w-[11rem] truncate">
+                  {SORT_OPTIONS.find((o) => o.value === filters.sortBy)?.label || 'Empfohlen'}
+                </span>
+                <motion.span
+                  animate={{ rotate: showSortDropdown ? 180 : 0 }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  className="inline-flex items-center justify-center text-text-muted"
+                >
+                  <ChevronDown className="w-4 h-4 shrink-0" aria-hidden="true" />
+                </motion.span>
+              </motion.button>
+
+              <AnimatePresence>
+                {showSortDropdown && (
+                  <motion.div
+                    role="listbox"
+                    aria-label="Sortieroptionen"
+                    initial={{ opacity: 0, scale: 0.94, y: -6 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.94, y: -6 }}
+                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute right-0 top-full mt-2 w-56 origin-top-right bg-card rounded-2xl border border-border shadow-xl p-1.5 z-40 space-y-0.5"
+                  >
+                    {SORT_OPTIONS.map((opt) => {
+                      const isSelected = filters.sortBy === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          role="option"
+                          aria-selected={isSelected}
+                          type="button"
+                          onClick={() => {
+                            setFilters((prev) => ({ ...prev, sortBy: opt.value as FilterState['sortBy'] }));
+                            setShowSortDropdown(false);
+                          }}
+                          className={`w-full min-h-[42px] px-3 py-2 rounded-xl text-left text-sm font-semibold flex items-center justify-between gap-2 transition-colors cursor-pointer touch-manipulation active:scale-[0.98] ${
+                            isSelected
+                              ? 'bg-accent-tint text-accent'
+                              : 'text-text-main hover:bg-surface'
+                          }`}
+                        >
+                          <span className="truncate">{opt.label}</span>
+                          {isSelected && (
+                            <motion.span
+                              initial={{ scale: 0.5, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ duration: 0.15 }}
+                            >
+                              <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
+                            </motion.span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
-            {/* Layout-Toggle: Raster / Liste */}
+            {/* Animierter Layout-Toggle: Raster / Liste */}
             <div
               role="group"
               aria-label="Darstellung"
-              className="flex items-center rounded-xl border border-border bg-card overflow-hidden shrink-0"
+              className="relative flex items-center p-0.5 rounded-xl border border-border bg-card overflow-hidden shrink-0 h-11"
             >
               <button
                 type="button"
@@ -270,10 +361,17 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({
                 aria-pressed={viewMode === 'grid'}
                 aria-label="Rasteransicht"
                 title="Raster"
-                className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors cursor-pointer ${
-                  viewMode === 'grid' ? 'bg-accent-tint text-accent' : 'text-text-muted hover:bg-surface'
+                className={`relative z-10 w-10 h-full min-w-[40px] flex items-center justify-center rounded-[10px] transition-colors cursor-pointer touch-manipulation ${
+                  viewMode === 'grid' ? 'text-accent' : 'text-text-muted hover:text-text-main'
                 }`}
               >
+                {viewMode === 'grid' && (
+                  <motion.span
+                    layoutId="explorer-view-mode-pill"
+                    transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    className="absolute inset-0 rounded-[10px] bg-accent-tint border border-accent/25 -z-10"
+                  />
+                )}
                 <LayoutGrid className="w-4 h-4" aria-hidden="true" />
               </button>
               <button
@@ -282,10 +380,17 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({
                 aria-pressed={viewMode === 'list'}
                 aria-label="Listenansicht"
                 title="Liste"
-                className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center border-l border-border transition-colors cursor-pointer ${
-                  viewMode === 'list' ? 'bg-accent-tint text-accent' : 'text-text-muted hover:bg-surface'
+                className={`relative z-10 w-10 h-full min-w-[40px] flex items-center justify-center rounded-[10px] transition-colors cursor-pointer touch-manipulation ${
+                  viewMode === 'list' ? 'text-accent' : 'text-text-muted hover:text-text-main'
                 }`}
               >
+                {viewMode === 'list' && (
+                  <motion.span
+                    layoutId="explorer-view-mode-pill"
+                    transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    className="absolute inset-0 rounded-[10px] bg-accent-tint border border-accent/25 -z-10"
+                  />
+                )}
                 <List className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>

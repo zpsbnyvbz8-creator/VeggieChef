@@ -60,7 +60,7 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
     <article
       id={`recipe-card-${recipe.id}`}
       style={cardStyle}
-      className={`group relative flex flex-col w-full h-full bg-card rounded-2xl border overflow-hidden transition-all duration-300 vc-card-stagger ${
+      className={`@container group relative flex flex-col w-full h-full bg-card rounded-2xl border overflow-hidden transition-all duration-300 vc-card-stagger ${
         isDisliked
           ? 'border-border opacity-70 hover:opacity-100'
           : isCompact
@@ -91,7 +91,7 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
         />
       </div>
 
-      <div className={`flex flex-col flex-1 ${isCompact ? 'p-3' : 'p-3.5 sm:p-4'}`}>
+      <div className={`flex flex-col flex-1 ${isCompact ? 'p-3' : 'p-3.5'}`}>
         <h3
           className={`font-bold text-text-main leading-snug line-clamp-2 text-card-title group-hover:text-accent transition-colors`}
         >
@@ -113,21 +113,21 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
           )}
         </h3>
 
-        {/* Infozeile: bricht bei wenig Platz in 2 Zeilen um, Mindesthöhe hält alle Karten gleich hoch */}
-        <div className="mt-auto pt-2.5 flex flex-wrap content-start items-start gap-x-2.5 gap-y-1 text-card-info font-medium leading-snug min-h-[2.65rem] text-text-muted">
-          <span className="inline-flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
+        {/* Infozeile: Passt auf Desktop in eine Zeile; reicht der Platz bei schmaleren Kacheln nicht, bricht die Schwierigkeit sauber in die Zeile darunter um (nie abgeschnitten) */}
+        <div className="mt-auto pt-2.5 flex flex-wrap content-start items-center gap-x-2 gap-y-1 text-card-info sm:text-[12.5px] md:text-[13px] font-medium leading-snug text-text-muted">
+          <span className="inline-flex items-center gap-1 whitespace-nowrap shrink-0">
+            <Clock className="w-3.5 h-3.5 text-accent shrink-0" aria-hidden="true" />
             {recipe.totalTimeMinutes} Min
           </span>
           {ratingText && (
-            <span className="inline-flex items-center gap-1">
-              <Star className="w-3.5 h-3.5 fill-[#E67E22] text-[#E67E22]" aria-hidden="true" />
+            <span className="inline-flex items-center gap-1 whitespace-nowrap shrink-0">
+              <Star className="w-3.5 h-3.5 fill-[#E67E22] text-[#E67E22] shrink-0" aria-hidden="true" />
               {ratingText}
             </span>
           )}
           {showDifficulty && (
-            <span className="inline-flex items-center gap-1">
-              <ChefHat className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
+            <span className="inline-flex items-center gap-1 whitespace-nowrap shrink-0">
+              <ChefHat className="w-3.5 h-3.5 text-text-muted shrink-0" aria-hidden="true" />
               {DIFFICULTY_LABEL[recipe.difficulty]}
             </span>
           )}
