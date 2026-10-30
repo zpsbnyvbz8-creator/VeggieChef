@@ -79,7 +79,13 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const [copied, setCopied] = useState(false);
   const [quickAddInput, setQuickAddInput] = useState('');
   const [categoryChoice, setCategoryChoice] = useState<'auto' | IngredientCategory>('auto');
-  const [viewMode, setViewMode] = useState<'categorized' | 'flat'>('categorized');
+  const [viewMode, setViewMode] = useState<'categorized' | 'flat'>(() =>
+    loadFromLocalStorage<'categorized' | 'flat'>('veggiechef_shopping_view_mode', 'categorized')
+  );
+
+  useEffect(() => {
+    saveToLocalStorage('veggiechef_shopping_view_mode', viewMode);
+  }, [viewMode]);
 
   // Toggleable Recipe Source ("Herkunft der Zutat")
   const [showRecipeSource, setShowRecipeSource] = useState<boolean>(() =>
@@ -98,17 +104,51 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   // Delayed Check-Off (~3 seconds) so accidental taps can be undone before disappearing
   const [pendingCompleteIds, setPendingCompleteIds] = useState<Record<string, boolean>>({});
   const pendingTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const setItemsRef = useRef(setItems);
+  setItemsRef.current = setItems;
 
+  const cancelPendingComplete = (id?: string) => {
+    if (id) {
+      if (pendingTimeoutsRef.current[id]) {
+        clearTimeout(pendingTimeoutsRef.current[id]);
+        delete pendingTimeoutsRef.current[id];
+      }
+      setPendingCompleteIds((prev) => {
+        if (!prev[id]) return prev;
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    } else {
+      Object.values(pendingTimeoutsRef.current).forEach(clearTimeout);
+      pendingTimeoutsRef.current = {};
+      setPendingCompleteIds({});
+    }
+  };
+
+  // Falls die Ansicht während eines laufenden 3-Sekunden-Timers verlassen wird,
+  // werden abgehakte Artikel sauber als erledigt gespeichert statt verloren zu gehen.
   useEffect(() => {
     return () => {
-      Object.values(pendingTimeoutsRef.current).forEach(clearTimeout);
+      const pendingIds = Object.keys(pendingTimeoutsRef.current);
+      if (pendingIds.length > 0) {
+        Object.values(pendingTimeoutsRef.current).forEach(clearTimeout);
+        pendingTimeoutsRef.current = {};
+        setItemsRef.current((prev) =>
+          prev.map((item) => (pendingIds.includes(item.id) ? { ...item, completed: true } : item))
+        );
+      }
     };
   }, []);
 
-  // Shelf (Category) reorder state via drag and drop
-  const [shelfOrder, setShelfOrder] = useState<IngredientCategory[]>(() =>
-    loadFromLocalStorage('veggiechef_shelf_order', DEFAULT_SHELF_ORDER)
-  );
+  // Shelf (Category) reorder state via drag and drop (mit Selbstheilung falls Kategorien fehlen)
+  const [shelfOrder, setShelfOrder] = useState<IngredientCategory[]>(() => {
+    const saved = loadFromLocalStorage<IngredientCategory[]>('veggiechef_shelf_order', DEFAULT_SHELF_ORDER);
+    if (!Array.isArray(saved) || saved.length === 0) return DEFAULT_SHELF_ORDER;
+    const valid = saved.filter((c): c is IngredientCategory => DEFAULT_SHELF_ORDER.includes(c));
+    const missing = DEFAULT_SHELF_ORDER.filter((c) => !valid.includes(c));
+    return [...Array.from(new Set(valid)), ...missing];
+  });
   const [draggedShelf, setDraggedShelf] = useState<IngredientCategory | null>(null);
   const [dragOverShelf, setDragOverShelf] = useState<IngredientCategory | null>(null);
 
@@ -224,11 +264,16 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         setShowContextMenu(false);
       }
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowContextMenu(false);
+    };
     document.addEventListener('pointerdown', handleDown);
     document.addEventListener('pointerup', handleUp);
+    document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('pointerdown', handleDown);
       document.removeEventListener('pointerup', handleUp);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [showContextMenu]);
 
@@ -250,13 +295,28 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         setIsCategoryDropdownOpen(false);
       }
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsCategoryDropdownOpen(false);
+    };
     document.addEventListener('pointerdown', handleDown);
     document.addEventListener('pointerup', handleUp);
+    document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('pointerdown', handleDown);
       document.removeEventListener('pointerup', handleUp);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isCategoryDropdownOpen]);
+
+  // Escape-Taste für Lösch-Modal
+  useEffect(() => {
+    if (!confirmDeleteState) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setConfirmDeleteState(null);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [confirmDeleteState]);
 
   useLockBodyScroll(Boolean(confirmDeleteState));
 
@@ -331,15 +391,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
     // 1. Bereits erledigtes Item im "Erledigt"-Bereich -> sofort wieder aktivieren
     if (targetItem.completed) {
-      if (pendingTimeoutsRef.current[id]) {
-        clearTimeout(pendingTimeoutsRef.current[id]);
-        delete pendingTimeoutsRef.current[id];
-      }
-      setPendingCompleteIds((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
+      cancelPendingComplete(id);
       setItems((prev) =>
         prev.map((item) => (item.id === id ? { ...item, completed: false } : item))
       );
@@ -348,15 +400,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
     // 2. Item befindet sich gerade in der ~3 Sekunden Verzögerung -> Klick bricht das Abhaken sofort ab!
     if (pendingCompleteIds[id]) {
-      if (pendingTimeoutsRef.current[id]) {
-        clearTimeout(pendingTimeoutsRef.current[id]);
-        delete pendingTimeoutsRef.current[id];
-      }
-      setPendingCompleteIds((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
+      cancelPendingComplete(id);
       return;
     }
 
@@ -378,6 +422,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const deleteItem = (id: string) => {
     const itemToDelete = items.find((i) => i.id === id);
     if (!itemToDelete) return;
+    cancelPendingComplete(id);
+    if (editingItemId === id) {
+      setEditingItemId(null);
+      setEditingAmountValue('');
+    }
     setUndoBackup([...items]);
     setLastDeletedInfo({
       type: 'single',
@@ -392,8 +441,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   };
 
   const startEditingItem = (item: ShoppingItem) => {
+    // Falls der Artikel gerade im 3-Sekunden-Abhak-Countdown war, Abhaken abbrechen!
+    cancelPendingComplete(item.id);
     setEditingItemId(item.id);
-    const combined = [item.amount, item.unit].filter(Boolean).join(' ').trim();
+    const display = formatDisplayGrocery(item.amount, item.unit, item.name);
+    const combined = [display.formattedAmount || item.amount, display.formattedUnit || item.unit]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
     setEditingAmountValue(combined || '1');
     setSwipedItemId(null);
   };
@@ -411,24 +466,31 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         if (!val) {
           return { ...it, amount: '', unit: '' };
         }
-        const parsed = parseNaturalLanguageGroceryItem(val);
-        if (parsed.amount) {
-          const num = typeof parsed.amount === 'number' ? parsed.amount : parseFloat(String(parsed.amount).replace(',', '.'));
-          if (!isNaN(num)) {
-            const scaled = normalizeAndScaleGroceryQuantity(num, parsed.unit, it.name);
-            return { ...it, amount: scaled.amount, unit: scaled.unit };
-          }
-          return { ...it, amount: parsed.amount, unit: parsed.unit };
-        }
-        const match = val.match(/^([\d.,]+)\s*(.*)$/);
+        // Direkt Zahl (inkl. Dezimal oder Bruch wie 1/2) + optionale Einheit extrahieren,
+        // damit Einheiten wie "Dosen", "Schalen", "Bund" nicht als Zutatenname fehlinterpretiert werden.
+        const match = val.match(/^(\d+(?:[.,]\d+)?|\d+\/\d+)\s*(.*)$/);
         if (match && match[1]) {
-          const num = parseFloat(match[1].replace(',', '.'));
-          const unit = match[2] || '';
-          if (!isNaN(num)) {
-            const scaled = normalizeAndScaleGroceryQuantity(num, unit, it.name);
+          const rawNum = match[1].replace(',', '.');
+          const rawUnit = (match[2] || '').trim();
+          let num: number | null = null;
+          if (rawNum.includes('/')) {
+            const parts = rawNum.split('/');
+            const n = parseFloat(parts[0]);
+            const d = parseFloat(parts[1]);
+            if (!isNaN(n) && !isNaN(d) && d !== 0) num = n / d;
+          } else {
+            const parsed = parseFloat(rawNum);
+            if (!isNaN(parsed)) num = parsed;
+          }
+
+          if (num !== null && !isNaN(num)) {
+            if (num <= 0) {
+              return { ...it, amount: '', unit: '' };
+            }
+            const scaled = normalizeAndScaleGroceryQuantity(num, rawUnit, it.name);
             return { ...it, amount: scaled.amount, unit: scaled.unit };
           }
-          return { ...it, amount: match[1], unit };
+          return { ...it, amount: match[1], unit: rawUnit };
         }
         return { ...it, amount: val, unit: '' };
       })
@@ -440,24 +502,58 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
   const stepEditedAmount = (delta: number) => {
     const val = editingAmountValue.trim();
-    const match = val.match(/^([\d.,]+)\s*(.*)$/);
+    const match = val.match(/^(\d+(?:[.,]\d+)?|\d+\/\d+)\s*(.*)$/);
     if (match && match[1]) {
-      const parsedNum = parseFloat(match[1].replace(',', '.'));
-      if (!isNaN(parsedNum)) {
-        let step = 1;
-        if (parsedNum >= 100) step = 50;
-        else if (parsedNum >= 20) step = 10;
-        else if (parsedNum >= 10) step = 5;
-        else if (parsedNum < 1 && parsedNum > 0) step = 0.5;
+      const rawNum = match[1].replace(',', '.');
+      let parsedNum = NaN;
+      if (rawNum.includes('/')) {
+        const [n, d] = rawNum.split('/').map(Number);
+        if (!isNaN(n) && !isNaN(d) && d !== 0) parsedNum = n / d;
+      } else {
+        parsedNum = parseFloat(rawNum);
+      }
 
-        const next = Math.max(0, Math.round((parsedNum + delta * step) * 10) / 10);
-        const unit = match[2] || '';
-        setEditingAmountValue(unit ? `${next} ${unit}` : `${next}`);
+      if (!isNaN(parsedNum)) {
+        const unit = (match[2] || '').trim();
+        const lowerUnit = unit.toLowerCase();
+        let step = 1;
+        let minVal = 0.5;
+
+        if (lowerUnit === 'g' || lowerUnit === 'ml') {
+          minVal = 10;
+          if (parsedNum >= 100) step = 50;
+          else if (parsedNum >= 25) step = 25;
+          else step = 10;
+        } else if (lowerUnit === 'kg' || lowerUnit === 'l') {
+          minVal = 0.25;
+          step = parsedNum <= 1 && delta < 0 ? 0.25 : 0.5;
+        } else {
+          if (parsedNum >= 100) {
+            step = 50;
+            minVal = 10;
+          } else if (parsedNum >= 20) {
+            step = 5;
+            minVal = 1;
+          } else if (parsedNum <= 1 && delta < 0) {
+            step = 0.5;
+            minVal = 0.5;
+          } else if (parsedNum % 1 !== 0) {
+            step = 0.5;
+            minVal = 0.5;
+          } else {
+            step = 1;
+            minVal = 0.5;
+          }
+        }
+
+        const next = Math.max(minVal, Math.round((parsedNum + delta * step) * 100) / 100);
+        const formattedNext = String(next).replace('.', ',');
+        setEditingAmountValue(unit ? `${formattedNext} ${unit}` : formattedNext);
         return;
       }
     }
     if (!val) {
-      setEditingAmountValue(delta > 0 ? '1' : '0');
+      setEditingAmountValue('1');
     } else {
       setEditingAmountValue(delta > 0 ? `1 ${val}` : val);
     }
@@ -479,6 +575,9 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   // Leeren/Löschen der gesamten Einkaufsliste
   const handleDeleteAll = () => {
     if (items.length === 0) return;
+    cancelPendingComplete();
+    setEditingItemId(null);
+    setSwipedItemId(null);
     const count = items.length;
     setUndoBackup([...items]);
     setLastDeletedInfo({ type: 'all', count });
@@ -489,6 +588,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
   const handleUndo = () => {
     if (undoBackup && undoBackup.length > 0) {
+      cancelPendingComplete();
       setItems(undoBackup);
       const count = lastDeletedInfo?.count || undoBackup.length;
       setUndoBackup(null);
@@ -505,9 +605,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
     if (!raw) return;
 
     const parsed = parseNaturalLanguageGroceryItem(raw);
-    const finalName = parsed.name || raw;
-    const finalAmount = parsed.amount || '';
-    const finalUnit = parsed.unit || '';
+    const hasParsedName = Boolean(parsed.name && parsed.name.trim());
+    const finalName = hasParsedName ? parsed.name.trim() : raw;
+    const finalAmount = hasParsedName ? parsed.amount || '' : '';
+    const finalUnit = hasParsedName ? parsed.unit || '' : '';
 
     const assignedCategory: IngredientCategory =
       categoryChoice === 'auto'
@@ -527,13 +628,27 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       (it) => !it.completed && areIngredientsEquivalent(it.name, finalName)
     );
 
-    setItems((prev) => mergeOrAddShoppingItem(prev, newItem));
+    if (existingMatch) {
+      cancelPendingComplete(existingMatch.id);
+    }
+
+    const explicitCategorySelected = categoryChoice !== 'auto';
+
+    setItems((prev) => {
+      const merged = mergeOrAddShoppingItem(prev, newItem);
+      if (explicitCategorySelected && existingMatch) {
+        return merged.map((it) =>
+          it.id === existingMatch.id ? { ...it, category: assignedCategory } : it
+        );
+      }
+      return merged;
+    });
     setQuickAddInput('');
     setCategoryChoice('auto');
     const catLabel = CATEGORY_META[assignedCategory]?.label || 'Sonstiges';
 
     if (existingMatch) {
-      onCopyFeedback(`Menge für "${finalName}" erhöht!`);
+      onCopyFeedback(`Menge für "${existingMatch.name}" erhöht!`);
     } else {
       const amountStr = [finalAmount, finalUnit].filter(Boolean).join(' ');
       onCopyFeedback(
@@ -575,8 +690,16 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
     setDraggedShelf(catKey);
   };
 
-  const handleDragOverShelf = (e: React.DragEvent, _catKey: IngredientCategory) => {
+  const handleDragOverShelf = (e: React.DragEvent, catKey: IngredientCategory) => {
     e.preventDefault();
+    if (draggedShelf && draggedShelf !== catKey) {
+      if (dragOverShelf !== catKey) setDragOverShelf(catKey);
+    } else if (draggedItemId) {
+      const item = items.find((i) => i.id === draggedItemId);
+      if (item && (item.category || 'sonstiges') !== catKey) {
+        if (dragOverShelf !== catKey) setDragOverShelf(catKey);
+      }
+    }
   };
 
   const handleDropShelf = (e: React.DragEvent, targetCatKey: IngredientCategory) => {
@@ -585,7 +708,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
     // 1. Wenn ein ARTIKEL auf ein Regal fallen gelassen wird:
     if (draggedItemId) {
       const item = items.find((i) => i.id === draggedItemId);
-      if (item) {
+      if (item && (item.category || 'sonstiges') !== targetCatKey) {
         setItems((prev) =>
           prev.map((it) => (it.id === draggedItemId ? { ...it, category: targetCatKey } : it))
         );
@@ -593,6 +716,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
       }
       setDraggedItemId(null);
       setDragOverItemId(null);
+      setDragDropPosition(null);
+      setDragOverShelf(null);
       return;
     }
 
@@ -1327,43 +1452,65 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
         {/* Unified Action Row: Auf Mobile steht das 3-Punkte-Menü rechtsbündig gegenüber dem Regale/Liste-Schalter */}
         <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-border">
-          {/* Left side: View switcher ([ Regale ] / [ Liste ]) */}
-          <div className="order-1 relative flex items-center p-1 bg-surface border border-border rounded-xl text-[16px] select-none shadow-2xs h-[44px]">
-            <motion.div
-              layout
-              transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-accent rounded-lg shadow-xs pointer-events-none ${
-                viewMode === 'categorized' ? 'left-1' : 'left-[calc(50%+2px)]'
-              }`}
-            />
-
-            <button
+          {/* Left side: View switcher ([ Regale ] / [ Liste ]) im Sekundär-Button-Stil */}
+          <div
+            role="group"
+            aria-label="Ansichtsmodus wählen"
+            className="order-1 relative flex items-center p-1 bg-surface border border-border rounded-xl text-[16px] select-none shadow-2xs h-[44px]"
+          >
+            <motion.button
               type="button"
+              whileTap={{ scale: 0.96 }}
               onClick={() => setViewMode('categorized')}
+              aria-pressed={viewMode === 'categorized'}
               className={`relative z-10 px-3.5 sm:px-4 h-full flex items-center justify-center gap-2 rounded-lg text-[16px] transition-colors cursor-pointer touch-manipulation select-none ${
                 viewMode === 'categorized'
-                  ? 'text-on-accent font-bold'
-                  : 'text-[#57534d] hover:text-accent font-semibold'
+                  ? 'text-accent font-bold'
+                  : 'text-text-muted hover:text-text-main font-semibold'
               }`}
               title="Nach Supermarkt-Regalen gruppiert"
             >
-              <LayoutGrid className="w-4 h-4" />
+              {viewMode === 'categorized' && (
+                <motion.span
+                  layoutId="shopping-view-mode-pill"
+                  transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                  className="absolute inset-0 rounded-lg bg-accent-tint border border-accent/35 shadow-2xs -z-10"
+                />
+              )}
+              <LayoutGrid
+                className={`w-4 h-4 transition-transform duration-200 ${
+                  viewMode === 'categorized' ? 'scale-105 text-accent' : ''
+                }`}
+              />
               <span>Regale</span>
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
               type="button"
+              whileTap={{ scale: 0.96 }}
               onClick={() => setViewMode('flat')}
+              aria-pressed={viewMode === 'flat'}
               className={`relative z-10 px-3.5 sm:px-4 h-full flex items-center justify-center gap-2 rounded-lg text-[16px] transition-colors cursor-pointer touch-manipulation select-none ${
                 viewMode === 'flat'
-                  ? 'text-on-accent font-bold'
-                  : 'text-[#57534d] hover:text-accent font-semibold'
+                  ? 'text-accent font-bold'
+                  : 'text-text-muted hover:text-text-main font-semibold'
               }`}
               title="Alle Artikel in einer sortierbaren Liste"
             >
-              <List className="w-4 h-4" />
+              {viewMode === 'flat' && (
+                <motion.span
+                  layoutId="shopping-view-mode-pill"
+                  transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                  className="absolute inset-0 rounded-lg bg-accent-tint border border-accent/35 shadow-2xs -z-10"
+                />
+              )}
+              <List
+                className={`w-4 h-4 transition-transform duration-200 ${
+                  viewMode === 'flat' ? 'scale-105 text-accent' : ''
+                }`}
+              />
               <span>Liste</span>
-            </button>
+            </motion.button>
           </div>
 
           {/* 3-Punkte-Menü Button: Auf Mobile direkt rechtsbündig gegenüber dem Regale/Liste-Schalter (order-2), auf Desktop neben den Aktionsbuttons */}
@@ -1599,11 +1746,16 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
 
         {/* Middle: Custom Category Dropdown */}
         <div ref={categoryDropdownRef} className="relative shrink-0">
-          <button
+          <motion.button
             type="button"
             id="shopping-item-category-select"
+            whileTap={{ scale: 0.96 }}
             onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-            className="inline-flex items-center gap-2 bg-card hover:bg-accent-tint border border-border rounded-2xl px-3.5 sm:px-4 py-2.5 text-[16px] font-semibold text-text-main cursor-pointer focus:border-accent focus:outline-hidden h-12 min-h-[48px] transition-colors select-none shadow-[0_4px_16px_-2px_rgba(45,62,64,0.06)]"
+            className={`inline-flex items-center gap-2 border rounded-2xl px-3.5 sm:px-4 py-2.5 text-[16px] font-semibold cursor-pointer focus:outline-hidden h-12 min-h-[48px] transition-all select-none shadow-[0_4px_16px_-2px_rgba(45,62,64,0.06)] ${
+              isCategoryDropdownOpen
+                ? 'bg-accent-tint border-accent/40 text-accent ring-2 ring-accent/15'
+                : 'bg-card hover:bg-accent-tint border-border text-text-main'
+            }`}
             title="Regal / Kategorie wählen"
             aria-label="Regal / Kategorie wählen"
             aria-expanded={isCategoryDropdownOpen}
@@ -1629,7 +1781,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
             >
               <ChevronDown className={`w-4 h-4 ${isCategoryDropdownOpen ? 'text-accent' : 'text-text-muted'}`} />
             </motion.div>
-          </button>
+          </motion.button>
 
           {/* Animated Popover Menu with categories (auf Mobile & Desktop) */}
           <AnimatePresence>
@@ -1653,7 +1805,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       setCategoryChoice('auto');
                       setIsCategoryDropdownOpen(false);
                     }}
-                    className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[16px] font-medium transition-colors cursor-pointer text-left ${
+                    className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[16px] font-medium transition-colors cursor-pointer text-left active:scale-[0.98] ${
                       categoryChoice === 'auto'
                         ? 'bg-accent-tint text-accent font-semibold'
                         : 'text-text-main hover:bg-surface'
@@ -1663,7 +1815,15 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       <Sparkles className="w-4 h-4 text-accent" />
                       <span>Auto-Erkennung</span>
                     </span>
-                    {categoryChoice === 'auto' && <Check className="w-4 h-4 text-accent" />}
+                    {categoryChoice === 'auto' && (
+                      <motion.span
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.15 }}
+                      >
+                        <Check className="w-4 h-4 text-accent stroke-[2.5]" />
+                      </motion.span>
+                    )}
                   </button>
 
                   <div className="my-1 border-t border-border" />
@@ -1687,14 +1847,22 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                           setCategoryChoice(catKey as IngredientCategory);
                           setIsCategoryDropdownOpen(false);
                         }}
-                        className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[16px] transition-colors cursor-pointer text-left ${
+                        className={`w-full min-h-[44px] flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[16px] transition-colors cursor-pointer text-left active:scale-[0.98] ${
                           isSelected
                             ? 'bg-accent-tint text-accent font-semibold'
                             : 'text-text-main hover:bg-surface font-normal'
                         }`}
                       >
                         <span>{catLabel}</span>
-                        {isSelected && <Check className="w-4 h-4 text-accent" />}
+                        {isSelected && (
+                          <motion.span
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.15 }}
+                          >
+                            <Check className="w-4 h-4 text-accent stroke-[2.5]" />
+                          </motion.span>
+                        )}
                       </button>
                     );
                   })}
@@ -1705,15 +1873,16 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
         </div>
 
         {/* Right: Square icon button (+) */}
-        <button
+        <motion.button
           type="submit"
+          whileTap={quickAddInput.trim() ? { scale: 0.94 } : undefined}
           disabled={!quickAddInput.trim()}
-          className="w-12 h-12 min-w-[48px] min-h-[48px] bg-accent hover:bg-accent-hover disabled:opacity-40 text-on-accent rounded-2xl flex items-center justify-center shadow-[0_4px_16px_-2px_rgba(45,62,64,0.12)] shrink-0 transition-all active:scale-95 touch-manipulation cursor-pointer"
+          className="w-12 h-12 min-w-[48px] min-h-[48px] bg-accent hover:bg-accent-hover disabled:opacity-40 text-on-accent rounded-2xl flex items-center justify-center shadow-[0_4px_16px_-2px_rgba(45,62,64,0.12)] shrink-0 transition-all touch-manipulation cursor-pointer"
           title="Zutat hinzufügen"
           aria-label="Zutat hinzufügen"
         >
           <Plus className="w-5 h-5 stroke-[2.5]" />
-        </button>
+        </motion.button>
       </form>
 
       {/* Main Content Area */}
@@ -1782,9 +1951,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                     </AnimatePresence>
                   </div>
                 ) : (
-                  <p className="text-xs text-text-muted py-6 text-center italic">
+                  <motion.p
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-xs text-text-muted py-6 text-center italic"
+                  >
                     Alle Artikel sind abgehakt! 🎉
-                  </p>
+                  </motion.p>
                 )}
               </div>
             </motion.div>
@@ -1808,6 +1982,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                       const meta = CATEGORY_META[catKey];
                       const isCollapsed = Boolean(collapsedCategories[catKey]);
                       const isBeingDragged = draggedShelf === catKey;
+                      const isShelfDragOver = dragOverShelf === catKey;
 
                       return (
                         <motion.div
@@ -1818,8 +1993,17 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                           exit={{ opacity: 0, scale: 0.96, y: -6 }}
                           transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
                           onDragOver={(e: any) => handleDragOverShelf(e, catKey)}
+                          onDragLeave={(e: any) => {
+                            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                              if (dragOverShelf === catKey) setDragOverShelf(null);
+                            }
+                          }}
                           onDrop={(e: any) => handleDropShelf(e, catKey)}
-                          className="bg-card rounded-2xl border border-border shadow-[0_6px_24px_-4px_rgba(45,62,64,0.08),0_2px_8px_-2px_rgba(45,62,64,0.04)] overflow-hidden"
+                          className={`bg-card rounded-2xl border shadow-[0_6px_24px_-4px_rgba(45,62,64,0.08),0_2px_8px_-2px_rgba(45,62,64,0.04)] overflow-hidden transition-colors ${
+                            isShelfDragOver
+                              ? 'border-accent/60 ring-2 ring-accent/25'
+                              : 'border-border'
+                          }`}
                         >
                           {/* Shelf Header (Ohne 6-Punkte-Griff und ohne separaten Badge, Anzahl in Klammern hinter dem Namen) */}
                           <div
@@ -1874,13 +2058,18 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
                   </AnimatePresence>
                 </div>
               ) : (
-                <div className="bg-card rounded-2xl p-8 text-center border border-border shadow-[0_6px_24px_-4px_rgba(45,62,64,0.08),0_2px_8px_-2px_rgba(45,62,64,0.04)] space-y-2">
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                  className="bg-card rounded-2xl p-8 text-center border border-border shadow-[0_6px_24px_-4px_rgba(45,62,64,0.08),0_2px_8px_-2px_rgba(45,62,64,0.04)] space-y-2"
+                >
                   <span className="text-2xl">🎉</span>
                   <h3 className="text-base font-semibold text-text-main">Alle Regale sind abgehakt!</h3>
                   <p className="text-xs text-text-muted">
                     Alle Artikel wurden erledigt und befinden sich im erledigten Bereich unten.
                   </p>
-                </div>
+                </motion.div>
               )}
             </motion.div>
           )}

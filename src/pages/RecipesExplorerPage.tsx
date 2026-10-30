@@ -126,10 +126,15 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({
           }
         }
       }
+      // Bei Standard-Sortierung ("Empfohlen") bleibt die chronologische "Zuletzt gekocht"-Reihenfolge erhalten;
+      // bei expliziter Sortierung (z. B. Schnellste, Wenigste Kalorien) wird die gewählte Sortierung übernommen.
+      if (filters.sortBy !== 'recommended') {
+        return filteredRecipes.filter((fr) => seenIds.has(fr.id));
+      }
       return orderedRecipes.filter((r) => filteredRecipes.some((fr) => fr.id === r.id));
     }
     return filteredRecipes;
-  }, [isBookmarks, isFavorites, isCooked, filteredRecipes, bookmarks, favorites, cookedLogs, allRecipes]);
+  }, [isBookmarks, isFavorites, isCooked, filteredRecipes, bookmarks, favorites, cookedLogs, allRecipes, filters.sortBy]);
 
   const isNarrowed = hasAnyNarrowingFilter(filters);
   const isBrowsing = !isFavorites && !isBookmarks && !isCooked && !isNarrowed;

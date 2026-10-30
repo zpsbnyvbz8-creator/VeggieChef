@@ -61,6 +61,41 @@ const DIFFICULTY_LABEL: Record<string, string> = {
   Anspruchsvoll: 'Aufwendig',
 };
 
+type AiNutritionDropdownKey = 'calories' | 'protein' | 'difficulty';
+
+const AI_CALORIE_OPTIONS: { value: string; label: string; shortLabel: string }[] = [
+  { value: 'all', label: 'Kalorien: Alle', shortLabel: 'Kalorien' },
+  { value: 'low', label: '< 500 kcal', shortLabel: '< 500 kcal' },
+  { value: 'moderate', label: '500–700 kcal', shortLabel: '500–700 kcal' },
+  { value: 'high', label: '750+ kcal', shortLabel: '750+ kcal' },
+];
+
+const AI_PROTEIN_OPTIONS: { value: string; label: string; shortLabel: string }[] = [
+  { value: 'all', label: 'Protein: Alle', shortLabel: 'Protein' },
+  { value: 'medium', label: '20+ g Protein', shortLabel: '20+ g' },
+  { value: 'high', label: '30+ g Protein', shortLabel: '30+ g' },
+  { value: 'very-high', label: '40+ g Protein', shortLabel: '40+ g' },
+];
+
+const AI_DIFFICULTY_OPTIONS: { value: string; label: string; shortLabel: string }[] = [
+  { value: 'all', label: 'Anspruch: Alle', shortLabel: 'Anspruch' },
+  { value: 'Einfach', label: 'Einfach', shortLabel: 'Einfach' },
+  { value: 'Mittel', label: 'Mittel', shortLabel: 'Mittel' },
+  { value: 'Anspruchsvoll', label: 'Aufwendig', shortLabel: 'Aufwendig' },
+];
+
+function findRecipeForSlot(slot: MealPlanSlot, allRecipes: Recipe[]): Recipe | undefined {
+  return (
+    allRecipes.find((r) => r.id === slot.recipeId) ||
+    allRecipes.find((r) => r.title.toLowerCase() === slot.recipeTitle.toLowerCase()) ||
+    allRecipes.find(
+      (r) =>
+        slot.recipeTitle.length >= 4 &&
+        r.title.toLowerCase().includes(slot.recipeTitle.toLowerCase().slice(0, 6))
+    )
+  );
+}
+
 interface WeeklyPlannerViewProps {
   mealPlan?: DayPlan[];
   setMealPlan?: React.Dispatch<React.SetStateAction<DayPlan[]>>;
@@ -127,20 +162,17 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     } catch {}
   };
 
-  const handleToggleAllLunch = () => {
-    toggleDayLunch();
-  };
-
   // Multi-week navigation modals
   const [showAllWeeksModal, setShowAllWeeksModal] = useState(false);
   const [showCreateWeekModal, setShowCreateWeekModal] = useState(false);
   const [newWeekTitleInput, setNewWeekTitleInput] = useState('');
 
-  // AI Meal plan generator modal state - Reformed and simplified!
+  // AI Meal plan generator modal state
   const [showAIGeneratorModal, setShowAIGeneratorModal] = useState(false);
   const [aiMealOption, setAiMealOption] = useState<'lunch' | 'dinner' | 'both'>('dinner');
   const [aiIsVegan, setAiIsVegan] = useState(true);
-  const [aiPeopleCount, setAiPeopleCount] = useState<number>(2);
+  const [planServings, setPlanServings] = useState<number>(3);
+  const [aiPeopleCount, setAiPeopleCount] = useState<number>(3);
   const [aiMaxMinutes, setAiMaxMinutes] = useState<number>(35);
   const [isAiTimeSliderActive, setIsAiTimeSliderActive] = useState<boolean>(false);
   const [aiCalorieFilter, setAiCalorieFilter] = useState<string>('all'); // 'all', 'high', 'low', 'moderate'
@@ -148,8 +180,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const [aiDifficultyFilter, setAiDifficultyFilter] = useState<string>('all'); // 'all', 'Einfach', 'Mittel', 'Anspruchsvoll'
   const [aiWishes, setAiWishes] = useState<string>('');
   const [isAiPreferencesOpen, setIsAiPreferencesOpen] = useState<boolean>(false);
+  const [aiAccordionOverflowVisible, setAiAccordionOverflowVisible] = useState<boolean>(false);
+  const [aiActiveDropdown, setAiActiveDropdown] = useState<AiNutritionDropdownKey | null>(null);
+  const aiDropdownsContainerRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
-  const [planServings, setPlanServings] = useState<number>(3);
 
   // Safety confirmation ONLY for clearing entire week
   const [showConfirmClearAll, setShowConfirmClearAll] = useState(false);
@@ -157,6 +191,53 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const [justAddedWeekToShopping, setJustAddedWeekToShopping] = useState(false);
   const [showContextMenu, setShowContextMenu] = useState(false);
   const contextMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isAiTimeSliderActive) return;
+    const handleRelease = () => setIsAiTimeSliderActive(false);
+    window.addEventListener('pointerup', handleRelease);
+    window.addEventListener('pointercancel', handleRelease);
+    window.addEventListener('touchend', handleRelease);
+    return () => {
+      window.removeEventListener('pointerup', handleRelease);
+      window.removeEventListener('pointercancel', handleRelease);
+      window.removeEventListener('touchend', handleRelease);
+    };
+  }, [isAiTimeSliderActive]);
+
+  useEffect(() => {
+    if (!aiActiveDropdown) return;
+    const handleOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      if (aiDropdownsContainerRef.current && !aiDropdownsContainerRef.current.contains(target)) {
+        setAiActiveDropdown(null);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setAiActiveDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [aiActiveDropdown]);
+
+  const handleToggleAiPreferences = () => {
+    setIsAiPreferencesOpen((prev) => {
+      const next = !prev;
+      if (!next) {
+        setAiAccordionOverflowVisible(false);
+        setAiActiveDropdown(null);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     setJustAddedWeekToShopping(false);
@@ -514,12 +595,12 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
   // Check if all planned recipes of the current week are on the shopping list (like in RecipeDetailPage)
   const isWeekOnShoppingList = React.useMemo(() => {
-    const plannedTitles: string[] = [];
+    const plannedSlots: MealPlanSlot[] = [];
     mealPlan.forEach((day) => {
-      if (day.lunch?.recipeTitle) plannedTitles.push(day.lunch.recipeTitle.toLowerCase());
-      if (day.dinner?.recipeTitle) plannedTitles.push(day.dinner.recipeTitle.toLowerCase());
+      if (day.lunch) plannedSlots.push(day.lunch);
+      if (day.dinner) plannedSlots.push(day.dinner);
     });
-    if (plannedTitles.length === 0) return false;
+    if (plannedSlots.length === 0) return false;
     if (justAddedWeekToShopping) return true;
 
     const activeSources = new Set(
@@ -527,8 +608,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         .filter((item) => !item.completed && item.recipeSource)
         .map((item) => item.recipeSource!.toLowerCase())
     );
-    const matchingRecipes = plannedTitles
-      .map((t) => allRecipes.find((r) => r.title.toLowerCase() === t))
+    const matchingRecipes = plannedSlots
+      .map((s) => findRecipeForSlot(s, allRecipes))
       .filter((r): r is Recipe => Boolean(r && r.ingredients && r.ingredients.length > 0));
 
     if (matchingRecipes.length === 0) return false;
@@ -536,27 +617,36 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   }, [mealPlan, allRecipes, shoppingCtx.shoppingItems, justAddedWeekToShopping]);
 
   const executeTransferAllToShopping = () => {
-    const plannedRecipeIds: string[] = [];
+    const plannedSlots: MealPlanSlot[] = [];
     mealPlan.forEach((day) => {
-      if (day.lunch) plannedRecipeIds.push(day.lunch.recipeId);
-      if (day.dinner) plannedRecipeIds.push(day.dinner.recipeId);
+      if (day.lunch) plannedSlots.push(day.lunch);
+      if (day.dinner) plannedSlots.push(day.dinner);
     });
 
-    if (plannedRecipeIds.length === 0) {
+    if (plannedSlots.length === 0) {
       onCopyFeedback('Keine Rezepte im Wochenplan vorhanden.');
       return;
     }
 
-    const payload = plannedRecipeIds
-      .map((id) => {
-        const found = allRecipes.find((r) => r.id === id);
+    const payload = plannedSlots
+      .map((slot) => {
+        const found = findRecipeForSlot(slot, allRecipes);
         return found ? { recipe: found, servings: planServings } : null;
       })
       .filter(Boolean) as { recipe: Recipe; servings: number }[];
 
+    if (payload.length === 0) {
+      onCopyFeedback('Keine passenden Rezepte mit Zutaten gefunden.');
+      return;
+    }
+
     onAddAllToShoppingList(payload);
     setJustAddedWeekToShopping(true);
-    onCopyFeedback(`Zutaten von ${payload.length} geplanten Gerichten für ${planServings} Portionen auf die Einkaufsliste gesetzt!`);
+    onCopyFeedback(
+      `Zutaten von ${payload.length} geplanten Gerichten für ${planServings} ${
+        planServings === 1 ? 'Portion' : 'Portionen'
+      } auf die Einkaufsliste gesetzt!`
+    );
   };
 
   // 1-Click transfer all planned recipes to shopping list
@@ -576,7 +666,56 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     const veganPool = allRecipes.filter((r) => r.isVegan);
     const recipePool = aiIsVegan ? (veganPool.length > 0 ? veganPool : allRecipes) : allRecipes;
 
-    const sanitizeVeganTitle = (title: string, fallbackVegan: string) => {
+    // Filter candidate pool by user preferences if sufficient recipes exist
+    let preferredPool = [...recipePool];
+    if (aiMaxMinutes > 0) {
+      const fastEnough = preferredPool.filter((r) => r.totalTimeMinutes <= aiMaxMinutes);
+      if (fastEnough.length >= 4) preferredPool = fastEnough;
+    }
+    if (aiCalorieFilter === 'high') {
+      const highCal = preferredPool.filter((r) => (r.nutrients?.calories || 0) >= 600);
+      if (highCal.length >= 3) preferredPool = highCal;
+    } else if (aiCalorieFilter === 'low') {
+      const lowCal = preferredPool.filter((r) => (r.nutrients?.calories || 0) <= 550);
+      if (lowCal.length >= 3) preferredPool = lowCal;
+    }
+    if (aiProteinFilter === 'high' || aiProteinFilter === 'very-high') {
+      const highProt = preferredPool.filter((r) => (r.nutrients?.protein || 0) >= 22);
+      if (highProt.length >= 3) preferredPool = highProt;
+    }
+    if (aiDifficultyFilter !== 'all') {
+      const diffMatches = preferredPool.filter((r) => r.difficulty === aiDifficultyFilter);
+      if (diffMatches.length >= 3) preferredPool = diffMatches;
+    }
+
+    const usedIds = new Set<string>();
+    const pickDistinctRecipe = (aiTitle: string, fallbackIndex: number): Recipe | undefined => {
+      const prefix = aiTitle.toLowerCase().trim().slice(0, 6);
+      const byTitleUnused = preferredPool.find(
+        (r) =>
+          !usedIds.has(r.id) &&
+          r.title &&
+          prefix.length >= 3 &&
+          (r.title.toLowerCase().includes(prefix) || aiTitle.toLowerCase().includes(r.title.toLowerCase().slice(0, 6)))
+      );
+      if (byTitleUnused) {
+        usedIds.add(byTitleUnused.id);
+        return byTitleUnused;
+      }
+      const nextUnusedInPreferred = preferredPool.find((r) => !usedIds.has(r.id));
+      if (nextUnusedInPreferred) {
+        usedIds.add(nextUnusedInPreferred.id);
+        return nextUnusedInPreferred;
+      }
+      const nextUnusedInPool = recipePool.find((r) => !usedIds.has(r.id));
+      if (nextUnusedInPool) {
+        usedIds.add(nextUnusedInPool.id);
+        return nextUnusedInPool;
+      }
+      return preferredPool[fallbackIndex % preferredPool.length] || recipePool[fallbackIndex % recipePool.length] || allRecipes[0];
+    };
+
+    const sanitizeVeganTitle = (title: string) => {
       if (!aiIsVegan) return title;
       const nonVeganPattern = /\b(feta|hirtenk[äa]se|parmesan|mozzarella|gorgonzola|camembert|gouda|cheddar|k[äa]se|quark|spiegelei|r[üu]hrei|eier|ei\b|ricotta|mascarpone|butter|joghurt|milch|sahne)\b/i;
       if (!nonVeganPattern.test(title)) return title;
@@ -590,7 +729,6 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     };
 
     try {
-      // Compile combined wishes incorporating nutrition/difficulty filters
       const wishParts: string[] = [];
 
       if (aiCalorieFilter === 'high') {
@@ -645,20 +783,15 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           const aiDay = data.days[idx] || data.days[0];
           const newDay = { ...day };
 
-          // Lunch
           if (aiMealOption === 'lunch' || aiMealOption === 'both') {
-            const rawLunch = (typeof aiDay?.lunch === 'string' && aiDay.lunch.trim()) 
-              ? aiDay.lunch 
-              : (aiIsVegan ? 'Kichererbsen-Avocado Bowl mit Zitronen-Tahini' : 'Vital-Bowl mit Avocado & Kichererbsen');
-            const lunchTitle = sanitizeVeganTitle(rawLunch, 'Kichererbsen-Avocado Bowl');
-
-            // Find matching recipe strictly from recipePool (which is 100% vegan when aiIsVegan is active)
-            const matched = recipePool.find((r) =>
-              r && r.title && (
-                r.title.toLowerCase().includes(lunchTitle.toLowerCase().slice(0, 6)) ||
-                lunchTitle.toLowerCase().includes(r.title.toLowerCase().slice(0, 6))
-              )
-            ) || recipePool[idx % recipePool.length] || allRecipes[0];
+            const rawLunch =
+              typeof aiDay?.lunch === 'string' && aiDay.lunch.trim()
+                ? aiDay.lunch
+                : aiIsVegan
+                ? 'Kichererbsen-Avocado Bowl mit Zitronen-Tahini'
+                : 'Vital-Bowl mit Avocado & Kichererbsen';
+            const lunchTitle = sanitizeVeganTitle(rawLunch);
+            const matched = pickDistinctRecipe(lunchTitle, idx);
 
             newDay.lunch = {
               recipeId: matched?.id || allRecipes[0]?.id || `recipe-${idx}`,
@@ -671,20 +804,15 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             };
           }
 
-          // Dinner
           if (aiMealOption === 'dinner' || aiMealOption === 'both') {
-            const rawDinner = (typeof aiDay?.dinner === 'string' && aiDay.dinner.trim()) 
-              ? aiDay.dinner 
-              : (aiIsVegan ? 'Cremiges Rote-Linsen-Kokos-Curry mit Reis' : 'Cremiges Curry mit Reis & Gemüse');
-            const dinnerTitle = sanitizeVeganTitle(rawDinner, 'Cremiges Rote-Linsen-Curry');
-
-            // Find matching recipe strictly from recipePool (which is 100% vegan when aiIsVegan is active)
-            const matched = recipePool.find((r) =>
-              r && r.title && (
-                r.title.toLowerCase().includes(dinnerTitle.toLowerCase().slice(0, 6)) ||
-                dinnerTitle.toLowerCase().includes(r.title.toLowerCase().slice(0, 6))
-              )
-            ) || recipePool[(idx + 2) % recipePool.length] || allRecipes[0];
+            const rawDinner =
+              typeof aiDay?.dinner === 'string' && aiDay.dinner.trim()
+                ? aiDay.dinner
+                : aiIsVegan
+                ? 'Cremiges Rote-Linsen-Kokos-Curry mit Reis'
+                : 'Cremiges Curry mit Reis & Gemüse';
+            const dinnerTitle = sanitizeVeganTitle(rawDinner);
+            const matched = pickDistinctRecipe(dinnerTitle, idx + 3);
 
             newDay.dinner = {
               recipeId: matched?.id || allRecipes[0]?.id || `recipe-${idx + 1}`,
@@ -700,44 +828,35 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           return newDay;
         });
 
+        setPlanServings(aiPeopleCount);
+        if (aiMealOption === 'lunch' || aiMealOption === 'both') {
+          setShowLunchSlot(true);
+          try {
+            safeStorage.setItem('veggiechef_show_lunch_slot', JSON.stringify(true));
+          } catch {}
+        }
         setMealPlan(updatedDays);
         setShowAIGeneratorModal(false);
         if (aiWishes.trim()) {
-          onCopyFeedback(`Wochenplan erstellt – deine Wünsche wurden berücksichtigt!`);
+          onCopyFeedback('Wochenplan erstellt – deine Wünsche wurden berücksichtigt!');
         } else {
-          onCopyFeedback(`Wochenplan "${data.planTitle || '7-Tage-Plan'}" erfolgreich erstellt!`);
+          onCopyFeedback('Wochenplan erfolgreich erstellt!');
         }
       } else {
         throw new Error('API did not return valid days');
       }
     } catch (err) {
       console.warn('Fallback generation activated for meal plan', err);
-      // Filter recipePool by user preferences if sufficient recipes exist
-      let filteredPool = [...recipePool];
-      if (aiCalorieFilter === 'high') {
-        const highCal = filteredPool.filter(r => (r.nutrients?.calories || 0) >= 600);
-        if (highCal.length >= 3) filteredPool = highCal;
-      } else if (aiCalorieFilter === 'low') {
-        const lowCal = filteredPool.filter(r => (r.nutrients?.calories || 0) <= 550);
-        if (lowCal.length >= 3) filteredPool = lowCal;
-      }
-      if (aiProteinFilter === 'high' || aiProteinFilter === 'very-high') {
-        const highProt = filteredPool.filter(r => (r.nutrients?.protein || 0) >= 22);
-        if (highProt.length >= 3) filteredPool = highProt;
-      }
-      if (aiDifficultyFilter !== 'all') {
-        const diffMatches = filteredPool.filter(r => r.difficulty === aiDifficultyFilter);
-        if (diffMatches.length >= 3) filteredPool = diffMatches;
-      }
 
-      // Guarantee reliable fallback recipes strictly conforming to vegan settings
       const fallbackDays = mealPlan.map((day, idx) => {
         const newDay = { ...day };
         if (aiMealOption === 'lunch' || aiMealOption === 'both') {
-          const rec = filteredPool[idx % filteredPool.length] || recipePool[idx % recipePool.length] || allRecipes[0];
+          const rec = pickDistinctRecipe('', idx);
           newDay.lunch = {
             recipeId: rec?.id || allRecipes[0]?.id || `recipe-${idx}`,
-            recipeTitle: rec?.title || (aiIsVegan ? 'Kichererbsen-Avocado Bowl mit Zitronen-Tahini' : 'Mediterraner Hirten-Salat'),
+            recipeTitle:
+              rec?.title ||
+              (aiIsVegan ? 'Kichererbsen-Avocado Bowl mit Zitronen-Tahini' : 'Mediterraner Hirten-Salat'),
             isVegan: aiIsVegan || Boolean(rec?.isVegan),
             prepTime: rec?.totalTimeMinutes || (aiMaxMinutes > 0 ? aiMaxMinutes : 20),
             calories: rec?.nutrients?.calories || (aiCalorieFilter === 'high' ? 760 : 430),
@@ -746,10 +865,11 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
           };
         }
         if (aiMealOption === 'dinner' || aiMealOption === 'both') {
-          const rec = filteredPool[(idx + 3) % filteredPool.length] || recipePool[(idx + 3) % recipePool.length] || allRecipes[0];
+          const rec = pickDistinctRecipe('', idx + 3);
           newDay.dinner = {
             recipeId: rec?.id || allRecipes[0]?.id || `recipe-${idx + 1}`,
-            recipeTitle: rec?.title || (aiIsVegan ? 'Rote-Linsen Kokos-Curry mit Reis' : 'Ofen-Gnocchi mit Spinat'),
+            recipeTitle:
+              rec?.title || (aiIsVegan ? 'Rote-Linsen Kokos-Curry mit Reis' : 'Ofen-Gnocchi mit Spinat'),
             isVegan: aiIsVegan || Boolean(rec?.isVegan),
             prepTime: rec?.totalTimeMinutes || (aiMaxMinutes > 0 ? aiMaxMinutes : 25),
             calories: rec?.nutrients?.calories || (aiCalorieFilter === 'high' ? 820 : 510),
@@ -759,6 +879,13 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         }
         return newDay;
       });
+      setPlanServings(aiPeopleCount);
+      if (aiMealOption === 'lunch' || aiMealOption === 'both') {
+        setShowLunchSlot(true);
+        try {
+          safeStorage.setItem('veggiechef_show_lunch_slot', JSON.stringify(true));
+        } catch {}
+      }
       setMealPlan(fallbackDays);
       setShowAIGeneratorModal(false);
       onCopyFeedback('Wochenplan erfolgreich mit leckeren Gerichten befüllt!');
@@ -783,10 +910,23 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
     0
   );
 
+  const aiActiveCustomSettingsCount = [
+    aiMaxMinutes !== 35,
+    aiCalorieFilter !== 'all',
+    aiProteinFilter !== 'all',
+    aiDifficultyFilter !== 'all',
+    aiWishes.trim().length > 0,
+  ].filter(Boolean).length;
+
+  const selectedAiCalorieOpt =
+    AI_CALORIE_OPTIONS.find((o) => o.value === aiCalorieFilter) || AI_CALORIE_OPTIONS[0];
+  const selectedAiProteinOpt =
+    AI_PROTEIN_OPTIONS.find((o) => o.value === aiProteinFilter) || AI_PROTEIN_OPTIONS[0];
+  const selectedAiDifficultyOpt =
+    AI_DIFFICULTY_OPTIONS.find((o) => o.value === aiDifficultyFilter) || AI_DIFFICULTY_OPTIONS[0];
+
   const renderMealItem = (day: DayPlan, mealType: 'lunch' | 'dinner', slot: MealPlanSlot) => {
-    const recipe = allRecipes.find((r) => r.id === slot.recipeId) ||
-      allRecipes.find((r) => r.title.toLowerCase() === slot.recipeTitle.toLowerCase()) ||
-      allRecipes.find((r) => r.title.toLowerCase().includes(slot.recipeTitle.toLowerCase().slice(0, 6)));
+    const recipe = findRecipeForSlot(slot, allRecipes);
     const isDraggingThis = draggingItem?.dayId === day.dayId && draggingItem?.mealType === mealType;
     const isDragOverThis = dragOverTarget?.dayId === day.dayId && dragOverTarget?.mealType === mealType;
     const isSwapTarget = isDragOverThis && draggingItem && (draggingItem.dayId !== day.dayId || draggingItem.mealType !== mealType);
@@ -1195,22 +1335,28 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             </div>
 
             {/* AI Generator Modal Trigger */}
-            <button
+            <motion.button
               id="open-ai-meal-plan-modal-btn"
-              onClick={() => setShowAIGeneratorModal(true)}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 sm:px-4.5 py-2.5 rounded-xl bg-surface hover:bg-accent-tint active:bg-border border border-border hover:border-accent-border text-text-main font-semibold text-sm sm:text-base shadow-2xs transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap h-11 min-h-[44px]"
+              type="button"
+              whileTap={{ scale: 0.96 }}
+              onClick={() => {
+                setAiPeopleCount(planServings);
+                setShowAIGeneratorModal(true);
+              }}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 sm:px-4.5 py-2.5 rounded-xl bg-surface hover:bg-accent-tint active:bg-border border border-border hover:border-accent-border text-text-main font-semibold text-sm sm:text-base shadow-2xs transition-all cursor-pointer touch-manipulation whitespace-nowrap h-11 min-h-[44px]"
             >
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
               <span>KI-Wochenplan</span>
-            </button>
+            </motion.button>
 
             {/* 1-Click All to Shopping List (Animiert wie in der Rezept-Detailansicht mit Haken, Farbe & "Auf Liste") */}
-            <button
+            <motion.button
               id="transfer-week-to-shopping-btn"
               type="button"
+              whileTap={totalPlannedMeals === 0 ? undefined : { scale: 0.96 }}
               onClick={handleTransferAllToShopping}
               disabled={totalPlannedMeals === 0}
-              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 sm:px-4.5 py-2.5 rounded-xl border text-sm sm:text-base transition-all cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap h-11 min-h-[44px] ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 sm:px-4.5 py-2.5 rounded-xl border text-sm sm:text-base transition-all cursor-pointer touch-manipulation whitespace-nowrap h-11 min-h-[44px] ${
                 isWeekOnShoppingList && totalPlannedMeals > 0
                   ? 'bg-accent-tint border-accent/40 text-accent font-bold shadow-2xs'
                   : 'bg-accent hover:bg-accent-hover border-transparent disabled:opacity-40 text-on-accent font-semibold shadow-xs'
@@ -1243,7 +1389,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                   </motion.span>
                 )}
               </AnimatePresence>
-            </button>
+            </motion.button>
           </div>
         </div>
       </div>
@@ -1304,9 +1450,29 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                       className="overflow-hidden shrink-0"
                     >
                       <div className="flex flex-col">
-                        {day.lunch
-                          ? renderMealItem(day, 'lunch', day.lunch)
-                          : renderEmptySlot(day, 'lunch')}
+                        <AnimatePresence mode="wait" initial={false}>
+                          {day.lunch ? (
+                            <motion.div
+                              key={`lunch-filled-${day.lunch.recipeId}-${day.lunch.recipeTitle}`}
+                              initial={{ opacity: 0, scale: 0.98 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.98 }}
+                              transition={{ duration: 0.18, ease: 'easeOut' }}
+                            >
+                              {renderMealItem(day, 'lunch', day.lunch)}
+                            </motion.div>
+                          ) : (
+                            <motion.div
+                              key="lunch-empty"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.16 }}
+                            >
+                              {renderEmptySlot(day, 'lunch')}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
 
                         {/* Direkter Übergang: Abstand komplett entfernt, dezente Trennlinie in der Hintergrundfarbe der App, die vor dem horizontalen Ende aufhört */}
                         {bothMealsPlanned ? (
@@ -1325,9 +1491,29 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
                 {/* Dinner Slot */}
                 <div className="flex flex-col shrink-0">
-                  {day.dinner
-                    ? renderMealItem(day, 'dinner', day.dinner)
-                    : renderEmptySlot(day, 'dinner')}
+                  <AnimatePresence mode="wait" initial={false}>
+                    {day.dinner ? (
+                      <motion.div
+                        key={`dinner-filled-${day.dinner.recipeId}-${day.dinner.recipeTitle}`}
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.18, ease: 'easeOut' }}
+                      >
+                        {renderMealItem(day, 'dinner', day.dinner)}
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="dinner-empty"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.16 }}
+                      >
+                        {renderEmptySlot(day, 'dinner')}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>
@@ -1404,9 +1590,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
             </AnimatePresence>
 
             {/* Eingefahren (immer sichtbar): Kalorien der Woche & Proteine der Woche – dezent, clean, wenig Text */}
-            <div
-              className="p-3 sm:p-3.5 h-[176px] min-h-[176px] flex flex-col justify-center"
-            >
+            <div className="p-3 sm:p-3.5 h-[176px] min-h-[176px] flex flex-col justify-center">
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="rounded-xl bg-surface/60 border border-border/80 px-3 py-2.5 flex flex-col justify-center">
                   <div className="flex items-center gap-1.5 text-xs font-medium text-text-muted mb-0.5">
@@ -1433,39 +1617,50 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         </div>
       </div>
 
-      {/* Undo Notification Banner (Unten am Ende des Wochenplans, exakt gleiches Design wie Einkaufsliste) */}
-      {showUndoBanner && undoBackup && (
-        <div className="p-3.5 sm:p-4 bg-text-main text-on-accent rounded-2xl shadow-lg border border-border/20 flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-bottom duration-200 mt-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-accent shrink-0" />
-            <span className="text-[16px] font-medium text-on-accent/95 truncate">
-              {lastDeletedMealInfo?.type === 'single' && lastDeletedMealInfo.title
-                ? `"${lastDeletedMealInfo.title}" entfernt.`
-                : 'Der Wochenplan wurde geleert.'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              id="undo-clear-meal-plan-btn"
-              type="button"
-              onClick={handleUndoClearMealPlan}
-              className="h-[44px] min-h-[44px] px-4 sm:px-5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-[16px] font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center gap-2"
-            >
-              <RotateCcw className="w-4 h-4 sm:hidden" />
-              <span>Rückgängig</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowUndoBanner(false)}
-              className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-on-accent/70 hover:text-on-accent hover:bg-card/10 transition-colors cursor-pointer touch-manipulation active:scale-95"
-              title="Schließen"
-              aria-label="Schließen"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Undo Notification Banner (Animiert mit AnimatePresence) */}
+      <AnimatePresence>
+        {showUndoBanner && undoBackup && (
+          <motion.div
+            key="weekly-planner-undo-banner"
+            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.98 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="p-3.5 sm:p-4 bg-text-main text-on-accent rounded-2xl shadow-lg border border-border/20 flex items-center justify-between gap-3 sm:gap-4 mt-2"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-accent shrink-0" />
+              <span className="text-[16px] font-medium text-on-accent/95 truncate">
+                {lastDeletedMealInfo?.type === 'single' && lastDeletedMealInfo.title
+                  ? `"${lastDeletedMealInfo.title}" entfernt.`
+                  : 'Der Wochenplan wurde geleert.'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <motion.button
+                id="undo-clear-meal-plan-btn"
+                type="button"
+                whileTap={{ scale: 0.95 }}
+                onClick={handleUndoClearMealPlan}
+                className="h-[44px] min-h-[44px] px-4 sm:px-5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-[16px] font-semibold shadow-xs transition-colors cursor-pointer touch-manipulation flex items-center justify-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4 sm:hidden" />
+                <span>Rückgängig</span>
+              </motion.button>
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.92 }}
+                onClick={() => setShowUndoBanner(false)}
+                className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-on-accent/70 hover:text-on-accent hover:bg-card/10 transition-colors cursor-pointer touch-manipulation"
+                title="Schließen"
+                aria-label="Schließen"
+              >
+                <X className="w-5 h-5" />
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Drag & Drop Ghost for Touch Devices */}
       {touchDragState && (
@@ -1489,7 +1684,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         </div>
       )}
 
-      {/* Global Recipe Picker Modal – Auf Mobile Vollbild, ohne "Rezept wählen", Filter-Toggle in der Suchleiste, animiertes Sortier-Menü & Startseiten-Raster-Kacheln */}
+      {/* Global Recipe Picker Modal */}
       <RecipePickerModal
         isOpen={showRecipePickerModal}
         onClose={() => setShowRecipePickerModal(false)}
@@ -1497,7 +1692,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         onSelectRecipe={assignRecipeToSlot}
       />
 
-      {/* AI Meal Plan Generator Modal – Im Stil der App (weiße Schließen/Abbrechen-Buttons, komplett animiert & zentrierter Portionen-Stepper) */}
+      {/* AI Meal Plan Generator Modal – Ohne "7-Tage-", "Wünsche & Feineinstellungen" im sekundären Button-Stil & eigene animierte Dropdowns */}
       <AnimatePresence>
         {showAIGeneratorModal && (
           <motion.div
@@ -1518,10 +1713,10 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
               onClick={(e) => e.stopPropagation()}
               className="bg-card rounded-2xl sm:rounded-3xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-border max-h-[94vh] sm:max-h-[90vh] overflow-y-auto overscroll-contain flex flex-col justify-between"
             >
-              {/* Modal Header mit weißem Schließen-Button im Stil der App */}
+              {/* Modal Header ohne "7-Tage-" */}
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-text-main leading-snug">
-                  7-Tage-Wochenplan erstellen
+                  Wochenplan erstellen
                 </h3>
                 <CloseButton onClick={() => setShowAIGeneratorModal(false)} ariaLabel="Schließen" />
               </div>
@@ -1631,34 +1826,63 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                 {/* Dünne Trennlinie vor dem ausklappbaren Element */}
                 <div className="border-t border-border" />
 
-                {/* Wünsche & Feineinstellungen – Geschmeidig animiertes Einklapp-Element */}
-                <div className="space-y-2.5">
+                {/* Wünsche & Feineinstellungen – Im sekundären Button-Stil (wie "Swipen" & Vorratskammer) */}
+                <div className="space-y-3">
                   <motion.button
-                    whileTap={{ scale: 0.99 }}
+                    whileTap={{ scale: 0.985 }}
                     type="button"
                     id="ai-toggle-preferences-btn"
-                    onClick={() => setIsAiPreferencesOpen((prev) => !prev)}
+                    onClick={handleToggleAiPreferences}
                     aria-expanded={isAiPreferencesOpen}
                     aria-controls="ai-meal-plan-extra-section"
-                    className="w-full min-h-[48px] p-3 sm:p-4 rounded-xl bg-accent-tint hover:bg-surface border border-border hover:border-accent/40 flex items-center justify-between text-left cursor-pointer select-none touch-manipulation transition-colors group"
+                    className={`group w-full min-h-[60px] p-3.5 sm:p-4 rounded-2xl border bg-accent-tint flex items-center justify-between text-left cursor-pointer select-none touch-manipulation transition-all ${
+                      isAiPreferencesOpen
+                        ? 'border-accent/45 shadow-2xs'
+                        : 'border-accent/25 hover:border-accent/50 hover:shadow-xs'
+                    }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex items-center justify-center text-accent shrink-0">
-                        <Sliders className="w-5 h-5 text-accent" />
+                      <div className="flex items-center justify-center text-accent shrink-0 group-hover:scale-110 transition-transform duration-300">
+                        <Sliders className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-accent" />
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base font-bold text-text-main">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-base font-bold text-text-main leading-tight">
                             Wünsche &amp; Feineinstellungen
                           </span>
+                          <AnimatePresence>
+                            {aiActiveCustomSettingsCount > 0 && (
+                              <motion.span
+                                initial={{ opacity: 0, scale: 0.85 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.85 }}
+                                transition={{ duration: 0.18 }}
+                                className="px-2 py-0.5 rounded-full bg-card/90 border border-accent/30 text-accent text-[11px] font-bold tabular-nums"
+                              >
+                                {aiActiveCustomSettingsCount} aktiv
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
                         </div>
                         <p className="text-xs text-text-muted truncate mt-0.5">
                           {`Max. ${aiMaxMinutes} Min.`}
                           {' · '}
-                          {aiCalorieFilter !== 'all' ? (aiCalorieFilter === 'high' ? '750+ kcal' : aiCalorieFilter === 'low' ? '< 500 kcal' : '500–700 kcal') : 'Kalorien: Alle'}
+                          {aiCalorieFilter !== 'all'
+                            ? aiCalorieFilter === 'high'
+                              ? '750+ kcal'
+                              : aiCalorieFilter === 'low'
+                              ? '< 500 kcal'
+                              : '500–700 kcal'
+                            : 'Kalorien: Alle'}
                           {' · '}
-                          {aiProteinFilter !== 'all' ? (aiProteinFilter === 'very-high' ? '40+ g' : aiProteinFilter === 'high' ? '30+ g' : '20+ g') : 'Protein: Alle'}
-                          {aiDifficultyFilter !== 'all' && ` · ${aiDifficultyFilter}`}
+                          {aiProteinFilter !== 'all'
+                            ? aiProteinFilter === 'very-high'
+                              ? '40+ g'
+                              : aiProteinFilter === 'high'
+                              ? '30+ g'
+                              : '20+ g'
+                            : 'Protein: Alle'}
+                          {aiDifficultyFilter !== 'all' && ` · ${selectedAiDifficultyOpt.shortLabel}`}
                           {aiWishes.trim() ? ` · "${aiWishes.trim().slice(0, 16)}..."` : ' · Keine Wünsche'}
                         </p>
                       </div>
@@ -1666,14 +1890,14 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
 
                     <motion.div
                       animate={{ rotate: isAiPreferencesOpen ? 180 : 0 }}
-                      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted group-hover:text-accent transition-colors shrink-0 ml-2"
+                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-accent shrink-0 ml-2"
                     >
                       <ChevronDown className="w-5 h-5 text-accent shrink-0" />
                     </motion.div>
                   </motion.button>
 
-                  {/* Animierter Accordion-Content */}
+                  {/* Animierter Accordion-Content mit freiem Overflow im geöffneten Zustand für die Custom-Dropdowns */}
                   <AnimatePresence initial={false}>
                     {isAiPreferencesOpen && (
                       <motion.div
@@ -1683,10 +1907,15 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{
-                          height: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+                          height: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
                           opacity: { duration: 0.2, ease: 'easeInOut' },
                         }}
-                        className="overflow-hidden"
+                        onAnimationComplete={() => {
+                          if (isAiPreferencesOpen) {
+                            setAiAccordionOverflowVisible(true);
+                          }
+                        }}
+                        className={aiAccordionOverflowVisible ? 'overflow-visible' : 'overflow-hidden'}
                       >
                         <div className="pt-3 pb-1">
                           <div className="relative pl-1 sm:pl-3 space-y-6 sm:space-y-7 before:absolute before:left-[17px] sm:before:left-[23px] before:top-4 before:bottom-4 before:w-0.5 before:bg-border">
@@ -1714,7 +1943,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.9 }}
                                         transition={{ duration: 0.2 }}
-                                        className="px-2 py-0.5 rounded-full bg-accent-tint border border-border text-accent font-bold text-xs tabular-nums"
+                                        className="px-2.5 py-0.5 rounded-full bg-accent-tint border border-accent/30 text-accent font-bold text-xs tabular-nums"
                                       >
                                         {aiMaxMinutes} Min.
                                       </motion.span>
@@ -1758,7 +1987,9 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                                     onChange={(e) => {
                                       const val = Number(e.target.value);
                                       if (val !== aiMaxMinutes && typeof window !== 'undefined' && 'vibrate' in navigator) {
-                                        try { navigator.vibrate(8); } catch {}
+                                        try {
+                                          navigator.vibrate(8);
+                                        } catch {}
                                       }
                                       setAiMaxMinutes(val);
                                     }}
@@ -1775,83 +2006,338 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                               </div>
                             </div>
 
-                            {/* Schritt 5: Nährwerte & Ansprüche */}
+                            {/* Schritt 5: Nährwerte & Anspruch (Eigene UI/UX-animierte Dropdown-Menüs ohne natives iOS-Menü) */}
                             <div className="relative flex items-start gap-3.5 sm:gap-4.5 group">
                               <div
                                 className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all ring-4 ring-on-accent ${
-                                  (aiCalorieFilter !== 'all' || aiProteinFilter !== 'all' || aiDifficultyFilter !== 'all')
+                                  aiCalorieFilter !== 'all' ||
+                                  aiProteinFilter !== 'all' ||
+                                  aiDifficultyFilter !== 'all'
                                     ? 'bg-accent text-on-accent shadow-2xs'
                                     : 'bg-card border-2 border-accent text-accent'
                                 }`}
                               >
-                                {(aiCalorieFilter !== 'all' || aiProteinFilter !== 'all' || aiDifficultyFilter !== 'all') ? <Check className="w-4 h-4 stroke-[3]" /> : '5'}
+                                {aiCalorieFilter !== 'all' ||
+                                aiProteinFilter !== 'all' ||
+                                aiDifficultyFilter !== 'all' ? (
+                                  <Check className="w-4 h-4 stroke-[3]" />
+                                ) : (
+                                  '5'
+                                )}
                               </div>
 
-                              <div className="flex-1 min-w-0 pt-0.5 space-y-2">
+                              <div
+                                className="flex-1 min-w-0 pt-0.5 space-y-2.5"
+                                ref={aiDropdownsContainerRef}
+                              >
                                 <div className="flex items-center justify-between gap-2">
                                   <h4 className="text-[16px] font-bold text-text-main">
-                                    Nährwerte &amp; Ansprüche
+                                    Nährwerte &amp; Anspruch
                                   </h4>
-                                  {(aiCalorieFilter !== 'all' || aiProteinFilter !== 'all' || aiDifficultyFilter !== 'all') && (
-                                    <span className="text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded-full border border-border">
-                                      Aktiv
-                                    </span>
-                                  )}
+                                  <AnimatePresence>
+                                    {(aiCalorieFilter !== 'all' ||
+                                      aiProteinFilter !== 'all' ||
+                                      aiDifficultyFilter !== 'all') && (
+                                      <motion.button
+                                        type="button"
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => {
+                                          setAiCalorieFilter('all');
+                                          setAiProteinFilter('all');
+                                          setAiDifficultyFilter('all');
+                                          setAiActiveDropdown(null);
+                                        }}
+                                        className="text-xs font-semibold text-text-muted hover:text-accent cursor-pointer transition-colors"
+                                      >
+                                        Zurücksetzen
+                                      </motion.button>
+                                    )}
+                                  </AnimatePresence>
                                 </div>
 
                                 <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                                  <div className="relative">
-                                    <select
+                                  {/* 1. Kalorien Dropdown */}
+                                  <div className="relative min-w-0">
+                                    <motion.button
+                                      type="button"
                                       id="ai-filter-calories"
-                                      aria-label="Kalorien"
-                                      value={aiCalorieFilter}
-                                      onChange={(e) => setAiCalorieFilter(e.target.value)}
-                                      className={`w-full appearance-none h-11 min-h-[44px] bg-card border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-text-main shadow-2xs ${
-                                        aiCalorieFilter === 'all' ? '' : 'font-semibold'
+                                      whileTap={{ scale: 0.96 }}
+                                      onClick={() =>
+                                        setAiActiveDropdown((prev) =>
+                                          prev === 'calories' ? null : 'calories'
+                                        )
+                                      }
+                                      aria-expanded={aiActiveDropdown === 'calories'}
+                                      aria-haspopup="listbox"
+                                      aria-label="Kalorien wählen"
+                                      className={`w-full h-11 min-h-[44px] px-2.5 sm:px-3 rounded-xl border flex items-center justify-between gap-1.5 text-[13px] sm:text-sm transition-all cursor-pointer touch-manipulation select-none ${
+                                        aiActiveDropdown === 'calories'
+                                          ? 'bg-accent-tint border-accent/45 text-accent font-bold ring-2 ring-accent/15 shadow-2xs'
+                                          : aiCalorieFilter !== 'all'
+                                          ? 'bg-accent-tint border-accent/40 text-accent font-bold shadow-2xs'
+                                          : 'bg-surface border-border hover:border-accent/40 text-text-main font-semibold'
                                       }`}
                                     >
-                                      <option value="all">Kalorien: Alle</option>
-                                      <option value="low">&lt; 500 kcal</option>
-                                      <option value="moderate">500–700 kcal</option>
-                                      <option value="high">750+ kcal</option>
-                                    </select>
-                                    <ChevronDown className="w-3.5 h-3.5 text-text-muted absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                      <span className="inline-flex items-center gap-1.5 min-w-0 truncate">
+                                        <Flame
+                                          className={`w-3.5 h-3.5 shrink-0 ${
+                                            aiCalorieFilter !== 'all' || aiActiveDropdown === 'calories'
+                                              ? 'text-accent'
+                                              : 'text-[#E67E22]'
+                                          }`}
+                                          aria-hidden="true"
+                                        />
+                                        <span className="sm:hidden truncate">
+                                          {selectedAiCalorieOpt.shortLabel}
+                                        </span>
+                                        <span className="hidden sm:inline truncate">
+                                          {selectedAiCalorieOpt.label}
+                                        </span>
+                                      </span>
+                                      <motion.span
+                                        animate={{ rotate: aiActiveDropdown === 'calories' ? 180 : 0 }}
+                                        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                                        className="inline-flex items-center justify-center shrink-0 text-text-muted"
+                                      >
+                                        <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+                                      </motion.span>
+                                    </motion.button>
+
+                                    <AnimatePresence>
+                                      {aiActiveDropdown === 'calories' && (
+                                        <motion.div
+                                          role="listbox"
+                                          aria-label="Kalorien-Optionen"
+                                          initial={{ opacity: 0, scale: 0.94, y: -6 }}
+                                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                                          exit={{ opacity: 0, scale: 0.94, y: -6 }}
+                                          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                                          className="absolute left-0 top-full mt-2 w-48 sm:w-52 origin-top-left bg-card rounded-2xl border border-border shadow-xl p-1.5 z-40 space-y-0.5"
+                                        >
+                                          {AI_CALORIE_OPTIONS.map((opt) => {
+                                            const isSelected = aiCalorieFilter === opt.value;
+                                            return (
+                                              <button
+                                                key={opt.value}
+                                                role="option"
+                                                aria-selected={isSelected}
+                                                type="button"
+                                                onClick={() => {
+                                                  setAiCalorieFilter(opt.value);
+                                                  setAiActiveDropdown(null);
+                                                }}
+                                                className={`w-full min-h-[42px] px-3 py-2 rounded-xl text-left text-sm font-semibold flex items-center justify-between gap-2 transition-colors cursor-pointer touch-manipulation active:scale-[0.98] ${
+                                                  isSelected
+                                                    ? 'bg-accent-tint text-accent font-bold'
+                                                    : 'text-text-main hover:bg-surface'
+                                                }`}
+                                              >
+                                                <span className="truncate">{opt.label}</span>
+                                                {isSelected && (
+                                                  <motion.span
+                                                    initial={{ scale: 0.5, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    transition={{ duration: 0.15 }}
+                                                  >
+                                                    <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
+                                                  </motion.span>
+                                                )}
+                                              </button>
+                                            );
+                                          })}
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
                                   </div>
 
-                                  <div className="relative">
-                                    <select
+                                  {/* 2. Protein Dropdown */}
+                                  <div className="relative min-w-0">
+                                    <motion.button
+                                      type="button"
                                       id="ai-filter-protein"
-                                      aria-label="Proteine"
-                                      value={aiProteinFilter}
-                                      onChange={(e) => setAiProteinFilter(e.target.value)}
-                                      className={`w-full appearance-none h-11 min-h-[44px] bg-card border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-text-main shadow-2xs ${
-                                        aiProteinFilter === 'all' ? '' : 'font-semibold'
+                                      whileTap={{ scale: 0.96 }}
+                                      onClick={() =>
+                                        setAiActiveDropdown((prev) =>
+                                          prev === 'protein' ? null : 'protein'
+                                        )
+                                      }
+                                      aria-expanded={aiActiveDropdown === 'protein'}
+                                      aria-haspopup="listbox"
+                                      aria-label="Proteine wählen"
+                                      className={`w-full h-11 min-h-[44px] px-2.5 sm:px-3 rounded-xl border flex items-center justify-between gap-1.5 text-[13px] sm:text-sm transition-all cursor-pointer touch-manipulation select-none ${
+                                        aiActiveDropdown === 'protein'
+                                          ? 'bg-accent-tint border-accent/45 text-accent font-bold ring-2 ring-accent/15 shadow-2xs'
+                                          : aiProteinFilter !== 'all'
+                                          ? 'bg-accent-tint border-accent/40 text-accent font-bold shadow-2xs'
+                                          : 'bg-surface border-border hover:border-accent/40 text-text-main font-semibold'
                                       }`}
                                     >
-                                      <option value="all">Protein: Alle</option>
-                                      <option value="medium">20+ g</option>
-                                      <option value="high">30+ g</option>
-                                      <option value="very-high">40+ g</option>
-                                    </select>
-                                    <ChevronDown className="w-3.5 h-3.5 text-text-muted absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                      <span className="inline-flex items-center gap-1.5 min-w-0 truncate">
+                                        <Dumbbell
+                                          className="w-3.5 h-3.5 shrink-0 text-accent"
+                                          aria-hidden="true"
+                                        />
+                                        <span className="sm:hidden truncate">
+                                          {selectedAiProteinOpt.shortLabel}
+                                        </span>
+                                        <span className="hidden sm:inline truncate">
+                                          {selectedAiProteinOpt.label}
+                                        </span>
+                                      </span>
+                                      <motion.span
+                                        animate={{ rotate: aiActiveDropdown === 'protein' ? 180 : 0 }}
+                                        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                                        className="inline-flex items-center justify-center shrink-0 text-text-muted"
+                                      >
+                                        <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+                                      </motion.span>
+                                    </motion.button>
+
+                                    <AnimatePresence>
+                                      {aiActiveDropdown === 'protein' && (
+                                        <motion.div
+                                          role="listbox"
+                                          aria-label="Protein-Optionen"
+                                          initial={{ opacity: 0, scale: 0.94, y: -6 }}
+                                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                                          exit={{ opacity: 0, scale: 0.94, y: -6 }}
+                                          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                                          className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-48 sm:w-52 origin-top bg-card rounded-2xl border border-border shadow-xl p-1.5 z-40 space-y-0.5"
+                                        >
+                                          {AI_PROTEIN_OPTIONS.map((opt) => {
+                                            const isSelected = aiProteinFilter === opt.value;
+                                            return (
+                                              <button
+                                                key={opt.value}
+                                                role="option"
+                                                aria-selected={isSelected}
+                                                type="button"
+                                                onClick={() => {
+                                                  setAiProteinFilter(opt.value);
+                                                  setAiActiveDropdown(null);
+                                                }}
+                                                className={`w-full min-h-[42px] px-3 py-2 rounded-xl text-left text-sm font-semibold flex items-center justify-between gap-2 transition-colors cursor-pointer touch-manipulation active:scale-[0.98] ${
+                                                  isSelected
+                                                    ? 'bg-accent-tint text-accent font-bold'
+                                                    : 'text-text-main hover:bg-surface'
+                                                }`}
+                                              >
+                                                <span className="truncate">{opt.label}</span>
+                                                {isSelected && (
+                                                  <motion.span
+                                                    initial={{ scale: 0.5, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    transition={{ duration: 0.15 }}
+                                                  >
+                                                    <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
+                                                  </motion.span>
+                                                )}
+                                              </button>
+                                            );
+                                          })}
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
                                   </div>
 
-                                  <div className="relative">
-                                    <select
+                                  {/* 3. Anspruch / Schwierigkeit Dropdown */}
+                                  <div className="relative min-w-0">
+                                    <motion.button
+                                      type="button"
                                       id="ai-filter-difficulty"
-                                      aria-label="Schwierigkeit"
-                                      value={aiDifficultyFilter}
-                                      onChange={(e) => setAiDifficultyFilter(e.target.value)}
-                                      className={`w-full appearance-none h-11 min-h-[44px] bg-card border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[13px] sm:text-sm font-medium rounded-xl pl-2.5 sm:pl-3 pr-6 py-2 cursor-pointer focus:outline-none transition-colors text-text-main shadow-2xs ${
-                                        aiDifficultyFilter === 'all' ? '' : 'font-semibold'
+                                      whileTap={{ scale: 0.96 }}
+                                      onClick={() =>
+                                        setAiActiveDropdown((prev) =>
+                                          prev === 'difficulty' ? null : 'difficulty'
+                                        )
+                                      }
+                                      aria-expanded={aiActiveDropdown === 'difficulty'}
+                                      aria-haspopup="listbox"
+                                      aria-label="Anspruch wählen"
+                                      className={`w-full h-11 min-h-[44px] px-2.5 sm:px-3 rounded-xl border flex items-center justify-between gap-1.5 text-[13px] sm:text-sm transition-all cursor-pointer touch-manipulation select-none ${
+                                        aiActiveDropdown === 'difficulty'
+                                          ? 'bg-accent-tint border-accent/45 text-accent font-bold ring-2 ring-accent/15 shadow-2xs'
+                                          : aiDifficultyFilter !== 'all'
+                                          ? 'bg-accent-tint border-accent/40 text-accent font-bold shadow-2xs'
+                                          : 'bg-surface border-border hover:border-accent/40 text-text-main font-semibold'
                                       }`}
                                     >
-                                      <option value="all">Schwierigkeit: Alle</option>
-                                      <option value="Einfach">Einfach</option>
-                                      <option value="Mittel">Mittel</option>
-                                      <option value="Anspruchsvoll">Anspruchsvoll</option>
-                                    </select>
-                                    <ChevronDown className="w-3.5 h-3.5 text-text-muted absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                      <span className="inline-flex items-center gap-1.5 min-w-0 truncate">
+                                        <ChefHat
+                                          className={`w-3.5 h-3.5 shrink-0 ${
+                                            aiDifficultyFilter !== 'all' ||
+                                            aiActiveDropdown === 'difficulty'
+                                              ? 'text-accent'
+                                              : 'text-text-muted'
+                                          }`}
+                                          aria-hidden="true"
+                                        />
+                                        <span className="sm:hidden truncate">
+                                          {selectedAiDifficultyOpt.shortLabel}
+                                        </span>
+                                        <span className="hidden sm:inline truncate">
+                                          {selectedAiDifficultyOpt.label}
+                                        </span>
+                                      </span>
+                                      <motion.span
+                                        animate={{
+                                          rotate: aiActiveDropdown === 'difficulty' ? 180 : 0,
+                                        }}
+                                        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                                        className="inline-flex items-center justify-center shrink-0 text-text-muted"
+                                      >
+                                        <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+                                      </motion.span>
+                                    </motion.button>
+
+                                    <AnimatePresence>
+                                      {aiActiveDropdown === 'difficulty' && (
+                                        <motion.div
+                                          role="listbox"
+                                          aria-label="Anspruch-Optionen"
+                                          initial={{ opacity: 0, scale: 0.94, y: -6 }}
+                                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                                          exit={{ opacity: 0, scale: 0.94, y: -6 }}
+                                          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                                          className="absolute right-0 top-full mt-2 w-48 sm:w-52 origin-top-right bg-card rounded-2xl border border-border shadow-xl p-1.5 z-40 space-y-0.5"
+                                        >
+                                          {AI_DIFFICULTY_OPTIONS.map((opt) => {
+                                            const isSelected = aiDifficultyFilter === opt.value;
+                                            return (
+                                              <button
+                                                key={opt.value}
+                                                role="option"
+                                                aria-selected={isSelected}
+                                                type="button"
+                                                onClick={() => {
+                                                  setAiDifficultyFilter(opt.value);
+                                                  setAiActiveDropdown(null);
+                                                }}
+                                                className={`w-full min-h-[42px] px-3 py-2 rounded-xl text-left text-sm font-semibold flex items-center justify-between gap-2 transition-colors cursor-pointer touch-manipulation active:scale-[0.98] ${
+                                                  isSelected
+                                                    ? 'bg-accent-tint text-accent font-bold'
+                                                    : 'text-text-main hover:bg-surface'
+                                                }`}
+                                              >
+                                                <span className="truncate">{opt.label}</span>
+                                                {isSelected && (
+                                                  <motion.span
+                                                    initial={{ scale: 0.5, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    transition={{ duration: 0.15 }}
+                                                  >
+                                                    <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
+                                                  </motion.span>
+                                                )}
+                                              </button>
+                                            );
+                                          })}
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
                                   </div>
                                 </div>
                               </div>
@@ -1874,11 +2360,18 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                                   <h4 className="text-[16px] font-bold text-text-main">
                                     Wünsche
                                   </h4>
-                                  {aiWishes.trim() && (
-                                    <span className="text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded-full border border-border">
-                                      Aktiv
-                                    </span>
-                                  )}
+                                  <AnimatePresence>
+                                    {aiWishes.trim() && (
+                                      <motion.span
+                                        initial={{ opacity: 0, scale: 0.85 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.85 }}
+                                        className="text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded-full border border-accent/30"
+                                      >
+                                        Aktiv
+                                      </motion.span>
+                                    )}
+                                  </AnimatePresence>
                                 </div>
 
                                 <input
@@ -1887,13 +2380,8 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                                   value={aiWishes}
                                   onChange={(e) => setAiWishes(e.target.value)}
                                   placeholder="z. B. keine Pilze, asiatisch angehaucht, schnell gekocht..."
-                                  className="w-full h-11 min-h-[44px] px-3.5 py-2 rounded-xl bg-card border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[16px] text-text-main placeholder-[#A0A5A1] transition-all outline-none shadow-2xs"
+                                  className="w-full h-11 min-h-[44px] px-3.5 py-2 rounded-xl bg-surface border border-border hover:border-accent/50 focus:border-accent focus:ring-1 focus:ring-accent text-[16px] text-text-main placeholder-[#A0A5A1] transition-all outline-none"
                                 />
-                                {aiWishes.trim() && (
-                                  <p className="text-[11px] text-accent font-medium">
-                                    ✓ Wünsche werden bei der KI-Generierung berücksichtigt
-                                  </p>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -2009,235 +2497,253 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
         )}
       </AnimatePresence>
 
-      {/* Alle Wochen Modal (Dezent & Minimalistisch) */}
-      {showAllWeeksModal && (
-        <div
-          id="all-weeks-modal-backdrop"
-          onClick={() => {
-            setShowAllWeeksModal(false);
-            setConfirmDeleteWeekId(null);
-          }}
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150 touch-none overscroll-contain"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-card rounded-2xl border border-border shadow-xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-150 overscroll-contain"
+      {/* Alle Wochen Modal (Animiert & im Stil der App) */}
+      <AnimatePresence>
+        {showAllWeeksModal && (
+          <motion.div
+            key="all-weeks-modal-backdrop"
+            id="all-weeks-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => {
+              setShowAllWeeksModal(false);
+              setConfirmDeleteWeekId(null);
+            }}
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 touch-none overscroll-contain"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <div className="flex items-center gap-2.5">
-                <div className="w-11 h-11 rounded-xl bg-accent-tint flex items-center justify-center text-accent shrink-0">
-                  <Layers className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-text-main">Alle Wochenpläne</h3>
-                  <p className="text-sm font-medium text-text-muted">Wähle eine Woche zum Anzeigen & Planen</p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setShowAllWeeksModal(false);
-                  setConfirmDeleteWeekId(null);
-                }}
-                className="w-11 h-11 rounded-xl hover:bg-surface text-[#57534d] hover:text-accent transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-4 max-h-[60vh] overflow-y-auto space-y-2.5 overscroll-contain">
-              {weeks?.map((w) => {
-                const isActive = w.id === activeWeekId;
-                const plannedCount = w.days.reduce(
-                  (acc, d) => acc + (d.lunch ? 1 : 0) + (d.dinner ? 1 : 0),
-                  0
-                );
-
-                return (
-                  <div
-                    key={w.id}
-                    onClick={() => {
-                      if (onSelectWeek) onSelectWeek(w.id);
-                      setShowAllWeeksModal(false);
-                      setConfirmDeleteWeekId(null);
-                    }}
-                    className={`p-3.5 min-h-[48px] rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                      isActive
-                        ? 'bg-accent-tint border-accent shadow-xs ring-1 ring-accent'
-                        : 'bg-card border-border hover:border-accent/40 hover:bg-surface'
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[15px] font-bold text-text-main truncate">
-                          {w.title}
-                        </span>
-                        {isActive && (
-                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-accent text-on-accent">
-                            Aktiv
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs font-medium text-text-muted mt-0.5">
-                        {w.startDate && <span>{w.startDate}</span>}
-                        <span>•</span>
-                        <span className="font-semibold text-accent">{plannedCount} Mahlzeiten</span>
-                      </div>
-                    </div>
-
-                    {confirmDeleteWeekId === w.id ? (
-                      <div 
-                        onClick={(e) => e.stopPropagation()} 
-                        className="flex items-center gap-2 bg-rose-50 border border-rose-200 p-1.5 rounded-xl animate-in fade-in duration-150 shrink-0"
-                      >
-                        <span className="text-xs font-bold text-rose-700">Löschen?</span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (onDeleteWeek) {
-                              onDeleteWeek(w.id);
-                              onCopyFeedback(`Woche "${w.title}" gelöscht.`);
-                            }
-                            setConfirmDeleteWeekId(null);
-                          }}
-                          className="min-h-[44px] px-3.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-on-accent text-[14px] font-bold shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-                        >
-                          Ja
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmDeleteWeekId(null);
-                          }}
-                          className="min-h-[44px] px-3 rounded-lg bg-card border border-rose-200 text-[#57534d] hover:text-accent text-[14px] font-semibold cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-                        >
-                          Nein
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {!isActive && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (onSelectWeek) onSelectWeek(w.id);
-                              setShowAllWeeksModal(false);
-                            }}
-                            className="min-h-[40px] px-3.5 rounded-xl bg-card border border-border text-sm font-semibold text-[#57534d] hover:bg-accent-tint cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-                          >
-                            Öffnen
-                          </button>
-                        )}
-                        {weeks && weeks.length > 1 && onDeleteWeek && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConfirmDeleteWeekId(w.id);
-                            }}
-                            className="w-11 h-11 rounded-xl text-text-muted hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-                            title="Woche löschen"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        )}
-                      </div>
-                    )}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl border border-border shadow-xl max-w-md w-full overflow-hidden overscroll-contain"
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-11 h-11 rounded-xl bg-accent-tint flex items-center justify-center text-accent shrink-0">
+                    <Layers className="w-5 h-5" />
                   </div>
-                );
-              })}
-            </div>
-
-            <div className="p-4 border-t border-border bg-surface flex items-center justify-between gap-2">
-              <span className="text-sm font-medium text-text-muted">
-                Insgesamt {weeks?.length || 1} {weeks?.length === 1 ? 'Woche' : 'Wochen'}
-              </span>
-              {onCreateNewWeek && (
-                <button
-                  type="button"
+                  <div>
+                    <h3 className="text-lg font-bold text-text-main">Alle Wochenpläne</h3>
+                    <p className="text-sm font-medium text-text-muted">Wähle eine Woche zum Anzeigen &amp; Planen</p>
+                  </div>
+                </div>
+                <CloseButton
                   onClick={() => {
                     setShowAllWeeksModal(false);
-                    setNewWeekTitleInput('');
-                    setShowCreateWeekModal(true);
+                    setConfirmDeleteWeekId(null);
                   }}
-                  className="min-h-[44px] h-11 px-4 py-2 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-sm font-semibold shadow-xs transition-all flex items-center gap-2 cursor-pointer touch-manipulation active:scale-95"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Neue Woche</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Neue Woche erstellen Modal */}
-      {showCreateWeekModal && (
-        <div
-          id="create-week-modal-backdrop"
-          onClick={() => setShowCreateWeekModal(false)}
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150 touch-none overscroll-contain"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-card rounded-2xl border border-border shadow-xl max-w-sm w-full p-5 space-y-4 animate-in zoom-in-95 duration-150 overscroll-contain"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-11 h-11 rounded-xl bg-accent-tint flex items-center justify-center text-accent shrink-0">
-                  <Plus className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-text-main">Neue Woche planen</h3>
-                  <p className="text-sm font-medium text-text-muted">Leeren 7-Tage-Plan anlegen</p>
-                </div>
+                  ariaLabel="Schließen"
+                />
               </div>
-              <button
-                onClick={() => setShowCreateWeekModal(false)}
-                className="w-11 h-11 rounded-xl hover:bg-surface text-[#57534d] hover:text-accent transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-text-main">Bezeichnung</label>
-              <input
-                type="text"
-                value={newWeekTitleInput}
-                onChange={(e) => setNewWeekTitleInput(e.target.value)}
-                placeholder={`z. B. Woche ${(weeks?.length || 0) + 1} oder KW ${(weeks?.length || 0) + 38}`}
-                className="w-full min-h-[48px] px-4 py-2.5 rounded-xl bg-surface border border-border text-base text-text-main placeholder:text-text-muted focus:outline-none focus:border-accent"
-              />
-            </div>
+              <div className="p-4 max-h-[60vh] overflow-y-auto space-y-2.5 overscroll-contain">
+                {weeks?.map((w) => {
+                  const isActive = w.id === activeWeekId;
+                  const plannedCount = w.days.reduce(
+                    (acc, d) => acc + (d.lunch ? 1 : 0) + (d.dinner ? 1 : 0),
+                    0
+                  );
 
-            <div className="flex items-center gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowCreateWeekModal(false)}
-                className="flex-1 min-h-[44px] h-11 py-2.5 rounded-xl border border-border text-sm font-semibold text-[#57534d] hover:text-accent hover:bg-surface transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-              >
-                Abbrechen
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (onCreateNewWeek) {
-                    onCreateNewWeek(newWeekTitleInput.trim() || undefined);
-                  }
-                  setShowCreateWeekModal(false);
-                }}
-                className="flex-1 min-h-[44px] h-11 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-base font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-95"
-              >
-                <Check className="w-4 h-4" />
-                <span>Woche anlegen</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                  return (
+                    <div
+                      key={w.id}
+                      onClick={() => {
+                        if (onSelectWeek) onSelectWeek(w.id);
+                        setShowAllWeeksModal(false);
+                        setConfirmDeleteWeekId(null);
+                      }}
+                      className={`p-3.5 min-h-[48px] rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                        isActive
+                          ? 'bg-accent-tint border-accent shadow-xs ring-1 ring-accent'
+                          : 'bg-card border-border hover:border-accent/40 hover:bg-surface'
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[15px] font-bold text-text-main truncate">
+                            {w.title}
+                          </span>
+                          {isActive && (
+                            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-accent text-on-accent">
+                              Aktiv
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs font-medium text-text-muted mt-0.5">
+                          {w.startDate && <span>{w.startDate}</span>}
+                          <span>•</span>
+                          <span className="font-semibold text-accent">{plannedCount} Mahlzeiten</span>
+                        </div>
+                      </div>
+
+                      {confirmDeleteWeekId === w.id ? (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center gap-2 bg-rose-50 border border-rose-200 p-1.5 rounded-xl shrink-0"
+                        >
+                          <span className="text-xs font-bold text-rose-700">Löschen?</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onDeleteWeek) {
+                                onDeleteWeek(w.id);
+                                onCopyFeedback(`Woche "${w.title}" gelöscht.`);
+                              }
+                              setConfirmDeleteWeekId(null);
+                            }}
+                            className="min-h-[44px] px-3.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-on-accent text-[14px] font-bold shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                          >
+                            Ja
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteWeekId(null);
+                            }}
+                            className="min-h-[44px] px-3 rounded-lg bg-card border border-rose-200 text-[#57534d] hover:text-accent text-[14px] font-semibold cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                          >
+                            Nein
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {!isActive && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (onSelectWeek) onSelectWeek(w.id);
+                                setShowAllWeeksModal(false);
+                              }}
+                              className="min-h-[40px] px-3.5 rounded-xl bg-card border border-border text-sm font-semibold text-[#57534d] hover:bg-accent-tint cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                            >
+                              Öffnen
+                            </button>
+                          )}
+                          {weeks && weeks.length > 1 && onDeleteWeek && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmDeleteWeekId(w.id);
+                              }}
+                              className="w-11 h-11 rounded-xl text-text-muted hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
+                              title="Woche löschen"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="p-4 border-t border-border bg-surface flex items-center justify-between gap-2">
+                <span className="text-sm font-medium text-text-muted">
+                  Insgesamt {weeks?.length || 1} {weeks?.length === 1 ? 'Woche' : 'Wochen'}
+                </span>
+                {onCreateNewWeek && (
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.96 }}
+                    onClick={() => {
+                      setShowAllWeeksModal(false);
+                      setNewWeekTitleInput('');
+                      setShowCreateWeekModal(true);
+                    }}
+                    className="min-h-[44px] h-11 px-4 py-2 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-sm font-semibold shadow-xs transition-all flex items-center gap-2 cursor-pointer touch-manipulation"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Neue Woche</span>
+                  </motion.button>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Neue Woche erstellen Modal (Animiert & im Stil der App) */}
+      <AnimatePresence>
+        {showCreateWeekModal && (
+          <motion.div
+            key="create-week-modal-backdrop"
+            id="create-week-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setShowCreateWeekModal(false)}
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 touch-none overscroll-contain"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl border border-border shadow-xl max-w-sm w-full p-5 space-y-4 overscroll-contain"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-11 h-11 rounded-xl bg-accent-tint flex items-center justify-center text-accent shrink-0">
+                    <Plus className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-text-main">Neue Woche planen</h3>
+                    <p className="text-sm font-medium text-text-muted">Leeren Wochenplan anlegen</p>
+                  </div>
+                </div>
+                <CloseButton onClick={() => setShowCreateWeekModal(false)} ariaLabel="Schließen" />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-text-main">Bezeichnung</label>
+                <input
+                  type="text"
+                  value={newWeekTitleInput}
+                  onChange={(e) => setNewWeekTitleInput(e.target.value)}
+                  placeholder={`z. B. Woche ${(weeks?.length || 0) + 1} oder KW ${(weeks?.length || 0) + 38}`}
+                  className="w-full min-h-[48px] px-4 py-2.5 rounded-xl bg-surface border border-border text-base text-text-main placeholder:text-text-muted focus:outline-none focus:border-accent"
+                />
+              </div>
+
+              <div className="flex items-center gap-2.5 pt-2">
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => setShowCreateWeekModal(false)}
+                  className="flex-1 min-h-[44px] h-11 py-2.5 rounded-xl border border-border bg-card hover:bg-surface text-sm font-semibold text-text-main transition-colors cursor-pointer touch-manipulation flex items-center justify-center"
+                >
+                  Abbrechen
+                </motion.button>
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => {
+                    if (onCreateNewWeek) {
+                      onCreateNewWeek(newWeekTitleInput.trim() || undefined);
+                    }
+                    setShowCreateWeekModal(false);
+                  }}
+                  className="flex-1 min-h-[44px] h-11 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-base font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Woche anlegen</span>
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Confirmation Modal: Duplicate Week Shopping List Addition (identisch zur Rezept-Detailansicht) */}
       <AnimatePresence>

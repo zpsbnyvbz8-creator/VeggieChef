@@ -44,10 +44,12 @@ const DishOfTheDayComponent: React.FC = () => {
     const monthNumber = (today.getMonth() + 1).toString().padStart(2, '0');
     const formattedDateStr = `${dayNumber}.${monthNumber}.`;
 
-    // Passenden Tag per Datum ("23.10.") oder per Wochentag-ID ("thu") finden
-    const todayDayPlan =
-      activeWeek.days.find((d) => d.dateStr === formattedDateStr) ||
-      activeWeek.days.find((d) => d.dayId === todayId);
+    // Passenden Tag per Datum ("23.10.") finden; nur auf Wochentag-ID ("thu") zurückfallen,
+    // wenn der aktive Wochenplan keine festen Kalenderdaten besitzt.
+    const hasExplicitDates = activeWeek.days.some((d) => Boolean(d.dateStr));
+    const todayDayPlan = hasExplicitDates
+      ? activeWeek.days.find((d) => d.dateStr === formattedDateStr)
+      : activeWeek.days.find((d) => d.dayId === todayId);
 
     if (!todayDayPlan) return null;
 

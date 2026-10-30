@@ -114,7 +114,7 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
         </h3>
 
         {/* Infozeile: Passt auf Desktop in eine Zeile; reicht der Platz bei schmaleren Kacheln nicht, bricht die Schwierigkeit sauber in die Zeile darunter um (nie abgeschnitten) */}
-        <div className="mt-auto pt-2.5 flex flex-wrap content-start items-center gap-x-2 gap-y-1 text-card-info sm:text-[12.5px] md:text-[13px] font-medium leading-snug text-text-muted">
+        <div className="mt-auto pt-2.5 flex flex-wrap content-start items-center gap-x-2.5 gap-y-1 text-card-info font-medium leading-snug text-text-muted">
           <span className="inline-flex items-center gap-1 whitespace-nowrap shrink-0">
             <Clock className="w-3.5 h-3.5 text-accent shrink-0" aria-hidden="true" />
             {recipe.totalTimeMinutes} Min

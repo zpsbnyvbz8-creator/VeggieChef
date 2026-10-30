@@ -68,15 +68,15 @@ function OptionGroup<T extends string | number>({
               role="radio"
               aria-checked={selected}
               onClick={() => onChange(opt.value)}
-              className={`h-11 px-4 rounded-xl border text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
+              className={`h-11 px-4 rounded-xl border text-sm flex items-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-95 ${
                 selected
-                  ? 'bg-accent border-accent text-on-accent shadow-2xs'
-                  : 'bg-surface border-border text-text-main hover:border-accent/50 hover:bg-accent-tint'
+                  ? 'bg-accent-tint border-accent/40 text-accent font-bold shadow-2xs'
+                  : 'bg-surface border-border text-text-main font-semibold hover:border-accent/50 hover:bg-accent-tint/50'
               }`}
             >
               {optIcon && (
                 <span
-                  className={`shrink-0 ${selected ? 'text-on-accent' : 'text-text-muted'}`}
+                  className={`shrink-0 ${selected ? 'text-accent' : 'text-text-muted'}`}
                   aria-hidden="true"
                 >
                   {optIcon}
