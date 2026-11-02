@@ -1738,7 +1738,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                         className={`h-11 min-h-[44px] py-2 px-1 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation flex items-center justify-center gap-1.5 ${
                           aiMealOption === 'lunch'
                             ? 'bg-accent text-on-accent border-accent shadow-xs'
-                            : 'bg-card hover:bg-surface text-text-main border-border shadow-2xs'
+                            : 'bg-surface hover:bg-accent-tint/60 text-text-main border-border shadow-2xs'
                         }`}
                       >
                         <Sun className="w-4 h-4 shrink-0" />
@@ -1751,7 +1751,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                         className={`h-11 min-h-[44px] py-2 px-1 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation flex items-center justify-center gap-1.5 ${
                           aiMealOption === 'dinner'
                             ? 'bg-accent text-on-accent border-accent shadow-xs'
-                            : 'bg-card hover:bg-surface text-text-main border-border shadow-2xs'
+                            : 'bg-surface hover:bg-accent-tint/60 text-text-main border-border shadow-2xs'
                         }`}
                       >
                         <Moon className="w-4 h-4 shrink-0" />
@@ -1764,7 +1764,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
                         className={`h-11 min-h-[44px] py-2 px-1 rounded-xl text-sm font-semibold border text-center transition-all cursor-pointer touch-manipulation flex items-center justify-center gap-1.5 ${
                           aiMealOption === 'both'
                             ? 'bg-accent text-on-accent border-accent shadow-xs'
-                            : 'bg-card hover:bg-surface text-text-main border-border shadow-2xs'
+                            : 'bg-surface hover:bg-accent-tint/60 text-text-main border-border shadow-2xs'
                         }`}
                       >
                         <Utensils className="w-4 h-4 shrink-0" />

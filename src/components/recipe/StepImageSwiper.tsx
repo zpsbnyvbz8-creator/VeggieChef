@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface StepImageSwiperProps {
   stepNumber: number;
@@ -71,28 +72,43 @@ export const StepImageSwiper: React.FC<StepImageSwiperProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         {/* Active Step Image */}
-        <img
-          src={activeImage}
-          alt={stepTitle || `Schritt ${stepNumber} Foto ${safeIndex + 1}`}
-          referrerPolicy="no-referrer"
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.01]"
-        />
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.img
+            key={activeImage}
+            src={activeImage}
+            alt={stepTitle || `Schritt ${stepNumber} Foto ${safeIndex + 1}`}
+            referrerPolicy="no-referrer"
+            initial={{ opacity: 0.75, scale: 1.01 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0.75 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+          />
+        </AnimatePresence>
 
         {/* Soft edge gradient for high readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/25 pointer-events-none" />
 
-        {/* Delete Photo Button in Manage Mode */}
-        {isManagingPhotos && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-black/60 hover:bg-rose-600 text-on-accent flex items-center justify-center backdrop-blur-md transition-all shadow-md cursor-pointer z-20 active:scale-95"
-            title="Dieses Schritt-Foto löschen"
-            aria-label="Foto löschen"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
+        {/* Delete Photo Button in Manage Mode (44x44px touch target) */}
+        <AnimatePresence initial={false}>
+          {isManagingPhotos && (
+            <motion.button
+              key="step-photo-delete-btn"
+              type="button"
+              onClick={handleDelete}
+              initial={{ opacity: 0, scale: 0.75 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.75 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute top-2.5 right-2.5 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-black/65 hover:bg-rose-600 text-on-accent flex items-center justify-center backdrop-blur-md transition-colors shadow-md cursor-pointer z-20 touch-manipulation"
+              title="Dieses Schritt-Foto löschen"
+              aria-label="Foto löschen"
+            >
+              <Trash2 className="w-4 h-4 shrink-0" />
+            </motion.button>
+          )}
+        </AnimatePresence>
 
         {/* Pagination Dots at Bottom Center - Clean & Minimal */}
         {images.length > 1 && (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Check, ChefHat, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { CloseButton } from '../ui/CloseButton';
 import { RecipeIngredient } from '../../types';
 
@@ -100,8 +101,6 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
     }
   }, [isOpen, ingredient?.name]);
 
-  if (!isOpen || !ingredient) return null;
-
   const handleCustomSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customInput.trim()) return;
@@ -114,24 +113,34 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
   const hasTip = Boolean(tip && tip.trim().length > 0);
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="substitute-modal-title"
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
-      onClick={onClose}
-    >
-      <div
-        className="bg-card rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-5 border border-border shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header: Minimalistisch & ruhig */}
-        <div className="flex items-center justify-between pb-3.5 border-b border-border/60">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 id="substitute-modal-title" className="text-lg font-bold text-text-main">
-                Zutat tauschen
-              </h3>
+    <AnimatePresence>
+      {isOpen && ingredient && (
+        <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="substitute-modal-title"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 10 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="bg-card rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-5 border border-border shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header: Minimalistisch & ruhig */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-border/60">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 id="substitute-modal-title" className="text-lg font-bold text-text-main">
+                    Zutat tauschen
+                  </h3>
               {isAiPowered && (
                 <span className="px-2 py-0.5 rounded-full bg-accent-tint text-accent text-[11px] font-semibold">
                   KI
@@ -312,8 +321,10 @@ export const IngredientSubstituteModal: React.FC<IngredientSubstituteModalProps>
               </button>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+          </div>
+        </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

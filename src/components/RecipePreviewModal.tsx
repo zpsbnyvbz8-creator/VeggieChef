@@ -54,7 +54,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
 
   const handleClose = () => {
     if (recipe && !isSaving && !isLoading) {
-      setShowDiscardConfirm(true);
+      setShowDiscardConfirm((prev) => !prev);
     } else {
       setShowDiscardConfirm(false);
       onClose();
@@ -96,7 +96,14 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          onClick={handleClose}
+          onClick={() => {
+            if (isSaving || isLoading) return;
+            if (recipe) {
+              setShowDiscardConfirm(true);
+            } else {
+              onClose();
+            }
+          }}
           className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 touch-none overscroll-contain"
         >
           <motion.div
@@ -109,7 +116,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
             className="relative bg-card border border-border rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90dvh] overscroll-contain"
           >
             {/* Header */}
-            <div className="px-5 sm:px-6 py-4 border-b border-border flex items-center justify-between bg-card shrink-0">
+            <div className="relative z-30 px-5 sm:px-6 py-4 border-b border-border flex items-center justify-between bg-card shrink-0">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-9 h-9 rounded-xl bg-accent-tint border border-accent/20 flex items-center justify-center text-accent shrink-0">
                   <ChefHat className="w-4 h-4" />
@@ -128,53 +135,65 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                 </div>
               </div>
               {!isSaving && !isLoading && (
-                <CloseButton onClick={handleClose} ariaLabel="Schließen" size="lg" />
+                <div className="relative shrink-0">
+                  <CloseButton
+                    onClick={handleClose}
+                    ariaLabel="Schließen"
+                    size="lg"
+                    className={showDiscardConfirm ? 'bg-surface text-text-main ring-2 ring-border' : ''}
+                  />
+
+                  <AnimatePresence>
+                    {showDiscardConfirm && recipe && (
+                      <motion.div
+                        key="discard-confirm-popover"
+                        initial={{ opacity: 0, scale: 0.75, y: -8, x: 6 }}
+                        animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.75, y: -8, x: 6 }}
+                        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute right-0 top-[calc(100%+8px)] z-40 w-64 sm:w-72 origin-top-right p-3.5 rounded-2xl bg-card border border-border shadow-xl space-y-3"
+                      >
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-bold text-text-main">Vorschau verwerfen?</p>
+                          <p className="text-xs text-text-muted leading-snug">
+                            Das Rezept wurde noch nicht gespeichert.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.96 }}
+                            onClick={() => setShowDiscardConfirm(false)}
+                            className="flex-1 min-h-[38px] h-9.5 px-3 rounded-xl border border-border bg-surface hover:bg-accent-tint text-xs sm:text-sm font-semibold text-text-main transition-colors cursor-pointer touch-manipulation flex items-center justify-center"
+                          >
+                            Behalten
+                          </motion.button>
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.96 }}
+                            onClick={handleDiscardConfirm}
+                            className="flex-1 min-h-[38px] h-9.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-on-accent text-xs sm:text-sm font-bold transition-colors cursor-pointer touch-manipulation flex items-center justify-center"
+                          >
+                            Verwerfen
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               )}
             </div>
 
             {/* Scrollable Content Area */}
             <div
+              onClick={() => {
+                if (showDiscardConfirm) setShowDiscardConfirm(false);
+              }}
               className={`flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 overscroll-contain ${
                 showFloatingSaveBar ? 'pb-24 sm:pb-28' : ''
               }`}
             >
-              {/* Clean, Discreet Discard Confirmation */}
-              <AnimatePresence initial={false}>
-                {showDiscardConfirm && (
-                  <motion.div
-                    key="discard-confirm"
-                    initial={{ opacity: 0, y: -6, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -6, scale: 0.98 }}
-                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                    className="p-4 rounded-2xl bg-surface border border-border shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-                  >
-                    <div className="space-y-0.5">
-                      <p className="text-sm font-bold text-text-main">Vorschau verwerfen?</p>
-                      <p className="text-xs text-text-muted">
-                        Das Rezept wurde noch nicht gespeichert.
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setShowDiscardConfirm(false)}
-                        className="min-h-[40px] h-10 px-3.5 rounded-xl border border-border bg-card hover:bg-accent-tint text-xs sm:text-sm font-semibold text-text-main transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-                      >
-                        Behalten
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleDiscardConfirm}
-                        className="min-h-[40px] h-10 px-3.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-on-accent text-xs sm:text-sm font-bold transition-colors cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-                      >
-                        Verwerfen
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
               {/* Error Banner */}
               <AnimatePresence initial={false}>
                 {errorMessage && (
@@ -285,8 +304,8 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                     transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                     className="space-y-4"
                   >
-                    {/* Kompakte Rezept-Kopfkarte im App-Stil */}
-                    <div className="rounded-2xl border border-border bg-surface/70 p-4 sm:p-5 flex items-start gap-4">
+                    {/* Kompakte Rezept-Kopfkarte im App-Stil (ohne Tags) */}
+                    <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 flex items-center gap-4 shadow-2xs">
                       {recipe.image && (
                         <img
                           src={recipe.image}
@@ -294,27 +313,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                           className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-border shadow-2xs shrink-0"
                         />
                       )}
-                      <div className="min-w-0 flex-1 space-y-1.5">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-accent-tint text-accent border border-accent/25">
-                            {recipe.category || 'Rezept'}
-                          </span>
-                          {recipe.totalTimeMinutes > 0 && (
-                            <span className="text-xs font-semibold text-text-muted">
-                              {recipe.totalTimeMinutes} Min.
-                            </span>
-                          )}
-                          {recipe.difficulty && (
-                            <span className="text-xs font-semibold text-text-muted">
-                              • {recipe.difficulty}
-                            </span>
-                          )}
-                          {recipe.nutrients?.calories > 0 && (
-                            <span className="text-xs font-semibold text-text-muted">
-                              • {recipe.nutrients.calories} kcal
-                            </span>
-                          )}
-                        </div>
+                      <div className="min-w-0 flex-1 space-y-1">
                         <h3 className="text-lg sm:text-xl font-bold text-text-main tracking-tight leading-snug">
                           {recipe.title}
                         </h3>
@@ -329,14 +328,9 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                     {/* Zutaten-Sektion mit integriertem, animiertem Portionen-Stepper */}
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between gap-2 px-0.5">
-                        <div className="flex items-baseline gap-1.5">
-                          <h4 className="text-base font-bold text-text-main">
-                            Zutaten
-                          </h4>
-                          <span className="text-xs font-medium text-text-muted">
-                            ({recipe.ingredients.length})
-                          </span>
-                        </div>
+                        <h4 className="text-base font-bold text-text-main">
+                          Zutaten ({recipe.ingredients.length})
+                        </h4>
 
                         {/* Dezenter Inline-Portionen-Stepper */}
                         <div className="inline-flex items-center bg-surface border border-border rounded-xl p-0.5 h-10 shadow-2xs">
@@ -378,9 +372,9 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                         </div>
                       </div>
 
-                      {/* Cleane Zutatenliste im Stil der Rezept-Detailansicht & Einkaufsliste */}
-                      <div className="border border-border rounded-2xl overflow-hidden bg-card shadow-2xs">
-                        <ul className="divide-y divide-[#F0EFEB]">
+                      {/* Zutatenliste in Grau (bg-surface) für klaren Kontrast zum weißen Modal */}
+                      <div className="border border-border rounded-2xl overflow-hidden bg-surface shadow-2xs">
+                        <ul className="divide-y divide-border/80">
                           {recipe.ingredients.map((ing, idx) => {
                             const key = `${ing.name}-${idx}`;
                             const rawAmountStr = formatIngredientAmount(

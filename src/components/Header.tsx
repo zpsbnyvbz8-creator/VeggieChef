@@ -15,6 +15,7 @@ import {
   Cloud,
   Settings,
   SlidersHorizontal,
+  History,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useRecipes } from '../context/RecipeContext';
@@ -629,15 +630,14 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
         onClick: () => go('/planner'),
       },
       {
-        icon: ShoppingCart,
-        label: 'Einkaufswagen',
-        path: '/shopping',
-        isActive: location.pathname.startsWith('/shopping'),
-        badge: shoppingCount,
-        onClick: () => go('/shopping'),
+        icon: History,
+        label: 'Zuletzt gekocht',
+        path: '/cooked',
+        isActive: location.pathname === '/cooked',
+        onClick: () => go('/cooked'),
       },
     ],
-    [go, location.pathname, shoppingCount]
+    [go, location.pathname]
   );
 
   const stageGroup2 = useMemo(
@@ -650,9 +650,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
       {
         icon: Cloud,
         label: 'Synchronisation',
-        onClick: openSyncFromMenu,
-        status: isFamilyConnected ? syncConfig?.groupName || 'Verbunden' : 'Lokal',
-        connected: isFamilyConnected,
+        placeholder: true,
       },
       {
         icon: Settings,
@@ -672,7 +670,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
         onClick: () => go('/stats'),
       },
     ],
-    [go, isFamilyConnected, openSyncFromMenu, syncConfig?.groupName, location.pathname]
+    [go, location.pathname]
   );
 
   /* ------------------------------ UI ------------------------------ */
@@ -837,7 +835,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
             isMenuOpen
               ? 'flex justify-center bg-transparent pointer-events-none'
               : isDesktop
-                ? 'pointer-events-none md:h-0'
+                ? 'flex justify-center bg-transparent pointer-events-none md:h-0'
                 : 'bg-header-panel pointer-events-auto'
           }`}
           style={{
@@ -850,13 +848,15 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
             className={`w-full transition-[border-radius,box-shadow] duration-[var(--dur-base)] ease-[var(--ease-standard)] ${
               isMenuOpen
                 ? 'bg-header-panel rounded-b-[24px] shadow-2xl md:max-w-xl md:mx-auto pointer-events-auto'
-                : 'bg-header-panel max-w-[1280px] mx-auto'
+                : isDesktop
+                  ? 'bg-header-panel rounded-b-[24px] md:max-w-xl md:mx-auto pointer-events-none'
+                  : 'bg-header-panel max-w-[1280px] mx-auto'
             }`}
           >
             <div className="relative w-full">
-              {/* Zustand 1 & 2: mobil Tabs (~52px) bzw. Suchfeld (~52px) */}
+              {/* Zustand 1 & 2: mobil Tabs (~52px) bzw. Suchfeld (~52px) – auf Desktop komplett ausgeblendet */}
               <div
-                className={`w-full h-[52px] px-3 sm:px-6 relative flex items-center transition-all duration-[180ms] ease-[var(--ease-standard)] ${
+                className={`w-full h-[52px] px-3 sm:px-6 relative flex md:hidden items-center transition-all duration-[180ms] ease-[var(--ease-standard)] ${
                   !isMenuOpen
                     ? 'opacity-100 translate-y-0 pointer-events-auto'
                     : 'opacity-0 -translate-y-2 pointer-events-none'

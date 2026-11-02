@@ -142,6 +142,43 @@ export const RecipeDetailPage: React.FC = () => {
   const [checkedIngredients, setCheckedIngredients] = useState<Record<string, boolean>>({});
   const [completedSteps, setCompletedSteps] = useState<Record<number, boolean>>({});
 
+  // Responsive Side-by-Side Layout (Desktop, iPad/Tablet, Mobile Landscape) + Discreet User Toggle
+  const [canUseSideBySide, setCanUseSideBySide] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(min-width: 700px), (orientation: landscape) and (min-width: 560px)').matches;
+  });
+
+  const [layoutPreference, setLayoutPreference] = useState<'split' | 'stacked'>(() => {
+    try {
+      const saved = localStorage.getItem('veggiechef_recipe_detail_layout');
+      if (saved === 'stacked' || saved === 'split') return saved;
+    } catch {}
+    return 'split';
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 700px), (orientation: landscape) and (min-width: 560px)');
+    const updateMatch = (e: MediaQueryListEvent | MediaQueryList) => {
+      setCanUseSideBySide(e.matches);
+    };
+    updateMatch(mq);
+    if (mq.addEventListener) {
+      mq.addEventListener('change', updateMatch);
+      return () => mq.removeEventListener('change', updateMatch);
+    } else {
+      mq.addListener(updateMatch);
+      return () => mq.removeListener(updateMatch);
+    }
+  }, []);
+
+  const handleLayoutPreferenceChange = (mode: 'split' | 'stacked') => {
+    setLayoutPreference(mode);
+    try {
+      localStorage.setItem('veggiechef_recipe_detail_layout', mode);
+    } catch {}
+  };
+
   // Hero header and reviews section refs
   const heroHeaderRef = useRef<HTMLElement | null>(null);
   const reviewsSectionRef = useRef<HTMLElement | null>(null);
@@ -486,7 +523,9 @@ export const RecipeDetailPage: React.FC = () => {
   }, [recipe.image, recipe.activeCoverImage, recipe.userImages]);
 
   const hasImages = allImages.length > 0;
-  const currentCoverImage = allImages[currentImageIndex] || allImages[0];
+  const safeCurrentImageIndex = hasImages ? Math.min(currentImageIndex, allImages.length - 1) : 0;
+  const currentCoverImage = allImages[safeCurrentImageIndex] || allImages[0];
+  const activeIngredients = (isVeganized && veganizedIngredients) ? veganizedIngredients : recipe.ingredients;
 
   // Touch Swipe Handlers for Hero Image
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -498,7 +537,7 @@ export const RecipeDetailPage: React.FC = () => {
   };
 
   const handleTouchEnd = () => {
-    if (touchStartX.current === null || touchEndX.current === null) return;
+    if (touchStartX.current === null || touchEndX.current === null || allImages.length <= 1) return;
     const diff = touchStartX.current - touchEndX.current;
     if (diff > 45) {
       // Swiped left -> next
@@ -526,7 +565,8 @@ export const RecipeDetailPage: React.FC = () => {
 
   const handleCopyIngredients = async () => {
     if (!recipe) return;
-    const text = generateRecipeIngredientsText(recipe, servings);
+    const activeRecipe = { ...recipe, ingredients: activeIngredients };
+    const text = generateRecipeIngredientsText(activeRecipe, servings);
     await safeCopyToClipboard(text);
     setIsOverflowMenuOpen(false);
     setIsCopied(true);
@@ -550,7 +590,8 @@ export const RecipeDetailPage: React.FC = () => {
 
   const executeAddShopping = () => {
     if (!recipe) return;
-    addToShoppingList(recipe, servings);
+    const activeRecipe = { ...recipe, ingredients: activeIngredients };
+    addToShoppingList(activeRecipe, servings);
     showToast(`Zutaten für ${servings} Portionen auf der Einkaufsliste!`);
   };
 
@@ -722,6 +763,14 @@ export const RecipeDetailPage: React.FC = () => {
       return ing;
     });
 
+    // Migrate checked state if the ingredient was checked
+    setCheckedIngredients((prev) => {
+      if (prev[originalName] === undefined) return prev;
+      const next = { ...prev, [substituteName]: prev[originalName] };
+      delete next[originalName];
+      return next;
+    });
+
     // Track substitution mapping: current new name -> root original name
     setSubstitutedIngredientsMap((prev) => {
       const next = { ...prev };
@@ -730,7 +779,7 @@ export const RecipeDetailPage: React.FC = () => {
       return next;
     });
 
-    // Track customized ingredient name so "(angepasst)" hint and styling apply
+    // Track customized ingredient name so styling applies
     setCustomizedIngredientNames((prev) => ({
       ...prev,
       [substituteName.toLowerCase()]: true,
@@ -770,6 +819,14 @@ export const RecipeDetailPage: React.FC = () => {
         return { ...ing, name: rootOriginal };
       }
       return ing;
+    });
+
+    // Migrate checked state if the ingredient was checked
+    setCheckedIngredients((prev) => {
+      if (prev[currentName] === undefined) return prev;
+      const next = { ...prev, [rootOriginal]: prev[currentName] };
+      delete next[currentName];
+      return next;
     });
 
     setSubstitutedIngredientsMap((prev) => {
@@ -894,7 +951,7 @@ export const RecipeDetailPage: React.FC = () => {
   const handleLaunchCookingMode = () => {
     setCookingCurrentStep(0);
     setIsCookingMinimized(false);
-    setCookingModeRecipe({ recipe, servings });
+    setCookingModeRecipe({ recipe: { ...recipe, ingredients: activeIngredients }, servings });
   };
 
   const handleConfirmCooked = () => {
@@ -920,9 +977,10 @@ export const RecipeDetailPage: React.FC = () => {
     setIsFullscreenImageOpen(true);
   };
 
-  const activeIngredients = (isVeganized && veganizedIngredients) ? veganizedIngredients : recipe.ingredients;
   const savings = calculateMealSavings(servings, recipe.isVegan || isVeganized);
   const hasBottomTimer = Boolean(cookingTimer || (cookingModeRecipe && isCookingMinimized));
+  const hasSteps = Boolean(recipe.steps && recipe.steps.length > 0);
+  const isSplitLayout = Boolean(canUseSideBySide && layoutPreference === 'split' && hasSteps);
 
   return (
     <div className={`min-h-screen bg-surface text-text-main selection:bg-accent-tint selection:text-accent overscroll-y-none ${hasBottomTimer ? 'pb-[calc(env(safe-area-inset-bottom)+11rem)]' : 'pb-[calc(env(safe-area-inset-bottom)+6.5rem)] md:pb-28'}`}>
@@ -963,7 +1021,7 @@ export const RecipeDetailPage: React.FC = () => {
           style={{ opacity: scrollProgress }}
         />
 
-        <div className="relative max-w-4xl mx-auto flex items-center justify-between pointer-events-auto">
+        <div className={`relative ${isSplitLayout ? 'max-w-5xl' : 'max-w-4xl'} mx-auto flex items-center justify-between pointer-events-auto transition-[max-width] duration-200`}>
           {/* Top Left: Back button (48px visible circle, 22px icon) */}
           <button
             id="recipe-back-floating-btn"
@@ -1016,35 +1074,13 @@ export const RecipeDetailPage: React.FC = () => {
               id="recipe-fav-floating-btn"
             />
 
-            {/* Overflow Menu Button */}
+            {/* Overflow Menu Button (Custom Animated Menu on Mobile & Desktop) */}
             <div ref={overflowMenuRef} className="relative">
-              {/* Native iOS / Mobile Dropdown Select */}
-              <select
-                aria-label="Rezept Optionen"
-                value=""
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === 'share') handleShare();
-                  else if (val === 'edit') setIsEditModalOpen(true);
-                  else if (val === 'cooked') setShowCookedDialog(true);
-                  else if (val === 'dislike') toggleDislike(recipe.id);
-                  else if (val === 'delete') setIsDeleteConfirmOpen(true);
-                  e.target.value = '';
-                }}
-                className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-[16px]"
-              >
-                <option value="" disabled>Rezept-Optionen...</option>
-                <option value="share">Rezept teilen</option>
-                <option value="edit">Rezept bearbeiten</option>
-                <option value="cooked">Als gekocht erfassen</option>
-                <option value="dislike">{isDisliked ? 'Wieder öfter anzeigen' : 'Seltener anzeigen'}</option>
-                <option value="delete">Rezept löschen</option>
-              </select>
-
               <button
                 id="recipe-overflow-menu-btn"
                 type="button"
                 onClick={() => setIsOverflowMenuOpen(!isOverflowMenuOpen)}
+                aria-expanded={isOverflowMenuOpen}
                 className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 ${
                   isScrolled
                     ? 'bg-accent-tint hover:bg-accent-tint text-text-main border border-border shadow-2xs'
@@ -1055,75 +1091,83 @@ export const RecipeDetailPage: React.FC = () => {
                 <MoreVertical className="w-[22px] h-[22px]" />
               </button>
 
-              {/* Desktop Overflow Dropdown */}
-              {isOverflowMenuOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setIsOverflowMenuOpen(false)}
-                  />
-                  <div className="hidden sm:block absolute right-0 top-14 z-50 w-64 bg-card rounded-2xl shadow-xl border border-border py-2 animate-in fade-in zoom-in-95 duration-150">
-                    <button
-                      type="button"
-                      onClick={handleShare}
-                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-text-main hover:bg-surface transition-colors cursor-pointer"
+              {/* Custom Animated Overflow Dropdown (Mobile & Desktop) */}
+              <AnimatePresence>
+                {isOverflowMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsOverflowMenuOpen(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -6 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -6 }}
+                      transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+                      className="absolute right-0 top-14 z-50 w-64 bg-card rounded-2xl shadow-xl border border-border py-2 origin-top-right"
                     >
-                      <Share2 className="w-5 h-5 text-accent" />
-                      <span>Rezept teilen</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={handleShare}
+                        className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-text-main hover:bg-surface active:bg-surface transition-colors cursor-pointer"
+                      >
+                        <Share2 className="w-5 h-5 text-accent shrink-0" />
+                        <span>Rezept teilen</span>
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsOverflowMenuOpen(false);
-                        setIsEditModalOpen(true);
-                      }}
-                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-text-main hover:bg-surface transition-colors cursor-pointer"
-                    >
-                      <Pencil className="w-5 h-5 text-accent" />
-                      <span>Rezept bearbeiten</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsOverflowMenuOpen(false);
+                          setIsEditModalOpen(true);
+                        }}
+                        className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-text-main hover:bg-surface active:bg-surface transition-colors cursor-pointer"
+                      >
+                        <Pencil className="w-5 h-5 text-accent shrink-0" />
+                        <span>Rezept bearbeiten</span>
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsOverflowMenuOpen(false);
-                        setShowCookedDialog(true);
-                      }}
-                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-text-main hover:bg-surface transition-colors cursor-pointer"
-                    >
-                      <SmilePlus className="w-5 h-5 text-accent" />
-                      <span>Als gekocht erfassen</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsOverflowMenuOpen(false);
+                          setShowCookedDialog(true);
+                        }}
+                        className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-text-main hover:bg-surface active:bg-surface transition-colors cursor-pointer"
+                      >
+                        <SmilePlus className="w-5 h-5 text-accent shrink-0" />
+                        <span>Als gekocht erfassen</span>
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsOverflowMenuOpen(false);
-                        toggleDislike(recipe.id);
-                      }}
-                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-text-main hover:bg-surface transition-colors cursor-pointer"
-                    >
-                      <ThumbsDown className="w-5 h-5 text-text-muted" />
-                      <span>{isDisliked ? 'Wieder öfter anzeigen' : 'Seltener anzeigen'}</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsOverflowMenuOpen(false);
+                          toggleDislike(recipe.id);
+                        }}
+                        className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-text-main hover:bg-surface active:bg-surface transition-colors cursor-pointer"
+                      >
+                        <ThumbsDown className="w-5 h-5 text-text-muted shrink-0" />
+                        <span>{isDisliked ? 'Wieder öfter anzeigen' : 'Seltener anzeigen'}</span>
+                      </button>
 
-                    <div className="my-1 border-t border-border" />
+                      <div className="my-1 border-t border-border" />
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsOverflowMenuOpen(false);
-                        setIsDeleteConfirmOpen(true);
-                      }}
-                      className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-5 h-5 text-rose-600" />
-                      <span>Rezept löschen</span>
-                    </button>
-                  </div>
-                </>
-              )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsOverflowMenuOpen(false);
+                          setIsDeleteConfirmOpen(true);
+                        }}
+                        className="w-full min-h-[44px] flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold text-rose-600 hover:bg-rose-50 active:bg-rose-50 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-5 h-5 text-rose-600 shrink-0" />
+                        <span>Rezept löschen</span>
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
@@ -1146,7 +1190,7 @@ export const RecipeDetailPage: React.FC = () => {
         {hasImages ? (
           <div 
             className="relative h-[calc(20rem+env(safe-area-inset-top,0px))] sm:h-[calc(24rem+env(safe-area-inset-top,0px))] md:h-[calc(26.25rem+env(safe-area-inset-top,0px))] w-full cursor-pointer group touch-pan-y"
-            onClick={() => openLightbox(allImages, currentImageIndex)}
+            onClick={() => openLightbox(allImages, safeCurrentImageIndex)}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -1175,7 +1219,7 @@ export const RecipeDetailPage: React.FC = () => {
                       setCurrentImageIndex(idx);
                     }}
                     className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                      currentImageIndex === idx ? 'w-5 bg-card shadow-xs' : 'w-1.5 bg-card/45 hover:bg-card/80'
+                      safeCurrentImageIndex === idx ? 'w-5 bg-card shadow-xs' : 'w-1.5 bg-card/45 hover:bg-card/80'
                     }`}
                     aria-label={`Bild ${idx + 1}`}
                   />
@@ -1192,7 +1236,7 @@ export const RecipeDetailPage: React.FC = () => {
       </header>
 
       {/* 3. MAIN BODY CONTENT */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-5 sm:pt-6 space-y-6 sm:space-y-8">
+      <main className={`${isSplitLayout ? 'max-w-5xl' : 'max-w-4xl'} mx-auto px-4 sm:px-6 pt-5 sm:pt-6 space-y-6 sm:space-y-8 transition-[max-width] duration-200`}>
         {/* Title, Badges (Strictly max 2) & Subtitle */}
         <section className="space-y-3">
           {/* Metadata Badges: Strictly max 2 badges, no metric duplicates or generic fluff */}
@@ -1306,8 +1350,8 @@ export const RecipeDetailPage: React.FC = () => {
 
         {/* 5. SERVINGS CARD & BALANCED 3-COLUMN ACTION ROW */}
         <section className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
-          <div className="flex items-center">
-            {/* Servings Stepper alone in Row 1: 210x54 px, Plus/Minus >= 48px */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Servings Stepper in Row 1: 210x54 px, Plus/Minus >= 48px */}
             <div className="inline-flex items-center justify-between bg-surface border border-border rounded-xl p-1 shadow-2xs w-[210px] h-[54px]">
               <button
                 id="servings-step-decrease-btn"
@@ -1342,9 +1386,84 @@ export const RecipeDetailPage: React.FC = () => {
                 <Plus className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Discreet Layout Toggle (Zutaten links vs. Zutaten oben) for Desktop, iPad & Mobile Landscape */}
+            {canUseSideBySide && hasSteps && (
+              <div
+                role="group"
+                aria-label="Anordnung von Zutaten und Zubereitung"
+                className="relative inline-flex items-center p-1 bg-surface border border-border rounded-xl select-none shadow-2xs h-[44px]"
+              >
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => handleLayoutPreferenceChange('split')}
+                  aria-pressed={layoutPreference === 'split'}
+                  className={`relative z-10 px-3 sm:px-3.5 h-full flex items-center justify-center gap-1.5 rounded-lg text-xs sm:text-[13px] transition-colors cursor-pointer touch-manipulation select-none ${
+                    layoutPreference === 'split'
+                      ? 'text-accent font-bold'
+                      : 'text-text-muted hover:text-text-main font-semibold'
+                  }`}
+                  title="Zutaten links neben den Zubereitungsschritten anzeigen"
+                >
+                  {layoutPreference === 'split' && (
+                    <motion.span
+                      layoutId="recipe-detail-layout-mode-pill"
+                      transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                      className="absolute inset-0 rounded-lg bg-accent-tint border border-accent/35 shadow-2xs -z-10"
+                    />
+                  )}
+                  <svg
+                    className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
+                      layoutPreference === 'split' ? 'text-accent scale-105' : 'text-current'
+                    }`}
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <rect x="1.5" y="2" width="5" height="12" rx="1.5" fill="currentColor" fillOpacity={layoutPreference === 'split' ? '0.28' : '0.15'} stroke="currentColor" strokeWidth="1.4" />
+                    <rect x="8.5" y="2" width="6" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+                  </svg>
+                  <span>Zutaten links</span>
+                </motion.button>
+
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => handleLayoutPreferenceChange('stacked')}
+                  aria-pressed={layoutPreference === 'stacked'}
+                  className={`relative z-10 px-3 sm:px-3.5 h-full flex items-center justify-center gap-1.5 rounded-lg text-xs sm:text-[13px] transition-colors cursor-pointer touch-manipulation select-none ${
+                    layoutPreference === 'stacked'
+                      ? 'text-accent font-bold'
+                      : 'text-text-muted hover:text-text-main font-semibold'
+                  }`}
+                  title="Zutaten wie bisher über den Zubereitungsschritten anzeigen"
+                >
+                  {layoutPreference === 'stacked' && (
+                    <motion.span
+                      layoutId="recipe-detail-layout-mode-pill"
+                      transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                      className="absolute inset-0 rounded-lg bg-accent-tint border border-accent/35 shadow-2xs -z-10"
+                    />
+                  )}
+                  <svg
+                    className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
+                      layoutPreference === 'stacked' ? 'text-accent scale-105' : 'text-current'
+                    }`}
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <rect x="2" y="1.5" width="12" height="5" rx="1.5" fill="currentColor" fillOpacity={layoutPreference === 'stacked' ? '0.28' : '0.15'} stroke="currentColor" strokeWidth="1.4" />
+                    <rect x="2" y="8.5" width="12" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+                  </svg>
+                  <span>Zutaten oben</span>
+                </motion.button>
+              </div>
+            )}
           </div>
 
-          {/* Under servings counter: Clean 3-Column Action Row */}
+          {/* Under servings counter: Clean 3-Column Action Row with Animated State Transitions */}
           <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-1 border-t border-border/70">
             {/* 1. [ + Planer ] / [ Eingeplant ] */}
             <button
@@ -1357,12 +1476,23 @@ export const RecipeDetailPage: React.FC = () => {
                   : 'bg-surface border-border hover:bg-accent-tint hover:border-accent/40 text-[#57534d]'
               }`}
             >
-              {isPlanned ? (
-                <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
-              ) : (
-                <CalendarPlus className="w-4 h-4 text-accent shrink-0" />
-              )}
-              <span className="text-[16px] truncate">{isPlanned ? 'Eingeplant' : '+ Planer'}</span>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={isPlanned ? 'planned' : 'unplanned'}
+                  initial={{ opacity: 0, y: 3, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -3, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex items-center justify-center gap-1.5 min-w-0"
+                >
+                  {isPlanned ? (
+                    <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
+                  ) : (
+                    <CalendarPlus className="w-4 h-4 text-accent shrink-0" />
+                  )}
+                  <span className="text-[16px] truncate">{isPlanned ? 'Eingeplant' : '+ Planer'}</span>
+                </motion.span>
+              </AnimatePresence>
             </button>
 
             {/* 2. [ + Liste ] / [ Auf Liste ] */}
@@ -1376,12 +1506,23 @@ export const RecipeDetailPage: React.FC = () => {
                   : 'bg-surface border-border hover:bg-accent-tint hover:border-accent/40 text-[#57534d]'
               }`}
             >
-              {isOnShoppingList ? (
-                <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
-              ) : (
-                <ShoppingCart className="w-4 h-4 text-accent shrink-0" />
-              )}
-              <span className="text-[16px] truncate">{isOnShoppingList ? 'Auf Liste' : '+ Liste'}</span>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={isOnShoppingList ? 'on-list' : 'add-list'}
+                  initial={{ opacity: 0, y: 3, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -3, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex items-center justify-center gap-1.5 min-w-0"
+                >
+                  {isOnShoppingList ? (
+                    <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
+                  ) : (
+                    <ShoppingCart className="w-4 h-4 text-accent shrink-0" />
+                  )}
+                  <span className="text-[16px] truncate">{isOnShoppingList ? 'Auf Liste' : '+ Liste'}</span>
+                </motion.span>
+              </AnimatePresence>
             </button>
 
             {/* 3. [ Kopieren ] / [ Kopiert ] */}
@@ -1395,194 +1536,577 @@ export const RecipeDetailPage: React.FC = () => {
                   : 'bg-surface border-border hover:bg-accent-tint hover:border-accent/40 text-[#57534d]'
               }`}
             >
-              {isCopied ? (
-                <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
-              ) : (
-                <Copy className="w-4 h-4 text-accent shrink-0" />
-              )}
-              <span className="text-[16px] truncate">{isCopied ? 'Kopiert' : 'Kopieren'}</span>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={isCopied ? 'copied' : 'copy'}
+                  initial={{ opacity: 0, y: 3, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -3, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex items-center justify-center gap-1.5 min-w-0"
+                >
+                  {isCopied ? (
+                    <Check className="w-4 h-4 text-accent shrink-0 stroke-[2.5]" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-accent shrink-0" />
+                  )}
+                  <span className="text-[16px] truncate">{isCopied ? 'Kopiert' : 'Kopieren'}</span>
+                </motion.span>
+              </AnimatePresence>
             </button>
           </div>
         </section>
 
-        {/* 6. INGREDIENTS LIST (Zutaten mit explizitem Anpassungs-Modus) */}
-        <section ref={ingredientsSectionRef} className="space-y-3">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div>
-              <h2 className="text-xl font-bold text-text-main flex items-center gap-2">
-                <span>Zutaten</span>
-              </h2>
-              <span className="text-xs text-text-muted hidden sm:inline">
-                {isCustomizingIngredients ? 'Tippe auf Ersetzen für Alternativen' : 'Tippe zum Abhaken'}
-              </span>
-            </div>
+        {/* 6 & 8. COOKING WORKSPACE: SIDE-BY-SIDE (ZUTATEN LINKS / ZUBEREITUNG RECHTS) OR STACKED */}
+        <div
+          className={
+            isSplitLayout
+              ? 'grid grid-cols-[minmax(250px,11fr)_minmax(290px,14fr)] lg:grid-cols-[minmax(320px,5fr)_minmax(420px,7fr)] gap-6 lg:gap-8 items-start'
+              : 'space-y-6 sm:space-y-8'
+          }
+        >
+          {/* 6. INGREDIENTS LIST (Zutaten mit explizitem Anpassungs-Modus) */}
+          <motion.section
+            layout="position"
+            transition={{ layout: { duration: 0.24, ease: [0.22, 1, 0.36, 1] } }}
+            ref={ingredientsSectionRef}
+            className={`space-y-3 min-w-0 ${isSplitLayout ? 'sticky top-20 self-start' : ''}`}
+          >
+            <div className="flex items-center justify-between gap-2 flex-wrap min-h-[44px]">
+              <div>
+                <h2 className="text-xl font-bold text-text-main flex items-center gap-2">
+                  <span>Zutaten</span>
+                </h2>
+              </div>
 
-            {/* Actions rechts: Veganisieren (links) + Zutaten anpassen (rechts) */}
-            <div className="flex items-center gap-2 shrink-0">
-              {!recipe.isVegan && (
-                <button
-                  id="veganize-ingredients-btn"
-                  type="button"
-                  onClick={handleVeganize}
-                  className={`h-10 px-3.5 rounded-xl border border-accent/25 bg-accent-tint hover:border-accent/50 text-accent font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs ${
-                    isVeganized ? 'ring-2 ring-accent/30' : ''
-                  }`}
-                  title={isVeganized ? 'Zum Original zurückwechseln' : 'Rezept veganisieren'}
-                >
-                  <Leaf className="w-4 h-4" />
-                  <span>{isVeganized ? 'Vegan ✓' : 'Veganisieren'}</span>
-                </button>
-              )}
-
-              {/* Explicit Ingredient Customization Mode Toggle Button */}
-              <button
-                id="toggle-ingredient-customize-btn"
-                type="button"
-                onClick={() => setIsCustomizingIngredients(!isCustomizingIngredients)}
-                className={`inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl border text-xs sm:text-sm font-semibold transition-all cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
-                  isCustomizingIngredients
-                    ? 'bg-accent text-on-accent border-accent shadow-xs hover:bg-accent-hover'
-                    : 'bg-card hover:bg-accent-tint border-border text-[#57534d] shadow-2xs'
-                }`}
-                title={isCustomizingIngredients ? 'Zutatenanpassung beenden' : 'Zutaten anpassen'}
-              >
-                {isCustomizingIngredients ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                    <span>Fertig</span>
-                  </>
-                ) : (
-                  <>
-                    <ArrowLeftRight className="w-3.5 h-3.5 text-accent" />
-                    <span>Zutaten anpassen</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Flat List with Dividers; Clean in Default State, Explicit Replace Buttons in Edit State */}
-          <div className="border border-border rounded-2xl overflow-hidden bg-card shadow-2xs">
-            <ul className="divide-y divide-border">
-              {activeIngredients.map((ing) => {
-                const isChecked = !!checkedIngredients[ing.name];
-                const amountStr = formatIngredientAmount(ing, recipe.servings, servings);
-                const isCustomized = Boolean(
-                  customizedIngredientNames[ing.name.toLowerCase()] ||
-                  substitutedIngredientsMap[ing.name.toLowerCase()]
-                );
-
-                return (
-                  <li
-                    key={ing.name}
-                    onClick={() => {
-                      if (!isCustomizingIngredients) {
-                        toggleCheckIngredient(ing.name);
-                      }
-                    }}
-                    className={`flex items-center justify-between py-3.5 px-4 sm:px-5 transition-colors select-none group ${
-                      isCustomizingIngredients ? 'cursor-default' : 'cursor-pointer'
-                    } ${
-                      isCustomized
-                        ? 'bg-accent-tint hover:bg-accent-tint/90 border-l-4 border-l-accent'
-                        : 'hover:bg-surface'
+              {/* Actions rechts: Veganisieren (links) + Zutaten anpassen (rechts) */}
+              <div className="flex items-center gap-2 shrink-0">
+                {!recipe.isVegan && (
+                  <motion.button
+                    layout
+                    whileTap={{ scale: 0.95 }}
+                    id="veganize-ingredients-btn"
+                    type="button"
+                    onClick={handleVeganize}
+                    transition={{ layout: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
+                    className={`h-10 px-3 sm:px-3.5 rounded-xl border border-accent/25 bg-accent-tint hover:border-accent/50 text-accent font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-colors cursor-pointer touch-manipulation shadow-2xs ${
+                      isVeganized ? 'ring-2 ring-accent/30' : ''
                     }`}
+                    title={isVeganized ? 'Zum Original zurückwechseln' : 'Rezept veganisieren'}
                   >
-                    {/* Left: Custom Checkbox + Natural Wrapping Ingredient Name + "(angepasst)" hint */}
-                    <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
-                      <div
-                        onClick={(e) => {
-                          if (isCustomizingIngredients) {
-                            e.stopPropagation();
-                            toggleCheckIngredient(ing.name);
-                          }
-                        }}
-                        className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all shrink-0 ${
-                          isCustomizingIngredients ? 'cursor-pointer' : ''
-                        } ${
-                          isChecked
-                            ? 'bg-accent border-accent text-on-accent'
-                            : 'border-[#D1D5DB] bg-card group-hover:border-accent'
-                        }`}
+                    <Leaf className="w-4 h-4 shrink-0" />
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.span
+                        key={isVeganized ? 'veganized' : 'veganize'}
+                        initial={{ opacity: 0, y: 2 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -2 }}
+                        transition={{ duration: 0.14 }}
                       >
-                        <AnimatePresence>
-                          {isChecked && (
-                            <motion.span
-                              initial={{ scale: 0, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              exit={{ scale: 0, opacity: 0 }}
-                              transition={{ duration: 0.15, ease: 'easeOut' }}
-                              className="flex items-center justify-center"
+                        {isVeganized ? 'Vegan ✓' : 'Veganisieren'}
+                      </motion.span>
+                    </AnimatePresence>
+                  </motion.button>
+                )}
+
+                {/* Explicit Ingredient Customization Mode Toggle Button */}
+                <motion.button
+                  layout
+                  whileTap={{ scale: 0.95 }}
+                  id="toggle-ingredient-customize-btn"
+                  type="button"
+                  onClick={() => setIsCustomizingIngredients(!isCustomizingIngredients)}
+                  transition={{ layout: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
+                  className={`inline-flex items-center gap-1.5 h-10 px-3 sm:px-3.5 rounded-xl border text-xs sm:text-sm font-semibold transition-colors cursor-pointer touch-manipulation shrink-0 ${
+                    isCustomizingIngredients
+                      ? 'bg-accent text-on-accent border-accent shadow-xs hover:bg-accent-hover'
+                      : 'bg-card hover:bg-accent-tint border-border text-[#57534d] shadow-2xs'
+                  }`}
+                  title={isCustomizingIngredients ? 'Zutatenanpassung beenden' : 'Zutaten anpassen'}
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    {isCustomizingIngredients ? (
+                      <motion.span
+                        key="customize-done"
+                        initial={{ opacity: 0, scale: 0.9, y: 2 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: -2 }}
+                        transition={{ duration: 0.15 }}
+                        className="inline-flex items-center gap-1.5"
+                      >
+                        <Check className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+                        <span>Fertig</span>
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="customize-open"
+                        initial={{ opacity: 0, scale: 0.9, y: 2 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: -2 }}
+                        transition={{ duration: 0.15 }}
+                        className="inline-flex items-center gap-1.5"
+                      >
+                        <ArrowLeftRight className="w-3.5 h-3.5 text-accent shrink-0" />
+                        <span>{isSplitLayout ? 'Anpassen' : 'Zutaten anpassen'}</span>
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              </div>
+            </div>
+
+            {/* Flat List with Dividers; Clean in Default State, Explicit Replace Buttons in Edit State */}
+            <div className="border border-border rounded-2xl overflow-hidden bg-card shadow-2xs">
+              <ul className="divide-y divide-border">
+                {activeIngredients.map((ing, idx) => {
+                  const isChecked = !!checkedIngredients[ing.name];
+                  const amountStr = formatIngredientAmount(ing, recipe.servings, servings);
+                  const isCustomized = Boolean(
+                    customizedIngredientNames[ing.name.toLowerCase()] ||
+                    substitutedIngredientsMap[ing.name.toLowerCase()]
+                  );
+
+                  return (
+                    <li
+                      key={`${idx}-${ing.name}`}
+                      onClick={() => {
+                        if (!isCustomizingIngredients) {
+                          toggleCheckIngredient(ing.name);
+                        }
+                      }}
+                      className={`flex items-center justify-between py-3.5 px-4 sm:px-5 transition-colors select-none group ${
+                        isCustomizingIngredients ? 'cursor-default' : 'cursor-pointer'
+                      } ${
+                        isCustomized
+                          ? 'bg-accent-tint hover:bg-accent-tint/90 border-l-4 border-l-accent'
+                          : 'hover:bg-surface'
+                      }`}
+                    >
+                      {/* Left: Custom Checkbox + Natural Wrapping Ingredient Name */}
+                      <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
+                        <div
+                          onClick={(e) => {
+                            if (isCustomizingIngredients) {
+                              e.stopPropagation();
+                              toggleCheckIngredient(ing.name);
+                            }
+                          }}
+                          className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all shrink-0 ${
+                            isCustomizingIngredients ? 'cursor-pointer' : ''
+                          } ${
+                            isChecked
+                              ? 'bg-accent border-accent text-on-accent'
+                              : 'border-[#D1D5DB] bg-card group-hover:border-accent'
+                          }`}
+                        >
+                          <AnimatePresence initial={false}>
+                            {isChecked && (
+                              <motion.span
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0, opacity: 0 }}
+                                transition={{ duration: 0.15, ease: 'easeOut' }}
+                                className="flex items-center justify-center"
+                              >
+                                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <span
+                            className={`text-base font-medium break-words leading-normal transition-all duration-200 ${
+                              isChecked ? 'line-through text-text-muted opacity-50' : 'text-text-main'
+                            }`}
+                          >
+                            {ing.name}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Right: Discreet Reset Arrow (left of quantity) + Quantity + Animated [ Ersetzen ] Action */}
+                      <motion.div
+                        layout="position"
+                        transition={{ layout: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
+                        className="flex items-center gap-2 shrink-0 pl-2"
+                      >
+                        <AnimatePresence initial={false}>
+                          {isCustomized && (
+                            <motion.button
+                              key="reset-arrow"
+                              layout="position"
+                              type="button"
+                              id={`reset-ingredient-${ing.name.toLowerCase().replace(/\s+/g, '-')}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleResetIngredient(ing.name);
+                              }}
+                              initial={{ opacity: 0, scale: 0.5, rotate: -45 }}
+                              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                              exit={{ opacity: 0, scale: 0.5, rotate: -45 }}
+                              whileTap={{ scale: 0.88 }}
+                              transition={{ duration: 0.18, ease: 'easeOut' }}
+                              aria-label="Auf Originalzutat zurücksetzen"
+                              title="Auf Originalzutat zurücksetzen"
+                              className="p-1.5 -m-1 text-text-muted hover:text-accent flex items-center justify-center transition-colors cursor-pointer touch-manipulation"
                             >
-                              <Check className="w-3.5 h-3.5 stroke-[3]" />
-                            </motion.span>
+                              <RotateCcw className="w-3.5 h-3.5 stroke-[2.2]" />
+                            </motion.button>
                           )}
                         </AnimatePresence>
-                      </div>
 
-                      <div className="flex-1 min-w-0">
-                        <span
-                          className={`text-base font-medium break-words leading-normal transition-all duration-200 ${
-                            isChecked ? 'line-through text-text-muted opacity-50' : 'text-text-main'
+                        <motion.span
+                          layout="position"
+                          transition={{ layout: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
+                          className={`text-base font-semibold text-right tabular-nums whitespace-nowrap transition-colors duration-200 ${
+                            isChecked ? 'line-through text-text-muted opacity-50' : 'text-accent'
                           }`}
                         >
-                          {ing.name}
-                        </span>
+                          {amountStr}
+                        </motion.span>
+
+                        {/* Explicit [ Ersetzen ] Button smoothly animated during customization mode */}
+                        <AnimatePresence initial={false}>
+                          {isCustomizingIngredients && (
+                            <motion.button
+                              key="replace-btn"
+                              layout="position"
+                              type="button"
+                              id={`replace-ingredient-${ing.name.toLowerCase().replace(/\s+/g, '-')}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSubstitutingIngredient(ing);
+                              }}
+                              initial={{ opacity: 0, scale: 0.85, x: 8 }}
+                              animate={{ opacity: 1, scale: 1, x: 0 }}
+                              exit={{ opacity: 0, scale: 0.85, x: 8 }}
+                              whileTap={{ scale: 0.94 }}
+                              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                              className={`inline-flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl bg-surface hover:bg-accent-tint border border-border hover:border-accent/40 text-[14px] font-semibold text-accent transition-colors cursor-pointer touch-manipulation shrink-0 ${
+                                isChecked ? 'opacity-40 hover:opacity-80' : ''
+                              }`}
+                              title={`${ing.name} ersetzen`}
+                            >
+                              <ArrowLeftRight className="w-4 h-4 shrink-0" />
+                              <span className={isSplitLayout ? 'hidden lg:inline text-[14px]' : 'text-[14px]'}>Ersetzen</span>
+                            </motion.button>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </motion.section>
+
+          {/* 8. PREPARATION STEPS & TIMELINE WITH DYNAMIC STEP-BY-STEP MEDIA + CHEF TIP */}
+          {recipe.steps && recipe.steps.length > 0 && (
+            <motion.div
+              layout="position"
+              transition={{ layout: { duration: 0.24, ease: [0.22, 1, 0.36, 1] } }}
+              className="space-y-6 min-w-0"
+            >
+              <section ref={stepsSectionRef} className="space-y-4">
+                {(() => {
+                  const hasStepPhotos = recipe.steps.some((s) => {
+                    if (typeof s === 'string') return false;
+                    return s.stepImages && s.stepImages.length > 0;
+                  });
+
+                  return (
+                    <>
+                      <div className="flex items-center justify-between gap-2 flex-wrap min-h-[44px]">
+                        <div>
+                          <h3 className="text-xl font-bold text-text-main">
+                            <span>Zubereitung</span>
+                          </h3>
+                        </div>
+
+                        {/* Header Actions for Step Photos with Smooth Mode Transitions */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <AnimatePresence mode="wait" initial={false}>
+                            {isManagingStepPhotos ? (
+                              /* In management mode: ONLY show [ Fertig ] button */
+                              <motion.button
+                                key="step-photos-finish"
+                                id="finish-step-photos-btn"
+                                type="button"
+                                onClick={() => setIsManagingStepPhotos(false)}
+                                initial={{ opacity: 0, scale: 0.9, y: 2 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: -2 }}
+                                whileTap={{ scale: 0.95 }}
+                                transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+                                className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl text-xs sm:text-sm font-semibold bg-accent text-on-accent border border-accent hover:bg-accent-hover transition-colors shadow-2xs cursor-pointer touch-manipulation shrink-0"
+                                title="Bearbeitung beenden"
+                              >
+                                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                                <span>Fertig</span>
+                              </motion.button>
+                            ) : hasStepPhotos ? (
+                              /* Not in management mode & photos exist: show icon-only [ Fotos aus-/einblenden ] and [ Verwalten (Stift) ] */
+                              <motion.div
+                                key="step-photos-controls"
+                                initial={{ opacity: 0, scale: 0.92, y: 2 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.92, y: -2 }}
+                                transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+                                className="flex items-center gap-2"
+                              >
+                                <motion.button
+                                  whileTap={{ scale: 0.92 }}
+                                  id="toggle-step-images-btn"
+                                  type="button"
+                                  onClick={() => setShowStepImages(!showStepImages)}
+                                  aria-label={showStepImages ? 'Schritt-Fotos ausblenden' : 'Schritt-Fotos einblenden'}
+                                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-card hover:bg-accent-tint border border-border text-[#57534d] transition-colors shadow-2xs cursor-pointer touch-manipulation shrink-0"
+                                  title={showStepImages ? 'Schritt-Fotos ausblenden' : 'Schritt-Fotos einblenden'}
+                                >
+                                  <AnimatePresence mode="wait" initial={false}>
+                                    {showStepImages ? (
+                                      <motion.span
+                                        key="eye-off"
+                                        initial={{ opacity: 0, scale: 0.65, rotate: -12 }}
+                                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                        exit={{ opacity: 0, scale: 0.65, rotate: 12 }}
+                                        transition={{ duration: 0.14 }}
+                                        className="flex items-center justify-center"
+                                      >
+                                        <EyeOff className="w-4 h-4 text-text-muted shrink-0" />
+                                      </motion.span>
+                                    ) : (
+                                      <motion.span
+                                        key="eye-on"
+                                        initial={{ opacity: 0, scale: 0.65, rotate: 12 }}
+                                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                        exit={{ opacity: 0, scale: 0.65, rotate: -12 }}
+                                        transition={{ duration: 0.14 }}
+                                        className="flex items-center justify-center"
+                                      >
+                                        <Eye className="w-4 h-4 text-accent shrink-0" />
+                                      </motion.span>
+                                    )}
+                                  </AnimatePresence>
+                                </motion.button>
+
+                                <motion.button
+                                  whileTap={{ scale: 0.92 }}
+                                  type="button"
+                                  onClick={() => {
+                                    setIsManagingStepPhotos(true);
+                                    setShowStepImages(true);
+                                  }}
+                                  aria-label="Fotos verwalten"
+                                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-card hover:bg-accent-tint border border-border text-[#57534d] transition-colors cursor-pointer touch-manipulation shrink-0 shadow-2xs"
+                                  title="Fotos verwalten"
+                                >
+                                  <Pencil className="w-4 h-4 shrink-0" />
+                                </motion.button>
+                              </motion.div>
+                            ) : (
+                              /* Not in management mode & no photos exist: show [ + Fotos hinzufügen ] */
+                              <motion.button
+                                key="step-photos-add"
+                                whileTap={{ scale: 0.95 }}
+                                id="manage-step-photos-btn"
+                                type="button"
+                                onClick={() => {
+                                  setIsManagingStepPhotos(true);
+                                  setShowStepImages(true);
+                                }}
+                                initial={{ opacity: 0, scale: 0.92, y: 2 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.92, y: -2 }}
+                                transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+                                className="inline-flex items-center gap-1.5 h-10 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-semibold bg-card hover:bg-accent-tint border border-border text-[#57534d] transition-colors shadow-2xs cursor-pointer touch-manipulation shrink-0"
+                                title="Schritt-Fotos hinzufügen"
+                              >
+                                <Plus className="w-3.5 h-3.5 text-accent shrink-0" />
+                                <span>Fotos hinzufügen</span>
+                              </motion.button>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Right: Quantity + Action */}
-                    <div className="flex items-center gap-2.5 shrink-0 pl-2">
-                      <span
-                        className={`text-base font-semibold text-right tabular-nums whitespace-nowrap transition-all duration-200 ${
-                          isChecked ? 'line-through text-text-muted opacity-50' : 'text-accent'
-                        }`}
-                      >
-                        {amountStr}
-                      </span>
+                      <div className="relative pl-1 sm:pl-3 space-y-6 sm:space-y-7 before:absolute before:left-[17px] sm:before:left-[23px] before:top-4 before:bottom-4 before:w-0.5 before:bg-border">
+                        {recipe.steps.map((step, idx) => {
+                          const stepObj: RecipeStep =
+                            typeof step === 'string'
+                              ? { stepNumber: idx + 1, title: `Schritt ${idx + 1}`, text: step, timerMinutes: undefined }
+                              : step;
+                          const isStepDone = !!completedSteps[stepObj.stepNumber];
+                          const stepImages = stepObj.stepImages || [];
 
-                      {/* Subtle Reset Button if ingredient was replaced (restores original) */}
-                      {isCustomized && (
-                        <button
-                          type="button"
-                          id={`reset-ingredient-${ing.name.toLowerCase().replace(/\s+/g, '-')}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleResetIngredient(ing.name);
-                          }}
-                          aria-label="Auf Originalzutat zurücksetzen"
-                          title="Auf Originalzutat zurücksetzen"
-                          className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl bg-card hover:bg-surface border border-accent/30 text-accent hover:text-accent-hover flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs"
-                        >
-                          <RotateCcw className="w-4 h-4 stroke-[2.2]" />
-                        </button>
-                      )}
+                          return (
+                            <div
+                              key={stepObj.stepNumber}
+                              className="relative flex items-start gap-3.5 sm:gap-4.5 select-none group"
+                            >
+                              {/* Timeline indicator circle */}
+                              <div
+                                onClick={() => toggleCompleteStep(stepObj.stepNumber)}
+                                className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all cursor-pointer active:scale-90 ${
+                                  isStepDone
+                                    ? 'bg-accent text-on-accent shadow-xs ring-4 ring-on-accent'
+                                    : 'bg-card border-2 border-accent text-accent group-hover:bg-accent-tint ring-4 ring-on-accent'
+                                }`}
+                              >
+                                <AnimatePresence mode="wait" initial={false}>
+                                  {isStepDone ? (
+                                    <motion.span
+                                      key="done"
+                                      initial={{ scale: 0, opacity: 0 }}
+                                      animate={{ scale: 1, opacity: 1 }}
+                                      exit={{ scale: 0, opacity: 0 }}
+                                      transition={{ duration: 0.14, ease: 'easeOut' }}
+                                      className="flex items-center justify-center"
+                                    >
+                                      <Check className="w-4 h-4 stroke-[3]" />
+                                    </motion.span>
+                                  ) : (
+                                    <motion.span
+                                      key="num"
+                                      initial={{ scale: 0.7, opacity: 0 }}
+                                      animate={{ scale: 1, opacity: 1 }}
+                                      exit={{ scale: 0.7, opacity: 0 }}
+                                      transition={{ duration: 0.14, ease: 'easeOut' }}
+                                    >
+                                      {stepObj.stepNumber}
+                                    </motion.span>
+                                  )}
+                                </AnimatePresence>
+                              </div>
 
-                      {/* Explicit [ Ersetzen ] Button only shown during customization mode */}
-                      {isCustomizingIngredients && (
-                        <button
-                          type="button"
-                          id={`replace-ingredient-${ing.name.toLowerCase().replace(/\s+/g, '-')}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSubstitutingIngredient(ing);
-                          }}
-                          className={`inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[48px] rounded-xl bg-surface hover:bg-accent-tint border border-border hover:border-accent/40 text-[14px] font-semibold text-accent transition-all cursor-pointer touch-manipulation active:scale-95 shrink-0 ${
-                            isChecked ? 'opacity-40 hover:opacity-80' : ''
-                          }`}
-                          title={`${ing.name} ersetzen`}
-                        >
-                          <ArrowLeftRight className="w-4 h-4" />
-                          <span className="text-[14px]">Ersetzen</span>
-                        </button>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </section>
+                              {/* Step Content */}
+                              <div className="flex-1 min-w-0 pt-0.5 space-y-2">
+                                <div 
+                                  onClick={() => toggleCompleteStep(stepObj.stepNumber)}
+                                  className="cursor-pointer"
+                                >
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span
+                                      className={`text-base font-bold transition-colors ${
+                                        isStepDone ? 'line-through text-text-muted opacity-60' : 'text-text-main'
+                                      }`}
+                                    >
+                                      {stepObj.title || `Schritt ${stepObj.stepNumber}`}
+                                    </span>
+
+                                    {stepObj.timerMinutes && (
+                                      <span
+                                        className={`inline-flex items-center gap-1.5 text-xs font-semibold text-[#457250] bg-[#E8EFEA] border border-[#D8E3DA] px-2.5 py-0.5 rounded-full transition-opacity ${
+                                          isStepDone ? 'opacity-40' : ''
+                                        }`}
+                                      >
+                                        <Clock className="w-3.5 h-3.5 text-accent" />
+                                        {stepObj.timerMinutes} Min.
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <p
+                                    className={`text-base leading-relaxed break-words mt-1 transition-colors ${
+                                      isStepDone ? 'line-through text-text-muted opacity-60' : 'text-text-main'
+                                    }`}
+                                  >
+                                    {stepObj.text}
+                                  </p>
+                                </div>
+
+                                {/* Step Images Layout: Smoothly collapsible swipeable carousel */}
+                                <AnimatePresence initial={false}>
+                                  {showStepImages && stepImages.length > 0 && (
+                                    <motion.div
+                                      key={`step-images-${stepObj.stepNumber}`}
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: 'auto', opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                                      className="overflow-hidden"
+                                    >
+                                      <div className={`transition-opacity duration-200 ${isStepDone ? 'opacity-40 grayscale-[15%]' : ''}`}>
+                                        <StepImageSwiper
+                                          stepNumber={stepObj.stepNumber}
+                                          images={stepImages}
+                                          stepTitle={stepObj.title || `Schritt ${stepObj.stepNumber}`}
+                                          isManagingPhotos={isManagingStepPhotos}
+                                          onRemovePhoto={handleRemoveStepPhoto}
+                                          onOpenLightbox={openLightbox}
+                                        />
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+
+                                {/* Explicit Step Photo Upload Trigger Target in photo management mode */}
+                                <AnimatePresence initial={false}>
+                                  {isManagingStepPhotos && (
+                                    <motion.div
+                                      key={`step-upload-${stepObj.stepNumber}`}
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: 'auto', opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                                      className="overflow-hidden"
+                                    >
+                                      <div className="pt-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleTriggerAddStepPhoto(stepObj.stepNumber)}
+                                          className="w-full py-3 px-4 rounded-xl border border-dashed border-accent/50 hover:border-accent bg-accent-tint/60 hover:bg-accent-tint text-xs font-semibold text-accent flex items-center justify-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-[0.99]"
+                                        >
+                                          <Plus className="w-4 h-4 text-accent" />
+                                          <span>Foto zu Schritt {stepObj.stepNumber} hinzufügen</span>
+                                        </button>
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  );
+                })()}
+              </section>
+
+              {/* Smart Chef Tip Callout */}
+              {recipe.chefTip && (
+                <div className="p-4 bg-[#FDF6F0] border-l-4 border-[#BD4800] rounded-r-2xl flex items-start gap-3">
+                  <ChefHat className="w-5 h-5 text-[#BD4800] shrink-0 mt-0.5" />
+                  <div>
+                    <h4 id="chef-tip-heading" className="text-[16px] leading-[24px] font-bold text-[#BD4800] uppercase tracking-wider">
+                      Profi-Tipp vom Veggie-Chef
+                    </h4>
+                    <p className="text-[16px] leading-[26px] text-text-main mt-1">
+                      {recipe.chefTip}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Fallback Chef Tip if recipe has no steps */}
+          {(!recipe.steps || recipe.steps.length === 0) && recipe.chefTip && (
+            <div className="p-4 bg-[#FDF6F0] border-l-4 border-[#BD4800] rounded-r-2xl flex items-start gap-3">
+              <ChefHat className="w-5 h-5 text-[#BD4800] shrink-0 mt-0.5" />
+              <div>
+                <h4 id="chef-tip-heading" className="text-[16px] leading-[24px] font-bold text-[#BD4800] uppercase tracking-wider">
+                  Profi-Tipp vom Veggie-Chef
+                </h4>
+                <p className="text-[16px] leading-[26px] text-text-main mt-1">
+                  {recipe.chefTip}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* 7. NUTRITION MACROS & EXPANDABLE MICRONUTRIENTS ACCORDION */}
         {recipe.nutrients && recipe.nutrients.calories > 0 && (
@@ -1626,17 +2150,18 @@ export const RecipeDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsMicronutrientsOpen(!isMicronutrientsOpen)}
+                aria-expanded={isMicronutrientsOpen}
                 className="w-full px-4 py-3 flex items-center justify-between text-[14px] font-semibold text-[#57534d] hover:bg-surface transition-colors cursor-pointer"
               >
                 <span className="flex items-center gap-2">
                   <Leaf className="w-3.5 h-3.5 text-accent" />
                   <span className="text-[14px]">Mikronährstoffe, Vitamine & Mineralien</span>
                 </span>
-                {isMicronutrientsOpen ? (
-                  <ChevronUp className="w-4 h-4 text-text-muted" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-text-muted" />
-                )}
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform duration-200 ${
+                    isMicronutrientsOpen ? 'rotate-180 text-accent' : 'text-text-muted'
+                  }`}
+                />
               </button>
 
               <AnimatePresence initial={false}>
@@ -1659,7 +2184,7 @@ export const RecipeDetailPage: React.FC = () => {
                         <div className="p-2.5 bg-card rounded-lg border border-border">
                           <div className="text-[12px] text-text-muted">Vitamin B12</div>
                           <div className="font-bold text-sm text-text-main tabular-nums">
-                            {recipe.nutrients.b12 ?? (recipe.isVegan ? '0 µg (pflanzl.)' : '0.5 µg')}
+                            {recipe.nutrients.b12 ?? ((recipe.isVegan || isVeganized) ? '0 µg (pflanzl.)' : '0.5 µg')}
                           </div>
                         </div>
                         <div className="p-2.5 bg-card rounded-lg border border-border">
@@ -1693,209 +2218,6 @@ export const RecipeDetailPage: React.FC = () => {
               </AnimatePresence>
             </div>
           </section>
-        )}
-
-        {/* 8. PREPARATION STEPS & TIMELINE WITH DYNAMIC STEP-BY-STEP MEDIA */}
-        {recipe.steps && recipe.steps.length > 0 && (
-          <section ref={stepsSectionRef} className="space-y-4">
-          {(() => {
-            const hasStepPhotos = recipe.steps.some((s) => {
-              if (typeof s === 'string') return false;
-              return s.stepImages && s.stepImages.length > 0;
-            });
-
-            return (
-              <>
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-xl font-bold text-text-main">
-                      Zubereitung Schritt für Schritt
-                    </h3>
-                    <span className="text-xs text-text-muted hidden sm:inline">Tippe zum Abhaken</span>
-                  </div>
-
-                  {/* Header Actions for Step Photos */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {isManagingStepPhotos ? (
-                      /* In management mode: ONLY show [ Fertig ] button */
-                      <button
-                        id="finish-step-photos-btn"
-                        type="button"
-                        onClick={() => setIsManagingStepPhotos(false)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[16px] font-semibold bg-accent text-on-accent border border-accent hover:bg-accent-hover transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
-                        title="Bearbeitung beenden"
-                      >
-                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span className="text-[16px]">Fertig</span>
-                      </button>
-                    ) : hasStepPhotos ? (
-                      /* Not in management mode & photos exist: show [ Fotos aus-/einblenden ] and [ Verwalten (Stift) ] */
-                      <>
-                        <button
-                          id="toggle-step-images-btn"
-                          type="button"
-                          onClick={() => setShowStepImages(!showStepImages)}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-card hover:bg-accent-tint border border-border text-[16px] font-semibold text-[#57534d] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
-                          title={showStepImages ? 'Schritt-Fotos ausblenden' : 'Schritt-Fotos einblenden'}
-                        >
-                          {showStepImages ? (
-                            <>
-                              <EyeOff className="w-3.5 h-3.5 text-text-muted" />
-                              <span className="text-[16px]">Fotos ausblenden</span>
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="w-3.5 h-3.5 text-accent" />
-                              <span className="text-[16px]">Fotos einblenden</span>
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsManagingStepPhotos(true);
-                            setShowStepImages(true);
-                          }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[16px] font-semibold bg-card hover:bg-accent-tint border border-border text-[#57534d] transition-colors cursor-pointer touch-manipulation active:scale-95 shrink-0"
-                          title="Fotos verwalten"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline text-[16px]">Verwalten</span>
-                        </button>
-                      </>
-                    ) : (
-                      /* Not in management mode & no photos exist: show [ + Fotos hinzufügen ] */
-                      <button
-                        id="manage-step-photos-btn"
-                        type="button"
-                        onClick={() => {
-                          setIsManagingStepPhotos(true);
-                          setShowStepImages(true);
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[16px] font-semibold bg-card hover:bg-accent-tint border border-border text-[#57534d] transition-colors shadow-2xs cursor-pointer touch-manipulation active:scale-95 shrink-0"
-                        title="Schritt-Fotos hinzufügen"
-                      >
-                        <Plus className="w-3.5 h-3.5 text-accent" />
-                        <span className="text-[16px]">Fotos hinzufügen</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="relative pl-1 sm:pl-3 space-y-6 sm:space-y-7 before:absolute before:left-[17px] sm:before:left-[23px] before:top-4 before:bottom-4 before:w-0.5 before:bg-border">
-                  {recipe.steps.map((step, idx) => {
-                    const stepObj: RecipeStep =
-                      typeof step === 'string'
-                        ? { stepNumber: idx + 1, title: `Schritt ${idx + 1}`, text: step, timerMinutes: undefined }
-                        : step;
-                    const isStepDone = !!completedSteps[stepObj.stepNumber];
-                    const stepImages = stepObj.stepImages || [];
-
-                    return (
-                      <div
-                        key={stepObj.stepNumber}
-                        className="relative flex items-start gap-3.5 sm:gap-4.5 select-none group"
-                      >
-                        {/* Timeline indicator circle */}
-                        <div
-                          onClick={() => toggleCompleteStep(stepObj.stepNumber)}
-                          className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all cursor-pointer ${
-                            isStepDone
-                              ? 'bg-accent text-on-accent shadow-xs ring-4 ring-on-accent'
-                              : 'bg-card border-2 border-accent text-accent group-hover:bg-accent-tint ring-4 ring-on-accent'
-                          }`}
-                        >
-                          {isStepDone ? <Check className="w-4 h-4 stroke-[3]" /> : stepObj.stepNumber}
-                        </div>
-
-                        {/* Step Content */}
-                        <div className="flex-1 min-w-0 pt-0.5 space-y-2">
-                          <div 
-                            onClick={() => toggleCompleteStep(stepObj.stepNumber)}
-                            className="cursor-pointer"
-                          >
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span
-                                className={`text-base font-bold transition-colors ${
-                                  isStepDone ? 'line-through text-text-muted opacity-60' : 'text-text-main'
-                                }`}
-                              >
-                                {stepObj.title || `Schritt ${stepObj.stepNumber}`}
-                              </span>
-
-                              {stepObj.timerMinutes && (
-                                <span
-                                  className={`inline-flex items-center gap-1.5 text-xs font-semibold text-[#457250] bg-[#E8EFEA] border border-[#D8E3DA] px-2.5 py-0.5 rounded-full transition-opacity ${
-                                    isStepDone ? 'opacity-40' : ''
-                                  }`}
-                                >
-                                  <Clock className="w-3.5 h-3.5 text-accent" />
-                                  {stepObj.timerMinutes} Min.
-                                </span>
-                              )}
-                            </div>
-
-                            <p
-                              className={`text-base leading-relaxed break-words mt-1 transition-colors ${
-                                isStepDone ? 'line-through text-text-muted opacity-60' : 'text-text-main'
-                              }`}
-                            >
-                              {stepObj.text}
-                            </p>
-                          </div>
-
-                          {/* Step Images Layout: Swipeable carousel matching the main recipe gallery */}
-                          {showStepImages && stepImages.length > 0 && (
-                            <div className={`transition-opacity duration-200 ${isStepDone ? 'opacity-40 grayscale-[15%]' : ''}`}>
-                              <StepImageSwiper
-                                stepNumber={stepObj.stepNumber}
-                                images={stepImages}
-                                stepTitle={stepObj.title || `Schritt ${stepObj.stepNumber}`}
-                                isManagingPhotos={isManagingStepPhotos}
-                                onRemovePhoto={handleRemoveStepPhoto}
-                                onOpenLightbox={openLightbox}
-                              />
-                            </div>
-                          )}
-
-                          {/* Explicit Step Photo Upload Trigger Target in photo management mode */}
-                          {isManagingStepPhotos && (
-                            <div className="pt-2">
-                              <button
-                                type="button"
-                                onClick={() => handleTriggerAddStepPhoto(stepObj.stepNumber)}
-                                className="w-full py-3 px-4 rounded-xl border border-dashed border-accent/50 hover:border-accent bg-accent-tint/60 hover:bg-accent-tint text-xs font-semibold text-accent flex items-center justify-center gap-2 transition-all cursor-pointer touch-manipulation active:scale-[0.99]"
-                              >
-                                <Plus className="w-4 h-4 text-accent" />
-                                <span>Foto zu Schritt {stepObj.stepNumber} hinzufügen</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            );
-          })()}
-        </section>
-        )}
-
-        {/* Smart Chef Tip Callout */}
-        {recipe.chefTip && (
-          <div className="p-4 bg-[#FDF6F0] border-l-4 border-[#BD4800] rounded-r-2xl flex items-start gap-3 mt-4">
-            <ChefHat className="w-5 h-5 text-[#BD4800] shrink-0 mt-0.5" />
-            <div>
-              <h4 id="chef-tip-heading" className="text-[16px] leading-[24px] font-bold text-[#BD4800] uppercase tracking-wider">
-                Profi-Tipp vom Veggie-Chef
-              </h4>
-              <p className="text-[16px] leading-[26px] text-text-main mt-1">
-                {recipe.chefTip}
-              </p>
-            </div>
-          </div>
         )}
 
         {/* 9. PUBLIC REVIEWS SECTION & PRIVATE NOTE */}
@@ -2371,104 +2693,128 @@ export const RecipeDetailPage: React.FC = () => {
       </AnimatePresence>
 
       {/* 6. "Gericht gekocht" Star & Notes Dialog */}
-      {showCookedDialog && (
-        <div
-          onClick={() => setShowCookedDialog(false)}
-          className="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-card rounded-3xl p-6 max-w-md w-full space-y-4 shadow-xl border border-border animate-in zoom-in-95 duration-200"
+      <AnimatePresence>
+        {showCookedDialog && (
+          <motion.div
+            key="cooked-dialog-backdrop"
+            role="dialog"
+            aria-modal="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => setShowCookedDialog(false)}
+            className="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
           >
-            <div className="text-center space-y-1.5">
-              <span className="text-3xl">🎉</span>
-              <h3 className="text-xl font-bold text-text-main">Guten Appetit!</h3>
-              <p className="text-[16px] text-[#57534d] leading-relaxed">
-                Möchtest du "{recipe.title}" in deiner Kochstatistik erfassen?
-              </p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-3xl p-6 max-w-md w-full space-y-4 shadow-xl border border-border"
+            >
+              <div className="text-center space-y-1.5">
+                <span className="text-3xl">🎉</span>
+                <h3 className="text-xl font-bold text-text-main">Guten Appetit!</h3>
+                <p className="text-[16px] text-[#57534d] leading-relaxed">
+                  Möchtest du "{recipe.title}" in deiner Kochstatistik erfassen?
+                </p>
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-text-main mb-1">
-                Eigene Notizen / Zubereitungs-Feedback (optional):
-              </label>
-              <textarea
-                value={cookedNotes}
-                onChange={(e) => setCookedNotes(e.target.value)}
-                placeholder="z.B. 'Super lecker, nächstes Mal noch etwas Chili dazugeben!'"
-                rows={3}
-                className="w-full text-[16px] p-3 border border-border rounded-xl focus:border-accent focus:outline-hidden text-text-main"
-              />
-            </div>
+              <div>
+                <label className="block text-xs font-semibold text-text-main mb-1">
+                  Eigene Notizen / Zubereitungs-Feedback (optional):
+                </label>
+                <textarea
+                  value={cookedNotes}
+                  onChange={(e) => setCookedNotes(e.target.value)}
+                  placeholder="z.B. 'Super lecker, nächstes Mal noch etwas Chili dazugeben!'"
+                  rows={3}
+                  className="w-full text-[16px] p-3 border border-border rounded-xl focus:border-accent focus:outline-hidden text-text-main transition-colors"
+                />
+              </div>
 
-            <div className="p-3.5 bg-accent-tint rounded-xl text-xs text-accent border border-border">
-              🌱 Durch dieses Gericht hast du ca. <strong>{savings.savedCO2Kg} kg CO₂</strong> und{' '}
-              <strong>{savings.savedWaterLiters} Liter Wasser</strong> eingespart!
-            </div>
+              <div className="p-3.5 bg-accent-tint rounded-xl text-xs text-accent border border-border">
+                🌱 Durch dieses Gericht hast du ca. <strong>{savings.savedCO2Kg} kg CO₂</strong> und{' '}
+                <strong>{savings.savedWaterLiters} Liter Wasser</strong> eingespart!
+              </div>
 
-            <div className="flex items-center gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowCookedDialog(false)}
-                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-[#57534d] bg-surface hover:bg-accent-tint border border-border cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-              >
-                Abbrechen
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmCooked}
-                className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-on-accent bg-accent hover:bg-accent-hover shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-              >
-                In Statistik speichern
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <div className="flex items-center gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCookedDialog(false)}
+                  className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-[#57534d] bg-surface hover:bg-accent-tint border border-border cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center transition-colors"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmCooked}
+                  className="flex-1 min-h-[48px] py-3 px-4 rounded-xl text-[16px] font-semibold text-on-accent bg-accent hover:bg-accent-hover shadow-xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center transition-all"
+                >
+                  In Statistik speichern
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Confirmation Modal: Duplicate Shopping List Addition */}
-      {showConfirmDuplicateShopping && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setShowConfirmDuplicateShopping(false)}
-          className="fixed inset-0 z-60 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-card rounded-2xl max-w-xs w-full p-5 space-y-3.5 border border-border shadow-xl text-center animate-in zoom-in-95 duration-150"
+      <AnimatePresence>
+        {showConfirmDuplicateShopping && (
+          <motion.div
+            key="duplicate-shopping-backdrop"
+            role="dialog"
+            aria-modal="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16 }}
+            onClick={() => setShowConfirmDuplicateShopping(false)}
+            className="fixed inset-0 z-60 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4"
           >
-            <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center mx-auto">
-              <ShoppingCart className="w-5 h-5" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="text-base font-bold text-text-main">Bereits auf der Liste</h4>
-              <p className="text-sm text-text-muted leading-relaxed">
-                Dieses Rezept ist bereits auf der Einkaufsliste. Nochmal hinzufügen?
-              </p>
-            </div>
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setShowConfirmDuplicateShopping(false)}
-                className="flex-1 min-h-[44px] h-11 py-2.5 rounded-xl border border-border text-sm font-semibold text-text-muted hover:bg-surface transition-colors cursor-pointer active:scale-95 flex items-center justify-center"
-              >
-                Abbrechen
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowConfirmDuplicateShopping(false);
-                  executeAddShopping();
-                }}
-                className="flex-1 min-h-[44px] h-11 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-sm font-bold shadow-2xs transition-all cursor-pointer active:scale-95 flex items-center justify-center"
-              >
-                Hinzufügen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl max-w-xs w-full p-5 space-y-3.5 border border-border shadow-xl text-center"
+            >
+              <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center mx-auto">
+                <ShoppingCart className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-base font-bold text-text-main">Bereits auf der Liste</h4>
+                <p className="text-sm text-text-muted leading-relaxed">
+                  Dieses Rezept ist bereits auf der Einkaufsliste. Nochmal hinzufügen?
+                </p>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmDuplicateShopping(false)}
+                  className="flex-1 min-h-[44px] h-11 py-2.5 rounded-xl border border-border text-sm font-semibold text-text-muted hover:bg-surface transition-colors cursor-pointer active:scale-95 flex items-center justify-center"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowConfirmDuplicateShopping(false);
+                    executeAddShopping();
+                  }}
+                  className="flex-1 min-h-[44px] h-11 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-sm font-bold shadow-2xs transition-all cursor-pointer active:scale-95 flex items-center justify-center"
+                >
+                  Hinzufügen
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Write / Edit Review Bottom Sheet */}
       <WriteReviewSheet
