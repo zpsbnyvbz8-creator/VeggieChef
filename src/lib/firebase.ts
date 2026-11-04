@@ -51,9 +51,7 @@ export function handleFirestoreError(error: unknown, operation: OperationType, p
   throw new Error(JSON.stringify(info));
 }
 
-// Resolved Firebase Configuration (strictly prioritizes Vercel VITE_FIREBASE_* Environment Variables)
-const metaEnv = typeof import.meta !== 'undefined' ? (import.meta as any).env : {};
-
+// Resolved Firebase Configuration (strictly prioritizes NEXT_PUBLIC_FIREBASE_* Environment Variables)
 const fallbackConfig = {
   apiKey: 'AIzaSy_demo_fallback_key',
   authDomain: 'veggiechef-demo.firebaseapp.com',
@@ -65,13 +63,13 @@ const fallbackConfig = {
 };
 
 const activeConfig = {
-  apiKey: metaEnv?.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey || fallbackConfig.apiKey,
-  authDomain: metaEnv?.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain || fallbackConfig.authDomain,
-  projectId: metaEnv?.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId || fallbackConfig.projectId,
-  firestoreDatabaseId: metaEnv?.VITE_FIREBASE_DATABASE_ID || firebaseConfig.firestoreDatabaseId || '(default)',
-  storageBucket: metaEnv?.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket || fallbackConfig.storageBucket,
-  messagingSenderId: metaEnv?.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId || fallbackConfig.messagingSenderId,
-  appId: metaEnv?.VITE_FIREBASE_APP_ID || firebaseConfig.appId || fallbackConfig.appId,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || firebaseConfig.apiKey || fallbackConfig.apiKey,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain || fallbackConfig.authDomain,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || firebaseConfig.projectId || fallbackConfig.projectId,
+  firestoreDatabaseId: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || firebaseConfig.firestoreDatabaseId || '(default)',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket || fallbackConfig.storageBucket,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId || fallbackConfig.messagingSenderId,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || firebaseConfig.appId || fallbackConfig.appId,
 };
 
 // Initialize Firebase App

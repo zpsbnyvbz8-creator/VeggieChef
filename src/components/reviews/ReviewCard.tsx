@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Star, ThumbsUp, ThumbsDown, MoreVertical, Edit2, Trash2 } from 'lucide-react';
 import { RecipeReview } from '../../types';

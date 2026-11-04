@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Play, Pause, RotateCcw, Maximize2, ChefHat, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';

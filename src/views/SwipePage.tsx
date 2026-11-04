@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useRecipes } from '../context/RecipeContext';
 import { SwipeDiscoverOverlay } from '../components/discover/SwipeDiscoverOverlay';
 
@@ -8,19 +10,19 @@ import { SwipeDiscoverOverlay } from '../components/discover/SwipeDiscoverOverla
  * Ermöglicht sauberes URL-Routing, Teilen und native Browser-History (Zurück/Vor).
  */
 export const SwipePage: React.FC = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { filteredRecipes, recipes } = useRecipes();
 
   // Verwende gefilterte Rezepte falls vorhanden, sonst Gesamtpool
   const candidateRecipes = filteredRecipes.length > 0 ? filteredRecipes : recipes;
 
   const handleClose = useCallback(() => {
-    if (window.history.length > 2) {
-      navigate(-1);
+    if (typeof window !== 'undefined' && window.history.length > 2) {
+      router.back();
     } else {
-      navigate('/', { replace: true });
+      router.replace('/');
     }
-  }, [navigate]);
+  }, [router]);
 
   return (
     <div className="w-full h-full min-h-dvh flex flex-col justify-center items-center">

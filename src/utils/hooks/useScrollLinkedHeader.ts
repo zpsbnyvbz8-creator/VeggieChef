@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 
@@ -38,9 +40,7 @@ export function useScrollLinkedHeader({ enabled, pinned }: UseScrollLinkedHeader
 } {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [isHidden, setIsHidden] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(
-    () => typeof window !== 'undefined' && !!window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   const optsRef = useRef({ enabled, pinned });
   optsRef.current = { enabled, pinned };

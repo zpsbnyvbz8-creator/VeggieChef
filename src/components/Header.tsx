@@ -1,6 +1,8 @@
+'use client';
+
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   Leaf,
   Compass,
@@ -296,8 +298,10 @@ const TabNav: React.FC<TabNavProps> = ({ tabs, active, onNavigate, idPrefix, mob
 };
 
 export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname() || '/';
+  const navigate = useCallback((path: string) => router.push(path), [router]);
+  const location = useMemo(() => ({ pathname }), [pathname]);
   const recipesCtx = useRecipes();
   const shoppingCtx = useShopping();
   const syncCtx = useSync();
@@ -606,7 +610,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
   const syncConfig = syncCtx.syncConfig;
   const isFamilyConnected = syncConfig?.mode === 'family' && Boolean(syncConfig.groupId);
 
-  const stageGroup1 = useMemo(
+  const stageGroup1 = useMemo<Array<Omit<MenuRowProps, 'big' | 'tabIndex'> & { path?: string }>>(
     () => [
       {
         icon: Compass,
@@ -640,7 +644,7 @@ export const Header: React.FC<HeaderProps> = ({ onPinnedChange, hidden = false }
     [go, location.pathname]
   );
 
-  const stageGroup2 = useMemo(
+  const stageGroup2 = useMemo<Array<Omit<MenuRowProps, 'big' | 'tabIndex'>>>(
     () => [
       {
         icon: User,

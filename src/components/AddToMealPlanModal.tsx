@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Calendar, ChevronDown, Sun, Moon, Check } from 'lucide-react';
 import { Recipe, DayPlan, WeekPlan } from '../types';

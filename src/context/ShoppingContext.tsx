@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ShoppingItem, Recipe } from '../types';
 import { 
@@ -32,30 +34,36 @@ const ShoppingContext = createContext<ShoppingContextType | undefined>(undefined
 export const ShoppingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
   const { syncConfig, syncShoppingItems, registerDomainSync } = useSync();
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  const [shoppingItems, setShoppingItemsState] = useState<ShoppingItem[]>(() => {
+  const [shoppingItems, setShoppingItemsState] = useState<ShoppingItem[]>(INITIAL_SHOPPING_ITEMS);
+
+  // Hydrate shoppingItems from localStorage on client mount
+  useEffect(() => {
     const loaded = loadFromLocalStorage<ShoppingItem[] | null>('veggiechef_shopping', null);
     if (loaded && Array.isArray(loaded)) {
-      // If loaded has items, save backup
       if (loaded.length > 0) {
         saveToLocalStorage('veggiechef_shopping_backup', loaded);
       }
-      return loaded;
+      setShoppingItemsState(loaded);
+      setIsHydrated(true);
+      return;
     }
     const backup = loadFromLocalStorage<ShoppingItem[] | null>('veggiechef_shopping_backup', null);
     if (backup && Array.isArray(backup) && backup.length > 0) {
-      return backup;
+      setShoppingItemsState(backup);
     }
-    return INITIAL_SHOPPING_ITEMS;
-  });
+    setIsHydrated(true);
+  }, []);
 
   // Sync state with localStorage & maintain safety backup
   useEffect(() => {
+    if (!isHydrated) return;
     saveToLocalStorage('veggiechef_shopping', shoppingItems);
     if (shoppingItems.length > 0) {
       saveToLocalStorage('veggiechef_shopping_backup', shoppingItems);
     }
-  }, [shoppingItems]);
+  }, [shoppingItems, isHydrated]);
 
   // Register with SyncContext to receive non-destructive merged shopping items on join
   useEffect(() => {

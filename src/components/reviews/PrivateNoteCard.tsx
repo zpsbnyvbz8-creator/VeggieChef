@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Pin, Edit2, Trash2, Lock, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';

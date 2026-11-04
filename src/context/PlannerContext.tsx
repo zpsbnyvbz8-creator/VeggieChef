@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { DayPlan, Recipe, WeekPlan } from '../types';
 import { INITIAL_MEAL_PLAN } from '../data/recipes';
@@ -27,41 +29,52 @@ export interface PlannerContextType {
   selectWeek: (weekId: string) => void;
 }
 
+const DEFAULT_WEEKS: WeekPlan[] = [
+  {
+    id: 'week-1',
+    title: 'Aktuelle Woche',
+    startDate: '15.09. - 21.09.',
+    days: INITIAL_MEAL_PLAN,
+    createdAt: 0,
+  },
+];
+
 const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
 
 export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
   const { syncConfig, syncMealPlanDays, registerDomainSync } = useSync();
+  const [isHydrated, setIsHydrated] = useState(false);
 
   // Weekly Plans (Supports multiple rotated weeks)
-  const [weeks, setWeeks] = useState<WeekPlan[]>(() => {
-    const saved = loadFromLocalStorage<WeekPlan[]>('veggiechef_weeks_v2', []);
-    if (saved && saved.length > 0) return saved;
-    const initialDays = loadFromLocalStorage<DayPlan[]>('veggiechef_mealplan', INITIAL_MEAL_PLAN);
-    return [
-      {
-        id: 'week-1',
-        title: 'Aktuelle Woche',
-        startDate: '15.09. - 21.09.',
-        days: initialDays,
-        createdAt: Date.now(),
-      },
-    ];
-  });
+  const [weeks, setWeeks] = useState<WeekPlan[]>(DEFAULT_WEEKS);
 
-  const [activeWeekId, setActiveWeekId] = useState<string>(() => {
-    return loadFromLocalStorage<string>('veggiechef_active_week_id', 'week-1');
-  });
+  const [activeWeekId, setActiveWeekId] = useState<string>('week-1');
+
+  // Hydrate from localStorage on client mount
+  useEffect(() => {
+    const saved = loadFromLocalStorage<WeekPlan[]>('veggiechef_weeks_v2', []);
+    if (saved && saved.length > 0) {
+      setWeeks(saved);
+    } else {
+      const initialDays = loadFromLocalStorage<DayPlan[]>('veggiechef_mealplan', INITIAL_MEAL_PLAN);
+      setWeeks([
+        {
+          id: 'week-1',
+          title: 'Aktuelle Woche',
+          startDate: '15.09. - 21.09.',
+          days: initialDays,
+          createdAt: Date.now(),
+        },
+      ]);
+    }
+    setActiveWeekId(loadFromLocalStorage<string>('veggiechef_active_week_id', 'week-1'));
+    setIsHydrated(true);
+  }, []);
 
   // Current active week & its 7-day meal plan
   const activeWeek = useMemo(() => {
-    return weeks.find((w) => w.id === activeWeekId) || weeks[0] || {
-      id: 'week-1',
-      title: 'Aktuelle Woche',
-      startDate: '15.09. - 21.09.',
-      days: INITIAL_MEAL_PLAN,
-      createdAt: Date.now(),
-    };
+    return weeks.find((w) => w.id === activeWeekId) || weeks[0] || DEFAULT_WEEKS[0];
   }, [weeks, activeWeekId]);
 
   const mealPlan = activeWeek.days;
@@ -69,14 +82,15 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Recipe being planned via day/time selector modal
   const [recipeToAddToPlan, setRecipeToAddToPlan] = useState<Recipe | null>(null);
 
-  // Sync state with localStorage
+  // Sync state with localStorage (only after hydration)
   useEffect(() => {
+    if (!isHydrated) return;
     saveToLocalStorage('veggiechef_weeks_v2', weeks);
     saveToLocalStorage('veggiechef_active_week_id', activeWeekId);
     if (activeWeek) {
       saveToLocalStorage('veggiechef_mealplan', activeWeek.days);
     }
-  }, [weeks, activeWeekId, activeWeek]);
+  }, [weeks, activeWeekId, activeWeek, isHydrated]);
 
   // Register with SyncContext for non-destructive merge updates on join
   useEffect(() => {

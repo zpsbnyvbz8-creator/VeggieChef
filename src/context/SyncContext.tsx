@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import {
   SyncConfig,
@@ -66,15 +68,30 @@ export interface SyncContextType {
 
 const SyncContext = createContext<SyncContextType | undefined>(undefined);
 
+const DEFAULT_SYNC_CONFIG: SyncConfig = {
+  mode: 'local',
+  groupId: '',
+  groupName: '',
+  memberName: '',
+  joinedAt: '',
+};
+
 export const SyncProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [syncConfig, setSyncConfig] = useState<SyncConfig>(() => loadSyncConfig());
-  const [syncStatus, setSyncStatusLocal] = useState<SyncStatus>(() =>
-    syncConfig.mode === 'family' && syncConfig.groupId ? getSyncStatus() : 'idle'
-  );
+  const [syncConfig, setSyncConfig] = useState<SyncConfig>(DEFAULT_SYNC_CONFIG);
+  const [syncStatus, setSyncStatusLocal] = useState<SyncStatus>('idle');
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const { showToast } = useToast();
 
   const domainHandlersRef = useRef<Set<DomainSyncHandlers>>(new Set());
+
+  // Hydrate syncConfig from localStorage on client mount
+  useEffect(() => {
+    const loaded = loadSyncConfig();
+    setSyncConfig(loaded);
+    if (loaded.mode === 'family' && loaded.groupId) {
+      setSyncStatusLocal(getSyncStatus());
+    }
+  }, []);
 
   // Subscribe to central sync service status events
   useEffect(() => {

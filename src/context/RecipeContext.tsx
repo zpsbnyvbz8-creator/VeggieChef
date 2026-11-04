@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { 
   Recipe, 
@@ -34,56 +36,50 @@ const DEFAULT_FILTERS: FilterState = {
   sortBy: 'featured',
 };
 
+const DEFAULT_COOKED_LOGS: CookedLog[] = [
+  {
+    id: 'log-1',
+    recipeId: 'rec-1',
+    recipeTitle: 'Cremiges Kichererbsen Tikka Masala',
+    date: '2025-05-10T12:00:00.000Z',
+    servingsCooked: 4,
+    isVegan: true,
+    savedCO2Kg: 5.6,
+    savedWaterLiters: 4800,
+  },
+  {
+    id: 'log-2',
+    recipeId: 'rec-2',
+    recipeTitle: 'Crispy Sesam-Tofu Bowl mit Edamame & Erdnuss-Dressing',
+    date: '2025-05-07T12:00:00.000Z',
+    servingsCooked: 2,
+    isVegan: true,
+    savedCO2Kg: 2.8,
+    savedWaterLiters: 2400,
+  }
+];
+
 const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
 export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
   const { syncConfig, syncSingleRecipe, registerDomainSync } = useSync();
+  const [isHydrated, setIsHydrated] = useState(false);
 
   // Recipes State (Initial + Custom Saved AI Recipes + User Modifications like Photos/Cover)
-  const [recipes, setRecipes] = useState<Recipe[]>(() => {
-    const saved = loadFromLocalStorage<Recipe[]>('veggiechef_recipes', []);
-    if (!saved || saved.length === 0) {
-      return INITIAL_RECIPES;
-    }
-    const savedMap = new Map(saved.map((r) => [r.id, r]));
-    // Merge saved modifications into INITIAL_RECIPES (e.g. photos, custom cover, ratings)
-    const mergedInitial = INITIAL_RECIPES.map((initRecipe) => {
-      const savedVersion = savedMap.get(initRecipe.id);
-      if (savedVersion) {
-        return {
-          ...initRecipe,
-          ...savedVersion,
-        };
-      }
-      return initRecipe;
-    });
-
-    // Add user custom recipes that are not part of INITIAL_RECIPES
-    const initialIds = new Set(INITIAL_RECIPES.map((r) => r.id));
-    const userCustom = saved.filter((r) => !initialIds.has(r.id));
-    return [...mergedInitial, ...userCustom];
-  });
+  const [recipes, setRecipes] = useState<Recipe[]>(INITIAL_RECIPES);
 
   // Vegan toggle
-  const [onlyVegan, setOnlyVegan] = useState<boolean>(() => 
-    loadFromLocalStorage('veggiechef_only_vegan', false)
-  );
+  const [onlyVegan, setOnlyVegan] = useState<boolean>(false);
 
   // Favorites
-  const [favorites, setFavorites] = useState<string[]>(() => 
-    loadFromLocalStorage('veggiechef_favorites', ['rec-1', 'rec-3'])
-  );
+  const [favorites, setFavorites] = useState<string[]>(['rec-1', 'rec-3']);
 
   // Bookmarks (Merkliste getrennt von Favoriten)
-  const [bookmarks, setBookmarks] = useState<string[]>(() =>
-    loadFromLocalStorage('veggiechef_bookmarks', [])
-  );
+  const [bookmarks, setBookmarks] = useState<string[]>([]);
 
   // Disliked Recipes (to show less frequently & deprioritize)
-  const [dislikedIds, setDislikedIds] = useState<string[]>(() => 
-    loadFromLocalStorage('veggiechef_dislikes', [])
-  );
+  const [dislikedIds, setDislikedIds] = useState<string[]>([]);
 
   // Filter & Search State
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
@@ -100,59 +96,71 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [cookingTimer, setCookingTimer] = useState<CookingTimerState | null>(null);
 
   // Cooked Logs & Statistics
-  const [cookedLogs, setCookedLogs] = useState<CookedLog[]>(() => 
-    loadFromLocalStorage('veggiechef_cooked_logs', [
-      {
-        id: 'log-1',
-        recipeId: 'rec-1',
-        recipeTitle: 'Cremiges Kichererbsen Tikka Masala',
-        date: new Date(Date.now() - 86400000 * 2).toISOString(),
-        servingsCooked: 4,
-        isVegan: true,
-        savedCO2Kg: 5.6,
-        savedWaterLiters: 4800,
-      },
-      {
-        id: 'log-2',
-        recipeId: 'rec-2',
-        recipeTitle: 'Crispy Sesam-Tofu Bowl mit Edamame & Erdnuss-Dressing',
-        date: new Date(Date.now() - 86400000 * 5).toISOString(),
-        servingsCooked: 2,
-        isVegan: true,
-        savedCO2Kg: 2.8,
-        savedWaterLiters: 2400,
-      }
-    ])
-  );
+  const [cookedLogs, setCookedLogs] = useState<CookedLog[]>(DEFAULT_COOKED_LOGS);
 
-  // LocalStorage synchronizations
+  // Hydrate all state from localStorage on client mount
   useEffect(() => {
+    const saved = loadFromLocalStorage<Recipe[]>('veggiechef_recipes', []);
+    if (saved && saved.length > 0) {
+      const savedMap = new Map(saved.map((r) => [r.id, r]));
+      const mergedInitial = INITIAL_RECIPES.map((initRecipe) => {
+        const savedVersion = savedMap.get(initRecipe.id);
+        if (savedVersion) {
+          return {
+            ...initRecipe,
+            ...savedVersion,
+          };
+        }
+        return initRecipe;
+      });
+      const initialIds = new Set(INITIAL_RECIPES.map((r) => r.id));
+      const userCustom = saved.filter((r) => !initialIds.has(r.id));
+      setRecipes([...mergedInitial, ...userCustom]);
+    }
+
+    setOnlyVegan(loadFromLocalStorage('veggiechef_only_vegan', false));
+    setFavorites(loadFromLocalStorage('veggiechef_favorites', ['rec-1', 'rec-3']));
+    setBookmarks(loadFromLocalStorage('veggiechef_bookmarks', []));
+    setDislikedIds(loadFromLocalStorage('veggiechef_dislikes', []));
+    setCookedLogs(loadFromLocalStorage('veggiechef_cooked_logs', DEFAULT_COOKED_LOGS));
+    setIsHydrated(true);
+  }, []);
+
+  // LocalStorage synchronizations (only after initial hydration)
+  useEffect(() => {
+    if (!isHydrated) return;
     saveToLocalStorage('veggiechef_recipes', recipes);
-  }, [recipes]);
+  }, [recipes, isHydrated]);
 
   useEffect(() => {
+    if (!isHydrated) return;
     saveToLocalStorage('veggiechef_only_vegan', onlyVegan);
-  }, [onlyVegan]);
+  }, [onlyVegan, isHydrated]);
 
   useEffect(() => {
+    if (!isHydrated) return;
     saveToLocalStorage('veggiechef_favorites', favorites);
-  }, [favorites]);
+  }, [favorites, isHydrated]);
 
   useEffect(() => {
+    if (!isHydrated) return;
     saveToLocalStorage('veggiechef_bookmarks', bookmarks);
-  }, [bookmarks]);
+  }, [bookmarks, isHydrated]);
 
   useEffect(() => {
+    if (!isHydrated) return;
     saveToLocalStorage('veggiechef_dislikes', dislikedIds);
-  }, [dislikedIds]);
+  }, [dislikedIds, isHydrated]);
 
   useEffect(() => {
+    if (!isHydrated) return;
     saveToLocalStorage('veggiechef_cooked_logs', cookedLogs);
-  }, [cookedLogs]);
+  }, [cookedLogs, isHydrated]);
 
   useEffect(() => {
+    if (!isHydrated) return;
     saveToLocalStorage('veggiechef_active_timer', cookingTimer);
-  }, [cookingTimer]);
+  }, [cookingTimer, isHydrated]);
 
   // Register with SyncContext for non-destructive merge updates on join
   useEffect(() => {

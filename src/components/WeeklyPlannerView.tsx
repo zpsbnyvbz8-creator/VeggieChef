@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { 
   Sparkles, 
   ShoppingCart, 
@@ -116,7 +118,8 @@ interface WeeklyPlannerViewProps {
 }
 
 export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const navigate = (path: string) => router.push(path);
   const plannerCtx = usePlanner();
   const recipesCtx = useRecipes();
   const shoppingCtx = useShopping();
@@ -144,14 +147,18 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
   const [showRecipePickerModal, setShowRecipePickerModal] = useState(false);
 
   // Toggle showing lunch slot for all days AND weekly summary - persisted in safeStorage
-  const [showLunchSlot, setShowLunchSlot] = useState<boolean>(() => {
+  const [showLunchSlot, setShowLunchSlot] = useState<boolean>(true);
+
+  useEffect(() => {
     try {
       const saved = safeStorage.getItem('veggiechef_show_lunch_slot');
-      return saved !== null ? JSON.parse(saved) : true;
+      if (saved !== null) {
+        setShowLunchSlot(JSON.parse(saved));
+      }
     } catch {
-      return true;
+      // Fallback
     }
-  });
+  }, []);
 
   // When clicking any day header or the weekly summary header, all days and the weekly summary expand/collapse together
   const toggleDayLunch = () => {
@@ -962,6 +969,7 @@ export const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = (props) => {
       },
       ingredients: [],
       steps: [],
+      chefTip: '',
     };
 
     return (

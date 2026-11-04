@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useRouter } from 'next/navigation';
 import { 
   ArrowLeft,
   Clock, 
@@ -72,8 +74,10 @@ import {
 import { RecipeReview } from '../types';
 
 export const RecipeDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
+  const router = useRouter();
+  const navigate = (path: string) => router.push(path);
 
   const {
     recipes,
@@ -143,18 +147,16 @@ export const RecipeDetailPage: React.FC = () => {
   const [completedSteps, setCompletedSteps] = useState<Record<number, boolean>>({});
 
   // Responsive Side-by-Side Layout (Desktop, iPad/Tablet, Mobile Landscape) + Discreet User Toggle
-  const [canUseSideBySide, setCanUseSideBySide] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia('(min-width: 700px), (orientation: landscape) and (min-width: 560px)').matches;
-  });
+  const [canUseSideBySide, setCanUseSideBySide] = useState<boolean>(false);
 
-  const [layoutPreference, setLayoutPreference] = useState<'split' | 'stacked'>(() => {
+  const [layoutPreference, setLayoutPreference] = useState<'split' | 'stacked'>('split');
+
+  useEffect(() => {
     try {
       const saved = localStorage.getItem('veggiechef_recipe_detail_layout');
-      if (saved === 'stacked' || saved === 'split') return saved;
+      if (saved === 'stacked' || saved === 'split') setLayoutPreference(saved);
     } catch {}
-    return 'split';
-  });
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import {
   Leaf,
   Trash2,
@@ -60,7 +62,8 @@ function formatTotalCookingTime(totalMinutes: number): string {
 }
 
 export const StatsView: React.FC<StatsViewProps> = (props) => {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const navigate = (path: string) => router.push(path);
   const recipesCtx = useRecipes();
   const toastCtx = useToast();
 

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MoreHorizontal, CalendarPlus, ShoppingCart, Copy, ThumbsDown, ThumbsUp, Check } from 'lucide-react';

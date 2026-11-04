@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { Clock, Star, ChefHat, ArrowRight, Calendar } from 'lucide-react';
 import { RecipeImage } from './RecipeImage';
 import { HeartButton } from './ui/HeartButton';
@@ -110,7 +112,7 @@ const DishOfTheDayComponent: React.FC = () => {
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/45 to-black/10" />
 
         {/* Whole-hero click target (decorative duplicate of the CTA link) */}
-        <Link to={detailPath} tabIndex={-1} aria-hidden="true" className="absolute inset-0 z-10" />
+        <Link href={detailPath} tabIndex={-1} aria-hidden="true" className="absolute inset-0 z-10" />
 
         {/* Top row: badge + favorite */}
         <div className="absolute top-3 sm:top-4 inset-x-3 sm:inset-x-4 z-20 flex items-start justify-between gap-2 pointer-events-none">
@@ -182,7 +184,7 @@ const DishOfTheDayComponent: React.FC = () => {
           {/* Primärer Button: Stets „Rezept ansehen“ mit Pfeil */}
           <Link
             id="dish-of-the-day-view-btn"
-            to={detailPath}
+            href={detailPath}
             className="pointer-events-auto mt-5 inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-accent hover:bg-accent-hover text-on-accent font-bold text-base shadow-md transition-all active:scale-95 w-full sm:w-auto min-h-[48px]"
           >
             Rezept ansehen

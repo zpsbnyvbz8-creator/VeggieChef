@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Star, Plus, ThumbsUp, MessageSquare, Check, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRecipes } from '../context/RecipeContext';
@@ -25,8 +27,11 @@ import { forceUnlockBodyScroll } from '../utils/useLockBodyScroll';
 const PAGE_SIZE = 10;
 
 export const AllReviewsPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
+  const router = useRouter();
+  const navigate = (path: string, opts?: { replace?: boolean }) =>
+    opts?.replace ? router.replace(path) : router.push(path);
   const { recipes, updateRecipe } = useRecipes();
   const { showToast } = useToast();
 

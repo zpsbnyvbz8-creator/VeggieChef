@@ -1,5 +1,7 @@
+'use client';
+
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { Clock, Star, ChefHat } from 'lucide-react';
 import { Recipe } from '../../types';
 import { RecipeImage } from '../RecipeImage';
@@ -105,7 +107,7 @@ export const RecipeCardUnified: React.FC<RecipeCardUnifiedProps> = ({
             </button>
           ) : (
             <Link
-              to={`/recipes/${recipe.id}`}
+              href={`/recipes/${recipe.id}`}
               className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[-2px] rounded-sm"
             >
               {recipe.title}

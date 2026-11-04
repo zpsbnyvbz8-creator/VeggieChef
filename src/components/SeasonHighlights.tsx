@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useMemo, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Leaf } from 'lucide-react';
 import { useRecipes } from '../context/RecipeContext';

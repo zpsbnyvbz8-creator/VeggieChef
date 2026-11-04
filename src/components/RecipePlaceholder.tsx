@@ -2,7 +2,7 @@ import React from 'react';
 
 interface RecipePlaceholderProps {
   className?: string;
-  size?: 'sm' | 'md' | 'lg' | 'hero';
+  size?: 'sm' | 'md' | 'lg' | 'hero' | 'card';
 }
 
 /**

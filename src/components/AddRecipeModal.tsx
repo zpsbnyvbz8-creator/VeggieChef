@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import {
   X,
   Sparkles,
@@ -249,7 +251,8 @@ function parseRecipeFromDescription(text: string, imageBase64?: string | null): 
 }
 
 export const AddRecipeModal: React.FC<AddRecipeModalProps> = (props) => {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const navigate = (path: string) => router.push(path);
   const recipesCtx = useRecipes();
   const isOpen = props.isOpen !== undefined ? props.isOpen : recipesCtx.isAddRecipeOpen;
   const onClose = props.onClose ?? (() => recipesCtx.setIsAddRecipeOpen(false));

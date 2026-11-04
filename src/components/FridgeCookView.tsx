@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import {
   Sparkles,
   Plus,
@@ -60,7 +62,8 @@ function doesIngredientMatch(recipeIngredientName: string, selectedItem: string)
 }
 
 export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const navigate = (path: string) => router.push(path);
   const recipesCtx = useRecipes();
   const toastCtx = useToast();
 
@@ -69,21 +72,25 @@ export const FridgeCookView: React.FC<FridgeCookViewProps> = (props) => {
   const onlyVeganGlobal = props.onlyVeganGlobal ?? recipesCtx.onlyVegan;
   const onCopyFeedback = props.onCopyFeedback ?? toastCtx.showToast;
 
-  // Load and persist ingredients properly using safeStorage (prevents iframe SecurityError)
-  const [selectedIngredients, setSelectedIngredients] = useState<string[]>(() => {
+  // Load and persist ingredients properly using safeStorage inside useEffect (prevents hydration mismatch)
+  const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
+  const isHydratedRef = useRef(false);
+
+  useEffect(() => {
     try {
       const stored = safeStorage.getItem('veggiechef_pantry_ingredients');
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) setSelectedIngredients(parsed);
       }
     } catch {
       // Fallback
     }
-    return [];
-  });
+    isHydratedRef.current = true;
+  }, []);
 
   useEffect(() => {
+    if (!isHydratedRef.current) return;
     try {
       safeStorage.setItem('veggiechef_pantry_ingredients', JSON.stringify(selectedIngredients));
     } catch {

@@ -1,5 +1,7 @@
-import { useEffect } from 'react';
-import { useLocation, useNavigationType } from 'react-router-dom';
+'use client';
+
+import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 
 /** Routes whose list position is restored by the page itself when returning via Back/Forward. */
 const SELF_RESTORING_ROUTES = new Set(['/', '/favorites']);
@@ -9,17 +11,26 @@ const SELF_RESTORING_ROUTES = new Set(['/', '/favorites']);
  * except when going Back/Forward to a list that restores its own scroll position.
  */
 export const ScrollToTop = () => {
-  const { pathname } = useLocation();
-  const navType = useNavigationType();
+  const pathname = usePathname() || '/';
+  const isPopRef = useRef(false);
 
   useEffect(() => {
-    if (navType === 'POP' && SELF_RESTORING_ROUTES.has(pathname)) return;
+    const onPopState = () => {
+      isPopRef.current = true;
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  useEffect(() => {
+    const wasPop = isPopRef.current;
+    isPopRef.current = false;
+    if (wasPop && SELF_RESTORING_ROUTES.has(pathname)) return;
     window.scrollTo({
       top: 0,
       left: 0,
       behavior: 'instant' as ScrollBehavior,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   return null;

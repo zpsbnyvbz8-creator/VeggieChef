@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { 
   Heart, 
@@ -190,7 +192,8 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ recipe, isFront, onSwipe, onOpenD
 };
 
 export const SwipeRecipeDeck: React.FC<SwipeRecipeDeckProps> = ({ recipes, onSwitchToGrid }) => {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const navigate = (path: string) => router.push(path);
   const { favorites, toggleFavorite, setCookingModeRecipe } = useRecipes();
   const { showToast } = useToast();
 

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Copy, 
@@ -79,18 +81,22 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   const [copied, setCopied] = useState(false);
   const [quickAddInput, setQuickAddInput] = useState('');
   const [categoryChoice, setCategoryChoice] = useState<'auto' | IngredientCategory>('auto');
-  const [viewMode, setViewMode] = useState<'categorized' | 'flat'>(() =>
-    loadFromLocalStorage<'categorized' | 'flat'>('veggiechef_shopping_view_mode', 'categorized')
-  );
-
-  useEffect(() => {
-    saveToLocalStorage('veggiechef_shopping_view_mode', viewMode);
-  }, [viewMode]);
+  const [viewMode, setViewMode] = useState<'categorized' | 'flat'>('categorized');
+  const viewModeHydratedRef = useRef(false);
 
   // Toggleable Recipe Source ("Herkunft der Zutat")
-  const [showRecipeSource, setShowRecipeSource] = useState<boolean>(() =>
-    loadFromLocalStorage('veggiechef_show_recipe_source', true)
-  );
+  const [showRecipeSource, setShowRecipeSource] = useState<boolean>(true);
+
+  useEffect(() => {
+    setViewMode(loadFromLocalStorage<'categorized' | 'flat'>('veggiechef_shopping_view_mode', 'categorized'));
+    setShowRecipeSource(loadFromLocalStorage('veggiechef_show_recipe_source', true));
+    viewModeHydratedRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!viewModeHydratedRef.current) return;
+    saveToLocalStorage('veggiechef_shopping_view_mode', viewMode);
+  }, [viewMode]);
 
   const toggleShowRecipeSource = () => {
     setShowRecipeSource((prev) => {
@@ -142,13 +148,15 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = (props) => {
   }, []);
 
   // Shelf (Category) reorder state via drag and drop (mit Selbstheilung falls Kategorien fehlen)
-  const [shelfOrder, setShelfOrder] = useState<IngredientCategory[]>(() => {
+  const [shelfOrder, setShelfOrder] = useState<IngredientCategory[]>(DEFAULT_SHELF_ORDER);
+  useEffect(() => {
     const saved = loadFromLocalStorage<IngredientCategory[]>('veggiechef_shelf_order', DEFAULT_SHELF_ORDER);
-    if (!Array.isArray(saved) || saved.length === 0) return DEFAULT_SHELF_ORDER;
-    const valid = saved.filter((c): c is IngredientCategory => DEFAULT_SHELF_ORDER.includes(c));
-    const missing = DEFAULT_SHELF_ORDER.filter((c) => !valid.includes(c));
-    return [...Array.from(new Set(valid)), ...missing];
-  });
+    if (Array.isArray(saved) && saved.length > 0) {
+      const valid = saved.filter((c): c is IngredientCategory => DEFAULT_SHELF_ORDER.includes(c));
+      const missing = DEFAULT_SHELF_ORDER.filter((c) => !valid.includes(c));
+      setShelfOrder([...Array.from(new Set(valid)), ...missing]);
+    }
+  }, []);
   const [draggedShelf, setDraggedShelf] = useState<IngredientCategory | null>(null);
   const [dragOverShelf, setDragOverShelf] = useState<IngredientCategory | null>(null);
 

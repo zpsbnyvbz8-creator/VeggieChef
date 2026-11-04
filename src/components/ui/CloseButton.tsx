@@ -7,7 +7,8 @@ export interface CloseButtonProps {
   title?: string;
   className?: string;
   id?: string;
-  size?: 'md' | 'lg';
+  size?: 'md' | 'lg' | number;
+  iconSize?: number;
 }
 
 export const CloseButton: React.FC<CloseButtonProps> = ({

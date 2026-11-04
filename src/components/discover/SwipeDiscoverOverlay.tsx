@@ -1,6 +1,8 @@
+'use client';
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import {
   X,
   RotateCcw,
@@ -68,12 +70,21 @@ export const SwipeDiscoverOverlay: React.FC<SwipeDiscoverOverlayProps> = ({
   onClose,
   onSelectRecipe,
 }) => {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const navigate = useCallback((path: string) => router.push(path), [router]);
   const { favorites, toggleFavorite, dislikedIds } = useRecipes();
   const { showToast } = useToast();
   useLockBodyScroll(true);
 
-  const [deck, setDeck] = useState<Recipe[]>(() => buildDeck(recipes, dislikedIds));
+  const [deck, setDeck] = useState<Recipe[]>(() => {
+    const allowed = recipes.filter((r) => !dislikedIds.includes(r.id));
+    const source = allowed.length > 0 ? allowed : recipes;
+    return source.slice(0, DECK_SIZE);
+  });
+  useEffect(() => {
+    setDeck(buildDeck(recipes, dislikedIds));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [index, setIndex] = useState(0);
   const [hasSwipedOnce, setHasSwipedOnce] = useState(false);
   const [isEntered, setIsEntered] = useState(false);

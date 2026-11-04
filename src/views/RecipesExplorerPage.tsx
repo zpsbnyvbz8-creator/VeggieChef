@@ -1,6 +1,8 @@
+'use client';
+
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { useNavigate, useNavigationType } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { ArrowUpDown, Check, ChevronDown, Layers, LayoutGrid, List, Plus, Bookmark, History } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useRecipes } from '../context/RecipeContext';
@@ -36,8 +38,8 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({
   isBookmarks = false,
   isCooked = false,
 }) => {
-  const navigate = useNavigate();
-  const navType = useNavigationType();
+  const router = useRouter();
+  const navigate = (path: string) => router.push(path);
   const {
     favorites,
     bookmarks,
@@ -53,7 +55,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({
   } = useRecipes();
 
   const memoryKey = isBookmarks ? 'bookmarks' : isFavorites ? 'favorites' : isCooked ? 'cooked' : 'explore';
-  const restore = navType === 'POP' ? listMemory[memoryKey] : undefined;
+  const restore = listMemory[memoryKey];
 
   const [visibleCount, setVisibleCount] = useState(restore?.count ?? RECIPES_PAGE_SIZE);
 
@@ -84,8 +86,14 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({
 
   /* ---- Layout-Toggle Raster/Liste: Auswahl wird gemerkt (SSR-sicher, try/catch in helpers) ---- */
   const VIEW_MODE_KEY = 'veggiechef_explorer_view';
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => loadFromLocalStorage<'grid' | 'list'>(VIEW_MODE_KEY, 'grid'));
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const viewModeHydratedRef = useRef(false);
   useEffect(() => {
+    setViewMode(loadFromLocalStorage<'grid' | 'list'>(VIEW_MODE_KEY, 'grid'));
+    viewModeHydratedRef.current = true;
+  }, []);
+  useEffect(() => {
+    if (!viewModeHydratedRef.current) return;
     saveToLocalStorage(VIEW_MODE_KEY, viewMode);
   }, [viewMode]);
 
@@ -128,7 +136,7 @@ export const RecipesExplorerPage: React.FC<RecipesExplorerPageProps> = ({
       }
       // Bei Standard-Sortierung ("Empfohlen") bleibt die chronologische "Zuletzt gekocht"-Reihenfolge erhalten;
       // bei expliziter Sortierung (z. B. Schnellste, Wenigste Kalorien) wird die gewählte Sortierung übernommen.
-      if (filters.sortBy !== 'recommended') {
+      if ((filters.sortBy as string) !== 'recommended') {
         return filteredRecipes.filter((fr) => seenIds.has(fr.id));
       }
       return orderedRecipes.filter((r) => filteredRecipes.some((fr) => fr.id === r.id));

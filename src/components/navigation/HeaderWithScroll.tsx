@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useState } from 'react';
 import { useScrollLinkedHeader } from '../../utils/hooks/useScrollLinkedHeader';
 import { Header } from '../Header';
@@ -8,13 +10,12 @@ import { Header } from '../Header';
  * Bei offener Suche oder offenem Menü ist er „gepinnt" und bleibt eingefahren.
  */
 export const HeaderWithScroll: React.FC = () => {
-  const [hideEnabled, setHideEnabled] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches
-  );
+  const [hideEnabled, setHideEnabled] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 1023px)');
     const update = () => setHideEnabled(mq.matches);
+    update();
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
   }, []);

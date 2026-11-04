@@ -1,5 +1,7 @@
+'use client';
+
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { Clock, Flame, Dumbbell, Heart, Star } from 'lucide-react';
 import { Recipe } from '../types';
 import { RecipeImage } from './RecipeImage';
@@ -79,7 +81,7 @@ const RecipeCardComponent: React.FC<RecipeCardProps> = ({ recipe }) => {
 
         <h3 className="mt-1.5 font-bold text-text-main text-base leading-snug line-clamp-2 group-hover:text-accent transition-colors">
           <Link
-            to={`/recipes/${recipe.id}`}
+            href={`/recipes/${recipe.id}`}
             className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[-2px] rounded-sm"
           >
             {recipe.title}

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Recipe } from '../types';
 import { RecipePlaceholder } from './RecipePlaceholder';
@@ -6,7 +8,7 @@ interface RecipeImageProps {
   recipe: Recipe;
   className?: string;
   imgClassName?: string;
-  size?: 'sm' | 'md' | 'lg' | 'hero';
+  size?: 'sm' | 'md' | 'lg' | 'hero' | 'card';
   alt?: string;
 }
 

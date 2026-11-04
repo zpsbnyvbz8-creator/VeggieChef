@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Check, ChefHat, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
