@@ -96,10 +96,8 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isCookingMinimized, setIsCookingMinimized] = useState<boolean>(false);
   const [cookingCurrentStep, setCookingCurrentStep] = useState<number>(0);
 
-  // Active Persistent Cooking Timer State
-  const [cookingTimer, setCookingTimer] = useState<CookingTimerState | null>(() =>
-    loadFromLocalStorage('veggiechef_active_timer', null)
-  );
+  // Active Cooking Timer State (only active during a cooking session)
+  const [cookingTimer, setCookingTimer] = useState<CookingTimerState | null>(null);
 
   // Cooked Logs & Statistics
   const [cookedLogs, setCookedLogs] = useState<CookedLog[]>(() => 

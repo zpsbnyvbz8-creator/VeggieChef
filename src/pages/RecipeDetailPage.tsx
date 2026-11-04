@@ -220,9 +220,13 @@ export const RecipeDetailPage: React.FC = () => {
 
   // Gallery & Image states
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isFullscreenImageOpen, setIsFullscreenImageOpen] = useState(false);
-  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxContext, setLightboxContext] = useState<
+    | { type: 'hero' }
+    | { type: 'step'; stepNumber: number; title: string }
+    | null
+  >(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const isFullscreenImageOpen = lightboxContext !== null;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Touch Swipe gesture for Hero Image
@@ -527,6 +531,19 @@ export const RecipeDetailPage: React.FC = () => {
   const currentCoverImage = allImages[safeCurrentImageIndex] || allImages[0];
   const activeIngredients = (isVeganized && veganizedIngredients) ? veganizedIngredients : recipe.ingredients;
 
+  const activeLightboxImages = useMemo(() => {
+    if (!lightboxContext) return [];
+    if (lightboxContext.type === 'hero') {
+      return allImages;
+    }
+    const targetStep = recipe.steps?.find((s, idx) => {
+      const num = typeof s === 'string' ? idx + 1 : s.stepNumber;
+      return num === lightboxContext.stepNumber;
+    });
+    if (!targetStep || typeof targetStep === 'string') return [];
+    return targetStep.stepImages || [];
+  }, [lightboxContext, allImages, recipe.steps]);
+
   // Touch Swipe Handlers for Hero Image
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.targetTouches[0].clientX;
@@ -713,11 +730,14 @@ export const RecipeDetailPage: React.FC = () => {
       image: isDeletingBaseImage ? (newUserImages[0] || 'veggiechef-placeholder') : recipe.image,
     };
 
+    const remainingCount = allImages.filter((url) => url !== imgUrl).length;
     updateRecipe(updated);
     setCurrentImageIndex(0);
-    setLightboxIndex(0);
-    if (newUserImages.length === 0 && (isDeletingBaseImage || !updated.image || updated.image === 'veggiechef-placeholder')) {
-      setIsFullscreenImageOpen(false);
+    if (remainingCount <= 0) {
+      setLightboxContext(null);
+      setLightboxIndex(0);
+    } else {
+      setLightboxIndex((prev) => Math.max(0, Math.min(prev, remainingCount - 1)));
     }
     showToast('Foto erfolgreich gelöscht!');
   };
@@ -970,11 +990,35 @@ export const RecipeDetailPage: React.FC = () => {
     showToast('Als gekocht erfasst!');
   };
 
-  // Open lightbox with specific images
-  const openLightbox = (images: string[], index: number = 0) => {
-    setLightboxImages(images);
+  // Open lightbox for hero gallery or step photos
+  const openHeroLightbox = (index: number = 0) => {
+    setLightboxContext({ type: 'hero' });
     setLightboxIndex(index);
-    setIsFullscreenImageOpen(true);
+  };
+
+  const openStepLightbox = (stepNumber: number, stepTitle: string, index: number = 0) => {
+    const formattedTitle =
+      stepTitle && !stepTitle.toLowerCase().startsWith('schritt')
+        ? `Schritt ${stepNumber}: ${stepTitle}`
+        : stepTitle || `Schritt ${stepNumber}`;
+    setLightboxContext({ type: 'step', stepNumber, title: formattedTitle });
+    setLightboxIndex(index);
+  };
+
+  const handleLightboxDeletePhoto = (imgUrl: string, index: number) => {
+    if (!lightboxContext) return;
+    if (lightboxContext.type === 'step') {
+      const remainingCount = activeLightboxImages.length - 1;
+      handleRemoveStepPhoto(lightboxContext.stepNumber, index);
+      if (remainingCount <= 0) {
+        setLightboxContext(null);
+        setLightboxIndex(0);
+      } else {
+        setLightboxIndex((prev) => Math.max(0, Math.min(prev, remainingCount - 1)));
+      }
+    } else {
+      handleDeletePhoto(imgUrl);
+    }
   };
 
   const savings = calculateMealSavings(servings, recipe.isVegan || isVeganized);
@@ -1190,7 +1234,7 @@ export const RecipeDetailPage: React.FC = () => {
         {hasImages ? (
           <div 
             className="relative h-[calc(20rem+env(safe-area-inset-top,0px))] sm:h-[calc(24rem+env(safe-area-inset-top,0px))] md:h-[calc(26.25rem+env(safe-area-inset-top,0px))] w-full cursor-pointer group touch-pan-y"
-            onClick={() => openLightbox(allImages, safeCurrentImageIndex)}
+            onClick={() => openHeroLightbox(safeCurrentImageIndex)}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -2034,7 +2078,13 @@ export const RecipeDetailPage: React.FC = () => {
                                           stepTitle={stepObj.title || `Schritt ${stepObj.stepNumber}`}
                                           isManagingPhotos={isManagingStepPhotos}
                                           onRemovePhoto={handleRemoveStepPhoto}
-                                          onOpenLightbox={openLightbox}
+                                          onOpenLightbox={(_imgs, initialIndex) =>
+                                            openStepLightbox(
+                                              stepObj.stepNumber,
+                                              stepObj.title || `Schritt ${stepObj.stepNumber}`,
+                                              initialIndex
+                                            )
+                                          }
                                         />
                                       </div>
                                     </motion.div>
@@ -2601,19 +2651,18 @@ export const RecipeDetailPage: React.FC = () => {
 
       {/* 2. Fullscreen Lightbox Image Viewer */}
       <FullscreenImageViewer
-        isOpen={isFullscreenImageOpen}
-        images={lightboxImages.length > 0 ? lightboxImages : allImages}
+        isOpen={isFullscreenImageOpen && activeLightboxImages.length > 0}
+        images={activeLightboxImages}
         currentIndex={lightboxIndex}
         onClose={() => {
-          setIsFullscreenImageOpen(false);
-          setLightboxImages([]);
+          setLightboxContext(null);
           setLightboxIndex(0);
         }}
         onSelectIndex={(idx) => setLightboxIndex(idx)}
-        onSetAsCover={handleSetAsCover}
-        onDeletePhoto={handleDeletePhoto}
-        activeCoverUrl={recipe.activeCoverImage || recipe.image}
-        recipeTitle={recipe.title}
+        onSetAsCover={lightboxContext?.type === 'hero' ? handleSetAsCover : undefined}
+        onDeletePhoto={handleLightboxDeletePhoto}
+        activeCoverUrl={lightboxContext?.type === 'hero' ? (recipe.activeCoverImage || recipe.image) : undefined}
+        recipeTitle={lightboxContext?.type === 'step' ? lightboxContext.title : recipe.title}
       />
 
       {/* 3. Contextual Ingredient Substitution Modal */}
@@ -2736,8 +2785,7 @@ export const RecipeDetailPage: React.FC = () => {
               </div>
 
               <div className="p-3.5 bg-accent-tint rounded-xl text-xs text-accent border border-border">
-                🌱 Durch dieses Gericht hast du ca. <strong>{savings.savedCO2Kg} kg CO₂</strong> und{' '}
-                <strong>{savings.savedWaterLiters} Liter Wasser</strong> eingespart!
+                Wird mit <strong>{servings} {servings === 1 ? 'Portion' : 'Portionen'}</strong> unter „Zuletzt gekocht“ und in deiner Kochstatistik gespeichert.
               </div>
 
               <div className="flex items-center gap-2.5 pt-2">

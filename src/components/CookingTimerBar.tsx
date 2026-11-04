@@ -1,182 +1,183 @@
 import React from 'react';
-import { Clock, Play, Pause, RotateCcw, X, ChevronUp, ChefHat } from 'lucide-react';
-import { CookingTimerState } from '../types';
-import { useRecipes } from '../context/RecipeContext';
+import { Play, Pause, RotateCcw, Maximize2, ChefHat, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useRecipes } from '../context';
+import CloseButton from './ui/CloseButton';
 
-interface CookingTimerBarProps {
-  timer?: CookingTimerState | null;
-  onTogglePlay?: () => void;
-  onReset?: () => void;
-  onDismiss?: () => void;
-  onOpenCookingMode?: () => void;
-  /** Raise the bar above the bottom navigation (non-detail pages). */
-  offsetForBottomNav?: boolean;
-}
+export const CookingTimerBar: React.FC = () => {
+  const {
+    recipes,
+    cookingModeRecipe,
+    setCookingModeRecipe,
+    isCookingMinimized,
+    setIsCookingMinimized,
+    cookingCurrentStep,
+    setCookingCurrentStep,
+    cookingTimer,
+    setCookingTimer,
+  } = useRecipes();
 
-export const CookingTimerBar: React.FC<CookingTimerBarProps> = (props) => {
-  const recipesCtx = useRecipes();
+  const isVisible = Boolean(cookingTimer || (cookingModeRecipe && isCookingMinimized));
 
-  const timer = props.timer !== undefined ? props.timer : recipesCtx.cookingTimer;
-  const cookingModeRecipe = recipesCtx.cookingModeRecipe;
-  const isCookingMinimized = recipesCtx.isCookingMinimized;
-  const cookingCurrentStep = recipesCtx.cookingCurrentStep;
-
-  // Render when there is an active timer OR when cooking mode is minimized
-  if (!timer && (!cookingModeRecipe || !isCookingMinimized)) {
+  if (!isVisible) {
     return null;
   }
 
-  const onTogglePlay = props.onTogglePlay ?? (() => {
-    recipesCtx.setCookingTimer((prev) => (prev ? { ...prev, isRunning: !prev.isRunning } : null));
-  });
+  const activeRecipe =
+    cookingModeRecipe?.recipe ||
+    (cookingTimer ? recipes.find((r) => r.id === cookingTimer.recipeId) || null : null);
 
-  const onReset = props.onReset ?? (() => {
-    recipesCtx.setCookingTimer((prev) => (prev ? { ...prev, secondsLeft: prev.totalSeconds, isRunning: false } : null));
-  });
+  const recipeTitle =
+    activeRecipe?.title || cookingTimer?.recipeTitle || 'Kochmodus aktiv';
+  const totalSteps = activeRecipe?.steps?.length || 1;
+  const stepNumber = cookingModeRecipe
+    ? cookingCurrentStep + 1
+    : cookingTimer?.stepNumber || 1;
 
-  const onDismiss = props.onDismiss ?? (() => {
-    recipesCtx.setCookingTimer(null);
-    if (recipesCtx.isCookingMinimized) {
-      recipesCtx.setIsCookingMinimized(false);
-      recipesCtx.setCookingModeRecipe(null);
-      recipesCtx.setCookingCurrentStep(0);
-    }
-  });
+  const formatTime = (secs: number) => {
+    const mins = Math.floor(secs / 60);
+    const remSecs = secs % 60;
+    return `${String(mins).padStart(2, '0')}:${String(remSecs).padStart(2, '0')}`;
+  };
 
-  const onOpenCookingMode = props.onOpenCookingMode ?? (() => {
-    if (cookingModeRecipe) {
-      recipesCtx.setIsCookingMinimized(false);
-    } else if (timer) {
-      const target = recipesCtx.recipes.find((r) => r.id === timer.recipeId);
-      if (target) {
-        recipesCtx.setCookingModeRecipe({ recipe: target, servings: 2 });
-        recipesCtx.setCookingCurrentStep(Math.max(0, timer.stepNumber - 1));
-        recipesCtx.setIsCookingMinimized(false);
+  const handleResumeCooking = () => {
+    if (!cookingModeRecipe && activeRecipe) {
+      setCookingModeRecipe({ recipe: activeRecipe, servings: activeRecipe.servings });
+      if (cookingTimer?.stepNumber) {
+        setCookingCurrentStep(Math.max(0, cookingTimer.stepNumber - 1));
       }
     }
-  });
+    setIsCookingMinimized(false);
+  };
 
-  const recipeTitle = cookingModeRecipe?.recipe.title || timer?.recipeTitle || 'Rezept';
-  const stepNumber = timer?.stepNumber ?? (cookingCurrentStep + 1);
-  const totalSteps = cookingModeRecipe?.recipe.steps.length;
+  const handleToggleTimer = () => {
+    if (!cookingTimer) return;
+    setCookingTimer({
+      ...cookingTimer,
+      isRunning: !cookingTimer.isRunning,
+    });
+  };
 
-  const mins = timer ? Math.floor(timer.secondsLeft / 60) : 0;
-  const secs = timer ? timer.secondsLeft % 60 : 0;
-  const timeFormatted = timer ? `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}` : null;
-  const isFinished = timer ? timer.secondsLeft === 0 : false;
-  const progressPercent = timer && timer.totalSeconds > 0
-    ? Math.max(0, Math.min(100, Math.round(((timer.totalSeconds - timer.secondsLeft) / timer.totalSeconds) * 100)))
-    : 0;
+  const handleResetTimer = () => {
+    if (!cookingTimer) return;
+    setCookingTimer({
+      ...cookingTimer,
+      secondsLeft: cookingTimer.totalSeconds,
+      isRunning: false,
+    });
+  };
+
+  const handleCloseAll = () => {
+    setCookingTimer(null);
+    setIsCookingMinimized(false);
+    setCookingModeRecipe(null);
+  };
 
   return (
-    <aside
-      id="persistent-cooking-timer-bar"
-      className={`fixed inset-x-0 ${props.offsetForBottomNav ? 'bottom-[calc(3.5rem+env(safe-area-inset-bottom))]' : 'bottom-0'} z-50 bg-[#57534d] text-on-accent border-t border-[#3D5254] px-3 sm:px-6 py-2.5 shadow-2xl animate-in slide-in-from-bottom duration-200`}
-      aria-label="Aktiver Kochmodus und Timer"
-    >
-      {/* Top Countdown Progress Indicator */}
-      {timer && timer.totalSeconds > 0 && (
-        <div className="absolute top-0 inset-x-0 h-1 bg-card/10 overflow-hidden">
-          <div
-            className={`h-full transition-all duration-300 ${
-              isFinished ? 'bg-amber-400' : timer.isRunning ? 'bg-accent' : 'bg-accent/60'
-            }`}
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      )}
-
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
-        {/* Left info & time / step */}
-        <div 
-          onClick={onOpenCookingMode} 
-          className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group min-w-0"
-          title="Klicken, um den Kochmodus im Vollbild zu öffnen"
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 20, scale: 0.96 }}
+        transition={{ duration: 0.22, ease: 'easeOut' }}
+        className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-6 sm:w-auto sm:min-w-[380px] sm:max-w-md z-50 bg-card/95 backdrop-blur-md text-text-main rounded-2xl shadow-lg border border-border p-3 flex items-center justify-between gap-3"
+      >
+        {/* Left: Recipe & Step Info (Click to resume cooking mode) */}
+        <button
+          type="button"
+          onClick={handleResumeCooking}
+          className="flex items-center gap-3 text-left group min-w-0 flex-1 cursor-pointer"
         >
-          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-            isFinished
-              ? 'bg-amber-500 text-on-accent animate-bounce'
-              : timer?.isRunning
-              ? 'bg-accent text-on-accent animate-pulse'
-              : 'bg-card/10 text-on-accent/90 group-hover:bg-accent group-hover:text-on-accent'
-          }`}>
-            {timer ? <Clock className="w-5 h-5" /> : <ChefHat className="w-5 h-5 text-[#8DB898]" />}
+          <div className="w-10 h-10 rounded-xl bg-accent-tint text-accent flex items-center justify-center shrink-0 group-hover:bg-accent group-hover:text-on-accent transition-colors">
+            <ChefHat className="w-5 h-5" />
           </div>
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              {timeFormatted ? (
-                <span className="text-lg font-mono font-bold tracking-wider text-on-accent">
-                  {isFinished ? 'Fertig!' : timeFormatted}
-                </span>
-              ) : (
-                <span className="text-sm font-semibold text-[#8DB898]">
-                  Kochmodus aktiv
-                </span>
-              )}
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-card/10 text-[#8DB898] truncate">
-                Schritt {stepNumber}{totalSteps ? ` / ${totalSteps}` : ''}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-bold text-accent">
+                Schritt {Math.min(stepNumber, totalSteps)}/{totalSteps}
+              </span>
+              <span className="text-text-muted/40 text-xs">•</span>
+              <span className="text-[11px] font-medium text-text-muted group-hover:text-text-main transition-colors">
+                Öffnen
               </span>
             </div>
-            <p className="text-xs text-on-accent/70 truncate max-w-[130px] xs:max-w-[200px] sm:max-w-xs md:max-w-md group-hover:text-on-accent transition-colors">
+            <p className="text-sm font-bold text-text-main truncate">
               {recipeTitle}
             </p>
           </div>
-        </div>
+        </button>
 
-        {/* Right controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {timer && (
-            <>
+        {/* Center: Active Timer Controls (if a timer is set) */}
+        {cookingTimer && (
+          <div
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border shrink-0 ${
+              cookingTimer.secondsLeft === 0
+                ? 'bg-amber-50 border-amber-300 text-amber-900'
+                : 'bg-surface border-border text-text-main'
+            }`}
+          >
+            <Clock
+              className={`w-3.5 h-3.5 ${
+                cookingTimer.secondsLeft === 0
+                  ? 'text-amber-600 animate-bounce'
+                  : cookingTimer.isRunning
+                  ? 'text-accent'
+                  : 'text-text-muted'
+              }`}
+            />
+            <span className="font-mono font-bold text-xs sm:text-sm tabular-nums">
+              {cookingTimer.secondsLeft === 0
+                ? 'Fertig!'
+                : formatTime(cookingTimer.secondsLeft)}
+            </span>
+
+            {cookingTimer.secondsLeft > 0 ? (
               <button
                 type="button"
-                onClick={onTogglePlay}
-                className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation active:scale-95 ${
-                  timer.isRunning
-                    ? 'bg-[#D35400] hover:bg-[#B94600] text-on-accent'
-                    : 'bg-accent hover:bg-accent-hover text-on-accent'
-                }`}
-                title={timer.isRunning ? 'Timer pausieren' : 'Timer starten'}
+                onClick={handleToggleTimer}
+                className="w-7 h-7 rounded-lg bg-accent-tint text-accent hover:bg-accent hover:text-on-accent flex items-center justify-center transition-colors cursor-pointer ml-1"
+                title={cookingTimer.isRunning ? 'Timer pausieren' : 'Timer starten'}
               >
-                {timer.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
-                <span className="hidden sm:inline">{timer.isRunning ? 'Pause' : 'Start'}</span>
+                {cookingTimer.isRunning ? (
+                  <Pause className="w-3.5 h-3.5" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 ml-0.5" />
+                )}
               </button>
-
+            ) : (
               <button
                 type="button"
-                onClick={onReset}
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-card/10 hover:bg-card/20 text-on-accent/80 transition-colors flex items-center justify-center cursor-pointer touch-manipulation active:scale-95"
+                onClick={handleResetTimer}
+                className="w-7 h-7 rounded-lg bg-amber-200/70 text-amber-900 hover:bg-amber-300 flex items-center justify-center transition-colors cursor-pointer ml-1"
                 title="Timer zurücksetzen"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-3.5 h-3.5" />
               </button>
-            </>
-          )}
+            )}
+          </div>
+        )}
 
-          {/* Re-open / Maximize Cooking Mode */}
+        {/* Right: Maximize & Close */}
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
-            id="cooking-timer-bar-open-btn"
-            onClick={onOpenCookingMode}
-            className="min-h-[38px] px-3 sm:px-3.5 py-1.5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer touch-manipulation active:scale-95 shadow-xs"
-            title="Kochmodus im Vollbild fortsetzen"
+            onClick={handleResumeCooking}
+            className="w-9 h-9 rounded-xl bg-surface hover:bg-border/60 border border-border text-text-muted hover:text-text-main flex items-center justify-center transition-colors cursor-pointer"
+            title="Kochmodus maximieren"
+            aria-label="Kochmodus maximieren"
           >
-            <ChevronUp className="w-4 h-4" />
-            <span>Vollbild</span>
+            <Maximize2 className="w-4 h-4" />
           </button>
-
-          {/* Dismiss button */}
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl hover:bg-card/10 text-on-accent/60 hover:text-on-accent transition-colors flex items-center justify-center cursor-pointer touch-manipulation active:scale-95"
-            title="Kochleiste beenden"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <CloseButton
+            onClick={handleCloseAll}
+            ariaLabel="Kochmodus beenden"
+            size={36}
+            iconSize={16}
+            className="rounded-xl bg-surface hover:bg-border/60 border border-border text-text-muted hover:text-text-main"
+          />
         </div>
-      </div>
-    </aside>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 

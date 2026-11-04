@@ -1,11 +1,19 @@
-export type AchievementTier = 'bronze' | 'silver' | 'gold' | 'diamond' | 'insane';
+export type MilestoneIconKey =
+  | 'utensils'
+  | 'flame'
+  | 'compass'
+  | 'leaf'
+  | 'clock'
+  | 'dumbbell'
+  | 'users'
+  | 'chef';
 
 export interface AchievementItem {
   id: string;
-  tier: AchievementTier;
   title: string;
   desc: string;
-  icon: string;
+  iconName: MilestoneIconKey;
+  accentTone: 'sage' | 'apricot' | 'terracotta';
   current: number;
   target: number;
   unit: string;
@@ -15,396 +23,167 @@ export interface AchievementItem {
 export interface UserStatsMetrics {
   totalCooked: number;
   totalPortions: number;
-  totalCO2Saved: number;
-  totalWaterSaved: number;
   veganCount: number;
-  favoritesCount: number;
   distinctDishesCount: number;
+  quickMealsCount: number;
+  highProteinMealsCount: number;
 }
 
+export interface CookingStageInfo {
+  level: number;
+  title: string;
+  subtitle: string;
+  currentMeals: number;
+  nextLevelMeals: number | null;
+  progressPercent: number;
+}
+
+const COOKING_STAGES: { minMeals: number; title: string; subtitle: string }[] = [
+  { minMeals: 0, title: 'Einsteiger', subtitle: 'Bereit für dein erstes gekochtes Gericht' },
+  { minMeals: 1, title: 'Frisch am Herd', subtitle: 'Der Anfang deiner eigenen Kochstatistik' },
+  { minMeals: 5, title: 'Hobbykoch', subtitle: 'Selbst kochen gehört fest zu deiner Woche' },
+  { minMeals: 12, title: 'Routinier', subtitle: 'Abwechslungsreiche Küche mit sicherer Hand' },
+  { minMeals: 25, title: 'Stammkoch', subtitle: 'Beachtliche Sammlung an gekochten Mahlzeiten' },
+  { minMeals: 50, title: 'Küchenchef', subtitle: 'Erfahrene Routine über viele Wochen hinweg' },
+];
+
+export function computeCookingStage(totalCooked: number): CookingStageInfo {
+  let currentIdx = 0;
+  for (let i = 0; i < COOKING_STAGES.length; i++) {
+    if (totalCooked >= COOKING_STAGES[i].minMeals) {
+      currentIdx = i;
+    }
+  }
+
+  const currentStage = COOKING_STAGES[currentIdx];
+  const nextStage = COOKING_STAGES[currentIdx + 1] || null;
+
+  if (!nextStage) {
+    return {
+      level: currentIdx + 1,
+      title: currentStage.title,
+      subtitle: currentStage.subtitle,
+      currentMeals: totalCooked,
+      nextLevelMeals: null,
+      progressPercent: 100,
+    };
+  }
+
+  const span = Math.max(1, nextStage.minMeals - currentStage.minMeals);
+  const progressed = Math.max(0, totalCooked - currentStage.minMeals);
+  const progressPercent = Math.min(100, Math.round((progressed / span) * 100));
+
+  return {
+    level: currentIdx + 1,
+    title: currentStage.title,
+    subtitle: currentStage.subtitle,
+    currentMeals: totalCooked,
+    nextLevelMeals: nextStage.minMeals,
+    progressPercent,
+  };
+}
+
+/**
+ * 8 ehrliche, auf echten Rezept- und Kochdaten basierende Meilensteine (ohne erfundene Umwelt-Formeln)
+ */
 export function computeAchievements(metrics: UserStatsMetrics): AchievementItem[] {
   const {
     totalCooked,
     totalPortions,
-    totalCO2Saved,
-    totalWaterSaved,
     veganCount,
-    favoritesCount,
     distinctDishesCount,
+    quickMealsCount,
+    highProteinMealsCount,
   } = metrics;
 
   return [
-    // --- TIER 1: BRONZE (Einstieg) ---
     {
       id: 'first_cook',
-      tier: 'bronze',
-      title: 'Erster Veggie-Koch',
-      desc: '1 Gericht selbst zubereitet',
-      icon: '🌱',
+      title: 'Erstes Gericht',
+      desc: '1 Rezept selbst zubereitet und erfasst.',
+      iconName: 'utensils',
+      accentTone: 'sage',
       current: totalCooked,
       target: 1,
       unit: 'Gericht',
       unlocked: totalCooked >= 1,
     },
     {
-      id: 'trio_cook',
-      tier: 'bronze',
-      title: 'Hülsenfrüchte & Power',
-      desc: '3 pflanzliche Mahlzeiten gekocht',
-      icon: '🫘',
+      id: 'routine_5',
+      title: 'Frische Routine',
+      desc: '5 Mahlzeiten frisch selbst gekocht.',
+      iconName: 'flame',
+      accentTone: 'terracotta',
       current: totalCooked,
-      target: 3,
+      target: 5,
       unit: 'Gerichte',
-      unlocked: totalCooked >= 3,
-    },
-    {
-      id: 'co2_bronze',
-      tier: 'bronze',
-      title: 'Klimaschutz-Start',
-      desc: '15 kg Treibhausgase eingespart',
-      icon: '🌍',
-      current: totalCO2Saved,
-      target: 15,
-      unit: 'kg CO₂',
-      unlocked: totalCO2Saved >= 15,
-    },
-    {
-      id: 'water_bronze',
-      tier: 'bronze',
-      title: 'Wasserretter',
-      desc: '5.000 Liter Wasser geschützt',
-      icon: '💧',
-      current: totalWaterSaved,
-      target: 5000,
-      unit: 'L Wasser',
-      unlocked: totalWaterSaved >= 5000,
-    },
-    {
-      id: 'vegan_bronze',
-      tier: 'bronze',
-      title: 'Pflanzen-Entdecker',
-      desc: '3 rein vegane Gerichte gekocht',
-      icon: '🥑',
-      current: veganCount,
-      target: 3,
-      unit: 'Gerichte',
-      unlocked: veganCount >= 3,
-    },
-    {
-      id: 'fav_bronze',
-      tier: 'bronze',
-      title: 'Rezept-Kurator',
-      desc: 'Mindestens 3 Favoriten gespeichert',
-      icon: '⭐',
-      current: favoritesCount,
-      target: 3,
-      unit: 'Favoriten',
-      unlocked: favoritesCount >= 3,
-    },
-
-    // --- TIER 2: SILBER (Fortgeschritten) ---
-    {
-      id: 'cook_10',
-      tier: 'silver',
-      title: 'Koch-Enthusiast',
-      desc: '10 Mahlzeiten selbst zubereitet',
-      icon: '🍳',
-      current: totalCooked,
-      target: 10,
-      unit: 'Gerichte',
-      unlocked: totalCooked >= 10,
-    },
-    {
-      id: 'co2_50',
-      tier: 'silver',
-      title: 'CO₂-Reduzierer',
-      desc: '50 kg CO₂ eingespart',
-      icon: '🍃',
-      current: totalCO2Saved,
-      target: 50,
-      unit: 'kg CO₂',
-      unlocked: totalCO2Saved >= 50,
-    },
-    {
-      id: 'water_25k',
-      tier: 'silver',
-      title: 'Brunnen-Wächter',
-      desc: '25.000 Liter Wasser bewahrt',
-      icon: '🌊',
-      current: totalWaterSaved,
-      target: 25000,
-      unit: 'L Wasser',
-      unlocked: totalWaterSaved >= 25000,
-    },
-    {
-      id: 'portions_25',
-      tier: 'silver',
-      title: 'Gemeinschafts-Koch',
-      desc: '25 Portionen zubereitet',
-      icon: '🍲',
-      current: totalPortions,
-      target: 25,
-      unit: 'Portionen',
-      unlocked: totalPortions >= 25,
-    },
-    {
-      id: 'vegan_10',
-      tier: 'silver',
-      title: 'Plant-Based Fan',
-      desc: '10 rein vegane Gerichte gekocht',
-      icon: '🥦',
-      current: veganCount,
-      target: 10,
-      unit: 'Gerichte',
-      unlocked: veganCount >= 10,
+      unlocked: totalCooked >= 5,
     },
     {
       id: 'variety_5',
-      tier: 'silver',
-      title: 'Gaumen-Explorer',
-      desc: '5 verschiedene Rezepte gekocht',
-      icon: '📖',
+      title: 'Rezept-Entdecker',
+      desc: '5 verschiedene Rezepte aus der Sammlung probiert.',
+      iconName: 'compass',
+      accentTone: 'apricot',
       current: distinctDishesCount,
       target: 5,
       unit: 'Rezepte',
       unlocked: distinctDishesCount >= 5,
     },
     {
-      id: 'portions_15',
-      tier: 'silver',
+      id: 'vegan_5',
+      title: 'Rein pflanzlich',
+      desc: '5 rein vegane Mahlzeiten zubereitet.',
+      iconName: 'leaf',
+      accentTone: 'sage',
+      current: veganCount,
+      target: 5,
+      unit: 'Gerichte',
+      unlocked: veganCount >= 5,
+    },
+    {
+      id: 'quick_3',
+      title: 'Schnelle Küche',
+      desc: '3 schnelle Gerichte (bis 25 Min. Gesamtzeit) gekocht.',
+      iconName: 'clock',
+      accentTone: 'apricot',
+      current: quickMealsCount,
+      target: 3,
+      unit: 'Gerichte',
+      unlocked: quickMealsCount >= 3,
+    },
+    {
+      id: 'protein_3',
+      title: 'Protein-Fokus',
+      desc: '3 proteinreiche Gerichte (ab 20 g Protein/Port.) gekocht.',
+      iconName: 'dumbbell',
+      accentTone: 'terracotta',
+      current: highProteinMealsCount,
+      target: 3,
+      unit: 'Gerichte',
+      unlocked: highProteinMealsCount >= 3,
+    },
+    {
+      id: 'portions_25',
       title: 'Große Tafel',
-      desc: 'Mindestens 15 Portionen insgesamt gekocht',
-      icon: '🍲',
+      desc: 'Insgesamt 25 Portionen zubereitet.',
+      iconName: 'users',
+      accentTone: 'apricot',
       current: totalPortions,
-      target: 15,
+      target: 25,
       unit: 'Portionen',
-      unlocked: totalPortions >= 15,
+      unlocked: totalPortions >= 25,
     },
-
-    // --- TIER 3: GOLD (Meister) ---
     {
-      id: 'cook_50',
-      tier: 'gold',
-      title: 'Küchenmeister',
-      desc: '50 Mahlzeiten zubereitet',
-      icon: '👨‍🍳',
+      id: 'cook_20',
+      title: 'Stammgast am Herd',
+      desc: '20 Mahlzeiten erfolgreich selbst gekocht.',
+      iconName: 'chef',
+      accentTone: 'sage',
       current: totalCooked,
-      target: 50,
-      unit: 'Gerichte',
-      unlocked: totalCooked >= 50,
-    },
-    {
-      id: 'cook_100',
-      tier: 'gold',
-      title: 'Der 100er-Klub',
-      desc: '100 Mahlzeiten gekocht',
-      icon: '💯',
-      current: totalCooked,
-      target: 100,
-      unit: 'Gerichte',
-      unlocked: totalCooked >= 100,
-    },
-    {
-      id: 'portions_150',
-      tier: 'gold',
-      title: 'Festmahl-Organisator',
-      desc: '150 Portionen serviert',
-      icon: '🥘',
-      current: totalPortions,
-      target: 150,
-      unit: 'Portionen',
-      unlocked: totalPortions >= 150,
-    },
-    {
-      id: 'co2_150',
-      tier: 'gold',
-      title: 'Klima-Pionier',
-      desc: '150 kg CO₂ eingespart',
-      icon: '🌲',
-      current: totalCO2Saved,
-      target: 150,
-      unit: 'kg CO₂',
-      unlocked: totalCO2Saved >= 150,
-    },
-    {
-      id: 'water_100k',
-      tier: 'gold',
-      title: 'Fluss-Beschützer',
-      desc: '100.000 Liter Wasser bewahrt',
-      icon: '🏞️',
-      current: totalWaterSaved,
-      target: 100000,
-      unit: 'L Wasser',
-      unlocked: totalWaterSaved >= 100000,
-    },
-    {
-      id: 'vegan_50',
-      tier: 'gold',
-      title: 'Veganer Routinier',
-      desc: '50 rein vegane Gerichte gekocht',
-      icon: '🌿',
-      current: veganCount,
-      target: 50,
-      unit: 'Gerichte',
-      unlocked: veganCount >= 50,
-    },
-    {
-      id: 'variety_20',
-      tier: 'gold',
-      title: 'Vielseitiger Genießer',
-      desc: '20 verschiedene Rezepte gekocht',
-      icon: '🗺️',
-      current: distinctDishesCount,
       target: 20,
-      unit: 'Rezepte',
-      unlocked: distinctDishesCount >= 20,
-    },
-
-    // --- TIER 4: DIAMANT (Veteran / Mehrere Monate bis 1 Jahr) ---
-    {
-      id: 'cook_250',
-      tier: 'diamond',
-      title: 'Küchen-Veteran',
-      desc: '250 Mahlzeiten zubereitet',
-      icon: '🎖️',
-      current: totalCooked,
-      target: 250,
       unit: 'Gerichte',
-      unlocked: totalCooked >= 250,
-    },
-    {
-      id: 'portions_500',
-      tier: 'diamond',
-      title: 'Großküchen-Direktor',
-      desc: '500 Portionen zubereitet',
-      icon: '🍽️',
-      current: totalPortions,
-      target: 500,
-      unit: 'Portionen',
-      unlocked: totalPortions >= 500,
-    },
-    {
-      id: 'co2_500',
-      tier: 'diamond',
-      title: 'Halbe Tonne CO₂',
-      desc: '500 kg CO₂ eingespart',
-      icon: '🛡️',
-      current: totalCO2Saved,
-      target: 500,
-      unit: 'kg CO₂',
-      unlocked: totalCO2Saved >= 500,
-    },
-    {
-      id: 'water_300k',
-      tier: 'diamond',
-      title: 'Aquifer-Schützer',
-      desc: '300.000 Liter Wasser geschützt',
-      icon: '🐬',
-      current: totalWaterSaved,
-      target: 300000,
-      unit: 'L Wasser',
-      unlocked: totalWaterSaved >= 300000,
-    },
-    {
-      id: 'vegan_150',
-      tier: 'diamond',
-      title: 'Grüner Visionär',
-      desc: '150 rein vegane Mahlzeiten',
-      icon: '🌾',
-      current: veganCount,
-      target: 150,
-      unit: 'Gerichte',
-      unlocked: veganCount >= 150,
-    },
-    {
-      id: 'variety_40',
-      tier: 'diamond',
-      title: 'Veggie-Enzyklopädie',
-      desc: '40 unterschiedliche Rezepte gekocht',
-      icon: '📚',
-      current: distinctDishesCount,
-      target: 40,
-      unit: 'Rezepte',
-      unlocked: distinctDishesCount >= 40,
-    },
-
-    // --- TIER 5: 🔥 INSANE (Jahrelange Nutzung / Legenden-Status) ---
-    {
-      id: 'cook_500',
-      tier: 'insane',
-      title: '👑 500 Gerichte Legende',
-      desc: '500 Mahlzeiten gekocht (ca. 1,5 - 2 Jahre)',
-      icon: '🏆',
-      current: totalCooked,
-      target: 500,
-      unit: 'Gerichte',
-      unlocked: totalCooked >= 500,
-    },
-    {
-      id: 'co2_1000',
-      tier: 'insane',
-      title: '🌍 1 Tonne CO₂ Gigant',
-      desc: '1.000 kg Treibhausgase eingespart',
-      icon: '🌋',
-      current: totalCO2Saved,
-      target: 1000,
-      unit: 'kg CO₂',
-      unlocked: totalCO2Saved >= 1000,
-    },
-    {
-      id: 'water_1m',
-      tier: 'insane',
-      title: '🌊 Eine Million Liter Wasser',
-      desc: '1.000.000 L virtuelles Wasser gerettet',
-      icon: '🐋',
-      current: totalWaterSaved,
-      target: 1000000,
-      unit: 'L Wasser',
-      unlocked: totalWaterSaved >= 1000000,
-    },
-    {
-      id: 'cook_1000',
-      tier: 'insane',
-      title: '⚡ 1.000 Gerichte Titan',
-      desc: '1.000 Mahlzeiten zubereitet (3+ Jahre Meisterschaft)',
-      icon: '⚡',
-      current: totalCooked,
-      target: 1000,
-      unit: 'Gerichte',
-      unlocked: totalCooked >= 1000,
-    },
-    {
-      id: 'portions_2500',
-      tier: 'insane',
-      title: '🏛️ 2.500 Portionen Tafelherr',
-      desc: '2.500 Portionen serviert – eine Lebensleistung',
-      icon: '🏰',
-      current: totalPortions,
-      target: 2500,
-      unit: 'Portionen',
-      unlocked: totalPortions >= 2500,
-    },
-    {
-      id: 'co2_2500',
-      tier: 'insane',
-      title: '🪐 Planet-Guardian (2.500 kg)',
-      desc: '2,5 Tonnen Treibhausgase dauerhaft eliminiert',
-      icon: '🪐',
-      current: totalCO2Saved,
-      target: 2500,
-      unit: 'kg CO₂',
-      unlocked: totalCO2Saved >= 2500,
-    },
-    {
-      id: 'vegan_500',
-      tier: 'insane',
-      title: '🌌 500x Rein Vegan',
-      desc: '500 rein vegane Mahlzeiten gekocht',
-      icon: '🌌',
-      current: veganCount,
-      target: 500,
-      unit: 'Gerichte',
-      unlocked: veganCount >= 500,
+      unlocked: totalCooked >= 20,
     },
   ];
 }

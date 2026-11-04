@@ -1,37 +1,34 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  BarChart3, 
-  Leaf, 
-  Droplets, 
-  Award, 
-  Trash2, 
-  RotateCcw, 
-  Utensils, 
-  Calendar, 
-  ArrowRight,
-  Sparkles,
-  BookOpen,
-  AlertTriangle,
-  Trophy,
-  Star,
-  Search,
-  CheckCircle2,
+import {
+  Leaf,
+  Trash2,
+  RotateCcw,
+  Utensils,
+  Check,
   Flame,
-  Crown,
-  Filter,
   X,
+  Users,
   Clock,
-  Users
+  Dumbbell,
+  ChefHat,
+  Compass,
+  History,
+  MoreHorizontal,
+  Heart,
+  Bookmark,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CookedLog, Recipe } from '../types';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
-import { computeAchievements, AchievementItem } from '../data/achievements';
+import {
+  computeAchievements,
+  computeCookingStage,
+  AchievementItem,
+  MilestoneIconKey,
+} from '../data/achievements';
 import { useRecipes } from '../context/RecipeContext';
 import { useToast } from '../context/ToastContext';
-
-export type AchievementFilterTier = 'all' | 'unlocked' | 'bronze' | 'silver' | 'gold' | 'diamond' | 'insane';
 
 interface StatsViewProps {
   logs?: CookedLog[];
@@ -42,6 +39,26 @@ interface StatsViewProps {
   onCopyFeedback?: (msg: string) => void;
 }
 
+const MILESTONE_ICONS: Record<MilestoneIconKey, React.FC<{ className?: string }>> = {
+  utensils: Utensils,
+  flame: Flame,
+  compass: Compass,
+  leaf: Leaf,
+  clock: Clock,
+  dumbbell: Dumbbell,
+  users: Users,
+  chef: ChefHat,
+};
+
+function formatTotalCookingTime(totalMinutes: number): string {
+  if (totalMinutes <= 0) return '0 Min.';
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  if (hours === 0) return `${mins} Min.`;
+  if (mins === 0) return `${hours} Std.`;
+  return `${hours} Std. ${mins} Min.`;
+}
+
 export const StatsView: React.FC<StatsViewProps> = (props) => {
   const navigate = useNavigate();
   const recipesCtx = useRecipes();
@@ -50,69 +67,33 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
   const logs = props.logs ?? recipesCtx.cookedLogs;
   const setLogs = props.setLogs ?? recipesCtx.setCookedLogs;
   const favoritesCount = props.favoritesCount ?? recipesCtx.favorites.length;
+  const bookmarksCount = recipesCtx.bookmarks.length;
   const allRecipes = props.allRecipes ?? recipesCtx.recipes;
-  const onSelectRecipe = props.onSelectRecipe ?? ((r: Recipe) => navigate(`/recipes/${r.id}`));
   const onCopyFeedback = props.onCopyFeedback ?? toastCtx.showToast;
+
   const [undoBackup, setUndoBackup] = useState<CookedLog[] | null>(null);
   const [showUndoBanner, setShowUndoBanner] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const contextMenuRef = useRef<HTMLDivElement | null>(null);
 
-  // Filters for Cooked History
-  const [historySearchQuery, setHistorySearchQuery] = useState('');
-  const [historyFilter, setHistoryFilter] = useState<'all' | 'vegan'>('all');
+  // Activity Range Toggle: '7days' vs '4weeks'
+  const [activityRange, setActivityRange] = useState<'7days' | '4weeks'>('7days');
 
-  // Filter for Achievements
-  const [achievementTierFilter, setAchievementTierFilter] = useState<AchievementFilterTier>('all');
-
-  // Mobile clean view toggle: 'history' or 'achievements'
-  const [activeMobileTab, setActiveMobileTab] = useState<'history' | 'achievements'>('history');
-
-  // Inline-Bestätigung für PC beim Löschen eines Eintrags (kein Pop-up)
-  const [confirmDeleteLogId, setConfirmDeleteLogId] = useState<string | null>(null);
-
-  // Mobile Swipe-to-Delete state (70% Schwelle & Menü)
-  const [swipedLogId, setSwipedLogId] = useState<string | null>(null);
-  const [activeTouchLogId, setActiveTouchLogId] = useState<string | null>(null);
-  const [touchCurrentOffset, setTouchCurrentOffset] = useState<number>(0);
-  const touchStartRef = useRef<{ startX: number; startY: number; baseOffset: number; itemWidth?: number } | null>(null);
-  const justClosedSwipeLogMenuRef = useRef<boolean>(false);
-
-  // Auto-close inline confirmation when clicking outside
-  useEffect(() => {
-    if (!confirmDeleteLogId) return;
-    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target?.closest('[data-inline-confirm="true"]')) return;
-      setConfirmDeleteLogId(null);
-    };
-    window.addEventListener('pointerdown', handleOutsideClick);
-    return () => window.removeEventListener('pointerdown', handleOutsideClick);
-  }, [confirmDeleteLogId]);
-
-  // Auto-close swiped log menu when clicking or tapping anywhere on screen
-  useEffect(() => {
-    if (!swipedLogId) return;
-    const handleGlobalTap = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target?.closest('[data-swipe-action="true"]')) return;
-      setSwipedLogId(null);
-      justClosedSwipeLogMenuRef.current = true;
-      setTimeout(() => {
-        justClosedSwipeLogMenuRef.current = false;
-      }, 300);
-    };
-    const timer = setTimeout(() => {
-      window.addEventListener('pointerdown', handleGlobalTap, true);
-    }, 40);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('pointerdown', handleGlobalTap, true);
-    };
-  }, [swipedLogId]);
+  // Milestones Filter Toggle: 'all' vs 'unlocked'
+  const [milestoneFilter, setMilestoneFilter] = useState<'all' | 'unlocked'>('all');
 
   useLockBodyScroll(showConfirmModal);
 
-  // Auto-dismiss undo banner after 10s
+  useEffect(() => {
+    if (!showContextMenu) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowContextMenu(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showContextMenu]);
+
   useEffect(() => {
     if (showUndoBanner) {
       const timer = setTimeout(() => {
@@ -123,20 +104,211 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
     }
   }, [showUndoBanner]);
 
+  // Match each log entry to its recipe in the collection for factual time, nutrition & category data
+  const enrichedLogs = useMemo(() => {
+    return logs.map((log) => {
+      const matchedRecipe = allRecipes.find(
+        (r) => r.id === log.recipeId || r.title.toLowerCase() === log.recipeTitle.toLowerCase()
+      );
+      return {
+        log,
+        recipe: matchedRecipe,
+      };
+    });
+  }, [logs, allRecipes]);
+
+  // Core Factual Metrics
   const totalCooked = logs.length;
   const totalPortions = logs.reduce((acc, log) => acc + (log.servingsCooked || 2), 0);
-  const totalCO2Saved = Math.round(logs.reduce((acc, log) => acc + (log.savedCO2Kg || 0), 0) * 10) / 10;
-  const totalWaterSaved = Math.round(logs.reduce((acc, log) => acc + (log.savedWaterLiters || 0), 0));
   const veganCount = logs.filter((l) => l.isVegan).length;
+  const vegetarianCount = Math.max(0, totalCooked - veganCount);
+  const veganSharePercent = totalCooked > 0 ? Math.round((veganCount / totalCooked) * 100) : 0;
   const distinctDishesCount = new Set(
     logs.map((l) => (l.recipeId || l.recipeTitle).toLowerCase().trim())
   ).size;
+
+  // Real Cooking Time & Nutrition derived from matched recipes
+  const {
+    totalCookingMinutes,
+    avgCookingMinutes,
+    avgProteinPerServing,
+    avgCaloriesPerServing,
+    quickMealsCount,
+    highProteinMealsCount,
+  } = useMemo(() => {
+    let sumMinutes = 0;
+    let countWithTime = 0;
+    let sumProtein = 0;
+    let sumCalories = 0;
+    let countWithNutrients = 0;
+    let quickCount = 0;
+    let highProteinCount = 0;
+
+    enrichedLogs.forEach(({ recipe }) => {
+      if (recipe) {
+        if (recipe.totalTimeMinutes > 0) {
+          sumMinutes += recipe.totalTimeMinutes;
+          countWithTime += 1;
+          if (recipe.totalTimeMinutes <= 25) {
+            quickCount += 1;
+          }
+        }
+        if (recipe.nutrients) {
+          sumProtein += recipe.nutrients.protein || 0;
+          sumCalories += recipe.nutrients.calories || 0;
+          countWithNutrients += 1;
+          if ((recipe.nutrients.protein || 0) >= 20) {
+            highProteinCount += 1;
+          }
+        }
+      }
+    });
+
+    return {
+      totalCookingMinutes: sumMinutes,
+      avgCookingMinutes: countWithTime > 0 ? Math.round(sumMinutes / countWithTime) : 0,
+      avgProteinPerServing: countWithNutrients > 0 ? Math.round(sumProtein / countWithNutrients) : 0,
+      avgCaloriesPerServing: countWithNutrients > 0 ? Math.round(sumCalories / countWithNutrients) : 0,
+      quickMealsCount: quickCount,
+      highProteinMealsCount: highProteinCount,
+    };
+  }, [enrichedLogs]);
+
+  // Cooking Stage (Erfahrungsstufe)
+  const cookingStage = useMemo(() => computeCookingStage(totalCooked), [totalCooked]);
+
+  // 7-Days Activity Data
+  const last7DaysActivity = useMemo(() => {
+    const weekdayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    const bars: {
+      key: string;
+      label: string;
+      subLabel: string;
+      isCurrent: boolean;
+      mealsCount: number;
+      portionsCount: number;
+    }[] = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      const dayNum = d.getDate();
+
+      const dayLogs = logs.filter((l) => {
+        const ld = new Date(l.date);
+        return ld.getFullYear() === y && ld.getMonth() === m && ld.getDate() === dayNum;
+      });
+
+      bars.push({
+        key: `${y}-${m + 1}-${dayNum}`,
+        label: weekdayNames[d.getDay()],
+        subLabel: `${dayNum}.${m + 1}.`,
+        isCurrent: i === 0,
+        mealsCount: dayLogs.length,
+        portionsCount: dayLogs.reduce((s, l) => s + (l.servingsCooked || 2), 0),
+      });
+    }
+    return bars;
+  }, [logs]);
+
+  // 4-Weeks Activity Data
+  const last4WeeksActivity = useMemo(() => {
+    const now = new Date();
+    now.setHours(23, 59, 59, 999);
+    const msPerDay = 86400000;
+
+    const weeks: {
+      key: string;
+      label: string;
+      subLabel: string;
+      isCurrent: boolean;
+      mealsCount: number;
+      portionsCount: number;
+    }[] = [];
+
+    for (let w = 3; w >= 0; w--) {
+      const endMs = now.getTime() - w * 7 * msPerDay;
+      const startMs = endMs - 7 * msPerDay;
+
+      const weekLogs = logs.filter((l) => {
+        const t = new Date(l.date).getTime();
+        return t > startMs && t <= endMs;
+      });
+
+      weeks.push({
+        key: `week-${w}`,
+        label: w === 0 ? 'Diese Wo.' : w === 1 ? 'Letzte Wo.' : `Vor ${w} Wo.`,
+        subLabel: `${weekLogs.length}× gekocht`,
+        isCurrent: w === 0,
+        mealsCount: weekLogs.length,
+        portionsCount: weekLogs.reduce((s, l) => s + (l.servingsCooked || 2), 0),
+      });
+    }
+    return weeks;
+  }, [logs]);
+
+  const activeChartData = activityRange === '7days' ? last7DaysActivity : last4WeeksActivity;
+  const maxChartMeals = Math.max(1, ...activeChartData.map((d) => d.mealsCount));
+  const activeDaysLast7 = last7DaysActivity.filter((d) => d.mealsCount > 0).length;
+
+  // Top Cooked Categories
+  const topCategories = useMemo(() => {
+    const counts: Record<string, number> = {};
+    enrichedLogs.forEach(({ log, recipe }) => {
+      const cat = recipe?.category || (log.isVegan ? 'Vegane Gerichte' : 'Vegetarische Gerichte');
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+
+    const entries = Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+
+    const maxCatCount = Math.max(1, ...entries.map((e) => e.count));
+    return entries.map((e) => ({
+      ...e,
+      percent: Math.round((e.count / maxCatCount) * 100),
+    }));
+  }, [enrichedLogs]);
+
+  // 8 Factual Milestones
+  const achievements: AchievementItem[] = useMemo(() => {
+    return computeAchievements({
+      totalCooked,
+      totalPortions,
+      veganCount,
+      distinctDishesCount,
+      quickMealsCount,
+      highProteinMealsCount,
+    });
+  }, [
+    totalCooked,
+    totalPortions,
+    veganCount,
+    distinctDishesCount,
+    quickMealsCount,
+    highProteinMealsCount,
+  ]);
+
+  const unlockedCount = achievements.filter((a) => a.unlocked).length;
+  const visibleAchievements = useMemo(() => {
+    if (milestoneFilter === 'unlocked') {
+      return achievements.filter((a) => a.unlocked);
+    }
+    return achievements;
+  }, [achievements, milestoneFilter]);
 
   const handleClearAllLogs = () => {
     if (logs.length === 0) return;
     setUndoBackup([...logs]);
     setLogs([]);
     setShowUndoBanner(true);
+    onCopyFeedback('Statistiken wurden zurückgesetzt.');
   };
 
   const handleUndo = () => {
@@ -144,118 +316,692 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
       setLogs(undoBackup);
       setUndoBackup(null);
       setShowUndoBanner(false);
+      onCopyFeedback('Statistiken wiederhergestellt!');
     }
   };
 
-  const handleDeleteSingleLog = (id: string) => {
-    setLogs((prev) => prev.filter((l) => l.id !== id));
-  };
-
-  const handleDeleteBySwipeLog = (log: CookedLog) => {
-    handleDeleteSingleLog(log.id);
-    setSwipedLogId(null);
-    setActiveTouchLogId(null);
-    setTouchCurrentOffset(0);
-    onCopyFeedback(`"${log.recipeTitle}" aus Verlauf entfernt.`);
-  };
-
-  // Sort logs by date descending
-  const sortedLogs = useMemo(() => {
-    return [...logs].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-  }, [logs]);
-
-  // Filtered logs for search & filter tabs
-  const filteredLogs = useMemo(() => {
-    return sortedLogs.filter((log) => {
-      if (historySearchQuery.trim()) {
-        const query = historySearchQuery.toLowerCase().trim();
-        const matchesTitle = log.recipeTitle.toLowerCase().includes(query);
-        const matchesNotes = log.notes?.toLowerCase().includes(query) ?? false;
-        if (!matchesTitle && !matchesNotes) return false;
-      }
-      if (historyFilter === 'vegan' && !log.isVegan) return false;
-      return true;
-    });
-  }, [sortedLogs, historySearchQuery, historyFilter]);
-
-  // Comprehensive tiered achievements including insane multi-year milestones
-  const achievements: AchievementItem[] = useMemo(() => {
-    return computeAchievements({
-      totalCooked,
-      totalPortions,
-      totalCO2Saved,
-      totalWaterSaved,
-      veganCount,
-      favoritesCount,
-      distinctDishesCount,
-    });
-  }, [totalCooked, totalCO2Saved, totalWaterSaved, veganCount, favoritesCount, distinctDishesCount, totalPortions]);
-
-  // Filtered achievements by tier
-  const filteredAchievements = useMemo(() => {
-    if (achievementTierFilter === 'all') return achievements;
-    if (achievementTierFilter === 'unlocked') return achievements.filter((a) => a.unlocked);
-    return achievements.filter((a) => a.tier === achievementTierFilter);
-  }, [achievements, achievementTierFilter]);
-
-  const unlockedCount = achievements.filter((a) => a.unlocked).length;
-  const insaneCount = achievements.filter((a) => a.tier === 'insane').length;
-  const insaneUnlockedCount = achievements.filter((a) => a.tier === 'insane' && a.unlocked).length;
-
   return (
-    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-300">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+      className="space-y-5 sm:space-y-6"
+    >
       {/* Undo Banner */}
-      {showUndoBanner && undoBackup && (
-        <div className="p-3.5 sm:p-4 bg-text-main text-on-accent rounded-2xl shadow-lg border border-border/20 flex items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-top duration-200">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-accent shrink-0" />
-            <span className="text-[16px] font-medium text-on-accent/95 truncate">
-              Statistiken zurückgesetzt ({undoBackup.length} Einträge).
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={handleUndo}
-              className="h-[44px] min-h-[44px] px-4 sm:px-5 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-[16px] font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center gap-2"
-            >
-              <RotateCcw className="w-4 h-4 sm:hidden" />
-              <span>Rückgängig</span>
-            </button>
-            <button
-              onClick={() => setShowUndoBanner(false)}
-              className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-on-accent/70 hover:text-on-accent hover:bg-card/10 transition-colors cursor-pointer touch-manipulation active:scale-95"
-              title="Schließen"
-              aria-label="Schließen"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {showUndoBanner && undoBackup && (
+          <motion.div
+            key="stats-undo-banner"
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            className="p-3.5 sm:p-4 bg-text-main text-on-accent rounded-2xl shadow-lg border border-border/20 flex items-center justify-between gap-3 sm:gap-4"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-accent shrink-0" />
+              <span className="text-[15px] sm:text-[16px] font-medium text-on-accent/95 truncate">
+                Statistiken zurückgesetzt ({undoBackup.length}{' '}
+                {undoBackup.length === 1 ? 'Eintrag' : 'Einträge'}).
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleUndo}
+                className="h-[44px] min-h-[44px] px-4 rounded-xl bg-accent hover:bg-accent-hover text-on-accent text-[15px] font-semibold shadow-xs transition-all active:scale-95 cursor-pointer touch-manipulation flex items-center justify-center"
+              >
+                <span>Rückgängig</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowUndoBanner(false)}
+                className="w-[44px] h-[44px] min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-on-accent/70 hover:text-on-accent hover:bg-card/10 transition-colors cursor-pointer touch-manipulation active:scale-95"
+                title="Schließen"
+                aria-label="Schließen"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Header */}
-      <div className="bg-card rounded-2xl p-4 sm:p-7 border border-border shadow-xs space-y-1">
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent-tint text-accent text-xs font-semibold border border-border">
-          <BarChart3 className="w-3.5 h-3.5" />
-          Deine Kochstatistik & Umweltbeitrag
+      {/* 1. HEADER & KOCH-FORTSCHRITT */}
+      <div className="bg-card rounded-2xl p-4 sm:p-6 border border-border shadow-xs space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1 max-w-xl">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-main leading-tight">
+              Statistiken
+            </h1>
+            <p className="text-base text-text-muted leading-relaxed">
+              Deine echten Kochdaten, Gewohnheiten und Meilensteine im Überblick.
+            </p>
+          </div>
+
+          {/* Right Controls: Secondary Button to "Zuletzt gekocht" + 3-Dots Overflow Menu */}
+          <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.96 }}
+              onClick={() => navigate('/cooked')}
+              className="h-11 min-h-[44px] px-3.5 sm:px-4 rounded-xl bg-header-top hover:bg-[#EDD2AA] text-text-main border border-header-line font-semibold text-sm sm:text-[15px] flex items-center gap-2 shadow-2xs transition-colors cursor-pointer touch-manipulation"
+              title="Deine zuletzt gekochten Rezepte ansehen"
+            >
+              <History className="w-4 h-4 text-text-main shrink-0" />
+              <span>Zuletzt gekocht</span>
+            </motion.button>
+
+            <div className="relative" ref={contextMenuRef}>
+              <button
+                type="button"
+                id="stats-context-menu-btn"
+                onClick={() => setShowContextMenu((prev) => !prev)}
+                aria-label="Weitere Optionen"
+                aria-expanded={showContextMenu}
+                className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs border ${
+                  showContextMenu
+                    ? 'bg-accent-tint text-text-main border-accent-border ring-2 ring-accent/25'
+                    : 'bg-surface hover:bg-accent-tint text-text-main border-border hover:border-accent-border'
+                }`}
+              >
+                <motion.div
+                  animate={{ rotate: showContextMenu ? 90 : 0 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <MoreHorizontal className="w-5 h-5" />
+                </motion.div>
+              </button>
+
+              <AnimatePresence>
+                {showContextMenu && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowContextMenu(false)}
+                      aria-hidden="true"
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -6 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -6 }}
+                      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                      className="absolute right-0 top-full mt-2 w-60 origin-top-right bg-card rounded-2xl border border-border shadow-xl p-1.5 z-50"
+                    >
+                      <button
+                        type="button"
+                        disabled={logs.length === 0}
+                        onClick={() => {
+                          setShowContextMenu(false);
+                          setShowConfirmModal(true);
+                        }}
+                        className="w-full min-h-[44px] px-3 py-2 rounded-xl text-left text-[15px] font-medium text-rose-600 hover:bg-rose-50 active:bg-rose-100/70 disabled:opacity-40 disabled:pointer-events-none flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center shrink-0 text-rose-600">
+                          <Trash2 className="w-4 h-4" />
+                        </div>
+                        <span className="truncate">Statistiken zurücksetzen</span>
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-main leading-tight">
-          Übersicht & Verlauf
-        </h1>
-        <p className="text-base text-text-muted leading-relaxed mt-1">
-          {totalCooked === 0
-            ? 'Noch keine Gerichte gekocht. Markiere Rezepte als gekocht, um deine Erfolge zu tracken.'
-            : `${totalCooked} Mahlzeiten zubereitet • ${totalPortions} Portionen • ${totalCO2Saved} kg CO₂ eingespart`}
-        </p>
+
+        {/* Sleek, Grounded Cooking Experience Strip */}
+        <div className="pt-3.5 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-accent-tint border border-accent-border text-accent flex items-center justify-center shrink-0">
+              <ChefHat className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm sm:text-base font-bold text-text-main">
+                  {cookingStage.title}
+                </span>
+                <span className="text-xs text-text-muted">·</span>
+                <span className="text-xs font-semibold text-accent">
+                  Stufe {cookingStage.level}
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-text-muted truncate">
+                {cookingStage.subtitle}
+              </p>
+            </div>
+          </div>
+
+          <div className="sm:w-64 shrink-0 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-medium text-text-muted">
+              <span>
+                {cookingStage.nextLevelMeals
+                  ? `${totalCooked} / ${cookingStage.nextLevelMeals} Mahlzeiten`
+                  : 'Alle Stufen gemeistert'}
+              </span>
+              <span className="font-bold text-accent tabular-nums">
+                {cookingStage.progressPercent}%
+              </span>
+            </div>
+            <div className="w-full h-2 bg-surface border border-border rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${cookingStage.progressPercent}%` }}
+                transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                className="h-full rounded-full bg-accent"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Clean, Subtle Confirmation Modal */}
+      {/* 2. DIE 4 ECHTEN KERN-KENNZAHLEN (KEINE ERFUNDENEN UMWELTWERTE) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Card 1: Gekochte Mahlzeiten */}
+        <motion.div
+          whileHover={{ y: -2 }}
+          transition={{ duration: 0.18 }}
+          className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-xs flex flex-col justify-between gap-3"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs sm:text-sm font-semibold text-text-muted">
+              Gekochte Gerichte
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-accent-tint border border-accent-border text-accent flex items-center justify-center shrink-0">
+              <Utensils className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-bold text-text-main tabular-nums tracking-tight">
+              {totalCooked}
+            </div>
+            <div className="text-xs text-text-muted mt-1 truncate">
+              {distinctDishesCount} {distinctDishesCount === 1 ? 'unterschiedliches Rezept' : 'verschiedene Rezepte'}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Card 2: Zubereitete Portionen */}
+        <motion.div
+          whileHover={{ y: -2 }}
+          transition={{ duration: 0.18 }}
+          className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-xs flex flex-col justify-between gap-3"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs sm:text-sm font-semibold text-text-muted">
+              Portionen
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-header-top/55 border border-header-line text-text-main flex items-center justify-center shrink-0">
+              <Users className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-bold text-text-main tabular-nums tracking-tight">
+              {totalPortions}
+            </div>
+            <div className="text-xs text-text-muted mt-1 truncate">
+              {totalCooked > 0
+                ? `Ø ${Math.round((totalPortions / totalCooked) * 10) / 10} pro Kochvorgang`
+                : 'Noch keine Portionen'}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Card 3: Echte Zeit am Herd */}
+        <motion.div
+          whileHover={{ y: -2 }}
+          transition={{ duration: 0.18 }}
+          className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-xs flex flex-col justify-between gap-3"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs sm:text-sm font-semibold text-text-muted">
+              Zeit am Herd
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-stat-kcal-bg border border-[#F2E4D6] text-season-autumn-text flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-bold text-text-main tabular-nums tracking-tight">
+              {formatTotalCookingTime(totalCookingMinutes)}
+            </div>
+            <div className="text-xs text-text-muted mt-1 truncate">
+              {avgCookingMinutes > 0
+                ? `Ø ${avgCookingMinutes} Min. pro Gericht`
+                : 'Aus Rezeptzeiten berechnet'}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Card 4: Echte Ø Nährwerte pro Portion */}
+        <motion.div
+          whileHover={{ y: -2 }}
+          transition={{ duration: 0.18 }}
+          className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-xs flex flex-col justify-between gap-3"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs sm:text-sm font-semibold text-text-muted">
+              Ø Protein / Port.
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-accent-tint border border-accent-border text-accent flex items-center justify-center shrink-0">
+              <Dumbbell className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-bold text-accent tabular-nums tracking-tight">
+              {avgProteinPerServing} g
+            </div>
+            <div className="text-xs text-text-muted mt-1 truncate">
+              {avgCaloriesPerServing > 0
+                ? `Ø ${avgCaloriesPerServing} kcal pro Portion`
+                : 'Noch keine Nährwertdaten'}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* 3. KOCH-AKTIVITÄT & KULINARISCHES PROFIL */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+        {/* Left: Koch-Aktivität (Umschaltbar 7 Tage / 4 Wochen) */}
+        <section className="bg-card rounded-2xl p-4 sm:p-6 border border-border shadow-xs flex flex-col justify-between space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-text-main">
+                Koch-Aktivität
+              </h2>
+              <p className="text-xs sm:text-sm text-text-muted">
+                {activityRange === '7days'
+                  ? activeDaysLast7 === 0
+                    ? 'In den letzten 7 Tagen noch kein Eintrag'
+                    : `An ${activeDaysLast7} der letzten 7 Tage gekocht`
+                  : `${last4WeeksActivity.reduce((s, w) => s + w.mealsCount, 0)} Gerichte in den letzten 4 Wochen`}
+              </p>
+            </div>
+
+            {/* Secondary Segmented Toggle: [ 7 Tage ] / [ 4 Wochen ] */}
+            <div
+              role="group"
+              aria-label="Zeitraum wählen"
+              className="relative inline-flex items-center p-1 bg-surface border border-border rounded-xl select-none shadow-2xs h-[40px] shrink-0"
+            >
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.96 }}
+                onClick={() => setActivityRange('7days')}
+                aria-pressed={activityRange === '7days'}
+                className={`relative z-10 px-3 h-full flex items-center justify-center rounded-lg text-xs sm:text-[13px] transition-colors cursor-pointer touch-manipulation ${
+                  activityRange === '7days'
+                    ? 'text-accent font-bold'
+                    : 'text-text-muted hover:text-text-main font-semibold'
+                }`}
+              >
+                {activityRange === '7days' && (
+                  <motion.span
+                    layoutId="stats-activity-range-pill"
+                    transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    className="absolute inset-0 rounded-lg bg-accent-tint border border-accent/35 shadow-2xs -z-10"
+                  />
+                )}
+                <span>7 Tage</span>
+              </motion.button>
+
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.96 }}
+                onClick={() => setActivityRange('4weeks')}
+                aria-pressed={activityRange === '4weeks'}
+                className={`relative z-10 px-3 h-full flex items-center justify-center rounded-lg text-xs sm:text-[13px] transition-colors cursor-pointer touch-manipulation ${
+                  activityRange === '4weeks'
+                    ? 'text-accent font-bold'
+                    : 'text-text-muted hover:text-text-main font-semibold'
+                }`}
+              >
+                {activityRange === '4weeks' && (
+                  <motion.span
+                    layoutId="stats-activity-range-pill"
+                    transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    className="absolute inset-0 rounded-lg bg-accent-tint border border-accent/35 shadow-2xs -z-10"
+                  />
+                )}
+                <span>4 Wochen</span>
+              </motion.button>
+            </div>
+          </div>
+
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={activityRange}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className={`grid ${
+                activityRange === '7days' ? 'grid-cols-7' : 'grid-cols-4'
+              } gap-2.5 sm:gap-3 pt-2 items-end h-36`}
+            >
+              {activeChartData.map((bar, idx) => {
+                const heightPercent =
+                  bar.mealsCount > 0
+                    ? Math.max(26, Math.round((bar.mealsCount / maxChartMeals) * 100))
+                    : 12;
+
+                return (
+                  <div
+                    key={bar.key}
+                    className="flex flex-col items-center justify-end h-full gap-2"
+                  >
+                    <div className="w-full flex-1 flex items-end justify-center">
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${heightPercent}%` }}
+                        transition={{
+                          duration: 0.42,
+                          delay: idx * 0.03,
+                          ease: [0.22, 1, 0.36, 1],
+                        }}
+                        title={
+                          bar.mealsCount > 0
+                            ? `${bar.mealsCount} ${bar.mealsCount === 1 ? 'Gericht' : 'Gerichte'} (${bar.portionsCount} Port.)`
+                            : 'Kein Eintrag'
+                        }
+                        className={`w-full ${
+                          activityRange === '7days' ? 'max-w-[38px]' : 'max-w-[56px]'
+                        } rounded-xl flex items-start justify-center pt-1.5 transition-colors ${
+                          bar.mealsCount > 0
+                            ? 'bg-accent text-on-accent shadow-2xs'
+                            : 'bg-surface border border-border'
+                        }`}
+                      >
+                        {bar.mealsCount > 0 && (
+                          <span className="text-[11px] font-bold leading-none tabular-nums">
+                            {bar.mealsCount}
+                          </span>
+                        )}
+                      </motion.div>
+                    </div>
+
+                    <div className="text-center">
+                      <span
+                        className={`block text-xs font-semibold ${
+                          bar.isCurrent ? 'text-accent font-bold' : 'text-text-muted'
+                        }`}
+                      >
+                        {bar.label}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </motion.div>
+          </AnimatePresence>
+        </section>
+
+        {/* Right: Kulinarisches Profil (Ernährung, Top-Kategorien & Sammlung) */}
+        <section className="bg-card rounded-2xl p-4 sm:p-6 border border-border shadow-xs flex flex-col justify-between space-y-4">
+          <div className="space-y-0.5">
+            <h2 className="text-lg sm:text-xl font-bold text-text-main">
+              Kulinarisches Profil
+            </h2>
+            <p className="text-xs sm:text-sm text-text-muted">
+              Deine gekochten Kategorien und deine Rezeptsammlung
+            </p>
+          </div>
+
+          {/* Vegan vs. Vegetarisch Balance */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-semibold">
+              <span className="text-accent">
+                Vegan · {veganSharePercent}% ({veganCount})
+              </span>
+              <span className="text-text-muted">
+                Vegetarisch · {totalCooked > 0 ? 100 - veganSharePercent : 0}% ({vegetarianCount})
+              </span>
+            </div>
+            <div className="w-full h-2.5 rounded-full bg-surface border border-border overflow-hidden flex">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${veganSharePercent}%` }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="h-full bg-accent"
+              />
+            </div>
+          </div>
+
+          {/* Top 3 Categories */}
+          <div className="space-y-2 pt-2 border-t border-border">
+            <div className="text-xs font-bold uppercase tracking-wider text-text-muted">
+              Lieblings-Kategorien
+            </div>
+
+            {topCategories.length === 0 ? (
+              <p className="text-xs text-text-muted py-1">
+                Sobald du Gerichte kochst, siehst du hier deine meistgekochten Kategorien.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {topCategories.map((cat) => (
+                  <div
+                    key={cat.name}
+                    className="flex items-center justify-between gap-3 text-xs sm:text-sm"
+                  >
+                    <span className="font-semibold text-text-main truncate">
+                      {cat.name}
+                    </span>
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <div className="w-24 sm:w-32 h-2 rounded-full bg-surface border border-border overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${cat.percent}%` }}
+                          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                          className="h-full rounded-full bg-accent/80"
+                        />
+                      </div>
+                      <span className="text-xs font-bold text-text-muted tabular-nums w-6 text-right">
+                        {cat.count}×
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Collection Mini-Footprint (Favorites & Bookmarks) */}
+          <div className="pt-2 border-t border-border grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => navigate('/favorites')}
+              className="p-2.5 rounded-xl bg-surface hover:bg-accent-tint/60 border border-border flex items-center justify-between transition-colors cursor-pointer touch-manipulation text-left"
+            >
+              <span className="flex items-center gap-2 text-xs font-semibold text-text-muted">
+                <Heart className="w-3.5 h-3.5 text-favorite" />
+                <span>Favoriten</span>
+              </span>
+              <span className="text-sm font-bold text-text-main tabular-nums">
+                {favoritesCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/bookmarks')}
+              className="p-2.5 rounded-xl bg-surface hover:bg-accent-tint/60 border border-border flex items-center justify-between transition-colors cursor-pointer touch-manipulation text-left"
+            >
+              <span className="flex items-center gap-2 text-xs font-semibold text-text-muted">
+                <Bookmark className="w-3.5 h-3.5 text-accent" />
+                <span>Merkliste</span>
+              </span>
+              <span className="text-sm font-bold text-text-main tabular-nums">
+                {bookmarksCount}
+              </span>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      {/* 4. MEILENSTEINE (8 KURATIERTE KOCH-ZIELE MIT FILTER-UMSCHALTER) */}
+      <section className="bg-card rounded-2xl p-4 sm:p-6 border border-border shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-bold text-text-main">
+                Meilensteine
+              </h2>
+              <span className="text-xs sm:text-sm font-semibold text-text-muted tabular-nums">
+                ({unlockedCount} von {achievements.length})
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-text-muted">
+              Acht Etappen rund um deine gekochten Rezepte.
+            </p>
+          </div>
+
+          {/* Secondary Segmented Toggle: [ Alle ] / [ Erreicht ] */}
+          <div
+            role="group"
+            aria-label="Meilensteine filtern"
+            className="relative inline-flex items-center p-1 bg-surface border border-border rounded-xl select-none shadow-2xs h-[40px] shrink-0"
+          >
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.96 }}
+              onClick={() => setMilestoneFilter('all')}
+              aria-pressed={milestoneFilter === 'all'}
+              className={`relative z-10 px-3 h-full flex items-center justify-center rounded-lg text-xs sm:text-[13px] transition-colors cursor-pointer touch-manipulation ${
+                milestoneFilter === 'all'
+                  ? 'text-accent font-bold'
+                  : 'text-text-muted hover:text-text-main font-semibold'
+              }`}
+            >
+              {milestoneFilter === 'all' && (
+                <motion.span
+                  layoutId="stats-milestone-filter-pill"
+                  transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                  className="absolute inset-0 rounded-lg bg-accent-tint border border-accent/35 shadow-2xs -z-10"
+                />
+              )}
+              <span>Alle ({achievements.length})</span>
+            </motion.button>
+
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.96 }}
+              onClick={() => setMilestoneFilter('unlocked')}
+              aria-pressed={milestoneFilter === 'unlocked'}
+              className={`relative z-10 px-3 h-full flex items-center justify-center rounded-lg text-xs sm:text-[13px] transition-colors cursor-pointer touch-manipulation ${
+                milestoneFilter === 'unlocked'
+                  ? 'text-accent font-bold'
+                  : 'text-text-muted hover:text-text-main font-semibold'
+              }`}
+            >
+              {milestoneFilter === 'unlocked' && (
+                <motion.span
+                  layoutId="stats-milestone-filter-pill"
+                  transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                  className="absolute inset-0 rounded-lg bg-accent-tint border border-accent/35 shadow-2xs -z-10"
+                />
+              )}
+              <span>Erreicht ({unlockedCount})</span>
+            </motion.button>
+          </div>
+        </div>
+
+        {visibleAchievements.length === 0 ? (
+          <div className="py-8 text-center space-y-2.5">
+            <p className="text-sm sm:text-base font-semibold text-text-main">
+              Noch kein Meilenstein freigeschaltet
+            </p>
+            <p className="text-xs sm:text-sm text-text-muted max-w-sm mx-auto">
+              Sobald du dein erstes Gericht als gekocht markierst, schaltest du hier den ersten Erfolg frei.
+            </p>
+          </div>
+        ) : (
+          <motion.div
+            layout
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+          >
+            <AnimatePresence mode="popLayout" initial={false}>
+              {visibleAchievements.map((ach) => {
+                const IconComponent = MILESTONE_ICONS[ach.iconName] || Utensils;
+                const progressRatio = Math.min(1, ach.current / ach.target);
+                const progressPercent = Math.min(100, Math.round(progressRatio * 100));
+
+                const iconBadgeStyles = ach.unlocked
+                  ? ach.accentTone === 'apricot'
+                    ? 'bg-header-top/70 border-header-line text-text-main'
+                    : ach.accentTone === 'terracotta'
+                    ? 'bg-stat-kcal-bg border-[#F2E4D6] text-season-autumn-text'
+                    : 'bg-accent-tint border-accent-border text-accent'
+                  : 'bg-card border-border text-text-muted';
+
+                return (
+                  <motion.div
+                    layout
+                    key={ach.id}
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    whileHover={{ y: -2 }}
+                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                    className={`p-4 rounded-2xl border flex flex-col justify-between gap-3 transition-colors ${
+                      ach.unlocked
+                        ? 'bg-accent-tint/45 border-accent-border shadow-2xs'
+                        : 'bg-surface border-border'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${iconBadgeStyles}`}
+                      >
+                        <IconComponent className="w-4.5 h-4.5" />
+                      </div>
+
+                      {ach.unlocked ? (
+                        <span className="px-2 py-0.5 rounded-full bg-accent text-on-accent text-[11px] font-bold inline-flex items-center gap-1 shrink-0">
+                          <Check className="w-3 h-3 stroke-[2.8]" />
+                          <span>Erreicht</span>
+                        </span>
+                      ) : (
+                        <span className="text-xs font-semibold text-text-muted tabular-nums">
+                          {Math.min(ach.current, ach.target)} / {ach.target}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-sm sm:text-[15px] text-text-main">
+                        {ach.title}
+                      </h3>
+                      <p className="text-xs text-text-muted leading-relaxed">
+                        {ach.desc}
+                      </p>
+                    </div>
+
+                    <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progressPercent}%` }}
+                        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                        className={`h-full rounded-full ${
+                          ach.unlocked ? 'bg-accent' : 'bg-text-muted/50'
+                        }`}
+                      />
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </section>
+
+      {/* Confirmation Modal for Resetting Stats */}
       <AnimatePresence>
         {showConfirmModal && (
           <motion.div
             key="confirm-clear-stats-backdrop"
+            role="dialog"
+            aria-modal="true"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -276,7 +1022,8 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
               </h3>
 
               <p className="text-[15px] text-text-muted leading-relaxed">
-                Dein gesamter Kochverlauf ({logs.length} {logs.length === 1 ? 'Eintrag' : 'Einträge'}) sowie die berechneten CO₂- und Wasserersparnisse werden zurückgesetzt.
+                Deine gesamten Kochdaten ({logs.length}{' '}
+                {logs.length === 1 ? 'Eintrag' : 'Einträge'}) werden auf null gesetzt.
               </p>
 
               <div className="flex items-center justify-end gap-2 pt-1.5">
@@ -305,645 +1052,6 @@ export const StatsView: React.FC<StatsViewProps> = (props) => {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        {/* Total Meals */}
-        <div className="bg-card p-3.5 sm:p-5 rounded-2xl border border-border shadow-xs space-y-1 sm:space-y-1.5">
-          <div className="flex items-center justify-between text-text-muted text-xs font-semibold uppercase tracking-wider">
-            <span>Gekocht</span>
-            <div className="p-1.5 sm:p-2 rounded-lg bg-surface text-[#57534d] border border-border">
-              <Utensils className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </div>
-          </div>
-          <div className="text-3xl font-bold text-text-main">{totalCooked}</div>
-          <div className="text-xs text-text-muted truncate font-medium">{totalPortions} Portionen</div>
-        </div>
-
-        {/* CO2 Saved */}
-        <div className="bg-card p-3.5 sm:p-5 rounded-2xl border border-border shadow-xs space-y-1 sm:space-y-1.5">
-          <div className="flex items-center justify-between text-text-muted text-xs font-semibold uppercase tracking-wider">
-            <span>CO₂ gespart</span>
-            <div className="p-1.5 sm:p-2 rounded-lg bg-accent-tint text-accent border border-border">
-              <Leaf className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </div>
-          </div>
-          <div className="text-3xl font-bold text-accent">{totalCO2Saved} kg</div>
-          <div className="text-xs text-text-muted truncate font-medium">vs. Mischkost</div>
-        </div>
-
-        {/* Water Saved */}
-        <div className="bg-card p-3.5 sm:p-5 rounded-2xl border border-border shadow-xs space-y-1 sm:space-y-1.5">
-          <div className="flex items-center justify-between text-text-muted text-xs font-semibold uppercase tracking-wider">
-            <span>Wasser</span>
-            <div className="p-1.5 sm:p-2 rounded-lg bg-surface text-[#57534d] border border-border">
-              <Droplets className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </div>
-          </div>
-          <div className="text-3xl font-bold text-text-main">{totalWaterSaved.toLocaleString('de-DE')} L</div>
-          <div className="text-xs text-text-muted truncate font-medium">virtuelles Wasser</div>
-        </div>
-
-        {/* Vegan Share */}
-        <div className="bg-card p-3.5 sm:p-5 rounded-2xl border border-border shadow-xs space-y-1 sm:space-y-1.5">
-          <div className="flex items-center justify-between text-text-muted text-xs font-semibold uppercase tracking-wider">
-            <span>Vegan</span>
-            <div className="p-1.5 sm:p-2 rounded-lg bg-[#FDF6F0] text-[#D35400] border border-[#F5EADF]">
-              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </div>
-          </div>
-          <div className="text-3xl font-bold text-text-main">
-            {veganCount} <span className="text-xs font-normal text-text-muted">/ {totalCooked}</span>
-          </div>
-          <div className="text-xs text-text-muted truncate font-medium">{favoritesCount} Favoriten</div>
-        </div>
-      </div>
-
-      {/* Mobile Navigation Tabs: Für deutlich mehr Übersicht auf Smartphones */}
-      <div className="flex p-1 bg-surface border border-border rounded-2xl md:hidden">
-        <button
-          type="button"
-          onClick={() => setActiveMobileTab('history')}
-          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation active:scale-95 ${
-            activeMobileTab === 'history'
-              ? 'bg-card text-text-main shadow-xs border border-border'
-              : 'text-[#57534d] hover:text-accent'
-          }`}
-        >
-          <Clock className="w-3.5 h-3.5" />
-          <span>Kochverlauf ({logs.length})</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveMobileTab('achievements')}
-          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation active:scale-95 ${
-            activeMobileTab === 'achievements'
-              ? 'bg-card text-text-main shadow-xs border border-border'
-              : 'text-[#57534d] hover:text-accent'
-          }`}
-        >
-          <Trophy className="w-3.5 h-3.5 text-[#D35400]" />
-          <span>Erfolge ({unlockedCount}/{achievements.length})</span>
-        </button>
-      </div>
-
-      {/* ZULETZT GEKOCHT SECTION - KOMPAKT & SCROLLBAR */}
-      <div className={`bg-card p-4 sm:p-6 rounded-2xl border border-border shadow-xs space-y-3 sm:space-y-4 ${activeMobileTab !== 'history' ? 'hidden md:block' : ''}`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-accent-tint text-accent">
-              <Utensils className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-text-main text-base">
-                  Zuletzt gekocht
-                </h3>
-                <span className="px-2.5 py-0.5 rounded-full bg-surface text-text-muted border border-border text-xs font-semibold">
-                  {logs.length}
-                </span>
-              </div>
-              <p className="text-xs text-text-muted hidden sm:block">
-                Scrollbare Liste aller deiner zubereiteten Mahlzeiten
-              </p>
-            </div>
-          </div>
-
-          {/* Quick Search & Filter if logs exist */}
-          {logs.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto">
-              <div className="relative flex-1 sm:w-52">
-                <Search className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={historySearchQuery}
-                  onChange={(e) => setHistorySearchQuery(e.target.value)}
-                  placeholder="Gericht filtern..."
-                  className="w-full pl-10 pr-10 py-2.5 text-[16px] bg-surface border border-border rounded-xl text-text-main placeholder:text-text-muted focus:outline-none focus:border-accent focus:bg-card transition-all min-h-[44px]"
-                />
-                {historySearchQuery && (
-                  <button
-                    onClick={() => setHistorySearchQuery('')}
-                    className="w-9 h-9 absolute right-1.5 top-1/2 -translate-y-1/2 text-[#57534d] hover:text-accent hover:bg-border rounded-lg flex items-center justify-center cursor-pointer touch-manipulation active:scale-90"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => setHistoryFilter('all')}
-                  className={`px-4 py-2.5 sm:py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
-                    historyFilter === 'all'
-                      ? 'bg-text-main text-on-accent border-text-main shadow-2xs'
-                      : 'bg-surface text-text-muted border-border hover:bg-card'
-                  }`}
-                >
-                  Alle
-                </button>
-                <button
-                  onClick={() => setHistoryFilter('vegan')}
-                  className={`px-4 py-2.5 sm:py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
-                    historyFilter === 'vegan'
-                      ? 'bg-accent text-on-accent border-accent shadow-2xs'
-                      : 'bg-surface text-text-muted border-border hover:bg-card'
-                  }`}
-                >
-                  Vegan
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {logs.length === 0 ? (
-          <div className="text-center py-8 text-xs text-text-muted space-y-1.5">
-            <p className="text-sm font-semibold text-text-main">Noch keine Einträge vorhanden</p>
-            <p>Öffne ein beliebiges Rezept und klicke auf "Ich habe das gekocht!", um es hier aufzulisten.</p>
-          </div>
-        ) : filteredLogs.length === 0 ? (
-          <div className="text-center py-6 text-xs text-text-muted space-y-3">
-            <p className="font-semibold text-text-main">Keine Treffer für diese Filterung</p>
-            <button
-              onClick={() => {
-                setHistorySearchQuery('');
-                setHistoryFilter('all');
-              }}
-              className="min-h-[42px] px-4 py-2 bg-accent-tint hover:bg-accent-tint text-accent font-semibold text-xs rounded-xl transition-colors cursor-pointer touch-manipulation active:scale-95 inline-flex items-center justify-center"
-            >
-              Filter zurücksetzen
-            </button>
-          </div>
-        ) : (
-          /* Scrollable Container so it doesn't take unlimited vertical space */
-          <div 
-            id="cooked-history-scroll-container"
-            className="max-h-[380px] sm:max-h-[440px] overflow-y-auto overscroll-contain pr-1 sm:pr-1.5 space-y-2.5 scrollbar-thin scrollbar-thumb-gray-200"
-          >
-            {filteredLogs.map((log) => {
-              const formattedDate = new Date(log.date).toLocaleDateString('de-DE', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-              });
-
-              // Find matching recipe in collection if available
-              const matchedRecipe = allRecipes.find(
-                (r) => r.id === log.recipeId || r.title.toLowerCase() === log.recipeTitle.toLowerCase()
-              );
-
-              // Mobile Touch & Swipe Offset
-              const isSwiped = swipedLogId === log.id;
-              const isThisItemTouching = activeTouchLogId === log.id;
-              const MENU_SWIPE_OFFSET = 72; // Angenehmer Abstand im geöffneten Zustand
-              const currentOffset = isThisItemTouching
-                ? touchCurrentOffset
-                : isSwiped
-                ? -MENU_SWIPE_OFFSET
-                : 0;
-
-              const itemWidth = touchStartRef.current?.itemWidth || 360;
-              const deleteThreshold = itemWidth * 0.7; // ~70% Schwelle
-              const pullDistance = Math.max(0, -currentOffset);
-              const isFullSwipeDelete = isThisItemTouching && pullDistance >= deleteThreshold;
-
-              // Wenn weiter links geswipt wird als das Menü
-              const isSwipingPastMenu = isThisItemTouching && pullDistance > MENU_SWIPE_OFFSET && !isFullSwipeDelete;
-              const extraPull = isSwipingPastMenu ? pullDistance - MENU_SWIPE_OFFSET : 0;
-              const expandingTrashWidth = isSwipingPastMenu
-                ? Math.min(itemWidth - 28, 40 + extraPull * 1.25)
-                : 40;
-
-              return (
-                <div
-                  key={log.id}
-                  data-swipe-log={log.id}
-                  className="relative overflow-hidden rounded-2xl select-none group touch-pan-y"
-                >
-                  {/* Background Action Tray: Im Grundzustand/Swipe #FAF9F6, bei >=70% dunkleres Rot (#C93B2B) */}
-                  <div
-                    className={`absolute inset-0 z-0 rounded-2xl overflow-hidden flex items-center justify-end transition-[background-color,border-color] duration-150 ease-out ${
-                      isFullSwipeDelete
-                        ? 'bg-[#C93B2B] border border-[#C93B2B]'
-                        : 'bg-surface border border-border px-3.5'
-                    }`}
-                  >
-                    {isFullSwipeDelete ? (
-                      /* Apple Full-Swipe: Bei ~70% nimmt das dunklere Rot komplett den Background Space ein */
-                      <div className="flex items-center justify-end w-full px-6 gap-2.5 text-on-accent font-semibold text-sm animate-in fade-in zoom-in-95 duration-150">
-                        <Trash2 className="w-5 h-5 stroke-[2.5] scale-110 transition-transform" />
-                        <span>Löschen</span>
-                      </div>
-                    ) : (
-                      /* Mülleimer wird dynamisch länger, wenn weiter links gewischt wird */
-                      <button
-                        data-swipe-action="true"
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteBySwipeLog(log);
-                        }}
-                        style={{
-                          width: isSwipingPastMenu ? `${expandingTrashWidth}px` : '40px',
-                          transition: isThisItemTouching ? 'none' : 'width 0.28s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s',
-                        }}
-                        className={`h-10 rounded-xl flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-90 shadow-2xs shrink-0 transition-colors ${
-                          isSwipingPastMenu
-                            ? 'bg-rose-100 text-rose-700 border border-rose-300 px-3'
-                            : 'w-10 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
-                        }`}
-                        title="Eintrag entfernen"
-                        aria-label="Eintrag entfernen"
-                      >
-                        <Trash2 className="w-4 h-4 shrink-0 stroke-[2.2]" />
-                        {isSwipingPastMenu && expandingTrashWidth > 72 && (
-                          <span className="text-xs font-semibold whitespace-nowrap animate-in fade-in duration-100">
-                            Löschen
-                          </span>
-                        )}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Foreground Log Card */}
-                  <div
-                    onTouchStart={(e) => {
-                      if (swipedLogId && swipedLogId !== log.id) {
-                        setSwipedLogId(null);
-                      }
-                      const touch = e.touches[0];
-                      const targetEl = e.currentTarget as HTMLElement;
-                      const width = targetEl.offsetWidth || window.innerWidth;
-                      touchStartRef.current = {
-                        startX: touch.clientX,
-                        startY: touch.clientY,
-                        baseOffset: swipedLogId === log.id ? -MENU_SWIPE_OFFSET : 0,
-                        itemWidth: width,
-                      };
-                      setActiveTouchLogId(log.id);
-                    }}
-                    onTouchMove={(e) => {
-                      if (!touchStartRef.current) return;
-                      const touch = e.touches[0];
-                      const diffX = touch.clientX - touchStartRef.current.startX;
-                      const diffY = touch.clientY - touchStartRef.current.startY;
-
-                      if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffX) < 12) {
-                        return;
-                      }
-
-                      const width = touchStartRef.current.itemWidth || 360;
-                      const rawOffset = touchStartRef.current.baseOffset + diffX;
-                      let clamped: number;
-                      if (rawOffset > 0) {
-                        clamped = Math.min(15, rawOffset * 0.2);
-                      } else {
-                        clamped = Math.max(-width, rawOffset);
-                      }
-                      setTouchCurrentOffset(clamped);
-                    }}
-                    onTouchEnd={() => {
-                      if (!touchStartRef.current) return;
-                      const width = touchStartRef.current.itemWidth || 360;
-                      const deleteThreshold = width * 0.7;
-                      touchStartRef.current = null;
-
-                      if (isThisItemTouching) {
-                        if (touchCurrentOffset <= -deleteThreshold) {
-                          handleDeleteBySwipeLog(log);
-                        } else if (touchCurrentOffset < -40) {
-                          setSwipedLogId(log.id);
-                          setActiveTouchLogId(null);
-                          setTouchCurrentOffset(0);
-                        } else {
-                          setSwipedLogId(null);
-                          setActiveTouchLogId(null);
-                          setTouchCurrentOffset(0);
-                        }
-                      }
-                    }}
-                    onClick={(e) => {
-                      if (swipedLogId || justClosedSwipeLogMenuRef.current) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setSwipedLogId(null);
-                      }
-                    }}
-                    style={{
-                      transform: `translate3d(${currentOffset}px, 0, 0)`,
-                      transition: isThisItemTouching ? 'none' : 'transform 0.32s cubic-bezier(0.16, 1, 0.3, 1)',
-                      willChange: isThisItemTouching ? 'transform' : 'auto',
-                    }}
-                    className="relative z-10 p-3 sm:p-3.5 bg-card sm:bg-surface rounded-2xl border border-border flex items-center justify-between gap-2.5 sm:gap-3 transition-colors hover:bg-card hover:border-accent-border shadow-2xs"
-                  >
-                    {/* Log Card Body: Clean mobile arrangement */}
-                    <div className="space-y-1.5 min-w-0 flex-1">
-                      {/* Top Row: Title */}
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-semibold text-text-main text-sm truncate">
-                          {log.recipeTitle}
-                        </span>
-                      </div>
-
-                      {/* Notes (if any) */}
-                      {log.notes && (
-                        <p className="text-[11px] text-text-muted italic truncate">
-                          "{log.notes}"
-                        </p>
-                      )}
-
-                      {/* Clean Scannable Metrics Badges (Apple-Style Clean Pills) */}
-                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-text-muted">
-                        <span className="bg-surface px-2 py-0.5 rounded-md border border-border inline-flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-text-muted" aria-hidden="true" />
-                          <span>{formattedDate}</span>
-                        </span>
-                        <span className="bg-surface px-2 py-0.5 rounded-md border border-border inline-flex items-center gap-1">
-                          <Users className="w-3 h-3 text-text-muted" aria-hidden="true" />
-                          <span>{log.servingsCooked || 2} Port.</span>
-                        </span>
-                        <span className="bg-accent-tint text-accent font-medium px-2 py-0.5 rounded-md border border-border inline-flex items-center gap-1">
-                          <Leaf className="w-3 h-3 text-accent" aria-hidden="true" />
-                          <span>{log.savedCO2Kg} kg CO₂</span>
-                        </span>
-                        <span className="bg-surface px-2 py-0.5 rounded-md border border-border hidden xs:inline-flex items-center gap-1">
-                          <Droplets className="w-3 h-3 text-accent" aria-hidden="true" />
-                          <span>{log.savedWaterLiters.toLocaleString('de-DE')} L</span>
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Right Side: Rezept Button & PC Delete / Inline Confirm */}
-                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-center" onClick={(e) => e.stopPropagation()}>
-                      {matchedRecipe && (
-                        <button
-                          type="button"
-                          onClick={() => onSelectRecipe(matchedRecipe)}
-                          className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-surface sm:bg-card hover:bg-accent-tint text-accent border border-border text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors cursor-pointer min-h-[38px] sm:min-h-0 touch-manipulation active:scale-95"
-                          title="Rezept ansehen"
-                        >
-                          <BookOpen className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Rezept</span>
-                        </button>
-                      )}
-
-                      {/* PC Inline-Bestätigung (Kein Pop-up) */}
-                      {confirmDeleteLogId === log.id ? (
-                        <div
-                          data-inline-confirm="true"
-                          className="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-xl p-1 animate-in fade-in zoom-in-95 duration-150"
-                        >
-                          <span className="text-xs font-semibold text-rose-700 px-1.5 hidden sm:inline whitespace-nowrap">
-                            Wirklich löschen?
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleDeleteSingleLog(log.id);
-                              setConfirmDeleteLogId(null);
-                              onCopyFeedback(`"${log.recipeTitle}" aus Verlauf entfernt.`);
-                            }}
-                            className="min-h-[40px] px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-on-accent text-[14px] font-semibold shadow-2xs transition-colors cursor-pointer active:scale-95 touch-manipulation flex items-center justify-center"
-                          >
-                            Löschen
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setConfirmDeleteLogId(null)}
-                            className="min-h-[40px] px-3 py-2 rounded-lg bg-card hover:bg-border text-[#57534d] hover:text-accent border border-border text-[14px] font-semibold transition-colors cursor-pointer active:scale-95 touch-manipulation flex items-center justify-center"
-                          >
-                            Abbrechen
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setConfirmDeleteLogId(log.id)}
-                          className="hidden sm:flex w-9 h-9 items-center justify-center rounded-xl bg-surface text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-border transition-all cursor-pointer touch-manipulation active:scale-95 shadow-2xs shrink-0"
-                          title="Eintrag entfernen (Bestätigung erforderlich)"
-                          aria-label="Eintrag entfernen"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* ERFOLGE & TROPHÄEN - MIT INSANE-LEVEL & KOMPAKTER ANSICHT */}
-      <div className={`bg-card p-4 sm:p-6 rounded-2xl border border-border shadow-xs space-y-3 sm:space-y-4 ${activeMobileTab !== 'achievements' ? 'hidden md:block' : ''}`}>
-        {/* Header with summary & unlocked badge */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-[#FDF6F0] text-[#D35400]">
-                <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-              <h3 className="text-base font-semibold text-text-main flex items-center gap-2">
-                <span>Erfolge & Trophäen</span>
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-accent-tint text-accent border border-border">
-                  {unlockedCount}/{achievements.length} freigeschaltet
-                </span>
-              </h3>
-            </div>
-            <p className="text-xs text-text-muted mt-0.5">
-              Von schnellen Einstiegs-Erfolgen bis hin zu extremen Langzeit-Trophäen (über 1.000 Mahlzeiten & Tonnen CO₂)
-            </p>
-          </div>
-
-          {/* Insane Milestone Status Pill */}
-          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold self-start sm:self-auto min-h-[38px]">
-            <Flame className="w-4 h-4 text-rose-600 shrink-0" />
-            <span>Insane Trophäen: {insaneUnlockedCount}/{insaneCount}</span>
-          </div>
-        </div>
-
-        {/* Tier Filter Tabs - Auf Einkaufslisten-Niveau vergrößert */}
-        <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none text-sm">
-          <button
-            onClick={() => setAchievementTierFilter('all')}
-            className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
-              achievementTierFilter === 'all'
-                ? 'bg-text-main text-on-accent border-text-main shadow-2xs'
-                : 'bg-surface text-text-muted border-border hover:bg-card'
-            }`}
-          >
-            Alle ({achievements.length})
-          </button>
-          <button
-            onClick={() => setAchievementTierFilter('unlocked')}
-            className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
-              achievementTierFilter === 'unlocked'
-                ? 'bg-accent text-on-accent border-accent shadow-2xs'
-                : 'bg-surface text-text-muted border-border hover:bg-card'
-            }`}
-          >
-            Erreicht ({unlockedCount})
-          </button>
-          <button
-            onClick={() => setAchievementTierFilter('bronze')}
-            className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
-              achievementTierFilter === 'bronze'
-                ? 'bg-amber-700 text-on-accent border-amber-700 shadow-2xs'
-                : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
-            }`}
-          >
-            Bronze
-          </button>
-          <button
-            onClick={() => setAchievementTierFilter('silver')}
-            className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
-              achievementTierFilter === 'silver'
-                ? 'bg-slate-700 text-on-accent border-slate-700 shadow-2xs'
-                : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
-            }`}
-          >
-            Silber
-          </button>
-          <button
-            onClick={() => setAchievementTierFilter('gold')}
-            className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
-              achievementTierFilter === 'gold'
-                ? 'bg-yellow-600 text-on-accent border-yellow-600 shadow-2xs'
-                : 'bg-yellow-50 text-yellow-800 border-yellow-300 hover:bg-yellow-100'
-            }`}
-          >
-            Gold
-          </button>
-          <button
-            onClick={() => setAchievementTierFilter('diamond')}
-            className={`px-4 py-2.5 sm:py-2 rounded-xl font-semibold whitespace-nowrap transition-all border cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation active:scale-95 ${
-              achievementTierFilter === 'diamond'
-                ? 'bg-teal-700 text-on-accent border-teal-700 shadow-2xs'
-                : 'bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100'
-            }`}
-          >
-            Diamant
-          </button>
-          <button
-            onClick={() => setAchievementTierFilter('insane')}
-            className={`px-4 py-2.5 sm:py-2 rounded-xl font-extrabold whitespace-nowrap transition-all border flex items-center gap-1.5 cursor-pointer min-h-[44px] sm:min-h-0 touch-manipulation active:scale-95 ${
-              achievementTierFilter === 'insane'
-                ? 'bg-rose-600 text-on-accent border-rose-600 shadow-2xs'
-                : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-            }`}
-          >
-            <Flame className="w-4 h-4 text-rose-600" />
-            <span>Insane ({insaneCount})</span>
-          </button>
-        </div>
-
-        {/* Compact, Scrollable Achievements Grid */}
-        <div 
-          id="achievements-scroll-container"
-          className="max-h-[380px] sm:max-h-[440px] overflow-y-auto overscroll-contain pr-1 sm:pr-1.5 scrollbar-thin scrollbar-thumb-gray-200"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-2.5">
-            {filteredAchievements.map((ach) => {
-              const progressRatio = Math.min(1, ach.current / ach.target);
-              const progressPercent = Math.min(100, Math.round(progressRatio * 100));
-
-              // Tier styling
-              const tierBadge = {
-                bronze: { label: 'Bronze', bg: 'bg-amber-100 text-amber-800 border-amber-200' },
-                silver: { label: 'Silber', bg: 'bg-slate-200 text-slate-700 border-slate-300' },
-                gold: { label: 'Gold', bg: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
-                diamond: { label: 'Diamant', bg: 'bg-teal-100 text-teal-800 border-teal-200' },
-                insane: { label: 'Insane', bg: 'bg-rose-100 text-rose-700 border-rose-200 font-bold' },
-              }[ach.tier];
-
-              return (
-                <div
-                  key={ach.id}
-                  className={`p-2.5 sm:p-3 rounded-xl border flex items-start gap-2.5 transition-all ${
-                    ach.unlocked
-                      ? ach.tier === 'insane'
-                        ? 'bg-rose-50/70 border-rose-200 shadow-2xs'
-                        : 'bg-accent-tint border-border shadow-2xs'
-                      : 'bg-surface border-border opacity-75 hover:opacity-100'
-                  }`}
-                >
-                  <div className="text-3xl shrink-0 p-1 bg-card rounded-lg border border-border shadow-2xs">
-                    {ach.icon}
-                  </div>
-
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <h4 className="font-semibold text-sm text-text-main break-words whitespace-normal leading-snug">
-                        {ach.title}
-                      </h4>
-                      <span className={`text-xs px-2 py-0.5 rounded-md border shrink-0 font-medium ${tierBadge.bg}`}>
-                        {tierBadge.label}
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-text-muted leading-tight break-words whitespace-normal">
-                      {ach.desc}
-                    </p>
-
-                    {/* Progress Bar & Counter */}
-                    <div className="pt-0.5 space-y-0.5">
-                      <div className="w-full bg-border h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-300 ${
-                            ach.unlocked
-                              ? ach.tier === 'insane'
-                                ? 'bg-rose-600'
-                                : 'bg-accent'
-                              : ach.tier === 'insane'
-                              ? 'bg-rose-400'
-                              : 'bg-text-muted'
-                          }`}
-                          style={{ width: `${progressPercent}%` }}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs text-text-muted">
-                        <span className="font-medium">
-                          {ach.unlocked
-                            ? 'Erreicht'
-                            : `${Math.min(ach.current, ach.target).toLocaleString('de-DE')} / ${ach.target.toLocaleString('de-DE')} ${ach.unit}`}
-                        </span>
-                        <span className="font-bold text-text-main">
-                          {progressPercent}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* STATISTIKEN LÖSCHEN - GANZ UNTEN PLATZIERT */}
-      {logs.length > 0 && (
-        <div className="bg-card p-4 sm:p-5 rounded-2xl border border-border shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <div className="space-y-0.5">
-            <h4 className="text-sm font-semibold text-text-main">Kochdaten & Verlauf verwalten</h4>
-            <p className="text-xs text-text-muted">
-              Möchtest du deinen bisherigen Kochverlauf und alle erfassten Ersparnisse zurücksetzen?
-            </p>
-          </div>
-          <button
-            id="clear-all-stats-btn"
-            onClick={() => setShowConfirmModal(true)}
-            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold text-sm border border-rose-200 transition-all cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center gap-2 shadow-2xs w-full sm:w-auto shrink-0"
-            title="Statistik und Kochverlauf leeren (erfordert Bestätigung)"
-          >
-            <Trash2 className="w-4 h-4 text-rose-600" />
-            <span>Statistik leeren</span>
-          </button>
-        </div>
-      )}
-    </div>
+    </motion.div>
   );
 };
-
